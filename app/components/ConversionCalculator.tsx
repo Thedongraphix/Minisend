@@ -39,45 +39,82 @@ export function ConversionCalculator({ usdcAmount, onKshChange }: ConversionCalc
   const kshAmount = Math.max(0, (usdcAmount * exchangeRate) - fees)
 
   return (
-    <div className="bg-green-50 p-4 rounded-lg border border-green-200 space-y-3">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-green-900">Conversion Details</h3>
-        <button
-          onClick={refreshExchangeRate}
-          disabled={isLoadingRate}
-          className="text-sm text-green-600 hover:text-green-800 disabled:opacity-50"
-        >
-          {isLoadingRate ? '🔄' : '↻'} Refresh Rate
-        </button>
-      </div>
+    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl shadow-lg border border-green-100 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-green-200/30 to-emerald-200/30 rounded-full -translate-y-12 -translate-x-12"></div>
       
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <span className="text-green-700">You'll receive:</span>
-          <span className="font-bold text-green-900">KSH {kshAmount.toFixed(2)}</span>
+      <div className="relative">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-gray-900">Conversion Details</h3>
+          <button
+            onClick={refreshExchangeRate}
+            disabled={isLoadingRate}
+            className="flex items-center space-x-2 text-sm text-green-700 hover:text-green-800 bg-green-100 hover:bg-green-200 px-3 py-2 rounded-lg transition-all duration-200 disabled:opacity-50"
+          >
+            <svg className={`w-4 h-4 ${isLoadingRate ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>{isLoadingRate ? 'Updating...' : 'Refresh Rate'}</span>
+          </button>
         </div>
         
-        <div className="text-sm text-green-600 space-y-1 pt-2 border-t border-green-200">
-          <div className="flex justify-between">
-            <span>Exchange Rate:</span>
-            <span>1 USDC = {exchangeRate} KSH</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Processing Fee:</span>
-            <span>KSH {fees.toFixed(2)} ({(fees / (usdcAmount * exchangeRate) * 100).toFixed(1)}%)</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Gross Amount:</span>
-            <span>KSH {(usdcAmount * exchangeRate).toFixed(2)}</span>
+        {/* Main conversion display */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-green-100 mb-4">
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-2">You'll receive</div>
+            <div className="text-4xl font-bold text-gray-900 mb-2">
+              KSH {kshAmount.toFixed(2)}
+            </div>
+            <div className="text-sm text-green-600 bg-green-50 px-3 py-1 rounded-lg inline-block">
+              🇰🇪 Direct to M-Pesa
+            </div>
           </div>
         </div>
+        
+        {/* Breakdown */}
+        <div className="space-y-3">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-green-100">
+            <div className="flex justify-between items-center text-gray-700">
+              <span className="font-medium">Exchange Rate:</span>
+              <span className="font-semibold">1 USDC = {exchangeRate} KSH</span>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-green-100">
+            <div className="flex justify-between items-center text-gray-700">
+              <span className="font-medium">Gross Amount:</span>
+              <span className="font-semibold">KSH {(usdcAmount * exchangeRate).toFixed(2)}</span>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-green-100">
+            <div className="flex justify-between items-center text-gray-700">
+              <span className="font-medium">Processing Fee:</span>
+              <span className="font-semibold text-orange-600">
+                KSH {fees.toFixed(2)} ({(fees / (usdcAmount * exchangeRate) * 100).toFixed(1)}%)
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {usdcAmount > 0 && (
+          <div className="mt-4 p-4 bg-green-100 rounded-xl border border-green-200">
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-green-800 font-medium text-sm">Fee Optimization Tip</p>
+                <p className="text-green-700 text-sm">
+                  Amounts over $100 USDC get lower fees ({usdcAmount > 100 ? '2%' : 'Currently 4%, upgrade to 2% with $100+'})
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-      
-      {usdcAmount > 0 && (
-        <div className="text-xs text-green-600 bg-green-100 p-2 rounded">
-          💡 Tip: Larger amounts have lower fee percentages
-        </div>
-      )}
     </div>
   )
 } 
