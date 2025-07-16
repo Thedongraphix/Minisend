@@ -1,16 +1,20 @@
 "use client";
 
-import { useAccount, useBalance } from 'wagmi'
-import { base } from 'wagmi/chains'
-
-const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' // USDC on Base
+import { useAccount, useBalance, useChainId } from 'wagmi'
+import { getUSDCContract, getNetworkConfig, isTestnet } from '@/lib/contracts'
 
 export function USDCBalance() {
   const { address } = useAccount()
+  const chainId = useChainId()
+  
+  // Get the appropriate USDC contract for current network
+  const usdcContract = getUSDCContract(chainId)
+  const networkConfig = getNetworkConfig(chainId)
+  
   const { data: balance, isLoading } = useBalance({
     address,
-    token: USDC_CONTRACT,
-    chainId: base.id,
+    token: usdcContract as `0x${string}`,
+    chainId,
   })
 
   if (isLoading) {
@@ -41,7 +45,14 @@ export function USDCBalance() {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Available USDC</h3>
-            <p className="text-sm text-gray-600">On Base Network</p>
+            <div className="flex items-center space-x-2">
+              <p className="text-sm text-gray-600">On {networkConfig.name}</p>
+              {isTestnet(chainId) && (
+                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs font-medium rounded-full border border-orange-200">
+                  Testnet
+                </span>
+              )}
+            </div>
           </div>
         </div>
         
@@ -57,11 +68,23 @@ export function USDCBalance() {
       
       {/* Additional info */}
       <div className="mt-4 pt-4 border-t border-blue-200/50">
-        <div className="flex items-center text-sm text-gray-600">
-          <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Secured by Base network
+        <div className="flex items-center justify-between">
+          <div className="flex items-center text-sm text-gray-600">
+            <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Secured by {networkConfig.name} network
+          </div>
+          
+          {/* Show testnet warning */}
+          {isTestnet(chainId) && (
+            <div className="flex items-center text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-lg border border-orange-200">
+              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.966-.833-2.736 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              Test Mode
+            </div>
+          )}
         </div>
       </div>
     </div>

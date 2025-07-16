@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPublicClient, http } from 'viem'
-import { base } from 'viem/chains'
+import { base, baseSepolia } from 'viem/chains'
 import { MoonPayIntegration } from '@/lib/moonpay'
 import { TransakIntegration } from '@/lib/transak'
-
-// USDC contract on Base
-const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+import { createMPesaInstance } from '@/lib/mpesa'
+import { getUSDCContract, getNetworkConfig } from '@/lib/contracts'
 
 // Initialize off-ramp providers
 const moonpay = new MoonPayIntegration(
@@ -19,18 +18,25 @@ const transak = new TransakIntegration({
   environment: process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'STAGING',
 })
 
-// Create Viem client for Base network
-const client = createPublicClient({
-  chain: base,
-  transport: http()
-})
+// Initialize M-Pesa
+const mpesa = createMPesaInstance()
+
+// Create Viem clients for both networks
+const createClient = (chainId: number) => {
+  const chain = chainId === base.id ? base : baseSepolia
+  return createPublicClient({
+    chain,
+    transport: http()
+  })
+}
 
 interface OffRampRequest {
   walletAddress: string
   usdcAmount: number
   kshAmount: number
   phoneNumber: string
-  provider?: 'moonpay' | 'transak'
+  provider?: 'moonpay' | 'transak' | 'mpesa'
+  chainId?: number
 }
 
 interface TransactionLogData {
@@ -42,15 +48,24 @@ interface TransactionLogData {
   provider: string
   status: string
   timestamp: Date
+  chainId: number
   usdcTxHash?: string
   mpesaReference?: string
+  checkoutRequestID?: string
   sellUrl?: string
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: OffRampRequest = await request.json()
-    const { walletAddress, usdcAmount, kshAmount, phoneNumber, provider = 'moonpay' } = body
+    const { 
+      walletAddress, 
+      usdcAmount, 
+      kshAmount, 
+      phoneNumber, 
+      provider = 'mpesa',
+      chainId = base.id 
+    } = body
 
     // Validate input
     if (!walletAddress || !usdcAmount || !kshAmount || !phoneNumber) {
@@ -60,8 +75,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate phone number format
-    if (!validateKenyanPhone(phoneNumber)) {
+    // Validate phone number format for M-Pesa
+    if (provider === 'mpesa' && !mpesa.validateKenyanPhone(phoneNumber)) {
       return NextResponse.json(
         { error: 'Invalid Kenyan phone number format' },
         { status: 400 }
@@ -77,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Check USDC balance
-    const balance = await checkUSDCBalance(walletAddress)
+    const balance = await checkUSDCBalance(walletAddress, chainId)
     if (balance < usdcAmount) {
       return NextResponse.json(
         { error: 'Insufficient USDC balance' },
@@ -90,13 +105,23 @@ export async function POST(request: NextRequest) {
 
     // 3. Process off-ramp based on provider
     let result
-    if (provider === 'moonpay') {
+    if (provider === 'mpesa') {
+      result = await processMPesaOffRamp({
+        walletAddress,
+        usdcAmount,
+        kshAmount,
+        phoneNumber,
+        transactionId,
+        chainId
+      })
+    } else if (provider === 'moonpay') {
       result = await processMoonPayOffRamp({
         walletAddress,
         usdcAmount,
         kshAmount,
         phoneNumber,
-        transactionId
+        transactionId,
+        chainId
       })
     } else {
       result = await processTransakOffRamp({
@@ -104,7 +129,8 @@ export async function POST(request: NextRequest) {
         usdcAmount,
         kshAmount,
         phoneNumber,
-        transactionId
+        transactionId,
+        chainId
       })
     }
 
@@ -116,6 +142,7 @@ export async function POST(request: NextRequest) {
       kshAmount,
       phoneNumber,
       provider,
+      chainId,
       status: 'initiated',
       timestamp: new Date(),
       ...result
@@ -124,10 +151,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       transactionId,
-      usdcTxHash: result.usdcTxHash,
-      mpesaReference: result.mpesaReference,
       provider,
-      estimatedCompletionTime: '1-3 minutes'
+      chainId,
+      networkName: getNetworkConfig(chainId).name,
+      ...result
     })
 
   } catch (error) {
@@ -139,137 +166,152 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function checkUSDCBalance(address: string): Promise<number> {
+// Check USDC balance for specific chain
+async function checkUSDCBalance(address: string, chainId: number): Promise<number> {
   try {
+    const client = createClient(chainId)
+    const usdcContract = getUSDCContract(chainId)
+
+    // Get USDC balance (6 decimals for USDC)
     const balance = await client.readContract({
-      address: USDC_CONTRACT as `0x${string}`,
+      address: usdcContract as `0x${string}`,
       abi: [
         {
+          constant: true,
+          inputs: [{ name: 'owner', type: 'address' }],
           name: 'balanceOf',
-          type: 'function',
-          stateMutability: 'view',
-          inputs: [{ name: 'account', type: 'address' }],
           outputs: [{ name: '', type: 'uint256' }],
+          type: 'function',
         },
       ],
       functionName: 'balanceOf',
       args: [address as `0x${string}`],
     })
 
-    // USDC has 6 decimals
+    // Convert from wei to USDC (6 decimals)
     return Number(balance) / 1e6
   } catch (error) {
     console.error('Error checking USDC balance:', error)
-    throw new Error('Failed to check USDC balance')
+    return 0
   }
 }
 
+// Process M-Pesa off-ramp (direct STK Push)
+async function processMPesaOffRamp(params: {
+  walletAddress: string
+  usdcAmount: number
+  kshAmount: number
+  phoneNumber: string
+  transactionId: string
+  chainId: number
+}) {
+  try {
+    // Initiate M-Pesa STK Push
+    const mpesaResult = await mpesa.stkPush({
+      phoneNumber: params.phoneNumber,
+      amount: params.kshAmount,
+      accountReference: params.transactionId,
+      transactionDesc: `USDC to KSH conversion - ${params.usdcAmount} USDC`
+    })
+
+    return {
+      checkoutRequestID: mpesaResult.checkoutRequestID,
+      merchantRequestID: mpesaResult.merchantRequestID,
+      mpesaReference: mpesaResult.checkoutRequestID,
+      message: 'M-Pesa STK push sent. Please check your phone and enter your M-Pesa PIN.',
+      customerMessage: mpesaResult.customerMessage
+    }
+  } catch (error) {
+    throw new Error(`M-Pesa payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
+}
+
+// Process MoonPay off-ramp (existing implementation)
 async function processMoonPayOffRamp(params: {
   walletAddress: string
   usdcAmount: number
   kshAmount: number
   phoneNumber: string
   transactionId: string
+  chainId: number
 }) {
   try {
-    // Generate MoonPay sell transaction URL
     const sellUrl = await moonpay.initiateSellTransaction({
       walletAddress: params.walletAddress,
       cryptoCurrency: 'usdc',
       baseCurrency: 'kes',
       quoteCurrencyAmount: params.kshAmount,
-      externalCustomerId: params.walletAddress,
-      redirectURL: `${process.env.NEXT_PUBLIC_URL}/success?tx=${params.transactionId}`,
-      phoneNumber: params.phoneNumber
+      externalCustomerId: params.transactionId,
+      redirectURL: `${process.env.NEXT_PUBLIC_URL}/success?tx=${params.transactionId}`
     })
 
-    // In a real implementation, you would:
-    // 1. Redirect user to MoonPay for USDC transfer
-    // 2. Wait for MoonPay webhook confirmation
-    // 3. Initiate M-Pesa payment via MoonPay
-
-    // For demo purposes, simulate transaction hashes
-    const usdcTxHash = `0x${generateRandomHash()}`
-    const mpesaReference = generateMPesaReference()
-
     return {
-      usdcTxHash,
-      mpesaReference,
-      sellUrl
+      sellUrl,
+      mpesaReference: params.transactionId,
+      message: 'Redirecting to MoonPay for KYC and payment processing'
     }
   } catch (error) {
-    console.error('MoonPay processing error:', error)
-    throw new Error('Failed to process MoonPay transaction')
+    throw new Error(`MoonPay processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
+// Process Transak off-ramp (existing implementation)
 async function processTransakOffRamp(params: {
   walletAddress: string
   usdcAmount: number
   kshAmount: number
   phoneNumber: string
   transactionId: string
+  chainId: number
 }) {
   try {
-    // Generate Transak sell URL
     const sellUrl = transak.generateSellURL({
       walletAddress: params.walletAddress,
       cryptoCurrencyCode: 'USDC',
       fiatCurrency: 'KES',
       fiatAmount: params.kshAmount,
-      email: `user_${params.transactionId}@example.com`, // In production, collect real email
-      phoneNumber: params.phoneNumber,
-      redirectURL: `${process.env.NEXT_PUBLIC_URL}/success?tx=${params.transactionId}`
+      email: `${params.transactionId}@temp.com`, // Temporary email
+      phoneNumber: params.phoneNumber
     })
-
-    // For demo purposes, simulate transaction hashes
-    const usdcTxHash = `0x${generateRandomHash()}`
-    const mpesaReference = generateMPesaReference()
 
     return {
-      usdcTxHash,
-      mpesaReference,
-      sellUrl
+      sellUrl,
+      mpesaReference: params.transactionId,
+      message: 'Redirecting to Transak for KYC and payment processing'
     }
   } catch (error) {
-    console.error('Transak processing error:', error)
-    throw new Error('Failed to process Transak transaction')
+    throw new Error(`Transak processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
+// Generate unique transaction ID
+function generateTransactionId(): string {
+  const timestamp = Date.now().toString(36)
+  const randomStr = Math.random().toString(36).substring(2, 8)
+  return `KE_${timestamp}_${randomStr}`.toUpperCase()
+}
+
+// Log transaction for compliance and tracking
 async function logTransaction(data: TransactionLogData) {
   try {
-    // In production, save to database (PostgreSQL, MongoDB, etc.)
-    console.log('Transaction logged:', {
-      ...data,
-      phoneNumber: data.phoneNumber.replace(/\d(?=\d{4})/g, '*') // Mask phone number
-    })
-
-    // You could also send to external compliance monitoring
-    if (process.env.CHAINALYSIS_API_KEY) {
-      // await sendToAnalytics(data)
-    }
+    // In a real implementation, you would save this to a database
+    // For now, we'll just log it
+    console.log('Transaction logged:', JSON.stringify(data, null, 2))
+    
+    // TODO: Implement database storage
+    // await database.transactions.create(data)
+    
   } catch (error) {
     console.error('Failed to log transaction:', error)
-    // Don't throw error here as it shouldn't block the main transaction
+    // Don't throw error as this shouldn't fail the main transaction
   }
 }
 
-function validateKenyanPhone(phone: string): boolean {
+// Validate Kenyan phone number (backup validation)
+function validateKenyanPhone(phoneNumber: string): boolean {
+  // Kenyan phone format: +254XXXXXXXXX or 07XXXXXXXX or 01XXXXXXXX
   const regex = /^(\+254|0)[17]\d{8}$/
-  return regex.test(phone)
-}
-
-function generateTransactionId(): string {
-  return `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-}
-
-function generateRandomHash(): string {
-  return Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
-}
-
-function generateMPesaReference(): string {
-  return `MP${Date.now().toString().slice(-8)}${Math.random().toString(36).substr(2, 4).toUpperCase()}`
+  return regex.test(phoneNumber)
 }
 
 // GET method for transaction status checking
@@ -291,9 +333,8 @@ export async function GET(request: NextRequest) {
     // For demo, return mock status
     return NextResponse.json({
       transactionId,
-      status: 'completed',
-      usdcTxHash: `0x${generateRandomHash()}`,
-      mpesaReference: generateMPesaReference(),
+      status: 'pending',
+      message: 'Transaction is being processed. Please check your M-Pesa for confirmation.',
       completedAt: new Date().toISOString()
     })
   } catch (error) {

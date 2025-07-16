@@ -1,4 +1,9 @@
-import { createHmac, timingSafeEqual } from 'crypto'
+import crypto from 'crypto'
+
+export interface TransakConfig {
+  apiKey: string
+  environment: 'STAGING' | 'PRODUCTION'
+}
 
 export interface TransakSellParams {
   walletAddress: string
@@ -7,34 +12,33 @@ export interface TransakSellParams {
   fiatAmount: number
   email: string
   phoneNumber: string
-  redirectURL?: string
 }
 
-export interface TransakConfig {
-  apiKey: string
-  environment: 'STAGING' | 'PRODUCTION'
-  partnerId?: string
-  partnerOrderId?: string
+export interface TransakOrderData {
+  id: string
+  status: string
+  fiatCurrency: string
+  cryptoCurrency: string
+  requestedAmount: number
+  walletAddress: string
+  createdAt: string
 }
 
 export interface TransakCurrencyResponse {
-  response: {
-    cryptoCurrencies: Array<{
-      symbol: string
-      name: string
-      network: string
-    }>
-  }
+  response: Array<{
+    symbol: string
+    name: string
+    minAmount: number
+    maxAmount: number
+  }>
 }
 
 export interface TransakPriceResponse {
   response: {
     fiatAmount: number
     cryptoAmount: number
-    fiatCurrency: string
-    cryptoCurrency: string
-    conversionPrice: number
-    totalFee: number
+    feeAmount: number
+    totalAmount: number
   }
 }
 
@@ -42,190 +46,117 @@ export interface TransakOrderResponse {
   response: {
     id: string
     status: string
-    fiatCurrency: string
+    walletAddress: string
     cryptoCurrency: string
+    fiatCurrency: string
     requestedAmount: number
     createdAt: string
-    completedAt?: string
   }
 }
 
 export class TransakIntegration {
-  private apiKey: string
-  private environment: 'STAGING' | 'PRODUCTION'
-  private partnerId?: string
+  private config: TransakConfig
   private baseUrl: string
 
   constructor(config: TransakConfig) {
-    this.apiKey = config.apiKey
-    this.environment = config.environment
-    this.partnerId = config.partnerId
-    this.baseUrl = this.environment === 'STAGING' 
-      ? 'https://staging-global.transak.com' 
-      : 'https://global.transak.com'
+    this.config = config
+    this.baseUrl = config.environment === 'PRODUCTION' 
+      ? 'https://global.transak.com' 
+      : 'https://staging-global.transak.com'
   }
 
-  /**
-   * Generate Transak widget URL for sell transactions
-   */
+  // Generate URL for sell transactions
   generateSellURL(params: TransakSellParams): string {
     const query = new URLSearchParams({
-      apiKey: this.apiKey,
-      hostURL: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+      apiKey: this.config.apiKey,
+      hostURL: typeof window !== 'undefined' ? window.location.origin : 'https://localhost:3000',
       walletAddress: params.walletAddress,
       cryptoCurrencyCode: params.cryptoCurrencyCode,
       fiatCurrency: params.fiatCurrency,
       fiatAmount: params.fiatAmount.toString(),
       email: params.email,
       mobileNumber: params.phoneNumber,
+      redirectURL: `${typeof window !== 'undefined' ? window.location.origin : 'https://localhost:3000'}/success`,
       productsAvailed: 'SELL',
       themeColor: '000000',
       hideMenu: 'true',
-      environment: this.environment,
+      disableWalletAddressForm: 'true'
     })
-
-    // Add optional parameters
-    if (params.redirectURL) {
-      query.append('redirectURL', params.redirectURL)
-    }
-
-    if (this.partnerId) {
-      query.append('partnerId', this.partnerId)
-    }
 
     return `${this.baseUrl}?${query}`
   }
 
-  /**
-   * Get supported currencies for Kenya
-   */
+  // Get supported currencies
   async getSupportedCurrencies(): Promise<TransakCurrencyResponse> {
-    const response = await fetch(
-      `https://api.transak.com/api/v2/currencies/crypto-currencies`,
-      {
-        method: 'GET',
+    try {
+      const response = await fetch(`${this.baseUrl}/api/v2/currencies/crypto-currencies`, {
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'api-key': this.config.apiKey
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch supported currencies')
       }
-    )
 
-    if (!response.ok) {
-      throw new Error(`Transak API error: ${response.statusText}`)
+      return await response.json()
+    } catch (error) {
+      console.error('Transak get currencies error:', error)
+      throw error
     }
-
-    return await response.json()
   }
 
-  /**
-   * Get current exchange rates
-   */
-  async getExchangeRate(
-    cryptoCurrency: string = 'USDC',
-    fiatCurrency: string = 'KES',
-    amount: number = 1
-  ): Promise<TransakPriceResponse> {
-    const query = new URLSearchParams({
-      fiatCurrency,
-      cryptoCurrency,
-      fiatAmount: amount.toString(),
-      paymentMethod: 'mobile_money', // For M-Pesa
-      partnerApiKey: this.apiKey,
-    })
+  // Get exchange rate
+  async getExchangeRate(fromCurrency: string, toCurrency: string, amount: number): Promise<TransakPriceResponse> {
+    try {
+      const query = new URLSearchParams({
+        fiatCurrency: toCurrency,
+        cryptoCurrency: fromCurrency,
+        fiatAmount: amount.toString(),
+        network: 'base',
+        partnerApiKey: this.config.apiKey
+      })
 
-    const response = await fetch(
-      `https://api.transak.com/api/v2/currencies/price?${query}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch(`${this.baseUrl}/api/v2/currencies/price?${query}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch exchange rate')
       }
-    )
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch exchange rate: ${response.statusText}`)
+      return await response.json()
+    } catch (error) {
+      console.error('Transak get exchange rate error:', error)
+      throw error
     }
-
-    return await response.json()
   }
 
-  /**
-   * Validate Kenyan phone number for M-Pesa
-   */
-  validateKenyanPhone(phoneNumber: string): boolean {
-    // Kenyan phone formats: +254XXXXXXXXX or 07XXXXXXXX or 01XXXXXXXX
-    const regex = /^(\+254|0)[17]\d{8}$/
-    return regex.test(phoneNumber)
-  }
-
-  /**
-   * Format phone number to international format
-   */
-  formatPhoneNumber(phoneNumber: string): string {
-    if (phoneNumber.startsWith('0')) {
-      return '+254' + phoneNumber.substring(1)
+  // Verify webhook signature
+  verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
+    try {
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(payload)
+        .digest('hex')
+      
+      return expectedSignature === signature
+    } catch (error) {
+      console.error('Webhook signature verification failed:', error)
+      return false
     }
-    return phoneNumber
   }
 
-  /**
-   * Get order status
-   */
-  async getOrderStatus(orderId: string): Promise<TransakOrderResponse> {
-    const response = await fetch(
-      `https://api.transak.com/api/v2/orders/${orderId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': this.apiKey,
-        },
-      }
-    )
-
-    if (!response.ok) {
-      throw new Error(`Transak API error: ${response.statusText}`)
-    }
-
-    return await response.json()
-  }
-
-  /**
-   * Handle webhook verification
-   */
-  verifyWebhook(payload: string, signature: string, secret: string): boolean {
-    const computedSignature = createHmac('sha256', secret)
-      .update(payload)
-      .digest('hex')
-
-    return timingSafeEqual(
-      Buffer.from(signature, 'hex'),
-      Buffer.from(computedSignature, 'hex')
-    )
-  }
-
-  /**
-   * Calculate fees for a transaction
-   */
-  calculateFees(amount: number, currency: string = 'KES'): {
-    processingFee: number
-    networkFee: number
-    totalFee: number
-    feePercentage: number
-  } {
-    // Transak typical fees for Kenya: 2-4%
-    const basePercentage = amount > 10000 ? 0.025 : 0.035 // 2.5% for larger amounts, 3.5% for smaller
-    const processingFee = amount * basePercentage
-    const networkFee = currency === 'KES' ? 50 : 0 // Fixed network fee in KES
-    const totalFee = processingFee + networkFee
-    const feePercentage = (totalFee / amount) * 100
-
+  // Process webhook data
+  processWebhook(webhookData: any): TransakOrderData {
+    const { eventData } = webhookData
+    
     return {
-      processingFee,
-      networkFee,
-      totalFee,
-      feePercentage
+      id: eventData.id,
+      status: eventData.status,
+      fiatCurrency: eventData.fiatCurrency,
+      cryptoCurrency: eventData.cryptocurrency,
+      requestedAmount: eventData.fiatAmount,
+      walletAddress: eventData.walletAddress,
+      createdAt: eventData.createdAt
     }
   }
 } 

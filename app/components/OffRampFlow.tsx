@@ -4,20 +4,35 @@ import { useState } from 'react'
 import { USDCBalance } from './USDCBalance'
 import { ConversionCalculator } from './ConversionCalculator'
 import { MPesaForm } from './MPesaForm'
-import { useAccount } from 'wagmi'
+import { useAccount, useChainId } from 'wagmi'
+import { getNetworkConfig, isTestnet } from '@/lib/contracts'
 
 interface TransactionResult {
-  usdcTxHash: string;
+  checkoutRequestID?: string;
+  merchantRequestID?: string;
   mpesaReference: string;
+  message: string;
+  sellUrl?: string;
+  customerMessage?: string;
 }
 
 export function OffRampFlow() {
   const { address, isConnected } = useAccount()
+  const chainId = useChainId()
   const [usdcAmount, setUsdcAmount] = useState(0)
   const [kshAmount, setKshAmount] = useState(0)
-  const [step, setStep] = useState(1) // 1: Amount, 2: M-Pesa, 3: Confirm, 4: Processing, 5: Success
+  const [step, setStep] = useState(1) // 1: Amount, 2: Provider, 3: M-Pesa, 4: Processing, 5: Success
+  const [provider, setProvider] = useState<'mpesa' | 'moonpay' | 'transak'>('mpesa')
   const [transactionResult, setTransactionResult] = useState<TransactionResult | null>(null)
   const [error, setError] = useState('')
+
+  const networkConfig = getNetworkConfig(chainId)
+  const isTestnetNetwork = isTestnet(chainId)
+
+  const handleProviderSelect = (selectedProvider: 'mpesa' | 'moonpay' | 'transak') => {
+    setProvider(selectedProvider)
+    setStep(3)
+  }
 
   const handleMPesaSubmit = async (mpesaData: { phoneNumber: string; amount: number }) => {
     setStep(4)
@@ -33,6 +48,8 @@ export function OffRampFlow() {
           usdcAmount,
           kshAmount,
           phoneNumber: mpesaData.phoneNumber,
+          provider,
+          chainId
         })
       })
       
@@ -40,8 +57,12 @@ export function OffRampFlow() {
       
       if (response.ok && data.success) {
         setTransactionResult({
-          usdcTxHash: data.usdcTxHash,
-          mpesaReference: data.mpesaReference
+          checkoutRequestID: data.checkoutRequestID,
+          merchantRequestID: data.merchantRequestID,
+          mpesaReference: data.mpesaReference,
+          message: data.message,
+          sellUrl: data.sellUrl,
+          customerMessage: data.customerMessage
         })
         setStep(5) // Success step
       } else {
@@ -50,7 +71,7 @@ export function OffRampFlow() {
     } catch (error) {
       console.error('Off-ramp error:', error)
       setError(error instanceof Error ? error.message : 'Unknown error occurred')
-      setStep(2) // Back to M-Pesa form
+      setStep(provider === 'mpesa' ? 3 : 2) // Back to appropriate step
     }
   }
 
@@ -58,6 +79,7 @@ export function OffRampFlow() {
     setStep(1)
     setUsdcAmount(0)
     setKshAmount(0)
+    setProvider('mpesa')
     setTransactionResult(null)
     setError('')
   }
@@ -78,7 +100,7 @@ export function OffRampFlow() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Connect Your Wallet</h2>
           <p className="text-gray-600 mb-6 leading-relaxed">Please connect your wallet to start converting USDC to M-Pesa</p>
           <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
-            💡 Make sure you have USDC on Base network
+            💡 Make sure you have USDC on {networkConfig.name}
           </div>
         </div>
       </div>
@@ -96,6 +118,14 @@ export function OffRampFlow() {
         </div>
         <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">USDC to M-Pesa</h1>
         <p className="text-gray-600 mt-2">Convert your USDC to Kenyan Shillings instantly</p>
+        
+        {/* Network indicator */}
+        <div className="flex items-center justify-center mt-3 space-x-2">
+          <div className={`w-3 h-3 rounded-full ${isTestnetNetwork ? 'bg-orange-500' : 'bg-green-500'}`}></div>
+          <span className={`text-sm font-medium ${isTestnetNetwork ? 'text-orange-700' : 'text-green-700'}`}>
+            {networkConfig.name} {isTestnetNetwork ? '(Testnet)' : ''}
+          </span>
+        </div>
       </div>
 
       {/* Modern Progress indicator */}
@@ -178,26 +208,124 @@ export function OffRampFlow() {
               onClick={() => setStep(2)}
               className="w-full mt-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform hover:scale-[1.02] transition-all duration-200 shadow-lg"
             >
-              Continue to Payment Details
+              Continue to Payment Method
             </button>
           )}
         </div>
       )}
       
+      {/* Step 2: Provider Selection */}
+      {step === 2 && (
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Choose Payment Method</h3>
+          <div className="space-y-4">
+            {/* M-Pesa Option (Recommended) */}
+            <button
+              onClick={() => handleProviderSelect('mpesa')}
+              className="w-full p-4 border-2 border-green-200 bg-green-50 rounded-xl hover:border-green-300 hover:bg-green-100 transition-all duration-200 text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Direct M-Pesa</h4>
+                    <p className="text-sm text-gray-600">Instant STK Push • No KYC required</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">RECOMMENDED</span>
+                  <p className="text-sm text-gray-600 mt-1">~1 minute</p>
+                </div>
+              </div>
+            </button>
+
+            {/* MoonPay Option */}
+            <button
+              onClick={() => handleProviderSelect('moonpay')}
+              className="w-full p-4 border-2 border-gray-200 bg-gray-50 rounded-xl hover:border-gray-300 hover:bg-gray-100 transition-all duration-200 text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">MoonPay</h4>
+                    <p className="text-sm text-gray-600">Full KYC required • Bank transfer</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">~24 hours</p>
+                </div>
+              </div>
+            </button>
+
+            {/* Transak Option */}
+            <button
+              onClick={() => handleProviderSelect('transak')}
+              className="w-full p-4 border-2 border-gray-200 bg-gray-50 rounded-xl hover:border-gray-300 hover:bg-gray-100 transition-all duration-200 text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Transak</h4>
+                    <p className="text-sm text-gray-600">KYC required • Bank transfer</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600">~24 hours</p>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Step 2+: Conversion Calculator */}
-      {step >= 2 && usdcAmount > 0 && (
+      {step >= 3 && usdcAmount > 0 && (
         <ConversionCalculator 
           usdcAmount={usdcAmount} 
           onKshChange={setKshAmount}
         />
       )}
       
-      {/* Step 2+: M-Pesa Form */}
-      {step >= 2 && step < 4 && kshAmount > 0 && (
+      {/* Step 3: M-Pesa Form (only for M-Pesa provider) */}
+      {step >= 3 && step < 4 && kshAmount > 0 && provider === 'mpesa' && (
         <MPesaForm 
           kshAmount={kshAmount}
           onSubmit={handleMPesaSubmit}
         />
+      )}
+
+      {/* Step 3: External Provider Redirect */}
+      {step >= 3 && step < 4 && (provider === 'moonpay' || provider === 'transak') && (
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              Complete with {provider === 'moonpay' ? 'MoonPay' : 'Transak'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              You will be redirected to {provider === 'moonpay' ? 'MoonPay' : 'Transak'} to complete KYC verification and payment processing.
+            </p>
+            <button
+              onClick={() => handleMPesaSubmit({ phoneNumber: '254700000000', amount: kshAmount })}
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transform hover:scale-[1.02] transition-all duration-200 shadow-lg"
+            >
+              Continue to {provider === 'moonpay' ? 'MoonPay' : 'Transak'}
+            </button>
+          </div>
+        </div>
       )}
       
       {/* Step 4: Processing */}
@@ -208,10 +336,12 @@ export function OffRampFlow() {
           </div>
           <h3 className="text-2xl font-bold text-blue-900 mb-2">Processing Transaction</h3>
           <p className="text-blue-700 mb-4">
-            Converting your USDC and initiating M-Pesa payment...
+            {provider === 'mpesa' 
+              ? 'Initiating M-Pesa STK push. Please check your phone...' 
+              : 'Converting your USDC and processing payment...'}
           </p>
           <div className="text-sm text-blue-600 bg-blue-100 px-4 py-2 rounded-lg inline-block">
-            ⏱️ This usually takes 1-3 minutes
+            ⏱️ {provider === 'mpesa' ? 'Please enter your M-Pesa PIN when prompted' : 'This usually takes 1-3 minutes'}
           </div>
         </div>
       )}
@@ -225,30 +355,58 @@ export function OffRampFlow() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-green-800 mb-2">Transaction Successful! 🎉</h3>
-            <p className="text-green-700 text-lg">
-              KSH {kshAmount.toFixed(2)} has been sent to your M-Pesa account
+            <h3 className="text-2xl font-bold text-green-800 mb-2">
+              {provider === 'mpesa' ? 'STK Push Sent! 📱' : 'Transaction Initiated! 🎉'}
+            </h3>
+            <p className="text-green-700 text-lg mb-4">
+              {transactionResult.message}
             </p>
+            {transactionResult.customerMessage && (
+              <p className="text-green-600 text-sm bg-green-100 p-3 rounded-lg border border-green-200">
+                {transactionResult.customerMessage}
+              </p>
+            )}
           </div>
           
           <div className="space-y-3">
-            <div className="bg-white p-4 rounded-xl border border-green-100 shadow-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">USDC Transaction:</span>
-                <span className="font-mono text-blue-600 font-semibold">
-                  {formatTxHash(transactionResult.usdcTxHash)}
-                </span>
+            {transactionResult.checkoutRequestID && (
+              <div className="bg-white p-4 rounded-xl border border-green-100 shadow-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 font-medium">Checkout Request ID:</span>
+                  <span className="font-mono text-green-600 font-semibold text-sm">
+                    {transactionResult.checkoutRequestID.slice(-8)}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
             <div className="bg-white p-4 rounded-xl border border-green-100 shadow-sm">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600 font-medium">M-Pesa Reference:</span>
+                <span className="text-gray-600 font-medium">Reference:</span>
                 <span className="font-mono text-green-600 font-semibold">
                   {transactionResult.mpesaReference}
                 </span>
               </div>
             </div>
+            <div className="bg-white p-4 rounded-xl border border-green-100 shadow-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600 font-medium">Network:</span>
+                <span className="font-semibold text-gray-700">
+                  {networkConfig.name} {isTestnetNetwork ? '(Testnet)' : ''}
+                </span>
+              </div>
+            </div>
           </div>
+          
+          {provider === 'mpesa' && (
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <h4 className="font-semibold text-blue-800 mb-2">Next Steps:</h4>
+              <ol className="text-blue-700 text-sm space-y-1">
+                <li>1. Check your phone for M-Pesa STK push notification</li>
+                <li>2. Enter your M-Pesa PIN to complete the payment</li>
+                <li>3. You&apos;ll receive a confirmation SMS with transaction details</li>
+              </ol>
+            </div>
+          )}
           
           <button
             onClick={resetFlow}
