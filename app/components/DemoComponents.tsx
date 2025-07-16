@@ -185,6 +185,14 @@ export function Home({ setActiveTab }: HomeProps) {
             Convert USDC to M-Pesa
           </Button>
           <Button
+            onClick={() => setActiveTab("wallets")}
+            variant="secondary"
+            className="w-full"
+            icon={<Icon name="dollar-sign" size="sm" />}
+          >
+            Explore Wallets
+          </Button>
+          <Button
             onClick={() => setActiveTab("features")}
             variant="secondary"
             className="w-full"

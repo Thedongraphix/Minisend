@@ -25,6 +25,7 @@ import { Home } from "./components/DemoComponents";
 import { Features } from "./components/DemoComponents";
 import { OffRampFlow } from "./components/OffRampFlow";
 import { NetworkTester } from "./components/NetworkTester";
+import { WalletShowcase } from "./components/WalletShowcase";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
@@ -99,11 +100,11 @@ export default function App() {
         </header>
 
         {/* Tab Navigation */}
-        {(activeTab === "features" || activeTab === "offramp" || activeTab === "testing") && (
+        {(activeTab === "features" || activeTab === "offramp" || activeTab === "testing" || activeTab === "wallets") && (
           <nav className="flex space-x-1 mb-4 bg-gray-100 p-1 rounded-lg">
             <button
               onClick={() => setActiveTab("features")}
-              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`flex-1 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
                 activeTab === "features"
                   ? "bg-white text-blue-600 shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
@@ -112,8 +113,18 @@ export default function App() {
               Features
             </button>
             <button
+              onClick={() => setActiveTab("wallets")}
+              className={`flex-1 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
+                activeTab === "wallets"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Wallets
+            </button>
+            <button
               onClick={() => setActiveTab("offramp")}
-              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`flex-1 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
                 activeTab === "offramp"
                   ? "bg-white text-blue-600 shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
@@ -123,7 +134,7 @@ export default function App() {
             </button>
             <button
               onClick={() => setActiveTab("testing")}
-              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`flex-1 px-2 py-2 text-xs font-medium rounded-md transition-all duration-200 ${
                 activeTab === "testing"
                   ? "bg-white text-blue-600 shadow-sm"
                   : "text-gray-600 hover:text-gray-900"
@@ -137,6 +148,7 @@ export default function App() {
         <main className="flex-1">
           {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
           {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
+          {activeTab === "wallets" && <WalletShowcase />}
           {activeTab === "offramp" && <OffRampFlow />}
           {activeTab === "testing" && <NetworkTester />}
         </main>
