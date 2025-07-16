@@ -1,22 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPublicClient, http } from 'viem'
 import { base, baseSepolia } from 'viem/chains'
-import { MoonPayIntegration } from '@/lib/moonpay'
-import { TransakIntegration } from '@/lib/transak'
 import { createMPesaInstance } from '@/lib/mpesa'
 import { getUSDCContract, getNetworkConfig } from '@/lib/contracts'
-
-// Initialize off-ramp providers
-const moonpay = new MoonPayIntegration(
-  process.env.MOONPAY_API_KEY || '',
-  process.env.MOONPAY_SECRET_KEY || '',
-  process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
-)
-
-const transak = new TransakIntegration({
-  apiKey: process.env.TRANSAK_API_KEY || '',
-  environment: process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'STAGING',
-})
 
 // Initialize M-Pesa
 const mpesa = createMPesaInstance()
@@ -35,7 +21,7 @@ interface OffRampRequest {
   usdcAmount: number
   kshAmount: number
   phoneNumber: string
-  provider?: 'moonpay' | 'transak' | 'mpesa'
+  provider?: 'mpesa'
   chainId?: number
 }
 
@@ -49,10 +35,8 @@ interface TransactionLogData {
   status: string
   timestamp: Date
   chainId: number
-  usdcTxHash?: string
-  mpesaReference?: string
   checkoutRequestID?: string
-  sellUrl?: string
+  mpesaReference?: string
 }
 
 export async function POST(request: NextRequest) {
@@ -76,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate phone number format for M-Pesa
-    if (provider === 'mpesa' && !mpesa.validateKenyanPhone(phoneNumber)) {
+    if (!mpesa.validateKenyanPhone(phoneNumber)) {
       return NextResponse.json(
         { error: 'Invalid Kenyan phone number format' },
         { status: 400 }
@@ -103,36 +87,15 @@ export async function POST(request: NextRequest) {
     // 2. Generate transaction ID for tracking
     const transactionId = generateTransactionId()
 
-    // 3. Process off-ramp based on provider
-    let result
-    if (provider === 'mpesa') {
-      result = await processMPesaOffRamp({
-        walletAddress,
-        usdcAmount,
-        kshAmount,
-        phoneNumber,
-        transactionId,
-        chainId
-      })
-    } else if (provider === 'moonpay') {
-      result = await processMoonPayOffRamp({
-        walletAddress,
-        usdcAmount,
-        kshAmount,
-        phoneNumber,
-        transactionId,
-        chainId
-      })
-    } else {
-      result = await processTransakOffRamp({
-        walletAddress,
-        usdcAmount,
-        kshAmount,
-        phoneNumber,
-        transactionId,
-        chainId
-      })
-    }
+    // 3. Process M-Pesa off-ramp
+    const result = await processMPesaOffRamp({
+      walletAddress,
+      usdcAmount,
+      kshAmount,
+      phoneNumber,
+      transactionId,
+      chainId
+    })
 
     // 4. Log transaction for compliance
     await logTransaction({
@@ -141,7 +104,7 @@ export async function POST(request: NextRequest) {
       usdcAmount,
       kshAmount,
       phoneNumber,
-      provider,
+      provider: 'mpesa',
       chainId,
       status: 'initiated',
       timestamp: new Date(),
@@ -151,7 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       transactionId,
-      provider,
+      provider: 'mpesa',
       chainId,
       networkName: getNetworkConfig(chainId).name,
       ...result
@@ -226,64 +189,6 @@ async function processMPesaOffRamp(params: {
   }
 }
 
-// Process MoonPay off-ramp (existing implementation)
-async function processMoonPayOffRamp(params: {
-  walletAddress: string
-  usdcAmount: number
-  kshAmount: number
-  phoneNumber: string
-  transactionId: string
-  chainId: number
-}) {
-  try {
-    const sellUrl = await moonpay.initiateSellTransaction({
-      walletAddress: params.walletAddress,
-      cryptoCurrency: 'usdc',
-      baseCurrency: 'kes',
-      quoteCurrencyAmount: params.kshAmount,
-      externalCustomerId: params.transactionId,
-      redirectURL: `${process.env.NEXT_PUBLIC_URL}/success?tx=${params.transactionId}`
-    })
-
-    return {
-      sellUrl,
-      mpesaReference: params.transactionId,
-      message: 'Redirecting to MoonPay for KYC and payment processing'
-    }
-  } catch (error) {
-    throw new Error(`MoonPay processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-  }
-}
-
-// Process Transak off-ramp (existing implementation)
-async function processTransakOffRamp(params: {
-  walletAddress: string
-  usdcAmount: number
-  kshAmount: number
-  phoneNumber: string
-  transactionId: string
-  chainId: number
-}) {
-  try {
-    const sellUrl = transak.generateSellURL({
-      walletAddress: params.walletAddress,
-      cryptoCurrencyCode: 'USDC',
-      fiatCurrency: 'KES',
-      fiatAmount: params.kshAmount,
-      email: `${params.transactionId}@temp.com`, // Temporary email
-      phoneNumber: params.phoneNumber
-    })
-
-    return {
-      sellUrl,
-      mpesaReference: params.transactionId,
-      message: 'Redirecting to Transak for KYC and payment processing'
-    }
-  } catch (error) {
-    throw new Error(`Transak processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-  }
-}
-
 // Generate unique transaction ID
 function generateTransactionId(): string {
   const timestamp = Date.now().toString(36)
@@ -305,13 +210,6 @@ async function logTransaction(data: TransactionLogData) {
     console.error('Failed to log transaction:', error)
     // Don't throw error as this shouldn't fail the main transaction
   }
-}
-
-// Validate Kenyan phone number (backup validation)
-function validateKenyanPhone(phoneNumber: string): boolean {
-  // Kenyan phone format: +254XXXXXXXXX or 07XXXXXXXX or 01XXXXXXXX
-  const regex = /^(\+254|0)[17]\d{8}$/
-  return regex.test(phoneNumber)
 }
 
 // GET method for transaction status checking
