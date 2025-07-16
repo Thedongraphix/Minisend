@@ -1,4 +1,4 @@
-import { createHash, createHmac, timingSafeEqual } from 'crypto'
+import { createHmac, timingSafeEqual } from 'crypto'
 
 export interface MoonPaySellParams {
   walletAddress: string

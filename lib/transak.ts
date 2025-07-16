@@ -17,6 +17,39 @@ export interface TransakConfig {
   partnerOrderId?: string
 }
 
+export interface TransakCurrencyResponse {
+  response: {
+    cryptoCurrencies: Array<{
+      symbol: string
+      name: string
+      network: string
+    }>
+  }
+}
+
+export interface TransakPriceResponse {
+  response: {
+    fiatAmount: number
+    cryptoAmount: number
+    fiatCurrency: string
+    cryptoCurrency: string
+    conversionPrice: number
+    totalFee: number
+  }
+}
+
+export interface TransakOrderResponse {
+  response: {
+    id: string
+    status: string
+    fiatCurrency: string
+    cryptoCurrency: string
+    requestedAmount: number
+    createdAt: string
+    completedAt?: string
+  }
+}
+
 export class TransakIntegration {
   private apiKey: string
   private environment: 'STAGING' | 'PRODUCTION'
@@ -66,7 +99,7 @@ export class TransakIntegration {
   /**
    * Get supported currencies for Kenya
    */
-  async getSupportedCurrencies(): Promise<any> {
+  async getSupportedCurrencies(): Promise<TransakCurrencyResponse> {
     const response = await fetch(
       `https://api.transak.com/api/v2/currencies/crypto-currencies`,
       {
@@ -91,7 +124,7 @@ export class TransakIntegration {
     cryptoCurrency: string = 'USDC',
     fiatCurrency: string = 'KES',
     amount: number = 1
-  ): Promise<any> {
+  ): Promise<TransakPriceResponse> {
     const query = new URLSearchParams({
       fiatCurrency,
       cryptoCurrency,
@@ -139,7 +172,7 @@ export class TransakIntegration {
   /**
    * Get order status
    */
-  async getOrderStatus(orderId: string): Promise<any> {
+  async getOrderStatus(orderId: string): Promise<TransakOrderResponse> {
     const response = await fetch(
       `https://api.transak.com/api/v2/orders/${orderId}`,
       {

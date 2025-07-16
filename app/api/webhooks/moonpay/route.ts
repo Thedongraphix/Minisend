@@ -7,6 +7,18 @@ const moonpay = new MoonPayIntegration(
   process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
 )
 
+interface MoonPayTransactionData {
+  id: string
+  status: string
+  failureReason?: string
+  externalCustomerId?: string
+}
+
+interface MoonPayWebhookPayload {
+  type: string
+  data: MoonPayTransactionData
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()
@@ -20,7 +32,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const webhookData = JSON.parse(body)
+    const webhookData: MoonPayWebhookPayload = JSON.parse(body)
     const { type, data } = webhookData
 
     console.log('MoonPay webhook received:', { type, transactionId: data.id })
@@ -49,7 +61,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleTransactionUpdate(transactionData: any) {
+async function handleTransactionUpdate(transactionData: MoonPayTransactionData) {
   // Update transaction status in your database
   console.log('Transaction updated:', transactionData.id, transactionData.status)
   
@@ -57,7 +69,7 @@ async function handleTransactionUpdate(transactionData: any) {
   // await updateTransactionStatus(transactionData.id, transactionData.status)
 }
 
-async function handleTransactionCompleted(transactionData: any) {
+async function handleTransactionCompleted(transactionData: MoonPayTransactionData) {
   console.log('Transaction completed:', transactionData.id)
   
   // In production:
@@ -74,7 +86,7 @@ async function handleTransactionCompleted(transactionData: any) {
   }
 }
 
-async function handleTransactionFailed(transactionData: any) {
+async function handleTransactionFailed(transactionData: MoonPayTransactionData) {
   console.log('Transaction failed:', transactionData.id, transactionData.failureReason)
   
   // In production:

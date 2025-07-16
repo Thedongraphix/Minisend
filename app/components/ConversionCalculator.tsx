@@ -8,7 +8,7 @@ interface ConversionCalculatorProps {
 }
 
 export function ConversionCalculator({ usdcAmount, onKshChange }: ConversionCalculatorProps) {
-  const [exchangeRate, setExchangeRate] = useState(129.2) // Current USDC to KSH rate
+  const [exchangeRate] = useState(129.2) // Current USDC to KSH rate
   const [fees, setFees] = useState(0)
   const [isLoadingRate, setIsLoadingRate] = useState(false)
 
@@ -61,7 +61,7 @@ export function ConversionCalculator({ usdcAmount, onKshChange }: ConversionCalc
         {/* Main conversion display */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-green-100 mb-4">
           <div className="text-center">
-            <div className="text-sm text-gray-600 mb-2">You'll receive</div>
+            <div className="text-sm text-gray-600 mb-2">You&apos;ll receive</div>
             <div className="text-4xl font-bold text-gray-900 mb-2">
               KSH {kshAmount.toFixed(2)}
             </div>

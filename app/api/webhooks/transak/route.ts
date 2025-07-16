@@ -6,6 +6,20 @@ const transak = new TransakIntegration({
   environment: process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'STAGING',
 })
 
+interface TransakOrderData {
+  id: string
+  partnerOrderId?: string
+  partnerCustomerId?: string
+  statusDetail?: string
+  fiatAmount?: number
+  fiatCurrency?: string
+}
+
+interface TransakWebhookPayload {
+  eventID: string
+  webhookData: TransakOrderData
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text()
@@ -20,7 +34,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const webhookData = JSON.parse(body)
+    const webhookData: TransakWebhookPayload = JSON.parse(body)
     const { eventID, webhookData: data } = webhookData
 
     console.log('Transak webhook received:', { eventID, orderId: data.id })
@@ -52,14 +66,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleOrderProcessing(orderData: any) {
+async function handleOrderProcessing(orderData: TransakOrderData) {
   console.log('Order processing:', orderData.id)
   
   // Update transaction status to processing
   // await updateTransactionStatus(orderData.partnerOrderId, 'processing')
 }
 
-async function handleOrderCompleted(orderData: any) {
+async function handleOrderCompleted(orderData: TransakOrderData) {
   console.log('Order completed:', orderData.id)
   
   // In production:
@@ -75,7 +89,7 @@ async function handleOrderCompleted(orderData: any) {
   }
 }
 
-async function handleOrderFailed(orderData: any) {
+async function handleOrderFailed(orderData: TransakOrderData) {
   console.log('Order failed:', orderData.id, orderData.statusDetail)
   
   // In production:
@@ -91,7 +105,7 @@ async function handleOrderFailed(orderData: any) {
   }
 }
 
-async function handleOrderCancelled(orderData: any) {
+async function handleOrderCancelled(orderData: TransakOrderData) {
   console.log('Order cancelled:', orderData.id)
   
   // Update transaction status to cancelled

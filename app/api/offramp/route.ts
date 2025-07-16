@@ -33,6 +33,20 @@ interface OffRampRequest {
   provider?: 'moonpay' | 'transak'
 }
 
+interface TransactionLogData {
+  transactionId: string
+  walletAddress: string
+  usdcAmount: number
+  kshAmount: number
+  phoneNumber: string
+  provider: string
+  status: string
+  timestamp: Date
+  usdcTxHash?: string
+  mpesaReference?: string
+  sellUrl?: string
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: OffRampRequest = await request.json()
@@ -223,7 +237,7 @@ async function processTransakOffRamp(params: {
   }
 }
 
-async function logTransaction(data: any) {
+async function logTransaction(data: TransactionLogData) {
   try {
     // In production, save to database (PostgreSQL, MongoDB, etc.)
     console.log('Transaction logged:', {
