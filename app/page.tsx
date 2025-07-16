@@ -80,6 +80,7 @@ export default function App() {
             <div className="flex items-center space-x-2">
               <Wallet className="z-10">
                 <ConnectWallet>
+                  <Avatar className="h-6 w-6" />
                   <Name className="text-inherit" />
                 </ConnectWallet>
                 <WalletDropdown>

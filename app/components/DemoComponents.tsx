@@ -144,6 +144,18 @@ export function Features({ setActiveTab }: FeaturesProps) {
               OnchainKit integration
             </span>
           </li>
+          <li className="flex items-start">
+            <Icon name="check" className="text-[var(--app-accent)] mt-1 mr-2" />
+            <span className="text-[var(--app-foreground-muted)]">
+              Multi-wallet support: MetaMask, Coinbase Wallet, Phantom, Rabby, Trust, Frame
+            </span>
+          </li>
+          <li className="flex items-start">
+            <Icon name="check" className="text-[var(--app-accent)] mt-1 mr-2" />
+            <span className="text-[var(--app-foreground-muted)]">
+              Base Sepolia testnet and Base mainnet support
+            </span>
+          </li>
         </ul>
         <Button variant="outline" onClick={() => setActiveTab("home")}>
           Back to Home
@@ -182,10 +194,6 @@ export function Home({ setActiveTab }: HomeProps) {
           </Button>
         </div>
       </Card>
-
-      <TodoList />
-
-      <TransactionCard />
     </div>
   );
 }
@@ -364,70 +372,7 @@ function TodoList() {
     }
   };
 
-  return (
-    <Card title="Get started">
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <input
-            type="text"
-            value={newTodo}
-            onChange={(e) => setNewTodo(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Add a new task..."
-            className="flex-1 px-3 py-2 bg-[var(--app-card-bg)] border border-[var(--app-card-border)] rounded-lg text-[var(--app-foreground)] placeholder-[var(--app-foreground-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--app-accent)]"
-          />
-          <Button
-            variant="primary"
-            size="md"
-            onClick={addTodo}
-            icon={<Icon name="plus" size="sm" />}
-          >
-            Add
-          </Button>
-        </div>
-
-        <ul className="space-y-2">
-          {todos.map((todo) => (
-            <li key={todo.id} className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  id={`todo-${todo.id}`}
-                  onClick={() => toggleTodo(todo.id)}
-                  className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                    todo.completed
-                      ? "bg-[var(--app-accent)] border-[var(--app-accent)]"
-                      : "border-[var(--app-foreground-muted)] bg-transparent"
-                  }`}
-                >
-                  {todo.completed && (
-                    <Icon
-                      name="check"
-                      size="sm"
-                      className="text-[var(--app-background)]"
-                    />
-                  )}
-                </button>
-                <label
-                  htmlFor={`todo-${todo.id}`}
-                  className={`text-[var(--app-foreground-muted)] cursor-pointer ${todo.completed ? "line-through opacity-70" : ""}`}
-                >
-                  {todo.text}
-                </label>
-              </div>
-              <button
-                type="button"
-                onClick={() => deleteTodo(todo.id)}
-                className="text-[var(--app-foreground-muted)] hover:text-[var(--app-foreground)]"
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </Card>
-  );
+ 
 }
 
 
@@ -458,49 +403,5 @@ function TransactionCard() {
     });
   }, [sendNotification]);
 
-  return (
-    <Card title="Make Your First Transaction">
-      <div className="space-y-4">
-        <p className="text-[var(--app-foreground-muted)] mb-4">
-          Experience the power of seamless sponsored transactions with{" "}
-          <a
-            href="https://onchainkit.xyz"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#0052FF] hover:underline"
-          >
-            OnchainKit
-          </a>
-          .
-        </p>
-
-        <div className="flex flex-col items-center">
-          {address ? (
-            <Transaction
-              calls={calls}
-              onSuccess={handleSuccess}
-              onError={(error: TransactionError) =>
-                console.error("Transaction failed:", error)
-              }
-            >
-              <TransactionButton className="text-white text-md" />
-              <TransactionStatus>
-                <TransactionStatusAction />
-                <TransactionStatusLabel />
-              </TransactionStatus>
-              <TransactionToast className="mb-4">
-                <TransactionToastIcon />
-                <TransactionToastLabel />
-                <TransactionToastAction />
-              </TransactionToast>
-            </Transaction>
-          ) : (
-            <p className="text-yellow-400 text-sm text-center mt-2">
-              Connect your wallet to send a transaction
-            </p>
-          )}
-        </div>
-      </div>
-    </Card>
-  );
+  
 }
