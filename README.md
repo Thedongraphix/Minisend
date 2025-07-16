@@ -8,20 +8,22 @@ This mini app enables Kenyan users to seamlessly convert USDC on Base network to
 
 ## ✨ Features
 
-- **USDC Balance Display**: Real-time USDC balance on Base network
+- **USDC Balance Display**: Real-time USDC balance on Base network  
 - **Live Exchange Rates**: Current USDC to KSH conversion rates
-- **M-Pesa Integration**: Direct payouts to Kenyan mobile money accounts
+- **M-Pesa STK Push**: Direct M-Pesa integration with STK Push payments
+- **Network Support**: Base Sepolia testnet and Base mainnet support
 - **Compliance Ready**: Built-in transaction limits and logging
-- **Multi-Provider Support**: MoonPay and Transak integration
 - **Mobile-First Design**: Optimized for Kenyan mobile users
+- **Wallet Integration**: MetaMask, Coinbase Wallet, and other popular wallets
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
 - Node.js 18+ and npm/yarn
-- Coinbase OnchainKit API key
-- MoonPay or Transak API credentials (sandbox for development)
+- Coinbase OnchainKit API key  
+- M-Pesa Developer credentials (Safaricom Daraja API)
+- Base network RPC access (for USDC transactions)
 
 ### Installation
 
