@@ -26,6 +26,8 @@ import { Features } from "./components/DemoComponents";
 import { OffRampFlow } from "./components/OffRampFlow";
 import { NetworkTester } from "./components/NetworkTester";
 import { WalletShowcase } from "./components/WalletShowcase";
+import { initializeUserSession, trackEvent } from "@/lib/analytics";
+import { useAppActions, getClientInfo } from "@/lib/sdk-actions";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
@@ -34,12 +36,40 @@ export default function App() {
 
   const addFrame = useAddFrame();
   const openUrl = useOpenUrl();
+  const { shareApp, openDocs } = useAppActions();
 
   useEffect(() => {
     if (!isFrameReady) {
       setFrameReady();
     }
   }, [setFrameReady, isFrameReady]);
+
+  // Initialize analytics session when context is available
+  useEffect(() => {
+    if (context && isFrameReady) {
+      const session = initializeUserSession(context);
+      const clientInfo = getClientInfo(context);
+      
+      trackEvent("app_loaded", {
+        userId: session?.userId,
+        clientName: clientInfo.clientName,
+        isCoinbaseWallet: clientInfo.isCoinbaseWallet,
+        isFrameAdded: clientInfo.isFrameAdded,
+      });
+    }
+  }, [context, isFrameReady]);
+
+  // Track tab changes for analytics
+  useEffect(() => {
+    if (context) {
+      const clientInfo = getClientInfo(context);
+      trackEvent("tab_changed", {
+        userId: context.user?.fid ? `fid:${context.user.fid}` : undefined,
+        tab: activeTab,
+        clientName: clientInfo.clientName,
+      });
+    }
+  }, [activeTab, context]);
 
   const handleAddFrame = useCallback(async () => {
     const frameAdded = await addFrame();
@@ -51,10 +81,10 @@ export default function App() {
       return (
         <Button
           variant="ghost"
-          size="sm"
+          size="medium"
           onClick={handleAddFrame}
           className="text-[var(--app-accent)] p-4"
-          icon={<Icon name="plus" size="sm" />}
+          iconName="plus"
         >
           Save Frame
         </Button>
@@ -96,7 +126,19 @@ export default function App() {
               </Wallet>
             </div>
           </div>
-          <div>{saveFrameButton}</div>
+          <div className="flex items-center space-x-2">
+            {/* Share button */}
+            <Button
+              variant="ghost"
+              size="medium"
+              onClick={shareApp}
+              className="text-[var(--app-accent)] p-2"
+              iconName="sparkles"
+            >
+              Share
+            </Button>
+            {saveFrameButton}
+          </div>
         </header>
 
         {/* Tab Navigation */}
@@ -156,9 +198,9 @@ export default function App() {
         <footer className="mt-2 pt-4 flex justify-center">
           <Button
             variant="ghost"
-            size="sm"
+            size="medium"
             className="text-[var(--ock-text-foreground-muted)] text-xs"
-            onClick={() => openUrl("https://base.org/builders/minikit")}
+            onClick={openDocs}
           >
             Built on Base with MiniKit
           </Button>
