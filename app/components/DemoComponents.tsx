@@ -1,72 +1,78 @@
 "use client";
 
-import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { useAccount } from "wagmi";
-import {
-  Transaction,
-  TransactionButton,
-  TransactionToast,
-  TransactionToastAction,
-  TransactionToastIcon,
-  TransactionToastLabel,
-  TransactionError,
-  TransactionResponse,
-  TransactionStatusAction,
-  TransactionStatusLabel,
-  TransactionStatus,
-} from "@coinbase/onchainkit/transaction";
-import { useNotification } from "@coinbase/onchainkit/minikit";
+import { type ReactNode } from "react";
 
 type ButtonProps = {
   children: ReactNode;
-  variant?: "primary" | "secondary" | "outline" | "ghost";
-  size?: "sm" | "md" | "lg";
+  variant?: "primary" | "secondary" | "outlined" | "ghost";
+  size?: "medium" | "large";
   className?: string;
   onClick?: () => void;
   disabled?: boolean;
   type?: "button" | "submit" | "reset";
-  icon?: ReactNode;
+  iconName?: "heart" | "star" | "check" | "plus" | "arrow-right" | "dollar-sign" | "sparkles";
+  roundedFull?: boolean;
+  fullWidth?: boolean;
 }
 
 export function Button({
   children,
   variant = "primary",
-  size = "md",
+  size = "medium",
   className = "",
   onClick,
   disabled = false,
   type = "button",
-  icon,
+  iconName,
+  roundedFull = false,
+  fullWidth = false,
 }: ButtonProps) {
-  const baseClasses =
-    "inline-flex items-center justify-center font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0052FF] disabled:opacity-50 disabled:pointer-events-none";
+  const baseClasses = [
+    "whitespace-nowrap",
+    "flex items-center justify-center",
+    "disabled:opacity-40 disabled:pointer-events-none",
+    "transition-all",
+    "font-medium"
+  ];
 
   const variantClasses = {
-    primary:
-      "bg-[var(--app-accent)] hover:bg-[var(--app-accent-hover)] text-[var(--app-background)]",
-    secondary:
-      "bg-[var(--app-gray)] hover:bg-[var(--app-gray-dark)] text-[var(--app-foreground)]",
-    outline:
-      "border border-[var(--app-accent)] hover:bg-[var(--app-accent-light)] text-[var(--app-accent)]",
-    ghost:
-      "hover:bg-[var(--app-accent-light)] text-[var(--app-foreground-muted)]",
+    primary: "bg-[#0052FF] text-white border border-[#0052FF] hover:bg-[#0044D9] active:bg-[#06318E]",
+    secondary: "bg-white border border-white text-[var(--app-foreground)] hover:bg-zinc-50 active:bg-zinc-100",
+    outlined: "bg-transparent text-white border border-white hover:bg-white hover:text-black active:bg-gray-200",
+    ghost: "hover:bg-[var(--app-accent-light)] text-[var(--app-foreground-muted)]",
   };
 
   const sizeClasses = {
-    sm: "text-xs px-2.5 py-1.5 rounded-md",
-    md: "text-sm px-4 py-2 rounded-lg",
-    lg: "text-base px-6 py-3 rounded-lg",
+    medium: "text-sm px-4 py-2 gap-3",
+    large: "text-lg px-6 py-4 gap-5",
   };
+
+  const classes = [
+    ...baseClasses,
+    variantClasses[variant],
+    sizeClasses[size],
+    roundedFull ? "rounded-full" : "rounded-lg",
+    fullWidth ? "w-full" : "w-auto",
+    className
+  ];
+
+  const buttonClasses = classes.filter(Boolean).join(" ");
 
   return (
     <button
       type={type}
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={buttonClasses}
       onClick={onClick}
       disabled={disabled}
     >
-      {icon && <span className="flex items-center mr-2">{icon}</span>}
-      {children}
+      <span>{children}</span>
+      {iconName && (
+        <Icon 
+          name={iconName} 
+          size={size === "large" ? "lg" : "md"} 
+          className="text-current"
+        />
+      )}
     </button>
   );
 }
@@ -157,7 +163,7 @@ export function Features({ setActiveTab }: FeaturesProps) {
             </span>
           </li>
         </ul>
-        <Button variant="outline" onClick={() => setActiveTab("home")}>
+        <Button variant="outlined" onClick={() => setActiveTab("home")}>
           Back to Home
         </Button>
       </Card>
@@ -180,7 +186,8 @@ export function Home({ setActiveTab }: HomeProps) {
           <Button
             onClick={() => setActiveTab("offramp")}
             className="w-full"
-            icon={<Icon name="arrow-right" size="sm" />}
+            iconName="arrow-right"
+            fullWidth
           >
             Convert USDC to M-Pesa
           </Button>
@@ -188,7 +195,8 @@ export function Home({ setActiveTab }: HomeProps) {
             onClick={() => setActiveTab("wallets")}
             variant="secondary"
             className="w-full"
-            icon={<Icon name="dollar-sign" size="sm" />}
+            iconName="dollar-sign"
+            fullWidth
           >
             Explore Wallets
           </Button>
@@ -196,7 +204,8 @@ export function Home({ setActiveTab }: HomeProps) {
             onClick={() => setActiveTab("features")}
             variant="secondary"
             className="w-full"
-            icon={<Icon name="star" size="sm" />}
+            iconName="star"
+            fullWidth
           >
             Explore Features
           </Button>
@@ -339,77 +348,6 @@ export function Icon({ name, size = "md", className = "" }: IconProps) {
   );
 }
 
-type Todo = {
-  id: number;
-  text: string;
-  completed: boolean;
-}
-
-function TodoList() {
-  const [todos, setTodos] = useState<Todo[]>([
-    { id: 1, text: "Learn about MiniKit", completed: false },
-    { id: 2, text: "Build a Mini App", completed: true },
-    { id: 3, text: "Deploy to Base and go viral", completed: false },
-  ]);
-  const [newTodo, setNewTodo] = useState("");
-
-  const addTodo = () => {
-    if (newTodo.trim() === "") return;
-
-    const newId =
-      todos.length > 0 ? Math.max(...todos.map((t) => t.id)) + 1 : 1;
-    setTodos([...todos, { id: newId, text: newTodo, completed: false }]);
-    setNewTodo("");
-  };
-
-  const toggleTodo = (id: number) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo,
-      ),
-    );
-  };
-
-  const deleteTodo = (id: number) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      addTodo();
-    }
-  };
-
- 
-}
 
 
-function TransactionCard() {
-  const { address } = useAccount();
 
-  // Example transaction call - sending 0 ETH to self
-  const calls = useMemo(() => address
-    ? [
-        {
-          to: address,
-          data: "0x" as `0x${string}`,
-          value: BigInt(0),
-        },
-      ]
-    : [], [address]);
-
-  const sendNotification = useNotification();
-
-  const handleSuccess = useCallback(async (response: TransactionResponse) => {
-    const transactionHash = response.transactionReceipts[0].transactionHash;
-
-    console.log(`Transaction successful: ${transactionHash}`);
-
-    await sendNotification({
-      title: "Congratulations!",
-      body: `You sent your a transaction, ${transactionHash}!`,
-    });
-  }, [sendNotification]);
-
-  
-}
