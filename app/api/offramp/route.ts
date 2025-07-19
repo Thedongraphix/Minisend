@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       usdcAmount, 
       kshAmount, 
       phoneNumber, 
-      provider = 'mpesa',
+  
       chainId = base.id 
     } = body
 
