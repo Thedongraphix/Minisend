@@ -33,6 +33,32 @@ export interface MPesaCallbackData {
   phoneNumber?: string
 }
 
+interface MPesaQueryResponse {
+  ResponseCode: string
+  ResponseDescription: string
+  MerchantRequestID: string
+  CheckoutRequestID: string
+  ResultCode: string
+  ResultDesc: string
+}
+
+interface MPesaCallbackBody {
+  Body: {
+    stkCallback: {
+      MerchantRequestID: string
+      CheckoutRequestID: string
+      ResultCode: number
+      ResultDesc: string
+      CallbackMetadata?: {
+        Item: Array<{
+          Name: string
+          Value: any
+        }>
+      }
+    }
+  }
+}
+
 export class MPesaIntegration {
   private config: MPesaConfig
   private baseUrl: string
@@ -145,7 +171,7 @@ export class MPesaIntegration {
   }
 
   // Query STK Push transaction status
-  async queryTransaction(checkoutRequestID: string): Promise<any> {
+  async queryTransaction(checkoutRequestID: string): Promise<MPesaQueryResponse> {
     try {
       const accessToken = await this.getAccessToken()
       const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0]
@@ -192,7 +218,7 @@ export class MPesaIntegration {
   }
 
   // Process callback data from M-Pesa
-  processCallback(callbackBody: any): MPesaCallbackData {
+  processCallback(callbackBody: MPesaCallbackBody): MPesaCallbackData {
     const { Body } = callbackBody
     const { stkCallback } = Body
 
@@ -207,7 +233,7 @@ export class MPesaIntegration {
     if (stkCallback.ResultCode === 0 && stkCallback.CallbackMetadata) {
       const metadata = stkCallback.CallbackMetadata.Item
       
-      metadata.forEach((item: any) => {
+      metadata.forEach((item: { Name: string; Value: any }) => {
         switch (item.Name) {
           case 'Amount':
             result.amount = item.Value
