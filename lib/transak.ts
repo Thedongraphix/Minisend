@@ -146,7 +146,7 @@ export class TransakIntegration {
   }
 
   // Process webhook data
-  processWebhook(webhookData: any): TransakOrderData {
+  processWebhook(webhookData: { eventData: any }): TransakOrderData {
     const { eventData } = webhookData
     
     return {
