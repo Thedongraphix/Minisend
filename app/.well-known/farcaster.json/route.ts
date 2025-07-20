@@ -15,7 +15,7 @@ export async function GET() {
   const URL = process.env.NEXT_PUBLIC_URL;
 
   // Build screenshot URLs array
-  const screenshots: string[] = [];
+  const screenshots: string[] = []; 
   if (process.env.NEXT_PUBLIC_APP_SCREENSHOT_1) screenshots.push(process.env.NEXT_PUBLIC_APP_SCREENSHOT_1);
   if (process.env.NEXT_PUBLIC_APP_SCREENSHOT_2) screenshots.push(process.env.NEXT_PUBLIC_APP_SCREENSHOT_2);
   if (process.env.NEXT_PUBLIC_APP_SCREENSHOT_3) screenshots.push(process.env.NEXT_PUBLIC_APP_SCREENSHOT_3);
