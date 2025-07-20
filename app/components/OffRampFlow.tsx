@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react'
-import { USDCBalance } from './USDCBalance'
+import { DirectUSDCBalance } from './DirectUSDCBalance'
 import { ConversionCalculator } from './ConversionCalculator'
 import { MPesaForm } from './MPesaForm'
 import { useAccount, useChainId } from 'wagmi'
@@ -163,7 +163,7 @@ export function OffRampFlow() {
       )}
       
       {/* USDC Balance */}
-      <USDCBalance />
+      <DirectUSDCBalance />
       
       {/* Step 1: Amount Input */}
       {step >= 1 && (
@@ -223,12 +223,12 @@ export function OffRampFlow() {
           <div className="w-20 h-20 mx-auto mb-6">
             <div className="animate-spin rounded-full h-20 w-20 border-4 border-blue-200 border-t-blue-600"></div>
           </div>
-          <h3 className="text-2xl font-bold text-blue-900 mb-2">Processing M-Pesa Payment</h3>
+          <h3 className="text-2xl font-bold text-blue-900 mb-2">Sending KSH to M-Pesa</h3>
           <p className="text-blue-700 mb-4">
-            Initiating M-Pesa STK push. Please check your phone...
+            Processing B2C payment. Money is being sent to your M-Pesa wallet...
           </p>
           <div className="text-sm text-blue-600 bg-blue-100 px-4 py-2 rounded-lg inline-block">
-            📱 Please enter your M-Pesa PIN when prompted
+            💰 No PIN required - you will receive the money automatically
           </div>
         </div>
       )}
@@ -243,7 +243,7 @@ export function OffRampFlow() {
               </svg>
             </div>
             <h3 className="text-2xl font-bold text-green-800 mb-2">
-              M-Pesa STK Push Sent! 📱
+              KSH Sent to M-Pesa! 💰
             </h3>
             <p className="text-green-700 text-lg mb-4">
               {transactionResult.message}
@@ -285,11 +285,11 @@ export function OffRampFlow() {
           </div>
           
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <h4 className="font-semibold text-blue-800 mb-2">Next Steps:</h4>
+            <h4 className="font-semibold text-blue-800 mb-2">What Happens Next:</h4>
             <ol className="text-blue-700 text-sm space-y-1">
-              <li>1. Check your phone for M-Pesa STK push notification</li>
-              <li>2. Enter your M-Pesa PIN to complete the payment</li>
-              <li>3. You&apos;ll receive a confirmation SMS with transaction details</li>
+              <li>1. Money is automatically sent to your M-Pesa wallet</li>
+              <li>2. You&apos;ll receive an SMS: &quot;You have received KSH X.XX&quot;</li>
+              <li>3. No PIN required - the money appears in your M-Pesa balance</li>
             </ol>
           </div>
           
