@@ -1,5 +1,19 @@
 import { useOpenUrl } from "@coinbase/onchainkit/minikit";
 
+// Type definitions for Farcaster SDK
+interface FarcasterActions {
+  composeCast?: (args: { text: string; embeds?: string[] }) => Promise<void>;
+  openProfile?: (args: { fid: number }) => Promise<void>;
+}
+
+interface FarcasterSDK {
+  actions?: FarcasterActions;
+}
+
+interface WindowWithFarcaster extends Window {
+  farcaster?: FarcasterSDK;
+}
+
 /**
  * SDK Actions utility for mini apps
  * Following Coinbase Wallet guide to use official SDK functions instead of deeplinks
@@ -13,8 +27,9 @@ export function useShareCast() {
     try {
       // Use composeCast SDK action if available, otherwise fallback to openUrl
       // The guide mentions composeCast function but it might not be available yet
-      if (typeof window !== 'undefined' && (window as { farcaster?: { actions?: { composeCast?: (args: { text: string; embeds?: string[] }) => Promise<void> } } }).farcaster?.actions?.composeCast) {
-        await ((window as unknown) as { farcaster: { actions: { composeCast: (args: { text: string; embeds?: string[] }) => Promise<void> } } }).farcaster.actions.composeCast({
+      const farcasterWindow = window as WindowWithFarcaster;
+      if (typeof window !== 'undefined' && farcasterWindow.farcaster?.actions?.composeCast) {
+        await farcasterWindow.farcaster.actions.composeCast!({
           text,
           embeds,
         });
@@ -47,8 +62,9 @@ export function useAppNavigation() {
   const openProfile = async (fid: number) => {
     try {
       // Use SDK action if available
-      if (typeof window !== 'undefined' && (window as { farcaster?: { actions?: { openProfile?: (args: { fid: number }) => Promise<void> } } }).farcaster?.actions?.openProfile) {
-        await (window as { farcaster: { actions: { openProfile: (args: { fid: number }) => Promise<void> } } }).farcaster.actions.openProfile({ fid });
+      const farcasterWindow = window as WindowWithFarcaster;
+      if (typeof window !== 'undefined' && farcasterWindow.farcaster?.actions?.openProfile) {
+        await farcasterWindow.farcaster.actions.openProfile!({ fid });
       } else {
         await openUrl(`https://warpcast.com/profile/${fid}`);
       }

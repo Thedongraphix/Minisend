@@ -17,11 +17,7 @@ interface WalletOption {
   onClick: () => void;
 }
 
-interface EthereumProvider {
-  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-  on: (event: string, handler: (...args: unknown[]) => void) => void;
-  removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
-}
+
 
 export function WalletSelector() {
   const [showModal, setShowModal] = useState(false);

@@ -115,7 +115,7 @@ export function trackOffRampEvent(event: string, data: {
   step?: number;
   error?: string;
   success?: boolean;
-}, context?: any): void {
+}, context?: { user?: { fid?: number }; client?: { clientFid?: number; added?: boolean } }): void {
   let userId: string | undefined;
   let clientId: number | undefined;
   let userFid: number | undefined;
@@ -146,7 +146,7 @@ export function getUserSession(userId: string): UserSession | null {
  * Create a simple JWT-like session token using context data
  * Note: This is for demo purposes. In production, use proper JWT with secrets
  */
-export function createSessionToken(context: any): string | null {
+export function createSessionToken(context: { user?: { fid?: number }; client?: { clientFid?: number; added?: boolean } }): string | null {
   if (!context?.user?.fid) {
     return null;
   }
@@ -165,7 +165,7 @@ export function createSessionToken(context: any): string | null {
 /**
  * Verify session token
  */
-export function verifySessionToken(token: string): any | null {
+export function verifySessionToken(token: string): { fid: number; clientFid: number; isFrameAdded: boolean; timestamp: number } | null {
   try {
     const sessionData = JSON.parse(atob(token));
     
