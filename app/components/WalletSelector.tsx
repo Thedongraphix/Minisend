@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import {
   Name,
@@ -17,32 +17,85 @@ interface WalletOption {
   onClick: () => void;
 }
 
+declare global {
+  interface Window {
+    ethereum?: {
+      isMetaMask?: boolean;
+      request: (args: { method: string; params?: any[] }) => Promise<any>;
+    };
+  }
+}
 
+
+
+// Utility functions for mobile detection and MetaMask handling
+const isMobileDevice = () => /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+const isMetaMaskMobileApp = () => {
+  return typeof window !== 'undefined' && 
+         window.ethereum?.isMetaMask && 
+         isMobileDevice();
+};
+
+const handleMetaMaskConnection = (connect: any, connectors: any[], setShowModal: (show: boolean) => void) => {
+  const metamaskConnector = connectors.find(c => c.name.toLowerCase().includes('metamask'));
+  
+  if (metamaskConnector) {
+    // Wagmi connector found
+    connect({ connector: metamaskConnector });
+    setShowModal(false);
+  } else if (window.ethereum?.isMetaMask) {
+    // Direct MetaMask connection
+    window.ethereum.request({ method: 'eth_requestAccounts' })
+      .then(() => setShowModal(false))
+      .catch((error: any) => console.error('MetaMask connection failed:', error));
+  } else if (isMobileDevice()) {
+    // Mobile: Open MetaMask app via deep link
+    const currentUrl = encodeURIComponent(window.location.href);
+    const metamaskDeepLink = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}${window.location.search}`;
+    
+    // For iOS, we need to handle the deep link differently
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    if (isIOS) {
+      // iOS: Try universal link first, fallback to app store
+      window.location.href = metamaskDeepLink;
+      
+      // Fallback to app store after a delay
+      setTimeout(() => {
+        if (document.hasFocus()) {
+          window.open('https://apps.apple.com/app/metamask/id1438144202', '_blank');
+        }
+      }, 2000);
+    } else {
+      // Android: Direct deep link
+      window.open(metamaskDeepLink, '_blank');
+    }
+    
+    setShowModal(false);
+  } else {
+    // Desktop: Redirect to install page
+    window.open('https://metamask.io/download/', '_blank');
+  }
+};
 
 export function WalletSelector() {
   const [showModal, setShowModal] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const walletOptions: WalletOption[] = [
     {
       id: "metamask",
-      name: "MetaMask",
+      name: isClient && isMetaMaskMobileApp() ? "MetaMask (In-App)" : "MetaMask",
       icon: "🦊",
-      onClick: () => {
-        const metamaskConnector = connectors.find(c => c.name.toLowerCase().includes('metamask'));
-        if (metamaskConnector) {
-          connect({ connector: metamaskConnector });
-          setShowModal(false);
-        } else if (window.ethereum?.isMetaMask) {
-          // Direct connection fallback
-          window.ethereum.request({ method: 'eth_requestAccounts' });
-          setShowModal(false);
-        } else {
-          alert('MetaMask not detected. Please install MetaMask.');
-        }
-      },
+      onClick: () => handleMetaMaskConnection(connect, connectors, setShowModal),
     },
     {
       id: "coinbase",
@@ -146,12 +199,25 @@ export function WalletSelector() {
                     key={wallet.id}
                     onClick={wallet.onClick}
                     disabled={isPending}
-                    className="w-full flex items-center space-x-4 p-5 glass-effect rounded-2xl hover:bg-white/10 transition-all duration-300 disabled:opacity-50 border border-white/10 hover:border-white/20 transform hover:scale-[1.02]"
+                    className="w-full flex items-center justify-between p-5 glass-effect rounded-2xl hover:bg-white/10 transition-all duration-300 disabled:opacity-50 border border-white/10 hover:border-white/20 transform hover:scale-[1.02]"
                   >
-                    <span className="text-3xl">{wallet.icon}</span>
-                    <span className="font-semibold text-white text-lg tracking-tight">
-                      {wallet.name}
-                    </span>
+                    <div className="flex items-center space-x-4">
+                      <span className="text-3xl">{wallet.icon}</span>
+                      <span className="font-semibold text-white text-lg tracking-tight">
+                        {wallet.name}
+                      </span>
+                    </div>
+                    {/* Show mobile indicator for MetaMask */}
+                    {isClient && wallet.id === "metamask" && isMobileDevice() && !isMetaMaskMobileApp() && (
+                      <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg border border-blue-500/30">
+                        Opens App
+                      </span>
+                    )}
+                    {isClient && wallet.id === "metamask" && isMetaMaskMobileApp() && (
+                      <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-lg border border-green-500/30">
+                        Detected
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
