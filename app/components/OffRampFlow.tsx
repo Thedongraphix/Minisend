@@ -110,12 +110,16 @@ export function OffRampFlow() {
         <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">USDC to M-Pesa</h1>
         <p className="text-gray-300 text-lg font-medium">Convert your USDC to Kenyan Shillings</p>
         
-        {/* Premium Network indicator */}
-        <div className="inline-flex items-center space-x-3 bg-white/5 backdrop-blur-sm px-4 py-2 rounded-2xl mt-4 border border-white/10">
-          <div className={`w-3 h-3 rounded-full ${isTestnetNetwork ? 'bg-orange-400' : 'bg-green-400'} shadow-lg`}></div>
-          <span className="text-sm text-gray-300 font-medium">
-            {networkConfig.name} {isTestnetNetwork ? '(Testnet)' : ''}
-          </span>
+
+        
+        {/* Powered by Base indicator */}
+        <div className="inline-flex items-center space-x-2 text-xs text-blue-300 bg-blue-500/10 px-3 py-1 rounded-xl mt-2 border border-blue-400/20">
+          <img 
+            src="/Base_Network_Logo.svg" 
+            alt="Base Network" 
+            className="w-3 h-3"
+          />
+          <span className="font-medium">Powered by Base</span>
         </div>
       </div>
 

@@ -162,7 +162,14 @@ export function Features({ setActiveTab }: FeaturesProps) {
               <Icon name="check" className="text-white" size="sm" />
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-1">Base Network Ready</h4>
+              <div className="flex items-center space-x-2 mb-1">
+                <img 
+                  src="/Base_Network_Logo.svg" 
+                  alt="Base Network" 
+                  className="w-4 h-4"
+                />
+                <h4 className="text-white font-semibold">Base Network Ready</h4>
+              </div>
               <span className="text-gray-300 leading-relaxed">
                 Production and testnet environments supported
               </span>
@@ -186,6 +193,14 @@ export function Home({ setActiveTab }: HomeProps) {
     <div className="space-y-8 animate-fade-in">
       <Card title="Kenya USDC Off-Ramp">
         <div className="space-y-6">
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <img 
+              src="/Base_Network_Logo.svg" 
+              alt="Base Network" 
+              className="w-5 h-5"
+            />
+            <span className="text-blue-300 text-sm font-medium">Built on Base</span>
+          </div>
           <p className="text-gray-300 text-lg leading-relaxed">
             Convert your USDC to Kenyan Shillings via M-Pesa seamlessly and securely. 
             Built for the African crypto economy.

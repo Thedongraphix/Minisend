@@ -170,13 +170,7 @@ export function DirectUSDCBalance() {
               ) : null}
             </div>
             
-            {/* USDC Brand Mark */}
-            <div className="relative">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl">
-                <span className="text-white font-bold text-sm tracking-tight">USDC</span>
-              </div>
-             
-            </div>
+            
           </div>
           
           {/* Center Section - Card Number */}
@@ -191,7 +185,14 @@ export function DirectUSDCBalance() {
           <div className="flex justify-between items-end">
             <div className="space-y-0.5">
               <p className="text-gray-400 text-[10px] font-medium tracking-[0.2em] uppercase">Network</p>
-              <p className="text-white text-sm font-semibold">{networkConfig.name}</p>
+              <div className="flex items-center space-x-2">
+                <img 
+                  src="/Base_Network_Logo.svg" 
+                  alt="Base Network" 
+                  className="w-4 h-4"
+                />
+                <p className="text-white text-sm font-semibold">{networkConfig.name}</p>
+              </div>
             </div>
             
             <div className="text-right space-y-0.5">

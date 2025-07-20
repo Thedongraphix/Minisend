@@ -111,9 +111,11 @@ export function NetworkTester() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10"/>
-                  </svg>
+                  <img 
+                    src="/Base_Network_Logo.svg" 
+                    alt="Base Network" 
+                    className="w-6 h-6"
+                  />
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">Base Mainnet</h4>
@@ -143,9 +145,11 @@ export function NetworkTester() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10"/>
-                  </svg>
+                  <img 
+                    src="/Base_Network_Logo.svg" 
+                    alt="Base Network" 
+                    className="w-6 h-6"
+                  />
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900">Base Sepolia</h4>

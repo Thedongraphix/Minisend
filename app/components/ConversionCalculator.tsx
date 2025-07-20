@@ -45,7 +45,14 @@ export function ConversionCalculator({ usdcAmount, onKshChange }: ConversionCalc
       
       <div className="relative">
         <div className="flex justify-between items-center mb-8">
-          <h3 className="text-2xl font-bold text-white tracking-tight">Conversion Details</h3>
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/Base_Network_Logo.svg" 
+              alt="Base Network" 
+              className="w-6 h-6"
+            />
+            <h3 className="text-2xl font-bold text-white tracking-tight">Conversion Details</h3>
+          </div>
           <button
             onClick={refreshExchangeRate}
             disabled={isLoadingRate}
