@@ -1,41 +1,25 @@
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --app-background: #ffffff;
-  --app-foreground: #111111;
-  --app-foreground-muted: #58585c;
+  --app-background: #000000;
+  --app-foreground: #ffffff;
+  --app-foreground-muted: #9ca3af;
   --app-accent: #0052ff;
   --app-accent-hover: #0047e1;
   --app-accent-active: #003db8;
-  --app-accent-light: #e6edff;
-  --app-gray: #f5f5f5;
-  --app-gray-dark: #e0e0e0;
-  --app-card-bg: rgba(255, 255, 255, 0.4);
-  --app-card-border: rgba(0, 0, 0, 0.1);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --app-background: #111111;
-    --app-foreground: #ffffff;
-    --app-foreground-muted: #c8c8d1;
-    --app-accent: #0052ff;
-    --app-accent-hover: #0047e1;
-    --app-accent-active: #003db8;
-    --app-accent-light: #1e293b;
-    --app-gray: #1e1e1e;
-    --app-gray-dark: #2e2e2e;
-    --app-card-bg: rgba(17, 17, 17, 0.4);
-    --app-card-border: rgba(115, 115, 115, 0.5);
-  }
+  --app-accent-light: #1e40af;
+  --app-gray: #1f1f1f;
+  --app-gray-dark: #2a2a2a;
+  --app-card-bg: rgba(31, 31, 31, 0.8);
+  --app-card-border: rgba(75, 85, 99, 0.3);
 }
 
 .mini-app-theme {
-  --ock-font-family: "Geist", sans-serif;
+  --ock-font-family: "Space Grotesk", sans-serif;
   --ock-border-radius: 0.75rem;
   --ock-border-radius-inner: 0.5rem;
 
@@ -95,7 +79,7 @@
 body {
   color: var(--app-foreground);
   background: var(--app-background);
-  font-family: var(--font-geist-sans), sans-serif;
+  font-family: "Space Grotesk", sans-serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;

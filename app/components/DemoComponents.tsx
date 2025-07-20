@@ -31,27 +31,29 @@ export function Button({
     "whitespace-nowrap",
     "flex items-center justify-center",
     "disabled:opacity-40 disabled:pointer-events-none",
-    "transition-all",
-    "font-medium"
+    "transition-all duration-300",
+    "font-semibold",
+    "tracking-tight",
+    "transform hover:scale-[1.02] active:scale-[0.98]"
   ];
 
   const variantClasses = {
-    primary: "bg-[#0052FF] text-white border border-[#0052FF] hover:bg-[#0044D9] active:bg-[#06318E]",
-    secondary: "bg-white border border-white text-[var(--app-foreground)] hover:bg-zinc-50 active:bg-zinc-100",
-    outlined: "bg-transparent text-white border border-white hover:bg-white hover:text-black active:bg-gray-200",
-    ghost: "hover:bg-[var(--app-accent-light)] text-[var(--app-foreground-muted)]",
+    primary: "bg-gradient-to-r from-blue-600 to-blue-700 text-white border border-blue-500/20 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl",
+    secondary: "bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 hover:border-white/30",
+    outlined: "bg-transparent text-white border border-white/30 hover:bg-white/10 hover:border-white/50 backdrop-blur-sm",
+    ghost: "hover:bg-white/10 text-gray-300 hover:text-white backdrop-blur-sm",
   };
 
   const sizeClasses = {
-    medium: "text-sm px-4 py-2 gap-3",
-    large: "text-lg px-6 py-4 gap-5",
+    medium: "text-sm px-5 py-2.5 gap-3",
+    large: "text-lg px-8 py-4 gap-4",
   };
 
   const classes = [
     ...baseClasses,
     variantClasses[variant],
     sizeClasses[size],
-    roundedFull ? "rounded-full" : "rounded-lg",
+    roundedFull ? "rounded-full" : "rounded-xl",
     fullWidth ? "w-full" : "w-auto",
     className
   ];
@@ -99,20 +101,25 @@ function Card({
 
   return (
     <div
-      className={`bg-[var(--app-card-bg)] backdrop-blur-md rounded-xl shadow-lg border border-[var(--app-card-border)] overflow-hidden transition-all hover:shadow-xl ${className} ${onClick ? "cursor-pointer" : ""}`}
+      className={`glass-effect rounded-3xl card-shadow overflow-hidden transition-all duration-300 hover:scale-[1.02] relative ${className} ${onClick ? "cursor-pointer hover:card-shadow-lg" : ""}`}
       onClick={onClick}
       onKeyDown={onClick ? handleKeyDown : undefined}
       tabIndex={onClick ? 0 : undefined}
       role={onClick ? "button" : undefined}
     >
-      {title && (
-        <div className="px-5 py-3 border-b border-[var(--app-card-border)]">
-          <h3 className="text-lg font-medium text-[var(--app-foreground)]">
-            {title}
-          </h3>
-        </div>
-      )}
-      <div className="p-5">{children}</div>
+      {/* Subtle background mesh */}
+      <div className="absolute inset-0 gradient-mesh opacity-20"></div>
+      
+      <div className="relative">
+        {title && (
+          <div className="px-8 py-6 border-b border-white/10">
+            <h3 className="text-2xl font-bold text-white tracking-tight">
+              {title}
+            </h3>
+          </div>
+        )}
+        <div className="p-8">{children}</div>
+      </div>
     </div>
   );
 }
@@ -123,47 +130,46 @@ type FeaturesProps = {
 
 export function Features({ setActiveTab }: FeaturesProps) {
   return (
-    <div className="space-y-6 animate-fade-in">
-      <Card title="Key Features">
-        <ul className="space-y-3 mb-4">
-          <li className="flex items-start">
-            <Icon name="check" className="text-[var(--app-accent)] mt-1 mr-2" />
-            <span className="text-[var(--app-foreground-muted)]">
-              Minimalistic and beautiful UI design
-            </span>
+    <div className="space-y-8 animate-fade-in">
+      <Card title="Enterprise Features">
+        <ul className="space-y-5 mb-8">
+          
+          
+          <li className="flex items-start space-x-4">
+            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+              <Icon name="check" className="text-white" size="sm" />
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-1">OnchainKit Integration</h4>
+              <span className="text-gray-300 leading-relaxed">
+                Built with Coinbase&apos;s enterprise web3 toolkit
+              </span>
+            </div>
           </li>
-          <li className="flex items-start">
-            <Icon name="check" className="text-[var(--app-accent)] mt-1 mr-2" />
-            <span className="text-[var(--app-foreground-muted)]">
-              Responsive layout for all devices
-            </span>
+          <li className="flex items-start space-x-4">
+            <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+              <Icon name="check" className="text-white" size="sm" />
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-1">Multi-Wallet Support</h4>
+              <span className="text-gray-300 leading-relaxed">
+                MetaMask, Coinbase Wallet, Phantom, Rabby, Trust, Frame
+              </span>
+            </div>
           </li>
-          <li className="flex items-start">
-            <Icon name="check" className="text-[var(--app-accent)] mt-1 mr-2" />
-            <span className="text-[var(--app-foreground-muted)]">
-              Dark mode support
-            </span>
-          </li>
-          <li className="flex items-start">
-            <Icon name="check" className="text-[var(--app-accent)] mt-1 mr-2" />
-            <span className="text-[var(--app-foreground-muted)]">
-              OnchainKit integration
-            </span>
-          </li>
-          <li className="flex items-start">
-            <Icon name="check" className="text-[var(--app-accent)] mt-1 mr-2" />
-            <span className="text-[var(--app-foreground-muted)]">
-              Multi-wallet support: MetaMask, Coinbase Wallet, Phantom, Rabby, Trust, Frame
-            </span>
-          </li>
-          <li className="flex items-start">
-            <Icon name="check" className="text-[var(--app-accent)] mt-1 mr-2" />
-            <span className="text-[var(--app-foreground-muted)]">
-              Base Sepolia testnet and Base mainnet support
-            </span>
+          <li className="flex items-start space-x-4">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+              <Icon name="check" className="text-white" size="sm" />
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-1">Base Network Ready</h4>
+              <span className="text-gray-300 leading-relaxed">
+                Production and testnet environments supported
+              </span>
+            </div>
           </li>
         </ul>
-        <Button variant="outlined" onClick={() => setActiveTab("home")}>
+        <Button variant="outlined" onClick={() => setActiveTab("home")} fullWidth>
           Back to Home
         </Button>
       </Card>
@@ -177,19 +183,53 @@ type HomeProps = {
 
 export function Home({ setActiveTab }: HomeProps) {
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       <Card title="Kenya USDC Off-Ramp">
-        <p className="text-[var(--app-foreground-muted)] mb-4">
-          Convert your USDC to Kenyan Shillings via M-Pesa seamlessly and securely.
-        </p>
-        <div className="space-y-2">
+        <div className="space-y-6">
+          <p className="text-gray-300 text-lg leading-relaxed">
+            Convert your USDC to Kenyan Shillings via M-Pesa seamlessly and securely. 
+            Built for the African crypto economy.
+          </p>
+          
+          {/* Feature highlights */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+              <div className="text-2xl mb-2">⚡</div>
+              <h4 className="text-white font-semibold text-sm mb-1">Instant</h4>
+              <p className="text-gray-400 text-xs">Direct to M-Pesa</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+              <div className="text-2xl mb-2">🔒</div>
+              <h4 className="text-white font-semibold text-sm mb-1">Secure</h4>
+              <p className="text-gray-400 text-xs">Enterprise grade</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+              <div className="text-2xl mb-2">💰</div>
+              <h4 className="text-white font-semibold text-sm mb-1">Low Fees</h4>
+              <p className="text-gray-400 text-xs">2-4% processing</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
+              <div className="text-2xl mb-2">🇰🇪</div>
+              <h4 className="text-white font-semibold text-sm mb-1">Local</h4>
+              <p className="text-gray-400 text-xs">Built for Kenya</p>
+            </div>
+          </div>
+          
           <Button
             onClick={() => setActiveTab("offramp")}
-            className="w-full"
             iconName="arrow-right"
             fullWidth
+            size="large"
           >
             Convert USDC to M-Pesa
+          </Button>
+          
+          <Button
+            onClick={() => setActiveTab("features")}
+            variant="outlined"
+            fullWidth
+          >
+            View Features
           </Button>
         </div>
       </Card>

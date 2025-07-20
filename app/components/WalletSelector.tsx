@@ -75,29 +75,34 @@ export function WalletSelector() {
       <div className="relative">
         <button
           onClick={() => setShowModal(!showModal)}
-          className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center space-x-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2.5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg backdrop-blur-sm border border-blue-500/20"
         >
-          <Avatar className="h-6 w-6" address={address} />
-          <Name address={address} className="text-inherit" />
+          <Avatar className="h-6 w-6 rounded-lg" address={address} />
+          <Name address={address} className="text-inherit font-semibold tracking-tight" />
         </button>
         
         {showModal && (
-          <div className="absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg p-4 min-w-[280px] z-50">
-            <Identity address={address} className="mb-4" hasCopyAddressOnClick>
-              <Avatar address={address} />
-              <Name address={address} />
-              <Address address={address} />
-              <EthBalance address={address} />
-            </Identity>
-            <button
-              onClick={() => {
-                disconnect();
-                setShowModal(false);
-              }}
-              className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Disconnect
-            </button>
+          <div className="absolute right-0 top-full mt-3 glass-effect rounded-2xl card-shadow p-6 min-w-[320px] z-50 border border-white/10">
+            <div className="relative">
+              <div className="absolute inset-0 gradient-mesh opacity-20 rounded-2xl"></div>
+              <div className="relative">
+                <Identity address={address} className="mb-6" hasCopyAddressOnClick>
+                  <Avatar address={address} className="rounded-xl shadow-lg" />
+                  <Name address={address} className="text-white font-bold text-lg" />
+                  <Address address={address} className="text-gray-300 font-mono text-sm" />
+                  <EthBalance address={address} className="text-blue-400 font-semibold" />
+                </Identity>
+                <button
+                  onClick={() => {
+                    disconnect();
+                    setShowModal(false);
+                  }}
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
+                >
+                  Disconnect Wallet
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -108,47 +113,54 @@ export function WalletSelector() {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-lg backdrop-blur-sm border border-blue-500/20 tracking-tight"
         disabled={isPending}
       >
         {isPending ? "Connecting..." : "Connect Wallet"}
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Connect Wallet
-              </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                ✕
-              </button>
-            </div>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="glass-effect rounded-3xl p-8 max-w-md w-full mx-4 card-shadow-lg border border-white/10 relative">
+            {/* Background mesh */}
+            <div className="absolute inset-0 gradient-mesh opacity-30 rounded-3xl"></div>
             
-            <div className="space-y-3">
-              {walletOptions.map((wallet) => (
+            <div className="relative">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-bold text-white tracking-tight">
+                  Connect Wallet
+                </h2>
                 <button
-                  key={wallet.id}
-                  onClick={wallet.onClick}
-                  disabled={isPending}
-                  className="w-full flex items-center space-x-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-all duration-200"
                 >
-                  <span className="text-2xl">{wallet.icon}</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {wallet.name}
-                  </span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
-              ))}
-            </div>
-            
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Choose your preferred wallet to connect
-              </p>
+              </div>
+              
+              <div className="space-y-4">
+                {walletOptions.map((wallet) => (
+                  <button
+                    key={wallet.id}
+                    onClick={wallet.onClick}
+                    disabled={isPending}
+                    className="w-full flex items-center space-x-4 p-5 glass-effect rounded-2xl hover:bg-white/10 transition-all duration-300 disabled:opacity-50 border border-white/10 hover:border-white/20 transform hover:scale-[1.02]"
+                  >
+                    <span className="text-3xl">{wallet.icon}</span>
+                    <span className="font-semibold text-white text-lg tracking-tight">
+                      {wallet.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              
+              <div className="mt-8 text-center">
+                <p className="text-sm text-gray-400 font-medium">
+                  Choose your preferred wallet to connect securely
+                </p>
+              </div>
             </div>
           </div>
         </div>
