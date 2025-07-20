@@ -56,19 +56,18 @@ Visit `http://localhost:3000` to see the app.
 NEXT_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_api_key
 NEXT_PUBLIC_URL=https://your-domain.com
 
-# Off-ramp Provider (choose one)
-MOONPAY_API_KEY=your_moonpay_api_key
-MOONPAY_SECRET_KEY=your_moonpay_secret_key
-# OR
-TRANSAK_API_KEY=your_transak_api_key
-TRANSAK_SECRET_KEY=your_transak_secret_key
+# M-Pesa Direct Integration (Daraja API)
+MPESA_CONSUMER_KEY=your_mpesa_consumer_key
+MPESA_CONSUMER_SECRET=your_mpesa_consumer_secret
+MPESA_PASSKEY=your_mpesa_passkey
+MPESA_SHORTCODE=your_mpesa_business_shortcode
 ```
 
 ### Getting API Keys
 
 1. **OnchainKit**: [Get API key](https://portal.cdp.coinbase.com/)
-2. **MoonPay**: [Apply for partnership](https://www.moonpay.com/business)
-3. **Transak**: [Get API access](https://transak.com/business)
+2. **M-Pesa Daraja API**: [Register as developer](https://developer.safaricom.co.ke/)
+3. **Redis**: [Set up Upstash Redis](https://upstash.com/) for notifications
 
 ## 🏗️ Architecture
 
@@ -77,7 +76,7 @@ TRANSAK_SECRET_KEY=your_transak_secret_key
 - **Blockchain**: Base network (USDC on Base)
 - **Wallet**: MiniKit wallet integration
 - **Styling**: Tailwind CSS
-- **Off-ramp**: MoonPay/Transak APIs
+- **Off-ramp**: Direct M-Pesa Daraja API integration
 
 ### Key Components
 
@@ -89,8 +88,8 @@ components/
 └── OffRampFlow.tsx      # Main off-ramp orchestrator
 
 lib/
-├── moonpay.ts          # MoonPay integration
-└── transak.ts          # Transak integration
+├── mpesa.ts            # M-Pesa Daraja API integration
+└── analytics.ts        # User analytics and tracking
 
 app/api/
 └── offramp/
@@ -105,8 +104,8 @@ app/api/
 4. **Calculate Conversion**: Real-time KSH amount with fees
 5. **M-Pesa Details**: User enters Kenyan phone number
 6. **Process Transaction**: 
-   - Transfer USDC to off-ramp provider
-   - Provider sends KSH to M-Pesa account
+   - Transfer USDC to secure escrow
+   - Direct M-Pesa STK Push to user's phone
 7. **Confirmation**: Transaction hash and M-Pesa reference
 
 ## 🌍 Kenyan Market Optimizations
@@ -149,8 +148,10 @@ Make sure to set these in your Vercel dashboard:
 
 - `NEXT_PUBLIC_ONCHAINKIT_API_KEY`
 - `NEXT_PUBLIC_URL` (your production domain)
-- `MOONPAY_API_KEY` / `TRANSAK_API_KEY`
-- `MOONPAY_SECRET_KEY` / `TRANSAK_SECRET_KEY`
+- `MPESA_CONSUMER_KEY`
+- `MPESA_CONSUMER_SECRET`
+- `MPESA_PASSKEY`
+- `MPESA_SHORTCODE`
 - `NODE_ENV=production`
 
 ## 📱 Testing
