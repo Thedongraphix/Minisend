@@ -190,42 +190,42 @@ type HomeProps = {
 
 export function Home({ setActiveTab }: HomeProps) {
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       <Card title="Kenya USDC Off-Ramp">
-        <div className="space-y-6">
-          <div className="flex items-center justify-center space-x-2 mb-4">
+        <div className="space-y-4">
+          <div className="flex items-center justify-center space-x-2 mb-2">
             <img 
               src="/Base_Network_Logo.svg" 
               alt="Base Network" 
-              className="w-5 h-5"
+              className="w-4 h-4"
             />
-            <span className="text-blue-300 text-sm font-medium">Built on Base</span>
+            <span className="text-blue-300 text-xs font-medium">Built on Base</span>
           </div>
-          <p className="text-gray-300 text-lg leading-relaxed">
+          <p className="text-gray-300 text-base leading-relaxed">
             Convert your USDC to Kenyan Shillings via M-Pesa seamlessly and securely. 
             Built for the African crypto economy.
           </p>
           
           {/* Feature highlights */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-              <div className="text-2xl mb-2">⚡</div>
-              <h4 className="text-white font-semibold text-sm mb-1">Instant</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+              <div className="text-xl mb-1">⚡</div>
+              <h4 className="text-white font-semibold text-xs mb-0.5">Instant</h4>
               <p className="text-gray-400 text-xs">Direct to M-Pesa</p>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-              <div className="text-2xl mb-2">🔒</div>
-              <h4 className="text-white font-semibold text-sm mb-1">Secure</h4>
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+              <div className="text-xl mb-1">🔒</div>
+              <h4 className="text-white font-semibold text-xs mb-0.5">Secure</h4>
               <p className="text-gray-400 text-xs">Enterprise grade</p>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-              <div className="text-2xl mb-2">💰</div>
-              <h4 className="text-white font-semibold text-sm mb-1">Low Fees</h4>
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+              <div className="text-xl mb-1">💰</div>
+              <h4 className="text-white font-semibold text-xs mb-0.5">Low Fees</h4>
               <p className="text-gray-400 text-xs">2-4% processing</p>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
-              <div className="text-2xl mb-2">🇰🇪</div>
-              <h4 className="text-white font-semibold text-sm mb-1">Local</h4>
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
+              <div className="text-xl mb-1">🇰🇪</div>
+              <h4 className="text-white font-semibold text-xs mb-0.5">Local</h4>
               <p className="text-gray-400 text-xs">Built for Kenya</p>
             </div>
           </div>
@@ -234,7 +234,7 @@ export function Home({ setActiveTab }: HomeProps) {
             onClick={() => setActiveTab("offramp")}
             iconName="arrow-right"
             fullWidth
-            size="large"
+            size="medium"
           >
             Convert USDC to M-Pesa
           </Button>
@@ -243,6 +243,7 @@ export function Home({ setActiveTab }: HomeProps) {
             onClick={() => setActiveTab("features")}
             variant="outlined"
             fullWidth
+            size="medium"
           >
             View Features
           </Button>

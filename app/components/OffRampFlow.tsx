@@ -175,44 +175,92 @@ export function OffRampFlow() {
       
       {/* Step 1: Premium Amount Input */}
       {step >= 1 && (
-        <div className="glass-effect rounded-3xl p-8 card-shadow">
-          <label className="block text-xl font-bold text-white mb-6 flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-sm">1</span>
+        <div className="relative w-full max-w-md mx-auto">
+          {/* Premium Amount Input Card */}
+          <div className="relative w-full rounded-3xl card-shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-[1.02]">
+            {/* Card Background with Premium Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800">
+              {/* Dynamic mesh gradient overlay */}
+              <div className="absolute inset-0 gradient-mesh opacity-40"></div>
+              
+              {/* Floating elements */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-4 right-4 w-12 h-12 border border-blue-400 rounded-full animate-pulse"></div>
+                <div className="absolute bottom-6 left-6 w-6 h-6 border border-green-400 rounded-full"></div>
+                <div className="absolute top-1/2 left-4 w-8 h-8 border border-white rounded-full"></div>
+              </div>
             </div>
-            <span className="tracking-tight">Amount to Convert</span>
-          </label>
-          
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-              <span className="text-gray-300 text-xl font-bold">$</span>
+            
+            {/* Card Content */}
+            <div className="relative z-10 p-6 sm:p-8">
+              {/* Header */}
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-sm">1</span>
+                </div>
+                <h3 className="text-lg font-bold text-white tracking-tight">Amount to Convert</h3>
+              </div>
+              
+              {/* Amount Input */}
+              <div className="relative mb-4">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                  <span className="text-gray-300 text-xl font-bold">$</span>
+                </div>
+                <input
+                  type="number"
+                  value={usdcAmount || ''}
+                  onChange={(e) => setUsdcAmount(parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                  className="w-full pl-12 pr-16 py-4 text-2xl font-bold bg-white/5 backdrop-blur-sm border-2 border-white/20 text-white rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10 placeholder-gray-400 transition-all duration-200"
+                  min="1"
+                  max="1000"
+                  step="0.01"
+                />
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <span className="text-gray-400 text-sm font-medium">USDC</span>
+                </div>
+              </div>
+
+              {/* Limits Display */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
+                  <div className="text-xs text-gray-400 mb-1">Minimum</div>
+                  <div className="text-white font-bold text-sm">$1</div>
+                </div>
+                <div className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
+                  <div className="text-xs text-gray-400 mb-1">Maximum</div>
+                  <div className="text-white font-bold text-sm">$1,000</div>
+                </div>
+              </div>
+
+              {/* Continue Button */}
+              {usdcAmount > 0 && step === 1 && (
+                <button
+                  onClick={() => setStep(2)}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-xl font-bold text-base hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <span>Continue to Payment</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              )}
+
+              {/* Validation Messages */}
+              {usdcAmount > 0 && (usdcAmount < 1 || usdcAmount > 1000) && (
+                <div className="mt-4 p-3 bg-orange-500/20 border border-orange-400/30 rounded-xl backdrop-blur-sm">
+                  <p className="text-orange-300 text-sm font-medium">
+                    {usdcAmount < 1 ? 'Minimum amount is $1 USDC' : 'Maximum amount is $1,000 USDC'}
+                  </p>
+                </div>
+              )}
             </div>
-            <input
-              type="number"
-              value={usdcAmount || ''}
-              onChange={(e) => setUsdcAmount(parseFloat(e.target.value) || 0)}
-              placeholder="Enter USDC amount"
-              className="w-full pl-12 pr-20 py-5 text-2xl font-bold bg-white/5 backdrop-blur-sm border-2 border-white/20 text-white rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white/10 placeholder-gray-400 transition-all duration-200"
-              min="1"
-              max="1000"
-              step="0.01"
-            />
-           
+            
+            {/* Subtle border glow */}
+            <div className="absolute inset-0 rounded-3xl border border-white/10"></div>
           </div>
-          
-          <div className="flex justify-between text-sm text-gray-400 mt-4 px-1">
-            <span className="font-medium">Min: $1 USDC</span>
-            <span className="font-medium">Max: $1,000 USDC</span>
-          </div>
-          
-          {usdcAmount > 0 && step === 1 && (
-            <button
-              onClick={() => setStep(2)}
-              className="w-full mt-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-2xl font-bold text-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] card-shadow-lg"
-            >
-              Continue to M-Pesa Payment →
-            </button>
-          )}
         </div>
       )}
       
