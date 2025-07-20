@@ -3,7 +3,7 @@ import { base, baseSepolia } from 'wagmi/chains'
 // USDC contract addresses for different networks
 export const USDC_CONTRACTS = {
   [base.id]: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base mainnet
-  [baseSepolia.id]: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // USDC on Base Sepolia
+  [baseSepolia.id]: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // USDC on Base Sepolia - exact case match
 } as const
 
 // Network configurations
