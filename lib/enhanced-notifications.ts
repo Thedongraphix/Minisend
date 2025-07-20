@@ -32,7 +32,7 @@ export class EnhancedNotificationService {
 
   constructor() {
     this.appName = process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'Kenya USDC Off-Ramp';
-    this.baseUrl = process.env.NEXT_PUBLIC_URL || 'https://kenya-usdc-offramp.vercel.app';
+    this.baseUrl = process.env.NEXT_PUBLIC_URL || 'https://minitest-phi.vercel.app';
   }
 
   /**
