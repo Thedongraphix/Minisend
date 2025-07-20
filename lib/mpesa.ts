@@ -27,36 +27,37 @@ export class MPesaIntegration {
   }
 
   // Process callback data from M-Pesa
-  processCallback(callbackBody: any): MPesaCallbackData {
+  processCallback(callbackBody: { Body: { stkCallback: Record<string, unknown> } }): MPesaCallbackData {
     const { Body } = callbackBody
     const { stkCallback } = Body
 
     const result: MPesaCallbackData = {
-      resultCode: stkCallback.ResultCode,
-      resultDesc: stkCallback.ResultDesc,
-      merchantRequestID: stkCallback.MerchantRequestID,
-      checkoutRequestID: stkCallback.CheckoutRequestID,
+      resultCode: typeof stkCallback.ResultCode === 'number' ? stkCallback.ResultCode : 0,
+      resultDesc: typeof stkCallback.ResultDesc === 'string' ? stkCallback.ResultDesc : '',
+      merchantRequestID: typeof stkCallback.MerchantRequestID === 'string' ? stkCallback.MerchantRequestID : '',
+      checkoutRequestID: typeof stkCallback.CheckoutRequestID === 'string' ? stkCallback.CheckoutRequestID : '',
     }
 
     if (stkCallback.ResultCode === 0 && stkCallback.CallbackMetadata) {
-      const metadata = stkCallback.CallbackMetadata.Item
+      const callbackMetadata = stkCallback.CallbackMetadata as { Item: Array<{ Name: string; Value: unknown }> };
+      const metadata = callbackMetadata.Item;
       
-      metadata.forEach((item: any) => {
+      metadata.forEach((item) => {
         switch (item.Name) {
           case 'Amount':
-            result.amount = item.Value
+            result.amount = typeof item.Value === 'number' ? item.Value : undefined
             break
           case 'MpesaReceiptNumber':
-            result.mpesaReceiptNumber = item.Value
+            result.mpesaReceiptNumber = typeof item.Value === 'string' ? item.Value : undefined
             break
           case 'Balance':
-            result.balance = item.Value
+            result.balance = typeof item.Value === 'number' ? item.Value : undefined
             break
           case 'TransactionDate':
-            result.transactionDate = item.Value
+            result.transactionDate = typeof item.Value === 'string' ? item.Value : undefined
             break
           case 'PhoneNumber':
-            result.phoneNumber = item.Value
+            result.phoneNumber = typeof item.Value === 'string' ? item.Value : undefined
             break
         }
       })

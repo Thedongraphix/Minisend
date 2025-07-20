@@ -4,8 +4,6 @@ import { type ReactNode } from "react";
 import { base, baseSepolia } from "wagmi/chains";
 import { OnchainKitProvider } from "@coinbase/onchainkit";
 import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
-import { WagmiProvider, createConfig, http } from 'wagmi';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 export function Providers(props: { children: ReactNode }) {
   // Determine which chain to use based on environment or a flag
@@ -36,7 +34,7 @@ export function Providers(props: { children: ReactNode }) {
         },
       }}
     >
-      <MiniKitProvider>
+      <MiniKitProvider chain={currentChain}>
         {props.children}
       </MiniKitProvider>
     </OnchainKitProvider>

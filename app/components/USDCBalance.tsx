@@ -31,8 +31,9 @@ export function USDCBalance() {
     address,
     token: currentUSDC as `0x${string}`,
     chainId,
-    watch: true,
-    enabled: !!address && !!currentUSDC,
+    query: {
+      enabled: !!address && !!currentUSDC,
+    },
   })
   
   // Try alternative USDC contract if on Base Sepolia
@@ -40,8 +41,9 @@ export function USDCBalance() {
     address,
     token: alternativeUSDC as `0x${string}`,
     chainId,
-    watch: true,
-    enabled: !!address && chainId === baseSepolia.id,
+    query: {
+      enabled: !!address && chainId === baseSepolia.id,
+    },
   })
 
   // Debug both balances

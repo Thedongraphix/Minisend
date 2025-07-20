@@ -18,7 +18,6 @@ import {
   WalletDropdown,
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "./components/DemoComponents";
 import { Icon } from "./components/DemoComponents";
@@ -37,7 +36,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
 
   const addFrame = useAddFrame();
-  const openUrl = useOpenUrl();
   const { shareApp, openDocs } = useAppActions();
 
   useEffect(() => {

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAccount, useChainId } from 'wagmi'
-import { getNetworkConfig, isTestnet } from '@/lib/contracts'
+import { getNetworkConfig } from '@/lib/contracts'
 import { baseSepolia } from 'wagmi/chains'
 
 export function DirectUSDCBalance() {
@@ -15,7 +15,7 @@ export function DirectUSDCBalance() {
   const networkConfig = getNetworkConfig(chainId)
   const usdcContract = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
   
-  const fetchBalance = async () => {
+  const fetchBalance = useCallback(async () => {
     if (!address || chainId !== baseSepolia.id) return
     
     setIsLoading(true)
@@ -65,11 +65,11 @@ export function DirectUSDCBalance() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [address, chainId])
   
   useEffect(() => {
     fetchBalance()
-  }, [address, chainId])
+  }, [fetchBalance])
 
   if (!isConnected) {
     return (

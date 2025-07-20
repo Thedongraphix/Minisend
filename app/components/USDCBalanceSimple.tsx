@@ -85,7 +85,7 @@ export function USDCBalanceSimple() {
     )
   }
 
-  const formattedBalance = formatBalance(balance, decimals || 6)
+  const formattedBalance = formatBalance(typeof balance === 'bigint' ? balance : undefined, typeof decimals === 'number' ? decimals : 6)
 
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl shadow-lg border border-blue-100 relative overflow-hidden">

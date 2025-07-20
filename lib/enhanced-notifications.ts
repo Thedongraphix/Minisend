@@ -19,7 +19,7 @@ interface TransactionNotification {
 
 interface UserEngagementNotification {
   type: 'welcome' | 'milestone' | 'feature_update' | 'reminder';
-  userData?: any;
+  userData?: Record<string, unknown>;
 }
 
 /**

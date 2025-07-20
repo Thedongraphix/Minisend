@@ -25,7 +25,7 @@ export interface B2CCallbackData {
     resultParameters?: {
       resultParameter: Array<{
         key: string;
-        value: any;
+        value: string;
       }>;
     };
   };

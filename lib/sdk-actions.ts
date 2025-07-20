@@ -13,8 +13,8 @@ export function useShareCast() {
     try {
       // Use composeCast SDK action if available, otherwise fallback to openUrl
       // The guide mentions composeCast function but it might not be available yet
-      if (typeof window !== 'undefined' && (window as any).farcaster?.actions?.composeCast) {
-        await (window as any).farcaster.actions.composeCast({
+      if (typeof window !== 'undefined' && (window as { farcaster?: { actions?: { composeCast?: (args: { text: string; embeds?: string[] }) => Promise<void> } } }).farcaster?.actions?.composeCast) {
+        await ((window as unknown) as { farcaster: { actions: { composeCast: (args: { text: string; embeds?: string[] }) => Promise<void> } } }).farcaster.actions.composeCast({
           text,
           embeds,
         });
@@ -47,8 +47,8 @@ export function useAppNavigation() {
   const openProfile = async (fid: number) => {
     try {
       // Use SDK action if available
-      if (typeof window !== 'undefined' && (window as any).farcaster?.actions?.openProfile) {
-        await (window as any).farcaster.actions.openProfile({ fid });
+      if (typeof window !== 'undefined' && (window as { farcaster?: { actions?: { openProfile?: (args: { fid: number }) => Promise<void> } } }).farcaster?.actions?.openProfile) {
+        await (window as { farcaster: { actions: { openProfile: (args: { fid: number }) => Promise<void> } } }).farcaster.actions.openProfile({ fid });
       } else {
         await openUrl(`https://warpcast.com/profile/${fid}`);
       }
@@ -151,13 +151,13 @@ export function useAppActions() {
 }
 
 // Client detection helper (Coinbase Wallet clientFid = 309857)
-export function getClientInfo(context: any) {
+export function getClientInfo(context: { client?: { clientFid?: number; added?: boolean } }) {
   const clientFid = context?.client?.clientFid;
   
   return {
     isCoinbaseWallet: clientFid === 309857,
     isWarpcast: clientFid === 1,
-    clientName: getClientName(clientFid),
+    clientName: getClientName(clientFid || 0),
     isFrameAdded: context?.client?.added || false,
   };
 }

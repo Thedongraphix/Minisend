@@ -5,7 +5,7 @@ interface AnalyticsEvent {
   clientId?: number;
   clientFid?: number;
   timestamp: number;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
 
 interface UserSession {
@@ -25,7 +25,7 @@ const userSessions = new Map<string, UserSession>();
  * Initialize user session using MiniKit context data
  * According to the guide, context data can be used for authentication sessions
  */
-export function initializeUserSession(context: any): UserSession | null {
+export function initializeUserSession(context: { user?: { fid?: number }; client?: { clientFid?: number; added?: boolean } }): UserSession | null {
   if (!context?.user?.fid) {
     console.log("No user context available");
     return null;
@@ -76,7 +76,7 @@ function getClientName(clientFid: number): string {
 /**
  * Track analytics event
  */
-export function trackEvent(event: string, properties?: Record<string, any>): void {
+export function trackEvent(event: string, properties?: Record<string, unknown>): void {
   const analyticsEvent: AnalyticsEvent = {
     event,
     timestamp: Date.now(),
@@ -84,10 +84,10 @@ export function trackEvent(event: string, properties?: Record<string, any>): voi
   };
 
   // Add user context if available
-  if (properties?.userId) {
+  if (properties?.userId && typeof properties.userId === 'string') {
     analyticsEvent.userId = properties.userId;
-    analyticsEvent.clientId = properties.clientId;
-    analyticsEvent.clientFid = properties.userFid;
+    analyticsEvent.clientId = typeof properties.clientId === 'number' ? properties.clientId : undefined;
+    analyticsEvent.clientFid = typeof properties.userFid === 'number' ? properties.userFid : undefined;
   }
 
   analyticsEvents.push(analyticsEvent);
@@ -96,7 +96,7 @@ export function trackEvent(event: string, properties?: Record<string, any>): voi
   console.log("Analytics Event:", analyticsEvent);
 
   // Update user activity
-  if (properties?.userId) {
+  if (properties?.userId && typeof properties.userId === 'string') {
     const session = userSessions.get(properties.userId);
     if (session) {
       session.lastActivity = Date.now();

@@ -1,15 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+interface ResultParameter {
+  Key: string;
+  Value: string;
+}
+
+interface MPesaResult {
+  ResultType: number;
+  ResultCode: number;
+  ResultDesc: string;
+  OriginatorConversationID: string;
+  ConversationID: string;
+  TransactionID: string;
+  ResultParameters?: {
+    ResultParameter: ResultParameter[];
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     console.log('📨 B2C Result Callback:', JSON.stringify(body, null, 2))
 
-    const { Result } = body
+    const { Result }: { Result: MPesaResult } = body
 
     if (Result) {
       const { 
-        ResultType, 
         ResultCode, 
         ResultDesc, 
         OriginatorConversationID, 
@@ -27,9 +43,9 @@ export async function POST(request: NextRequest) {
         })
 
         // Extract additional details if available
-        let recipientInfo = {}
+        let recipientInfo: Record<string, string> = {}
         if (Result.ResultParameters?.ResultParameter) {
-          Result.ResultParameters.ResultParameter.forEach((param: any) => {
+          Result.ResultParameters.ResultParameter.forEach((param: ResultParameter) => {
             if (param.Key === 'TransactionAmount') {
               recipientInfo = { ...recipientInfo, amount: param.Value }
             }
