@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPublicClient, http } from 'viem'
 import { base, baseSepolia } from 'viem/chains'
-import { createMPesaInstance } from '@/lib/mpesa'
+import { sendB2CPayment } from '@/lib/mpesa/b2c'
 import { getUSDCContract, getNetworkConfig } from '@/lib/contracts'
-
-// Initialize M-Pesa
-const mpesa = createMPesaInstance()
 
 // Create Viem clients for both networks
 const createClient = (chainId: number) => {
@@ -60,9 +57,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate phone number format for M-Pesa
-    if (!mpesa.validateKenyanPhone(phoneNumber)) {
+    const phoneRegex = /^(\+?254|0)[17]\d{8}$/
+    if (!phoneRegex.test(phoneNumber)) {
       return NextResponse.json(
-        { error: 'Invalid Kenyan phone number format' },
+        { error: 'Invalid Kenyan phone number format. Use +254XXXXXXXXX or 07XXXXXXXX' },
         { status: 400 }
       )
     }
@@ -159,7 +157,7 @@ async function checkUSDCBalance(address: string, chainId: number): Promise<numbe
   }
 }
 
-// Process M-Pesa off-ramp (direct STK Push)
+// Process M-Pesa off-ramp (B2C payment to user)
 async function processMPesaOffRamp(params: {
   walletAddress: string
   usdcAmount: number
@@ -169,23 +167,35 @@ async function processMPesaOffRamp(params: {
   chainId: number
 }) {
   try {
-    // Initiate M-Pesa STK Push
-    const mpesaResult = await mpesa.stkPush({
+    console.log(`🚀 Sending KSH ${params.kshAmount} to ${params.phoneNumber} via M-Pesa B2C`)
+    
+    // Calculate net amount after processing fee
+    const processingFee = params.kshAmount * 0.02 // 2% fee
+    const netAmount = params.kshAmount - processingFee
+    
+    // Send B2C payment (money TO user, not FROM user)
+    const b2cResult = await sendB2CPayment({
       phoneNumber: params.phoneNumber,
-      amount: params.kshAmount,
-      accountReference: params.transactionId,
-      transactionDesc: `USDC to KSH conversion - ${params.usdcAmount} USDC`
+      amount: netAmount,
+      reference: params.transactionId,
+      description: `USDC Off-ramp: $${params.usdcAmount} → KSH ${netAmount.toFixed(2)}`
     })
 
-    return {
-      checkoutRequestID: mpesaResult.checkoutRequestID,
-      merchantRequestID: mpesaResult.merchantRequestID,
-      mpesaReference: mpesaResult.checkoutRequestID,
-      message: 'M-Pesa STK push sent. Please check your phone and enter your M-Pesa PIN.',
-      customerMessage: mpesaResult.customerMessage
+    if (b2cResult.success) {
+      return {
+        conversationID: b2cResult.conversationId,
+        originatorConversationID: b2cResult.originatorConversationId,
+        mpesaReference: b2cResult.conversationId,
+        message: `KSH ${netAmount.toFixed(2)} sent to ${params.phoneNumber}`,
+        customerMessage: `You will receive KSH ${netAmount.toFixed(2)} in your M-Pesa wallet shortly. No PIN required.`,
+        netAmount: netAmount.toFixed(2),
+        processingFee: processingFee.toFixed(2)
+      }
+    } else {
+      throw new Error(b2cResult.error || 'B2C payment failed')
     }
   } catch (error) {
-    throw new Error(`M-Pesa payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    throw new Error(`M-Pesa B2C payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
