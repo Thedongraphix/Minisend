@@ -2,20 +2,63 @@
 
 import { useAccount, useBalance, useChainId } from 'wagmi'
 import { getUSDCContract, getNetworkConfig, isTestnet } from '@/lib/contracts'
+import { baseSepolia } from 'wagmi/chains'
 
 export function USDCBalance() {
-  const { address } = useAccount()
+  const { address, isConnected } = useAccount()
   const chainId = useChainId()
   
   // Get the appropriate USDC contract for current network
   const usdcContract = getUSDCContract(chainId)
   const networkConfig = getNetworkConfig(chainId)
   
-  const { data: balance, isLoading } = useBalance({
+  // Alternative USDC contracts on Base Sepolia for testing
+  const alternativeUSDC = '0x8a04d904055528a69f3e4594dda308a31aeb8457'
+  const currentUSDC = usdcContract
+  
+  // Debug logging
+  console.log('USDCBalance Debug:', {
     address,
-    token: usdcContract as `0x${string}`,
+    isConnected,
     chainId,
+    usdcContract,
+    alternativeUSDC,
+    networkName: networkConfig.name
   })
+  
+  // Try primary USDC contract
+  const { data: balance1, isLoading: loading1, error: error1, refetch: refetch1 } = useBalance({
+    address,
+    token: currentUSDC as `0x${string}`,
+    chainId,
+    watch: true,
+    enabled: !!address && !!currentUSDC,
+  })
+  
+  // Try alternative USDC contract if on Base Sepolia
+  const { data: balance2, isLoading: loading2, error: error2, refetch: refetch2 } = useBalance({
+    address,
+    token: alternativeUSDC as `0x${string}`,
+    chainId,
+    watch: true,
+    enabled: !!address && chainId === baseSepolia.id,
+  })
+
+  // Debug both balances
+  console.log('Balance Data:', { 
+    primary: { balance: balance1, loading: loading1, error: error1 },
+    alternative: { balance: balance2, loading: loading2, error: error2 }
+  })
+  
+  // Use whichever balance is non-zero or primary as fallback
+  const hasBalance1 = balance1 && parseFloat(balance1.formatted) > 0
+  const hasBalance2 = balance2 && parseFloat(balance2.formatted) > 0
+  
+  const balance = hasBalance1 ? balance1 : hasBalance2 ? balance2 : balance1
+  const isLoading = loading1 || loading2
+  const error = error1 && error2 ? 'Both contracts failed' : null
+  const refetch = hasBalance2 ? refetch2 : refetch1
+  const actualContract = hasBalance2 ? alternativeUSDC : currentUSDC
 
   if (isLoading) {
     return (
@@ -44,7 +87,18 @@ export function USDCBalance() {
             </svg>
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Available USDC</h3>
+            <div className="flex items-center space-x-2">
+              <h3 className="text-lg font-semibold text-gray-900">Available USDC</h3>
+              <button
+                onClick={() => refetch()}
+                className="text-blue-600 hover:text-blue-800 p-1"
+                title="Refresh balance"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
             <div className="flex items-center space-x-2">
               <p className="text-sm text-gray-600">On {networkConfig.name}</p>
               {isTestnet(chainId) && (
@@ -53,6 +107,15 @@ export function USDCBalance() {
                 </span>
               )}
             </div>
+            {/* Show contract address for debugging */}
+            <p className="text-xs text-gray-500 font-mono">
+              Contract: {actualContract.slice(0, 6)}...{actualContract.slice(-4)}
+            </p>
+            {hasBalance2 && (
+              <p className="text-xs text-green-600">
+                ✓ Using alternative USDC contract
+              </p>
+            )}
           </div>
         </div>
         
@@ -60,9 +123,15 @@ export function USDCBalance() {
           <p className="text-3xl font-bold text-gray-900">
             ${balance?.formatted || '0.00'}
           </p>
-          <p className="text-sm text-blue-600 font-medium">
-            Ready to convert
-          </p>
+          {error ? (
+            <p className="text-sm text-red-600 font-medium">
+              Error loading balance
+            </p>
+          ) : (
+            <p className="text-sm text-blue-600 font-medium">
+              Ready to convert
+            </p>
+          )}
         </div>
       </div>
       
