@@ -62,7 +62,7 @@ export function useAppNavigation() {
 
 // Share helpers for Kenya USDC app
 export function createShareMessages() {
-  const baseUrl = process.env.NEXT_PUBLIC_URL || "https://kenya-usdc-offramp.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_URL || "https://minitest-phi.vercel.app";
   
   return {
     // Share successful transaction
