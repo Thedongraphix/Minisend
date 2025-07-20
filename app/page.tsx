@@ -18,6 +18,7 @@ import {
   WalletDropdown,
   WalletDropdownDisconnect,
 } from "@coinbase/onchainkit/wallet";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "./components/DemoComponents";
 import { Icon } from "./components/DemoComponents";
@@ -26,6 +27,7 @@ import { Features } from "./components/DemoComponents";
 import { OffRampFlow } from "./components/OffRampFlow";
 import { NetworkTester } from "./components/NetworkTester";
 import { WalletShowcase } from "./components/WalletShowcase";
+import { WalletSelector } from "./components/WalletSelector";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
 import { useAppActions, getClientInfo } from "@/lib/sdk-actions";
 
@@ -109,21 +111,26 @@ export default function App() {
         <header className="flex justify-between items-center mb-3 h-11">
           <div>
             <div className="flex items-center space-x-2">
-              <Wallet className="z-10">
-                <ConnectWallet>
-                  <Avatar className="h-6 w-6" />
-                  <Name className="text-inherit" />
-                </ConnectWallet>
-                <WalletDropdown>
-                  <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                    <Avatar />
-                    <Name />
-                    <Address />
-                    <EthBalance />
-                  </Identity>
-                  <WalletDropdownDisconnect />
-                </WalletDropdown>
-              </Wallet>
+              {/* Show MiniKit wallet if in frame context, otherwise show custom wallet selector */}
+              {context ? (
+                <Wallet className="z-10">
+                  <ConnectWallet>
+                    <Avatar className="h-6 w-6" />
+                    <Name className="text-inherit" />
+                  </ConnectWallet>
+                  <WalletDropdown>
+                    <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                      <Avatar />
+                      <Name />
+                      <Address />
+                      <EthBalance />
+                    </Identity>
+                    <WalletDropdownDisconnect />
+                  </WalletDropdown>
+                </Wallet>
+              ) : (
+                <WalletSelector />
+              )}
             </div>
           </div>
           <div className="flex items-center space-x-2">
