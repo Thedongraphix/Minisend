@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 interface ConversionCalculatorProps {
   usdcAmount: number;
@@ -60,24 +61,26 @@ export function ConversionCalculator({ usdcAmount, onKshChange }: ConversionCalc
           {/* Header with Base logo and refresh */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-3">
-              <img 
+              <Image 
                 src="/Base_Network_Logo.svg" 
                 alt="Base Network" 
-                className="w-5 h-5 opacity-80"
+                width={20}
+                height={20}
+                className="opacity-80"
               />
               <span className="text-gray-400 text-sm font-medium tracking-wide">Live Rate</span>
             </div>
-            <button
-              onClick={refreshExchangeRate}
-              disabled={isLoadingRate}
+          <button
+            onClick={refreshExchangeRate}
+            disabled={isLoadingRate}
               className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all duration-200"
-            >
+          >
               <svg className={`w-4 h-4 text-white ${isLoadingRate ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          </div>
-
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+        
           {/* Main Conversion Display */}
           <div className="text-center mb-8">
             <div className="text-xs text-gray-400 font-medium tracking-[0.2em] uppercase mb-3">You Receive</div>
@@ -87,24 +90,24 @@ export function ConversionCalculator({ usdcAmount, onKshChange }: ConversionCalc
             <div className="inline-flex items-center space-x-2 bg-green-500/20 px-3 py-1.5 rounded-full border border-green-400/30">
               <span className="text-sm">🇰🇪</span>
               <span className="text-green-300 text-xs font-medium">Direct to M-Pesa</span>
-            </div>
           </div>
-
+        </div>
+        
           {/* Rate & Fee Grid */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
               <div className="text-xs text-gray-400 mb-1">Rate</div>
               <div className="text-white font-bold text-sm">{exchangeRate} KSH</div>
               <div className="text-xs text-gray-500">per USDC</div>
-            </div>
-            
+          </div>
+          
             <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
               <div className="text-xs text-gray-400 mb-1">Fee</div>
               <div className="text-orange-400 font-bold text-sm">{(fees / (usdcAmount * exchangeRate) * 100).toFixed(1)}%</div>
               <div className="text-xs text-gray-500">KSH {fees.toFixed(2)}</div>
             </div>
           </div>
-
+          
           {/* Fee Tier Indicator */}
           {usdcAmount > 0 && (
             <div className={`p-4 rounded-xl border transition-all duration-300 ${
@@ -120,9 +123,9 @@ export function ConversionCalculator({ usdcAmount, onKshChange }: ConversionCalc
                   usdcAmount > 100 ? 'text-green-300' : 'text-orange-300'
                 }`}>
                   {usdcAmount > 100 ? 'Premium Rate Active' : '$100+ for Premium Rate'}
-                </span>
-              </div>
+              </span>
             </div>
+          </div>
           )}
         </div>
         

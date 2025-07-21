@@ -26,6 +26,7 @@ import { OffRampFlow } from "./components/OffRampFlow";
 import { WalletSelector } from "./components/WalletSelector";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
 import { useAppActions, getClientInfo } from "@/lib/sdk-actions";
+import Image from 'next/image';
 import "./theme.css";
 
 export default function App() {
@@ -144,29 +145,48 @@ export default function App() {
           </div>
         </header>
 
-        {/* Tab Navigation */}
+        {/* Premium Tab Navigation */}
         {(activeTab === "features" || activeTab === "offramp") && (
-          <nav className="flex space-x-1 mb-4 bg-gray-900 p-1 rounded-lg border border-gray-700">
-            <button
-              onClick={() => setActiveTab("features")}
-              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                activeTab === "features"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-gray-300 hover:text-white"
-              }`}
-            >
-              Features
-            </button>
-            <button
-              onClick={() => setActiveTab("offramp")}
-              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                activeTab === "offramp"
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-gray-300 hover:text-white"
-              }`}
-            >
-              Off-Ramp
-            </button>
+          <nav className="relative mb-6">
+            <div className="relative rounded-2xl card-shadow-lg overflow-hidden">
+              {/* Premium background */}
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-black to-gray-800">
+                <div className="absolute inset-0 gradient-mesh opacity-30"></div>
+              </div>
+              
+              {/* Tab content */}
+              <div className="relative flex p-1.5 space-x-1">
+                <button
+                  onClick={() => setActiveTab("features")}
+                  className={`flex-1 px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
+                    activeTab === "features"
+                      ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
+                      : "text-gray-300 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <span>⚡</span>
+                    <span>Features</span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setActiveTab("offramp")}
+                  className={`flex-1 px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
+                    activeTab === "offramp"
+                      ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
+                      : "text-gray-300 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <span>💰</span>
+                    <span>Off-Ramp</span>
+                  </div>
+                </button>
+              </div>
+              
+              {/* Subtle border */}
+              <div className="absolute inset-0 rounded-2xl border border-white/10"></div>
+            </div>
           </nav>
         )}
 
@@ -176,15 +196,31 @@ export default function App() {
           {activeTab === "offramp" && <OffRampFlow />}
         </main>
 
-        <footer className="mt-2 pt-4 flex justify-center">
-          <Button
-            variant="ghost"
-            size="medium"
-            className="text-[var(--ock-text-foreground-muted)] text-xs"
-            onClick={openDocs}
-          >
-            Built on Base with MiniKit
-          </Button>
+        <footer className="mt-6 pt-4 flex justify-center">
+          <div className="relative rounded-xl card-shadow overflow-hidden">
+            {/* Premium footer background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800">
+              <div className="absolute inset-0 gradient-mesh opacity-20"></div>
+            </div>
+            
+            {/* Footer content */}
+            <button
+              onClick={openDocs}
+              className="relative flex items-center space-x-2 text-gray-400 hover:text-white text-xs p-3 transition-all duration-300"
+            >
+              <Image 
+                src="/Base_Network_Logo.svg" 
+                alt="Base Network" 
+                width={12}
+                height={12}
+                className="opacity-60"
+              />
+              <span>Built on Base with MiniKit</span>
+            </button>
+            
+            {/* Subtle border */}
+            <div className="absolute inset-0 rounded-xl border border-white/10"></div>
+          </div>
         </footer>
       </div>
     </div>

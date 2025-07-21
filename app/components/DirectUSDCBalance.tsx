@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { getNetworkConfig } from '@/lib/contracts'
 import { baseSepolia } from 'wagmi/chains'
+import Image from 'next/image'
 
 export function DirectUSDCBalance() {
   const { address, isConnected } = useAccount()
@@ -186,12 +187,13 @@ export function DirectUSDCBalance() {
             <div className="space-y-0.5">
               <p className="text-gray-400 text-[10px] font-medium tracking-[0.2em] uppercase">Network</p>
               <div className="flex items-center space-x-2">
-                <img 
+                <Image 
                   src="/Base_Network_Logo.svg" 
                   alt="Base Network" 
-                  className="w-4 h-4"
+                  width={16}
+                  height={16}
                 />
-                <p className="text-white text-sm font-semibold">{networkConfig.name}</p>
+              <p className="text-white text-sm font-semibold">{networkConfig.name}</p>
               </div>
             </div>
             

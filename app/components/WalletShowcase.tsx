@@ -15,6 +15,7 @@ import {
   WalletDropdownDisconnect 
 } from "@coinbase/onchainkit/wallet";
 import { base, baseSepolia } from "wagmi/chains";
+import Image from 'next/image';
 
 export function WalletShowcase() {
   const { address, isConnected, connector } = useAccount();
@@ -110,28 +111,30 @@ export function WalletShowcase() {
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <div className="flex items-center space-x-2">
-              <img 
+              <Image 
                 src="/Base_Network_Logo.svg" 
                 alt="Base Network" 
-                className="w-5 h-5"
+                width={20}
+                height={20}
               />
-              <div>
-                <div className="font-medium text-blue-900 dark:text-blue-100">Base Mainnet</div>
-                <div className="text-sm text-blue-700 dark:text-blue-300">Production network for live transactions</div>
+            <div>
+              <div className="font-medium text-blue-900 dark:text-blue-100">Base Mainnet</div>
+              <div className="text-sm text-blue-700 dark:text-blue-300">Production network for live transactions</div>
               </div>
             </div>
             <span className="text-blue-600 dark:text-blue-400">🟢</span>
           </div>
           <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
             <div className="flex items-center space-x-2">
-              <img 
+              <Image 
                 src="/Base_Network_Logo.svg" 
                 alt="Base Network" 
-                className="w-5 h-5"
+                width={20}
+                height={20}
               />
-              <div>
-                <div className="font-medium text-purple-900 dark:text-purple-100">Base Sepolia</div>
-                <div className="text-sm text-purple-700 dark:text-purple-300">Testnet for development and testing</div>
+            <div>
+              <div className="font-medium text-purple-900 dark:text-purple-100">Base Sepolia</div>
+              <div className="text-sm text-purple-700 dark:text-purple-300">Testnet for development and testing</div>
               </div>
             </div>
             <span className="text-purple-600 dark:text-purple-400">🟡</span>

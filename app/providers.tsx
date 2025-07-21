@@ -27,7 +27,6 @@ export function Providers(props: { children: ReactNode }) {
           termsUrl: 'https://base.org/terms',
           privacyUrl: 'https://base.org/privacy',
           supportedWallets: {
-            metamask: true,
             rabby: true,
             trust: true,
             frame: true,

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { getNetworkConfig, isTestnet, getExplorerLink } from '@/lib/contracts'
 import { base, baseSepolia } from 'wagmi/chains'
+import Image from 'next/image'
 
 export function NetworkTester() {
   const { address, isConnected } = useAccount()
@@ -111,10 +112,11 @@ export function NetworkTester() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <img 
+                  <Image 
                     src="/Base_Network_Logo.svg" 
                     alt="Base Network" 
-                    className="w-6 h-6"
+                    width={24}
+                    height={24}
                   />
                 </div>
                 <div>
@@ -145,10 +147,11 @@ export function NetworkTester() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <img 
+                  <Image 
                     src="/Base_Network_Logo.svg" 
                     alt="Base Network" 
-                    className="w-6 h-6"
+                    width={24}
+                    height={24}
                   />
                 </div>
                 <div>

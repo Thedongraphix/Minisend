@@ -17,12 +17,10 @@ interface WalletOption {
   onClick: () => void;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 declare global {
   interface Window {
-    ethereum?: {
-      isMetaMask?: boolean;
-      request: (args: { method: string; params?: any[] }) => Promise<any>;
-    };
+    ethereum?: any;
   }
 }
 
@@ -37,6 +35,7 @@ const isMetaMaskMobileApp = () => {
          isMobileDevice();
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handleMetaMaskConnection = (connect: any, connectors: any[], setShowModal: (show: boolean) => void) => {
   const metamaskConnector = connectors.find(c => c.name.toLowerCase().includes('metamask'));
   
@@ -48,10 +47,9 @@ const handleMetaMaskConnection = (connect: any, connectors: any[], setShowModal:
     // Direct MetaMask connection
     window.ethereum.request({ method: 'eth_requestAccounts' })
       .then(() => setShowModal(false))
-      .catch((error: any) => console.error('MetaMask connection failed:', error));
+      .catch((error: any) => console.error('MetaMask connection failed:', error)); // eslint-disable-line @typescript-eslint/no-explicit-any
   } else if (isMobileDevice()) {
     // Mobile: Open MetaMask app via deep link
-    const currentUrl = encodeURIComponent(window.location.href);
     const metamaskDeepLink = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}${window.location.search}`;
     
     // For iOS, we need to handle the deep link differently
@@ -95,7 +93,7 @@ export function WalletSelector() {
       id: "metamask",
       name: isClient && isMetaMaskMobileApp() ? "MetaMask (In-App)" : "MetaMask",
       icon: "🦊",
-      onClick: () => handleMetaMaskConnection(connect, connectors, setShowModal),
+      onClick: () => handleMetaMaskConnection(connect, connectors as any, setShowModal), // eslint-disable-line @typescript-eslint/no-explicit-any
     },
     {
       id: "coinbase",

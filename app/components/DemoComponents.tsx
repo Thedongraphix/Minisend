@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import Image from 'next/image';
 
 type ButtonProps = {
   children: ReactNode;
@@ -163,10 +164,11 @@ export function Features({ setActiveTab }: FeaturesProps) {
             </div>
             <div>
               <div className="flex items-center space-x-2 mb-1">
-                <img 
+                <Image 
                   src="/Base_Network_Logo.svg" 
                   alt="Base Network" 
-                  className="w-4 h-4"
+                  width={16}
+                  height={16}
                 />
                 <h4 className="text-white font-semibold">Base Network Ready</h4>
               </div>
@@ -194,10 +196,11 @@ export function Home({ setActiveTab }: HomeProps) {
       <Card title="Kenya USDC Off-Ramp">
         <div className="space-y-4">
           <div className="flex items-center justify-center space-x-2 mb-2">
-            <img 
+            <Image 
               src="/Base_Network_Logo.svg" 
               alt="Base Network" 
-              className="w-4 h-4"
+              width={16}
+              height={16}
             />
             <span className="text-blue-300 text-xs font-medium">Built on Base</span>
           </div>
