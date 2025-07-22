@@ -1,41 +1,50 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { WagmiProvider, createConfig, http } from 'wagmi';
 import { base, baseSepolia } from "wagmi/chains";
+import { coinbaseWallet } from 'wagmi/connectors';
 import { OnchainKitProvider } from "@coinbase/onchainkit";
 import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
 
-export function Providers(props: { children: ReactNode }) {
-  // Support both Base mainnet and testnet
-  // Default to mainnet unless explicitly set to use testnet
-  const useTestnet = process.env.NEXT_PUBLIC_USE_TESTNET === 'true'
-  const currentChain = useTestnet ? baseSepolia : base
+// Support both Base mainnet and testnet
+const useTestnet = process.env.NEXT_PUBLIC_USE_TESTNET === 'true'
+const currentChain = useTestnet ? baseSepolia : base
 
+// Create wagmi config following OnchainKit documentation
+const wagmiConfig = createConfig({
+  chains: [base, baseSepolia],
+  connectors: [
+    coinbaseWallet({
+      appName: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'Kenya USDC Off-Ramp',
+    }),
+  ],
+  ssr: true,
+  transports: {
+    [base.id]: http(),
+    [baseSepolia.id]: http(),
+  },
+});
+
+export function Providers(props: { children: ReactNode }) {
   return (
-    <OnchainKitProvider
-      apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
-      chain={currentChain}
-      config={{
-        appearance: {
-          name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'Kenya USDC Off-Ramp',
-          logo: process.env.NEXT_PUBLIC_ICON_URL,
-          mode: 'auto',
-          theme: 'default',
-        },
-        wallet: {
-          display: 'modal',
-          termsUrl: 'https://base.org/terms',
-          privacyUrl: 'https://base.org/privacy',
-          supportedWallets: {
-            coinbaseWallet: true,
-            metamask: true,
+    <WagmiProvider config={wagmiConfig}>
+      <OnchainKitProvider
+        apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
+        chain={currentChain}
+        config={{
+          appearance: {
+            name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'Kenya USDC Off-Ramp',
+            logo: process.env.NEXT_PUBLIC_ICON_URL,
+            mode: 'auto',
+            theme: 'default',
           },
-        },
-      }}
-    >
-      <MiniKitProvider chain={currentChain}>
-        {props.children}
-      </MiniKitProvider>
-    </OnchainKitProvider>
+        }}
+      >
+        <MiniKitProvider chain={currentChain}>
+          {props.children}
+        </MiniKitProvider>
+      </OnchainKitProvider>
+    </WagmiProvider>
   );
 }

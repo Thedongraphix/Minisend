@@ -3,7 +3,19 @@
 import { type ReactNode } from "react";
 import { useAccount } from "wagmi";
 import Image from 'next/image';
-import { WalletSelector } from "./WalletSelector";
+import {
+  ConnectWallet,
+  Wallet,
+  WalletDropdown,
+  WalletDropdownDisconnect,
+} from '@coinbase/onchainkit/wallet';
+import {
+  Address,
+  Avatar,
+  Name,
+  Identity,
+  EthBalance,
+} from '@coinbase/onchainkit/identity';
 
 type ButtonProps = {
   children: ReactNode;
@@ -240,16 +252,29 @@ export function Home({ setActiveTab }: HomeProps) {
           {/* Wallet Connection Area */}
           <div className="space-y-3">
             <div className="text-center">
-              {!isConnected ? (
-                <>
-                  <div className="text-gray-400 text-sm mb-3">Connect your wallet to get started</div>
-                  <div className="flex justify-center">
-                    <WalletSelector />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-green-400 text-sm mb-3">✅ Wallet Connected!</div>
+              <div className="text-gray-400 text-sm mb-3">Connect your wallet to get started</div>
+              <div className="flex justify-center">
+                <Wallet>
+                  <ConnectWallet 
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                    disconnectedLabel="Connect Wallet"
+                  >
+                    <Avatar className="h-5 w-5" />
+                    <Name />
+                  </ConnectWallet>
+                  <WalletDropdown>
+                    <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                      <Avatar />
+                      <Name />
+                      <Address />
+                      <EthBalance />
+                    </Identity>
+                    <WalletDropdownDisconnect />
+                  </WalletDropdown>
+                </Wallet>
+              </div>
+              {isConnected && (
+                <div className="mt-4">
                   <Button
                     onClick={() => setActiveTab("offramp")}
                     iconName="arrow-right"
@@ -258,7 +283,7 @@ export function Home({ setActiveTab }: HomeProps) {
                   >
                     Start Off-Ramp
                   </Button>
-                </>
+                </div>
               )}
             </div>
           </div>
