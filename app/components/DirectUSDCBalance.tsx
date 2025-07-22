@@ -68,7 +68,7 @@ export function DirectUSDCBalance() {
     } finally {
       setIsLoading(false)
     }
-  }, [address, chainId])
+  }, [address, chainId, usdcContract])
   
   useEffect(() => {
     fetchBalance()

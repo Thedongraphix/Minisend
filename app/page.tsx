@@ -4,28 +4,15 @@ import {
   useMiniKit,
   useAddFrame,
 } from "@coinbase/onchainkit/minikit";
-import {
-  Name,
-  Identity,
-  Address,
-  Avatar,
-  EthBalance,
-} from "@coinbase/onchainkit/identity";
-import {
-  ConnectWallet,
-  Wallet,
-  WalletDropdown,
-  WalletDropdownDisconnect,
-} from "@coinbase/onchainkit/wallet";
+// Wallet components removed - now handled in Home component
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "./components/DemoComponents";
 import { Icon } from "./components/DemoComponents";
 import { Home } from "./components/DemoComponents";
 import { Features } from "./components/DemoComponents";
 import { OffRampFlow } from "./components/OffRampFlow";
-import { WalletSelector } from "./components/WalletSelector";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
-import { useAppActions, getClientInfo } from "@/lib/sdk-actions";
+import { getClientInfo } from "@/lib/sdk-actions";
 import Image from 'next/image';
 import "./theme.css";
 
@@ -35,7 +22,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
 
   const addFrame = useAddFrame();
-  const { shareApp, openDocs } = useAppActions();
 
   useEffect(() => {
     if (!isFrameReady) {
