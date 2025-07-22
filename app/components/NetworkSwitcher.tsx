@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useChainId, useSwitchChain } from 'wagmi'
-import { base, baseSepolia } from 'wagmi/chains'
+import { base } from 'wagmi/chains'
 
 export function NetworkSwitcher() {
   const chainId = useChainId()
@@ -15,12 +15,6 @@ export function NetworkSwitcher() {
       name: 'Base Mainnet',
       icon: '🟢',
       description: 'Real USDC transactions'
-    },
-    {
-      id: baseSepolia.id,
-      name: 'Base Sepolia',
-      icon: '🔵',
-      description: 'Test network'
     }
   ]
 

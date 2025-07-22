@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useAccount, useChainId, useSwitchChain } from 'wagmi'
 import { getNetworkConfig, isTestnet, getExplorerLink } from '@/lib/contracts'
-import { base, baseSepolia } from 'wagmi/chains'
+import { base } from 'wagmi/chains'
 import Image from 'next/image'
 
 export function NetworkTester() {
@@ -136,10 +136,10 @@ export function NetworkTester() {
 
           {/* Base Sepolia */}
           <button
-            onClick={() => handleSwitchNetwork(baseSepolia.id)}
-            disabled={chainId === baseSepolia.id}
+            onClick={() => handleSwitchNetwork(base.id)}
+            disabled={chainId === base.id}
             className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-              chainId === baseSepolia.id
+              chainId === base.id
                 ? 'border-orange-300 bg-orange-50 cursor-not-allowed'
                 : 'border-gray-200 bg-gray-50 hover:border-orange-300 hover:bg-orange-50'
             }`}
@@ -159,7 +159,7 @@ export function NetworkTester() {
                   <p className="text-sm text-gray-600">Testnet for development</p>
                 </div>
               </div>
-              {chainId === baseSepolia.id && (
+              {chainId === base.id && (
                 <div className="text-orange-600">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

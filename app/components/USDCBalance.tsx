@@ -2,7 +2,7 @@
 
 import { useAccount, useBalance, useChainId } from 'wagmi'
 import { getUSDCContract, getNetworkConfig, isTestnet } from '@/lib/contracts'
-import { baseSepolia } from 'wagmi/chains'
+import { base } from 'wagmi/chains'
 import Image from 'next/image'
 
 export function USDCBalance() {
@@ -13,55 +13,24 @@ export function USDCBalance() {
   const usdcContract = getUSDCContract(chainId)
   const networkConfig = getNetworkConfig(chainId)
   
-  // Alternative USDC contracts on Base Sepolia for testing
-  const alternativeUSDC = '0x8a04d904055528a69f3e4594dda308a31aeb8457'
-  const currentUSDC = usdcContract
-  
   // Debug logging
   console.log('USDCBalance Debug:', {
     address,
     isConnected,
     chainId,
     usdcContract,
-    alternativeUSDC,
     networkName: networkConfig.name
   })
   
-  // Try primary USDC contract
-  const { data: balance1, isLoading: loading1, error: error1, refetch: refetch1 } = useBalance({
+  // Get USDC balance from Base mainnet
+  const { data: balance, isLoading, error, refetch } = useBalance({
     address,
-    token: currentUSDC as `0x${string}`,
+    token: usdcContract as `0x${string}`,
     chainId,
     query: {
-      enabled: !!address && !!currentUSDC,
+      enabled: !!address && chainId === base.id,
     },
   })
-  
-  // Try alternative USDC contract if on Base Sepolia
-  const { data: balance2, isLoading: loading2, error: error2, refetch: refetch2 } = useBalance({
-    address,
-    token: alternativeUSDC as `0x${string}`,
-    chainId,
-    query: {
-      enabled: !!address && chainId === baseSepolia.id,
-    },
-  })
-
-  // Debug both balances
-  console.log('Balance Data:', { 
-    primary: { balance: balance1, loading: loading1, error: error1 },
-    alternative: { balance: balance2, loading: loading2, error: error2 }
-  })
-  
-  // Use whichever balance is non-zero or primary as fallback
-  const hasBalance1 = balance1 && parseFloat(balance1.formatted) > 0
-  const hasBalance2 = balance2 && parseFloat(balance2.formatted) > 0
-  
-  const balance = hasBalance1 ? balance1 : hasBalance2 ? balance2 : balance1
-  const isLoading = loading1 || loading2
-  const error = error1 && error2 ? 'Both contracts failed' : null
-  const refetch = hasBalance2 ? refetch2 : refetch1
-  const actualContract = hasBalance2 ? alternativeUSDC : currentUSDC
 
   if (isLoading) {
     return (
@@ -112,13 +81,8 @@ export function USDCBalance() {
             </div>
             {/* Show contract address for debugging */}
             <p className="text-xs text-gray-500 font-mono">
-              Contract: {actualContract.slice(0, 6)}...{actualContract.slice(-4)}
+              Contract: {usdcContract.slice(0, 6)}...{usdcContract.slice(-4)}
             </p>
-            {hasBalance2 && (
-              <p className="text-xs text-green-600">
-                ✓ Using alternative USDC contract
-              </p>
-            )}
           </div>
         </div>
         

@@ -14,16 +14,14 @@ import {
   WalletDropdown,
   WalletDropdownDisconnect 
 } from "@coinbase/onchainkit/wallet";
-import { base, baseSepolia } from "wagmi/chains";
+import { base } from "wagmi/chains";
 import Image from 'next/image';
 
 export function WalletShowcase() {
   const { address, isConnected, connector } = useAccount();
   const chainId = useChainId();
 
-  const currentChain = chainId === base.id ? 'Base Mainnet' : 
-                     chainId === baseSepolia.id ? 'Base Sepolia' : 
-                     'Unknown Network';
+  const currentChain = chainId === base.id ? 'Base Mainnet' : 'Unknown Network';
 
   const supportedWallets = [
     { name: 'Coinbase Wallet', icon: '🔵', description: 'Smart wallet & EOA support' },

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { getNetworkConfig, getUSDCContract } from '@/lib/contracts'
-import { base, baseSepolia } from 'wagmi/chains'
+import { base } from 'wagmi/chains'
 import Image from 'next/image'
 
 export function DirectUSDCBalance() {
@@ -17,16 +17,14 @@ export function DirectUSDCBalance() {
   const usdcContract = getUSDCContract(chainId)
   
   const fetchBalance = useCallback(async () => {
-    if (!address || (chainId !== base.id && chainId !== baseSepolia.id)) return
+    if (!address || chainId !== base.id) return
     
     setIsLoading(true)
     setError('')
     
     try {
-      // Use appropriate RPC endpoint based on network
-      const rpcUrl = chainId === base.id 
-        ? 'https://mainnet.base.org'
-        : 'https://sepolia.base.org'
+      // Use Base mainnet RPC endpoint
+      const rpcUrl = 'https://mainnet.base.org'
       
       // ERC-20 balanceOf function call
       const data = `0x70a08231000000000000000000000000${address.slice(2)}`
@@ -90,7 +88,7 @@ export function DirectUSDCBalance() {
     )
   }
 
-  if (chainId !== baseSepolia.id) {
+  if (chainId !== base.id) {
     return (
       <div className="bg-gradient-to-br from-orange-900 to-red-900 border border-orange-700 p-8 rounded-2xl shadow-2xl">
         <div className="text-center">
@@ -100,19 +98,19 @@ export function DirectUSDCBalance() {
             </svg>
           </div>
           <h3 className="text-xl font-semibold text-white mb-2">Wrong Network</h3>
-          <p className="text-orange-200 mb-4">Please switch to Base Sepolia network</p>
+          <p className="text-orange-200 mb-4">Please switch to Base mainnet</p>
           <button
             onClick={() => {
               if (window.ethereum) {
                 window.ethereum.request({
                   method: 'wallet_switchEthereumChain',
-                  params: [{ chainId: '0x14a34' }],
+                  params: [{ chainId: '0x2105' }],
                 });
               }
             }}
             className="px-6 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition-colors"
           >
-            Switch to Base Sepolia
+            Switch to Base
           </button>
         </div>
       </div>

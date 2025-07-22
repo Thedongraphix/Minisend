@@ -2,7 +2,7 @@
 
 import { useAccount, useChainId, useReadContract } from 'wagmi'
 import { getNetworkConfig, isTestnet } from '@/lib/contracts'
-import { baseSepolia } from 'wagmi/chains'
+import { base } from 'wagmi/chains'
 import Image from 'next/image'
 
 const USDC_ABI = [
@@ -27,16 +27,16 @@ export function USDCBalanceSimple() {
   const chainId = useChainId()
   
   const networkConfig = getNetworkConfig(chainId)
-  const usdcContract = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+  const usdcContract = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
   
   const { data: balance, isLoading: balanceLoading, refetch } = useReadContract({
     address: usdcContract as `0x${string}`,
     abi: USDC_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
-    chainId: baseSepolia.id,
+    chainId: base.id,
     query: {
-      enabled: !!address && chainId === baseSepolia.id,
+      enabled: !!address && chainId === base.id,
     },
   })
 
@@ -44,7 +44,7 @@ export function USDCBalanceSimple() {
     address: usdcContract as `0x${string}`,
     abi: USDC_ABI,
     functionName: 'decimals',
-    chainId: baseSepolia.id,
+    chainId: base.id,
   })
 
   const formatBalance = (balance: bigint | undefined, decimals: number = 6): string => {
@@ -64,10 +64,10 @@ export function USDCBalanceSimple() {
     )
   }
 
-  if (chainId !== baseSepolia.id) {
+  if (chainId !== base.id) {
     return (
       <div className="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-2xl shadow-lg border border-orange-100">
-        <p className="text-orange-800">Please switch to Base Sepolia network</p>
+        <p className="text-orange-800">Please switch to Base mainnet</p>
       </div>
     )
   }
