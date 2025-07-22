@@ -126,34 +126,29 @@ export function WalletSelector() {
       <div className="relative">
         <button
           onClick={() => setShowModal(!showModal)}
-          className="flex items-center space-x-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2.5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] shadow-lg backdrop-blur-sm border border-blue-500/20"
+          className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm"
         >
-          <Avatar className="h-6 w-6 rounded-lg" address={address} />
-          <Name address={address} className="text-inherit font-semibold tracking-tight" />
+          <Avatar className="h-4 w-4" address={address} />
+          <Name address={address} className="text-inherit" />
         </button>
         
         {showModal && (
-          <div className="absolute right-0 top-full mt-3 glass-effect rounded-2xl card-shadow p-6 min-w-[320px] z-50 border border-white/10">
-            <div className="relative">
-              <div className="absolute inset-0 gradient-mesh opacity-20 rounded-2xl"></div>
-              <div className="relative">
-                <Identity address={address} className="mb-6" hasCopyAddressOnClick>
-                  <Avatar address={address} className="rounded-xl shadow-lg" />
-                  <Name address={address} className="text-white font-bold text-lg" />
-                  <Address address={address} className="text-gray-300 font-mono text-sm" />
-                  <EthBalance address={address} className="text-blue-400 font-semibold" />
-                </Identity>
-                <button
-                  onClick={() => {
-                    disconnect();
-                    setShowModal(false);
-                  }}
-                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
-                >
-                  Disconnect Wallet
-                </button>
-              </div>
-            </div>
+          <div className="absolute right-0 top-full mt-2 bg-gray-900 border border-gray-700 rounded-lg p-4 min-w-[280px] z-50">
+            <Identity address={address} className="mb-4" hasCopyAddressOnClick>
+              <Avatar address={address} />
+              <Name address={address} className="text-white font-semibold" />
+              <Address address={address} className="text-gray-300 text-sm" />
+              <EthBalance address={address} className="text-blue-400" />
+            </Identity>
+            <button
+              onClick={() => {
+                disconnect();
+                setShowModal(false);
+              }}
+              className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Disconnect
+            </button>
           </div>
         )}
       </div>
@@ -164,7 +159,7 @@ export function WalletSelector() {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-lg backdrop-blur-sm border border-blue-500/20 tracking-tight"
+        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors"
         disabled={isPending}
       >
         {isPending ? "Connecting..." : "Connect Wallet"}

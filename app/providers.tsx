@@ -6,9 +6,9 @@ import { OnchainKitProvider } from "@coinbase/onchainkit";
 import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
 
 export function Providers(props: { children: ReactNode }) {
-  // Determine which chain to use based on environment or a flag
-  const isDevelopment = process.env.NODE_ENV === 'development'
-  const useTestnet = process.env.NEXT_PUBLIC_USE_TESTNET === 'true' || isDevelopment
+  // Support both Base mainnet and testnet
+  // Default to mainnet unless explicitly set to use testnet
+  const useTestnet = process.env.NEXT_PUBLIC_USE_TESTNET === 'true'
   const currentChain = useTestnet ? baseSepolia : base
 
   return (
@@ -27,9 +27,8 @@ export function Providers(props: { children: ReactNode }) {
           termsUrl: 'https://base.org/terms',
           privacyUrl: 'https://base.org/privacy',
           supportedWallets: {
-            rabby: true,
-            trust: true,
-            frame: true,
+            coinbaseWallet: true,
+            metamask: true,
           },
         },
       }}

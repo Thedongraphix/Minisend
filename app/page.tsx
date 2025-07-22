@@ -104,88 +104,42 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme">
-      <div className="w-full max-w-md mx-auto px-4 py-3">
-        <header className="flex justify-between items-center mb-3 h-11">
-          <div>
-            <div className="flex items-center space-x-2">
-              {/* Show MiniKit wallet if in frame context, otherwise show custom wallet selector */}
-              {context ? (
-                <Wallet className="z-10">
-                  <ConnectWallet>
-                    <Avatar className="h-6 w-6" />
-                    <Name className="text-inherit" />
-                  </ConnectWallet>
-                  <WalletDropdown>
-                    <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                      <Avatar />
-                      <Name />
-                      <Address />
-                      <EthBalance />
-                    </Identity>
-                    <WalletDropdownDisconnect />
-                  </WalletDropdown>
-                </Wallet>
-              ) : (
-                <WalletSelector />
-              )}
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            {/* Share button */}
-            <Button
-              variant="ghost"
-              size="medium"
-              onClick={shareApp}
-              className="text-[var(--app-accent)] p-2"
-              iconName="sparkles"
-            >
-              Share
-            </Button>
+      {/* Main heading outside container */}
+      <div className="w-full text-center py-6">
+        <h1 className="text-2xl font-bold text-white">Kenya USDC Off-Ramp</h1>
+      </div>
+      
+      <div className="w-full max-w-md mx-auto px-4 pb-6">
+        {saveFrameButton && (
+          <div className="flex justify-end mb-4">
             {saveFrameButton}
           </div>
-        </header>
+        )}
 
-        {/* Premium Tab Navigation */}
+        {/* Tab Navigation */}
         {(activeTab === "features" || activeTab === "offramp") && (
-          <nav className="relative mb-6">
-            <div className="relative rounded-2xl card-shadow-lg overflow-hidden">
-              {/* Premium background */}
-              <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-black to-gray-800">
-                <div className="absolute inset-0 gradient-mesh opacity-30"></div>
-              </div>
-              
-              {/* Tab content */}
-              <div className="relative flex p-1.5 space-x-1">
-                <button
-                  onClick={() => setActiveTab("features")}
-                  className={`flex-1 px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
-                    activeTab === "features"
-                      ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
-                      : "text-gray-300 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  <div className="flex items-center justify-center space-x-2">
-                    <span>⚡</span>
-                    <span>Features</span>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveTab("offramp")}
-                  className={`flex-1 px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
-                    activeTab === "offramp"
-                      ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg"
-                      : "text-gray-300 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  <div className="flex items-center justify-center space-x-2">
-                    <span>💰</span>
-                    <span>Off-Ramp</span>
-                  </div>
-                </button>
-              </div>
-              
-              {/* Subtle border */}
-              <div className="absolute inset-0 rounded-2xl border border-white/10"></div>
+          <nav className="mb-8">
+            <div className="flex bg-gray-900 rounded-lg p-1 space-x-1">
+              <button
+                onClick={() => setActiveTab("features")}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === "features"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800"
+                }`}
+              >
+                Features
+              </button>
+              <button
+                onClick={() => setActiveTab("offramp")}
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === "offramp"
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800"
+                }`}
+              >
+                Off-Ramp
+              </button>
             </div>
           </nav>
         )}
@@ -196,32 +150,19 @@ export default function App() {
           {activeTab === "offramp" && <OffRampFlow />}
         </main>
 
-        <footer className="mt-6 pt-4 flex justify-center">
-          <div className="relative rounded-xl card-shadow overflow-hidden">
-            {/* Premium footer background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800">
-              <div className="absolute inset-0 gradient-mesh opacity-20"></div>
-            </div>
-            
-            {/* Footer content */}
-            <button
-              onClick={openDocs}
-              className="relative flex items-center space-x-2 text-gray-400 hover:text-white text-xs p-3 transition-all duration-300"
-            >
-              <Image 
-                src="/Base_Network_Logo.svg" 
-                alt="Base Network" 
-                width={12}
-                height={12}
-                className="opacity-60"
-              />
-              <span>Built on Base with MiniKit</span>
-            </button>
-            
-            {/* Subtle border */}
-            <div className="absolute inset-0 rounded-xl border border-white/10"></div>
-          </div>
-        </footer>
+      </div>
+      
+      {/* Footer outside container */}
+      <div className="w-full text-center px-4 py-4">
+        <div className="flex items-center justify-center space-x-2">
+          <Image 
+            src="/Base_Network_Logo.svg" 
+            alt="Base Network" 
+            width={16}
+            height={16}
+          />
+          <span className="text-sm text-gray-400">Built on Base with MiniKit</span>
+        </div>
       </div>
     </div>
   );

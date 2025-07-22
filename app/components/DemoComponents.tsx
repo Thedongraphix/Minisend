@@ -1,7 +1,9 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { useAccount } from "wagmi";
 import Image from 'next/image';
+import { WalletSelector } from "./WalletSelector";
 
 type ButtonProps = {
   children: ReactNode;
@@ -191,9 +193,11 @@ type HomeProps = {
 };
 
 export function Home({ setActiveTab }: HomeProps) {
+  const { isConnected } = useAccount();
+  
   return (
     <div className="space-y-6 animate-fade-in">
-      <Card title="Kenya USDC Off-Ramp">
+      <Card>
         <div className="space-y-4">
           <div className="flex items-center justify-center space-x-2 mb-2">
             <Image 
@@ -233,14 +237,31 @@ export function Home({ setActiveTab }: HomeProps) {
             </div>
           </div>
           
-          <Button
-            onClick={() => setActiveTab("offramp")}
-            iconName="arrow-right"
-            fullWidth
-            size="medium"
-          >
-            Convert USDC to M-Pesa
-          </Button>
+          {/* Wallet Connection Area */}
+          <div className="space-y-3">
+            <div className="text-center">
+              {!isConnected ? (
+                <>
+                  <div className="text-gray-400 text-sm mb-3">Connect your wallet to get started</div>
+                  <div className="flex justify-center">
+                    <WalletSelector />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-green-400 text-sm mb-3">✅ Wallet Connected!</div>
+                  <Button
+                    onClick={() => setActiveTab("offramp")}
+                    iconName="arrow-right"
+                    fullWidth
+                    size="medium"
+                  >
+                    Start Off-Ramp
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
           
           <Button
             onClick={() => setActiveTab("features")}

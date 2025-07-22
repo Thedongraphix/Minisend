@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAccount, useChainId } from 'wagmi'
-import { getNetworkConfig } from '@/lib/contracts'
-import { baseSepolia } from 'wagmi/chains'
+import { getNetworkConfig, getUSDCContract } from '@/lib/contracts'
+import { base, baseSepolia } from 'wagmi/chains'
 import Image from 'next/image'
 
 export function DirectUSDCBalance() {
@@ -14,17 +14,19 @@ export function DirectUSDCBalance() {
   const [error, setError] = useState<string>('')
   
   const networkConfig = getNetworkConfig(chainId)
-  const usdcContract = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
+  const usdcContract = getUSDCContract(chainId)
   
   const fetchBalance = useCallback(async () => {
-    if (!address || chainId !== baseSepolia.id) return
+    if (!address || (chainId !== base.id && chainId !== baseSepolia.id)) return
     
     setIsLoading(true)
     setError('')
     
     try {
-      // Use public Base Sepolia RPC endpoint
-      const rpcUrl = 'https://sepolia.base.org'
+      // Use appropriate RPC endpoint based on network
+      const rpcUrl = chainId === base.id 
+        ? 'https://mainnet.base.org'
+        : 'https://sepolia.base.org'
       
       // ERC-20 balanceOf function call
       const data = `0x70a08231000000000000000000000000${address.slice(2)}`
