@@ -6,22 +6,30 @@ import Image from 'next/image'
 interface ConversionCalculatorProps {
   usdcAmount: number;
   onKshChange: (amount: number) => void;
+  provider?: 'paycrest';
+  onRateChange?: (rate: number) => void;
 }
 
-export function ConversionCalculator({ usdcAmount, onKshChange }: ConversionCalculatorProps) {
+export function ConversionCalculator({ usdcAmount, onKshChange, provider = 'paycrest', onRateChange }: ConversionCalculatorProps) {
   const [exchangeRate] = useState(129.2) // Current USDC to KSH rate
   const [fees, setFees] = useState(0)
   const [isLoadingRate, setIsLoadingRate] = useState(false)
 
   useEffect(() => {
-    // Calculate fees based on amount (2-4% for M-Pesa)
-    const feePercentage = usdcAmount > 100 ? 0.02 : 0.04
-    const calculatedFees = usdcAmount * exchangeRate * feePercentage
-    setFees(calculatedFees)
+    // Calculate fees based on provider and amount
+    const feePercentage = 0.01; // 1% fee for PayCrest
+    const calculatedFees = usdcAmount * exchangeRate * feePercentage;
     
-    const kshAmount = Math.max(0, (usdcAmount * exchangeRate) - calculatedFees)
-    onKshChange(kshAmount)
-  }, [usdcAmount, exchangeRate, onKshChange])
+    setFees(calculatedFees);
+    
+    const kshAmount = Math.max(0, (usdcAmount * exchangeRate) - calculatedFees);
+    onKshChange(kshAmount);
+    
+    // Notify parent component of current rate
+    if (onRateChange) {
+      onRateChange(exchangeRate);
+    }
+  }, [usdcAmount, exchangeRate, provider, onKshChange, onRateChange])
 
   // Function to fetch live exchange rate (placeholder)
   const refreshExchangeRate = async () => {
@@ -87,9 +95,17 @@ export function ConversionCalculator({ usdcAmount, onKshChange }: ConversionCalc
             <div className="text-4xl font-bold text-white mb-4 tracking-tight">
               KSH {kshAmount.toFixed(2)}
             </div>
-            <div className="inline-flex items-center space-x-2 bg-green-500/20 px-3 py-1.5 rounded-full border border-green-400/30">
-              <span className="text-sm">🇰🇪</span>
-              <span className="text-green-300 text-xs font-medium">Direct to M-Pesa</span>
+            <div className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full border ${
+              provider === 'paycrest' 
+                ? 'bg-blue-500/20 border-blue-400/30' 
+                : 'bg-green-500/20 border-green-400/30'
+            }`}>
+              <span className="text-sm">{provider === 'paycrest' ? '⚡' : '🇰🇪'}</span>
+              <span className={`text-xs font-medium ${
+                provider === 'paycrest' ? 'text-blue-300' : 'text-green-300'
+              }`}>
+                {provider === 'paycrest' ? 'Via PayCrest' : 'Direct to M-Pesa'}
+              </span>
           </div>
         </div>
         
@@ -108,21 +124,32 @@ export function ConversionCalculator({ usdcAmount, onKshChange }: ConversionCalc
             </div>
           </div>
           
-          {/* Fee Tier Indicator */}
+          {/* Provider-specific Fee Information */}
           {usdcAmount > 0 && (
             <div className={`p-4 rounded-xl border transition-all duration-300 ${
-              usdcAmount > 100 
-                ? 'bg-green-500/10 border-green-400/30' 
-                : 'bg-orange-500/10 border-orange-400/30'
+              provider === 'paycrest'
+                ? 'bg-blue-500/10 border-blue-400/30'
+                : usdcAmount > 100 
+                  ? 'bg-green-500/10 border-green-400/30' 
+                  : 'bg-orange-500/10 border-orange-400/30'
             }`}>
               <div className="flex items-center space-x-3">
                 <div className={`w-2 h-2 rounded-full ${
-                  usdcAmount > 100 ? 'bg-green-400' : 'bg-orange-400'
+                  provider === 'paycrest' 
+                    ? 'bg-blue-400'
+                    : usdcAmount > 100 ? 'bg-green-400' : 'bg-orange-400'
                 }`}></div>
                 <span className={`text-sm font-medium ${
-                  usdcAmount > 100 ? 'text-green-300' : 'text-orange-300'
+                  provider === 'paycrest'
+                    ? 'text-blue-300'
+                    : usdcAmount > 100 ? 'text-green-300' : 'text-orange-300'
                 }`}>
-                  {usdcAmount > 100 ? 'Premium Rate Active' : '$100+ for Premium Rate'}
+                  {provider === 'paycrest' 
+                    ? 'Lower fees • Manual payment required'
+                    : usdcAmount > 100 
+                      ? 'Premium Rate Active • Automatic'
+                      : '$100+ for Premium Rate • Automatic'
+                  }
               </span>
             </div>
           </div>

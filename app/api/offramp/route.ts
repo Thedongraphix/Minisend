@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPublicClient, http } from 'viem'
 import { base, baseSepolia } from 'viem/chains'
-import { sendB2CPayment } from '@/lib/mpesa/b2c'
+// PayCrest integration - no more mpesa imports
 import { getUSDCContract, getNetworkConfig } from '@/lib/contracts'
 
 // Create Viem clients for both networks
@@ -18,8 +18,10 @@ interface OffRampRequest {
   usdcAmount: number
   kshAmount: number
   phoneNumber: string
-  provider?: 'mpesa'
+  provider?: 'paycrest'
   chainId?: number
+  accountName?: string // Required for PayCrest
+  rate?: number // Required for PayCrest
 }
 
 interface TransactionLogData {
@@ -44,7 +46,8 @@ export async function POST(request: NextRequest) {
       usdcAmount, 
       kshAmount, 
       phoneNumber, 
-  
+      provider = 'paycrest',
+      accountName,
       chainId = base.id 
     } = body
 
@@ -52,6 +55,14 @@ export async function POST(request: NextRequest) {
     if (!walletAddress || !usdcAmount || !kshAmount || !phoneNumber) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    // Validation for PayCrest (now our only provider)
+    if (!accountName) {
+      return NextResponse.json(
+        { error: 'Account name is required' },
         { status: 400 }
       )
     }
@@ -85,12 +96,13 @@ export async function POST(request: NextRequest) {
     // 2. Generate transaction ID for tracking
     const transactionId = generateTransactionId()
 
-    // 3. Process M-Pesa off-ramp
-    const result = await processMPesaOffRamp({
+    // 3. Process PayCrest off-ramp 
+    const result = await processPaycrestOffRamp({
       walletAddress,
       usdcAmount,
       kshAmount,
       phoneNumber,
+      accountName: accountName!,
       transactionId,
       chainId
     })
@@ -102,17 +114,16 @@ export async function POST(request: NextRequest) {
       usdcAmount,
       kshAmount,
       phoneNumber,
-      provider: 'mpesa',
+      provider,
       chainId,
-      status: 'initiated',
-      timestamp: new Date(),
-      ...result
+      status: result.status || 'initiated',
+      timestamp: new Date()
     })
 
     return NextResponse.json({
       success: true,
       transactionId,
-      provider: 'mpesa',
+      provider,
       chainId,
       networkName: getNetworkConfig(chainId).name,
       ...result
@@ -157,47 +168,6 @@ async function checkUSDCBalance(address: string, chainId: number): Promise<numbe
   }
 }
 
-// Process M-Pesa off-ramp (B2C payment to user)
-async function processMPesaOffRamp(params: {
-  walletAddress: string
-  usdcAmount: number
-  kshAmount: number
-  phoneNumber: string
-  transactionId: string
-  chainId: number
-}) {
-  try {
-    console.log(`🚀 Sending KSH ${params.kshAmount} to ${params.phoneNumber} via M-Pesa B2C`)
-    
-    // Calculate net amount after processing fee
-    const processingFee = params.kshAmount * 0.02 // 2% fee
-    const netAmount = params.kshAmount - processingFee
-    
-    // Send B2C payment (money TO user, not FROM user)
-    const b2cResult = await sendB2CPayment({
-      phoneNumber: params.phoneNumber,
-      amount: netAmount,
-      reference: params.transactionId,
-      description: `USDC Off-ramp: $${params.usdcAmount} → KSH ${netAmount.toFixed(2)}`
-    })
-
-    if (b2cResult.success) {
-      return {
-        conversationID: b2cResult.conversationId,
-        originatorConversationID: b2cResult.originatorConversationId,
-        mpesaReference: b2cResult.conversationId,
-        message: `KSH ${netAmount.toFixed(2)} sent to ${params.phoneNumber}`,
-        customerMessage: `You will receive KSH ${netAmount.toFixed(2)} in your M-Pesa wallet shortly. No PIN required.`,
-        netAmount: netAmount.toFixed(2),
-        processingFee: processingFee.toFixed(2)
-      }
-    } else {
-      throw new Error(b2cResult.error || 'B2C payment failed')
-    }
-  } catch (error) {
-    throw new Error(`M-Pesa B2C payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
-  }
-}
 
 // Generate unique transaction ID
 function generateTransactionId(): string {
@@ -252,4 +222,56 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}
+
+// Process PayCrest off-ramp
+async function processPaycrestOffRamp(params: {
+  walletAddress: string
+  usdcAmount: number
+  kshAmount: number
+  phoneNumber: string
+  accountName: string
+  transactionId: string
+  chainId: number
+}) {
+  try {
+    console.log(`🚀 Creating PayCrest order: $${params.usdcAmount} USDC → KSH ${params.kshAmount} for ${params.phoneNumber}`)
+    
+    // Create PayCrest order via API call to our endpoint
+    const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/paycrest/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: params.usdcAmount.toString(),
+        phoneNumber: params.phoneNumber,
+        accountName: params.accountName,
+        returnAddress: params.walletAddress,
+        provider: 'MPESA',
+        reference: params.transactionId
+      }),
+    })
+
+    if (!orderResponse.ok) {
+      const errorData = await orderResponse.json()
+      throw new Error(errorData.error || 'Failed to create PayCrest order')
+    }
+
+    const { order } = await orderResponse.json()
+
+    return {
+      orderId: order.id,
+      receiveAddress: order.receiveAddress,
+      validUntil: order.validUntil,
+      senderFee: order.senderFee,
+      transactionFee: order.transactionFee,
+      totalAmount: order.totalAmount,
+      status: order.status,
+      message: `PayCrest order created successfully. Send ${order.totalAmount} USDC to the address below.`,
+      recipient: order.recipient
+    }
+  } catch (error) {
+    throw new Error(`PayCrest order creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
+}

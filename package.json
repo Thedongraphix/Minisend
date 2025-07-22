@@ -2,10 +2,10 @@
   "name": "minisend",
   "version": "1.0.0",
   "private": true,
-  "description": "Convert USDC to Kenyan Shillings seamlessly via M-Pesa. The easiest way to cash out your crypto in Kenya.",
+  "description": "Convert USDC to Kenyan Shillings seamlessly via PayCrest. The easiest way to cash out your crypto in Kenya.",
   "keywords": [
     "usdc",
-    "mpesa",
+    "paycrest",
     "kenya",
     "crypto",
     "farcaster",

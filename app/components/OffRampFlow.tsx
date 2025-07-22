@@ -3,17 +3,16 @@
 import { useState } from 'react'
 import { DirectUSDCBalance } from './DirectUSDCBalance'
 import { ConversionCalculator } from './ConversionCalculator'
-import { MPesaForm } from './MPesaForm'
+import { PaycrestForm } from './PaycrestForm'
 import { useAccount, useChainId } from 'wagmi'
 import { getNetworkConfig, isTestnet } from '@/lib/contracts'
 import Image from 'next/image'
 
 interface TransactionResult {
-  checkoutRequestID?: string;
-  merchantRequestID?: string;
-  mpesaReference: string;
+  orderId: string;
+  receiveAddress: string;
   message: string;
-  customerMessage?: string;
+  status: string;
 }
 
 export function OffRampFlow() {
@@ -21,29 +20,28 @@ export function OffRampFlow() {
   const chainId = useChainId()
   const [usdcAmount, setUsdcAmount] = useState(0)
   const [kshAmount, setKshAmount] = useState(0)
-  const [step, setStep] = useState(1) // 1: Amount, 2: M-Pesa, 3: Processing, 4: Success
+  const [step, setStep] = useState(1) // 1: Amount, 2: Paycrest, 3: Processing, 4: Success
   const [transactionResult, setTransactionResult] = useState<TransactionResult | null>(null)
   const [error, setError] = useState('')
 
   const networkConfig = getNetworkConfig(chainId)
   const isTestnetNetwork = isTestnet(chainId)
 
-  const handleMPesaSubmit = async (mpesaData: { phoneNumber: string; amount: number }) => {
+  const handlePaycrestSubmit = async (paycrestData: { phoneNumber: string; accountName: string; amount: number }) => {
     setStep(3)
     setError('')
     
     try {
-      // Submit to your backend API
-      const response = await fetch('/api/offramp', {
+      // Submit to Paycrest API
+      const response = await fetch('/api/paycrest/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          walletAddress: address,
-          usdcAmount,
-          kshAmount,
-          phoneNumber: mpesaData.phoneNumber,
-          provider: 'mpesa',
-          chainId
+          amount: usdcAmount.toString(),
+          phoneNumber: paycrestData.phoneNumber,
+          accountName: paycrestData.accountName,
+          rate: (kshAmount / usdcAmount).toString(), // Calculate exchange rate
+          returnAddress: address,
         })
       })
       
@@ -51,11 +49,10 @@ export function OffRampFlow() {
       
       if (response.ok && data.success) {
         setTransactionResult({
-          checkoutRequestID: data.checkoutRequestID,
-          merchantRequestID: data.merchantRequestID,
-          mpesaReference: data.mpesaReference,
-          message: data.message,
-          customerMessage: data.customerMessage
+          orderId: data.order.id,
+          receiveAddress: data.order.receiveAddress,
+          message: `PayCrest order created successfully. Send ${data.order.totalAmount} USDC to the address below.`,
+          status: data.order.status
         })
         setStep(4) // Success step
       } else {
@@ -64,7 +61,7 @@ export function OffRampFlow() {
     } catch (error) {
       console.error('Off-ramp error:', error)
       setError(error instanceof Error ? error.message : 'Unknown error occurred')
-      setStep(2) // Back to M-Pesa form
+      setStep(2) // Back to Paycrest form
     }
   }
 
@@ -100,7 +97,7 @@ export function OffRampFlow() {
             </svg>
           </div>
             <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">Connect Wallet</h2>
-            <p className="text-gray-300 text-base mb-6 leading-relaxed">Connect to start converting USDC to M-Pesa</p>
+            <p className="text-gray-300 text-base mb-6 leading-relaxed">Connect to start converting USDC to KSH</p>
             
             <div className="bg-blue-500/20 px-4 py-3 rounded-xl border border-blue-400/30">
               <div className="flex items-center justify-center space-x-2 text-sm text-blue-300">
@@ -126,7 +123,7 @@ export function OffRampFlow() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
         </div>
-        <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">USDC to M-Pesa</h1>
+        <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">USDC to KSH</h1>
         <p className="text-gray-300 text-lg font-medium">Convert your USDC to Kenyan Shillings</p>
         
 
@@ -153,7 +150,7 @@ export function OffRampFlow() {
           
           {/* Progress content */}
           <div className="relative flex items-center space-x-3 p-4">
-          {[1, 2, 3, 4].map((stepNum) => (
+          {[1, 2, 3, 4, 5].map((stepNum) => (
             <div key={stepNum} className="flex items-center">
               <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300 ${
@@ -170,7 +167,7 @@ export function OffRampFlow() {
                   </svg>
                 ) : stepNum}
               </div>
-              {stepNum < 4 && (
+              {stepNum < 5 && (
                 <div className={`w-12 h-1 mx-2 rounded-full transition-all duration-300 ${
                   stepNum < step ? 'bg-green-500' : 'bg-white/10'
                 }`}></div>
@@ -320,15 +317,17 @@ export function OffRampFlow() {
           <ConversionCalculator 
             usdcAmount={usdcAmount} 
             onKshChange={setKshAmount}
+            provider="paycrest"
           />
         </div>
       )}
       
-      {/* Step 2: M-Pesa Form */}
+      {/* Step 2: PayCrest Form */}
       {step >= 2 && step < 3 && kshAmount > 0 && (
-        <MPesaForm 
+        <PaycrestForm 
           kshAmount={kshAmount}
-          onSubmit={handleMPesaSubmit}
+          usdcAmount={usdcAmount}
+          onSubmit={handlePaycrestSubmit}
         />
       )}
       
@@ -358,15 +357,15 @@ export function OffRampFlow() {
                 </div>
               </div>
               
-              <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">Sending to M-Pesa</h3>
+              <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">Processing Order</h3>
               <p className="text-gray-300 text-base mb-6 leading-relaxed">
-                Processing B2C payment...
+                Setting up your payment...
               </p>
               
               <div className="bg-blue-500/20 px-4 py-3 rounded-xl border border-blue-400/30">
                 <div className="flex items-center justify-center space-x-2 text-sm text-blue-300">
                   <span>🇰🇪</span>
-                  <span className="font-medium">Money sent automatically • No PIN required</span>
+                  <span className="font-medium">Payment order being created • Follow instructions</span>
                 </div>
               </div>
             </div>
@@ -402,38 +401,39 @@ export function OffRampFlow() {
                 </svg>
               </div>
                 <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">
-                  KSH Sent! 💰
+                  Order Created! 🚀
               </h3>
                 <p className="text-gray-300 text-base mb-4 leading-relaxed">
                 {transactionResult.message}
               </p>
-              {transactionResult.customerMessage && (
-                  <div className="bg-green-500/20 p-4 rounded-xl border border-green-400/30">
-                    <p className="text-green-300 text-sm">{transactionResult.customerMessage}</p>
-                  </div>
-              )}
             </div>
             
               {/* Transaction details */}
               <div className="space-y-3 mb-6">
-              {transactionResult.checkoutRequestID && (
-                  <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
+                <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
                   <div className="flex justify-between items-center">
-                      <span className="text-gray-300 text-sm">Request ID</span>
-                      <span className="font-mono text-green-400 font-bold text-xs">
-                      {transactionResult.checkoutRequestID.slice(-8)}
+                    <span className="text-gray-300 text-sm">Order ID</span>
+                    <span className="font-mono text-green-400 font-bold text-xs">
+                      {transactionResult.orderId.slice(-8)}
                     </span>
                   </div>
                 </div>
-              )}
                 <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-                <div className="flex justify-between items-center">
-                    <span className="text-gray-300 text-sm">Reference</span>
-                    <span className="font-mono text-green-400 font-bold text-sm">
-                    {transactionResult.mpesaReference}
-                  </span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-300 text-sm">Send USDC to</span>
+                    <span className="font-mono text-green-400 font-bold text-xs">
+                      {transactionResult.receiveAddress.slice(0, 6)}...{transactionResult.receiveAddress.slice(-4)}
+                    </span>
+                  </div>
                 </div>
-              </div>
+                <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-300 text-sm">Status</span>
+                    <span className="font-mono text-blue-400 font-bold text-sm capitalize">
+                      {transactionResult.status}
+                    </span>
+                  </div>
+                </div>
                 <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
                 <div className="flex justify-between items-center">
                     <span className="text-gray-300 text-sm">Network</span>
@@ -458,15 +458,15 @@ export function OffRampFlow() {
                 <ol className="text-gray-300 text-xs space-y-2">
                   <li className="flex items-start space-x-2">
                     <span className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">1</span>
-                    <span>Money sent to M-Pesa wallet</span>
+                    <span>Send USDC to the provided address</span>
                 </li>
                   <li className="flex items-start space-x-2">
                     <span className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">2</span>
-                    <span>You&apos;ll receive SMS confirmation</span>
+                    <span>PayCrest processes your payment</span>
                 </li>
                   <li className="flex items-start space-x-2">
                     <span className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">3</span>
-                    <span>No PIN required</span>
+                    <span>KSH sent to your M-Pesa number</span>
                 </li>
               </ol>
             </div>
