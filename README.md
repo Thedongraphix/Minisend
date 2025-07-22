@@ -1,16 +1,16 @@
 # Kenya USDC Off-Ramp Mini App
 
-A Farcaster mini app for converting USDC to Kenyan Shillings via M-Pesa, built with MiniKit and OnchainKit.
+A Farcaster mini app for converting USDC to Kenyan Shillings via PayCrest, built with MiniKit and OnchainKit.
 
 ## 🌍 Overview
 
-This mini app enables Kenyan users to seamlessly convert USDC on Base network to KSH in their M-Pesa wallets. It's designed for Kenya's growing crypto market ($4.95B remittance market, 28th highest crypto adoption globally).
+This mini app enables Kenyan users to seamlessly convert USDC on Base network to KSH in their mobile money wallets via PayCrest. It's designed for Kenya's growing crypto market ($4.95B remittance market, 28th highest crypto adoption globally).
 
 ## ✨ Features
 
 - **USDC Balance Display**: Real-time USDC balance on Base network  
 - **Live Exchange Rates**: Current USDC to KSH conversion rates
-- **M-Pesa STK Push**: Direct M-Pesa integration with STK Push payments
+- **PayCrest Integration**: Seamless USDC to KSH conversion via PayCrest sender API
 - **Network Support**: Base Sepolia testnet and Base mainnet support
 - **Compliance Ready**: Built-in transaction limits and logging
 - **Mobile-First Design**: Optimized for Kenyan mobile users
