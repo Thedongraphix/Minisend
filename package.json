@@ -1,7 +1,10 @@
 {
-  "name": "mini-test",
-  "version": "0.1.0",
+  "name": "minisend",
+  "version": "1.0.0",
   "private": true,
+  "description": "Convert USDC to Kenyan Shillings seamlessly via M-Pesa. The easiest way to cash out your crypto in Kenya.",
+  "keywords": ["usdc", "mpesa", "kenya", "crypto", "farcaster", "offramp"],
+  "author": "Minisend Team",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

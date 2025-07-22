@@ -1,0 +1,33 @@
+{
+  "name": "Minisend",
+  "short_name": "Minisend",
+  "description": "Convert USDC to Kenyan Shillings seamlessly via M-Pesa. The easiest way to cash out your crypto in Kenya.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#1D4ED8",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["finance", "utilities", "business"],
+  "icons": [
+    {
+      "src": "/minisend-icon.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/minisend-icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/minisend-icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -92,7 +92,16 @@ export default function App() {
     <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme">
       {/* Main heading outside container */}
       <div className="w-full text-center py-6">
-        <h1 className="text-2xl font-bold text-white">Kenya USDC Off-Ramp</h1>
+        <div className="flex items-center justify-center space-x-3 mb-2">
+          <Image 
+            src="/minisend-icon.svg" 
+            alt="Minisend" 
+            width={32}
+            height={32}
+          />
+          <h1 className="text-2xl font-bold text-white">Minisend</h1>
+        </div>
+        <p className="text-gray-400 text-sm">USDC to M-Pesa • Kenya</p>
       </div>
       
       <div className="w-full max-w-md mx-auto px-4 pb-6">

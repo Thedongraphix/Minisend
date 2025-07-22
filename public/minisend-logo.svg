@@ -1,0 +1,35 @@
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1D4ED8;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Logo Icon -->
+  <g transform="translate(8, 8)">
+    <!-- Outer circle representing global/crypto -->
+    <circle cx="12" cy="12" r="10" fill="url(#logoGradient)" filter="url(#glow)"/>
+    
+    <!-- Send arrow -->
+    <path d="M6 12 L18 12 M14 8 L18 12 L14 16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Small dots representing transfer -->
+    <circle cx="8" cy="12" r="1" fill="white" opacity="0.7"/>
+    <circle cx="10" cy="12" r="1" fill="white" opacity="0.5"/>
+    <circle cx="16" cy="12" r="1" fill="white" opacity="0.7"/>
+  </g>
+  
+  <!-- Text "Minisend" -->
+  <g transform="translate(35, 8)">
+    <text x="0" y="18" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#1F2937">Minisend</text>
+    <text x="0" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="400" fill="#6B7280">USDC → M-Pesa</text>
+  </g>
+</svg>
