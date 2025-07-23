@@ -159,6 +159,24 @@ export function createKshMobileMoneyRecipient(
   };
 }
 
+// Helper function to create NGN bank recipient
+export function createNgnBankRecipient(
+  phoneNumber: string,
+  accountName: string
+): PaycrestRecipient {
+  // For NGN, we'll use a default bank institution code
+  // In production, you'd want to let users select their specific bank
+  const institutionCode = 'GTBNGLA'; // GTBank as default - should be configurable
+  
+  return {
+    institution: institutionCode,
+    accountIdentifier: phoneNumber, // This should be account number in production
+    accountName,
+    currency: 'NGN',
+    memo: 'MiniSend USDC to NGN conversion'
+  };
+}
+
 // Helper function to calculate total amount including fees
 export function calculateTotalAmount(
   baseAmount: string,
