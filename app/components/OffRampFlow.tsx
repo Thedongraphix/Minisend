@@ -9,7 +9,18 @@ import { EnhancedTransactionFlow } from './EnhancedTransactionFlow'
 import { useMiniKit } from '@coinbase/onchainkit/minikit'
 import { useAccount, useChainId } from 'wagmi'
 import { getNetworkConfig, isTestnet } from '@/lib/contracts'
-import { ConnectWallet } from '@coinbase/onchainkit/wallet'
+import {
+  ConnectWallet,
+  Wallet,
+  WalletDropdown,
+  WalletDropdownDisconnect,
+} from '@coinbase/onchainkit/wallet';
+import {
+  Address,
+  Avatar,
+  Name,
+  Identity,
+} from '@coinbase/onchainkit/identity';
 import Image from 'next/image'
 
 interface TransactionResult {
@@ -157,11 +168,21 @@ export function OffRampFlow() {
               <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">Connect Wallet</h2>
               <p className="text-gray-300 text-base mb-6 leading-relaxed">Connect your wallet to start converting USDC</p>
               
-              {/* OnchainKit Connect Wallet */}
-              <ConnectWallet
-                text="Connect Wallet"
-                className="w-full"
-              />
+              {/* OnchainKit Wallet Component */}
+              <Wallet>
+                <ConnectWallet
+                  text="Connect Wallet"
+                  className="w-full"
+                />
+                <WalletDropdown>
+                  <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                    <Avatar />
+                    <Name />
+                    <Address />
+                  </Identity>
+                  <WalletDropdownDisconnect />
+                </WalletDropdown>
+              </Wallet>
               
               <div className="mt-4 bg-blue-500/20 px-4 py-3 rounded-xl border border-blue-400/30">
                 <div className="flex items-center justify-center space-x-2 text-sm text-blue-300">

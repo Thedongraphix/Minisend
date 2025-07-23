@@ -4,6 +4,18 @@ import {
   useMiniKit,
   useAddFrame,
 } from "@coinbase/onchainkit/minikit";
+import {
+  Wallet,
+  WalletDropdown,
+  WalletDropdownDisconnect,
+  ConnectWallet,
+} from '@coinbase/onchainkit/wallet';
+import {
+  Address,
+  Avatar,
+  Name,
+  Identity,
+} from '@coinbase/onchainkit/identity';
 // Wallet components removed - now handled in Home component
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "./components/DemoComponents";
@@ -105,9 +117,32 @@ export default function App() {
       </div>
       
       <div className="w-full max-w-md mx-auto px-4 pb-6">
-        {saveFrameButton && (
-          <div className="flex justify-end mb-4">
-            {saveFrameButton}
+        {(saveFrameButton || context?.user) && (
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              {context?.user && (
+                <Wallet>
+                  <ConnectWallet>
+                    <Avatar className="h-6 w-6" />
+                    <Name />
+                  </ConnectWallet>
+                  <WalletDropdown>
+                    <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                      <Avatar />
+                      <Name />
+                      <Address />
+                    </Identity>
+                    <WalletDropdownDisconnect 
+                      text="🔌 Disconnect" 
+                      className="hover:bg-red-500/20 text-red-400"
+                    />
+                  </WalletDropdown>
+                </Wallet>
+              )}
+            </div>
+            <div>
+              {saveFrameButton}
+            </div>
           </div>
         )}
 
