@@ -6,8 +6,10 @@ import { ConversionCalculator } from './ConversionCalculator'
 import { PaycrestForm } from './PaycrestForm'
 import { CurrencySelector, Currency, CURRENCIES } from './CurrencySelector'
 import { PaycrestAutomatedOrderCard } from './PaycrestAutomatedOrderCard'
+import { useMiniKit } from '@coinbase/onchainkit/minikit'
 import { useAccount, useChainId } from 'wagmi'
 import { getNetworkConfig, isTestnet } from '@/lib/contracts'
+import { ConnectWallet } from '@coinbase/onchainkit/wallet'
 import Image from 'next/image'
 
 interface TransactionResult {
@@ -33,8 +35,16 @@ interface PaycrestOrder {
 }
 
 export function OffRampFlow() {
-  const { address, isConnected } = useAccount()
+  // Dual wallet system: MiniKit for Farcaster, Wagmi for web
+  const { context } = useMiniKit()
+  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount()
   const chainId = useChainId()
+  
+  // Detect environment and use appropriate wallet
+  const isFarcaster = Boolean(context?.user)
+  const address = isFarcaster ? (context?.user as { walletAddress?: string })?.walletAddress : wagmiAddress
+  const isConnected = isFarcaster ? Boolean(address) : wagmiConnected
+  
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('KES')
   const [usdcAmount, setUsdcAmount] = useState(0)
   const [localAmount, setLocalAmount] = useState(0)
@@ -107,44 +117,91 @@ export function OffRampFlow() {
   }
 
   if (!isConnected) {
-    return (
-      <div className="relative w-full max-w-md mx-auto">
-        <div className="relative rounded-3xl card-shadow-lg overflow-hidden">
-          {/* Premium connect wallet background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800">
-            <div className="absolute inset-0 gradient-mesh opacity-40"></div>
-            
-            {/* Floating wallet elements */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-6 right-6 w-16 h-16 border border-blue-400 rounded-full animate-pulse"></div>
-              <div className="absolute bottom-8 left-8 w-10 h-10 border border-green-400 rounded-full"></div>
-              <div className="absolute top-1/2 left-6 w-12 h-12 border border-white rounded-full"></div>
-            </div>
-          </div>
-          
-          {/* Connect content */}
-          <div className="relative z-10 p-8 text-center">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-            <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">Connect Wallet</h2>
-            <p className="text-gray-300 text-base mb-6 leading-relaxed">Connect to start converting USDC to KSH</p>
-            
-            <div className="bg-blue-500/20 px-4 py-3 rounded-xl border border-blue-400/30">
-              <div className="flex items-center justify-center space-x-2 text-sm text-blue-300">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                <span className="font-medium">Ready for {networkConfig.name}</span>
+    if (isFarcaster) {
+      // Farcaster frame wallet setup
+      return (
+        <div className="relative w-full max-w-md mx-auto">
+          <div className="relative rounded-3xl card-shadow-lg overflow-hidden">
+            {/* Premium farcaster wallet background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-black to-blue-800">
+              <div className="absolute inset-0 gradient-mesh opacity-40"></div>
+              
+              {/* Floating farcaster elements */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-6 right-6 w-16 h-16 border border-purple-400 rounded-full animate-pulse"></div>
+                <div className="absolute bottom-8 left-8 w-10 h-10 border border-blue-400 rounded-full"></div>
+                <div className="absolute top-1/2 left-6 w-12 h-12 border border-white rounded-full"></div>
               </div>
             </div>
+            
+            {/* Farcaster wallet content */}
+            <div className="relative z-10 p-8 text-center">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-600 to-blue-700 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                <span className="text-2xl">🎭</span>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">Wallet Setup Needed</h2>
+              <p className="text-gray-300 text-base mb-6 leading-relaxed">Please ensure you have wallet access enabled in your Farcaster client</p>
+              
+              <div className="bg-purple-500/20 px-4 py-3 rounded-xl border border-purple-400/30">
+                <div className="flex items-center justify-center space-x-2 text-sm text-purple-300">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                  <span className="font-medium">Powered by Farcaster MiniKit</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Subtle border */}
+            <div className="absolute inset-0 rounded-3xl border border-purple-400/20"></div>
           </div>
-          
-          {/* Subtle border */}
-          <div className="absolute inset-0 rounded-3xl border border-white/10"></div>
         </div>
-      </div>
-    )
+      )
+    } else {
+      // Regular web wallet connection
+      return (
+        <div className="relative w-full max-w-md mx-auto">
+          <div className="relative rounded-3xl card-shadow-lg overflow-hidden">
+            {/* Premium web wallet background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-black to-green-800">
+              <div className="absolute inset-0 gradient-mesh opacity-40"></div>
+              
+              {/* Floating web elements */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-6 right-6 w-16 h-16 border border-blue-400 rounded-full animate-pulse"></div>
+                <div className="absolute bottom-8 left-8 w-10 h-10 border border-green-400 rounded-full"></div>
+                <div className="absolute top-1/2 left-6 w-12 h-12 border border-white rounded-full"></div>
+              </div>
+            </div>
+            
+            {/* Web wallet content */}
+            <div className="relative z-10 p-8 text-center">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-green-700 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">Connect Wallet</h2>
+              <p className="text-gray-300 text-base mb-6 leading-relaxed">Connect your wallet to start converting USDC</p>
+              
+              {/* OnchainKit Connect Wallet */}
+              <ConnectWallet
+                text="Connect Wallet"
+                className="w-full"
+              />
+              
+              <div className="mt-4 bg-blue-500/20 px-4 py-3 rounded-xl border border-blue-400/30">
+                <div className="flex items-center justify-center space-x-2 text-sm text-blue-300">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  <span className="font-medium">Ready for {networkConfig.name}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Subtle border */}
+            <div className="absolute inset-0 rounded-3xl border border-blue-400/20"></div>
+          </div>
+        </div>
+      )
+    }
   }
 
   return (

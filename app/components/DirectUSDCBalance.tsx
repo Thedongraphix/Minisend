@@ -1,14 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react'
+import { useMiniKit } from '@coinbase/onchainkit/minikit'
 import { useAccount, useChainId } from 'wagmi'
 import { getNetworkConfig, getUSDCContract } from '@/lib/contracts'
-import { base } from 'wagmi/chains'
+import { base } from 'viem/chains'
 import Image from 'next/image'
 
 export function DirectUSDCBalance() {
-  const { address, isConnected } = useAccount()
+  // Dual wallet system: MiniKit for Farcaster, Wagmi for web
+  const { context } = useMiniKit()
+  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount()
   const chainId = useChainId()
+  
+  // Detect environment and use appropriate wallet
+  const isFarcaster = Boolean(context?.user)
+  const address = isFarcaster ? (context?.user as { walletAddress?: string })?.walletAddress : wagmiAddress
+  const isConnected = isFarcaster ? Boolean(address) : wagmiConnected
+  
   const [balance, setBalance] = useState<string>('0.00')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('')

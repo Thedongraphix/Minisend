@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLabel, TransactionStatusAction } from '@coinbase/onchainkit/transaction';
 import { parseUnits } from 'viem';
-import { useChainId } from 'wagmi';
+import { base } from 'viem/chains';
 import { getUSDCContract } from '@/lib/contracts';
 
 interface PaycrestOrder {
@@ -37,7 +37,7 @@ export function PaycrestAutomatedOrderCard({
 }: PaycrestAutomatedOrderCardProps) {
   const [isCompleted, setIsCompleted] = useState(false);
   const [error, setError] = useState<string>('');
-  const chainId = useChainId();
+  const chainId = base.id;
   const usdcContract = getUSDCContract(chainId);
 
   // Create the USDC transfer transaction using calls format  
