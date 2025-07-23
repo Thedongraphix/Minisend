@@ -13,10 +13,23 @@ export function DirectUSDCBalance() {
   const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount()
   const chainId = useChainId()
   
-  // Detect environment and use appropriate wallet
-  const isFarcaster = Boolean(context?.user)
-  const address = isFarcaster ? (context?.user as { walletAddress?: string })?.walletAddress : wagmiAddress
-  const isConnected = isFarcaster ? Boolean(address) : wagmiConnected
+  // Enhanced Farcaster detection and wallet logic (matches OffRampFlow)
+  const isFarcaster = Boolean(context?.user || context?.client)
+  const farcasterAddress = (context?.user as { walletAddress?: string })?.walletAddress
+  
+  // Use wagmi address as fallback when in Farcaster but no farcaster address
+  const address = farcasterAddress || wagmiAddress
+  const isConnected = Boolean(address) && (wagmiConnected || Boolean(farcasterAddress))
+  
+  // Debug logging
+  console.log('DirectUSDCBalance - Wallet detection:', {
+    isFarcaster,
+    farcasterAddress,
+    wagmiAddress,
+    finalAddress: address,
+    wagmiConnected,
+    isConnected
+  });
   
   const [balance, setBalance] = useState<string>('0.00')
   const [isLoading, setIsLoading] = useState(false)
