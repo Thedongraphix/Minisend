@@ -5,6 +5,7 @@ export type Currency = 'KES' | 'NGN';
 interface CurrencySelectorProps {
   selectedCurrency: Currency;
   onCurrencyChange: (currency: Currency) => void;
+  onContinue?: () => void;
 }
 
 const CURRENCIES = {
@@ -24,7 +25,7 @@ const CURRENCIES = {
   },
 } as const;
 
-export function CurrencySelector({ selectedCurrency, onCurrencyChange }: CurrencySelectorProps) {
+export function CurrencySelector({ selectedCurrency, onCurrencyChange, onContinue }: CurrencySelectorProps) {
   return (
     <div className="relative w-full max-w-md mx-auto">
       <div className="relative rounded-3xl card-shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-[1.01]">
@@ -110,6 +111,7 @@ export function CurrencySelector({ selectedCurrency, onCurrencyChange }: Currenc
           
           {/* Continue Button */}
           <button
+            onClick={onContinue}
             className="w-full mt-6 bg-gradient-to-r from-green-600 to-blue-600 text-white py-4 px-6 rounded-xl font-bold text-base hover:from-green-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
           >
             <div className="flex items-center justify-center space-x-2">

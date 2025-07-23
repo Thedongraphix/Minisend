@@ -36,11 +36,12 @@ export function PaycrestAutomatedOrderCard({
   onComplete 
 }: PaycrestAutomatedOrderCardProps) {
   const [isCompleted, setIsCompleted] = useState(false);
+  const [error, setError] = useState<string>('');
   const chainId = useChainId();
   const usdcContract = getUSDCContract(chainId);
 
-  // Create the USDC transfer transaction
-  const transactions = [
+  // Create the USDC transfer transaction using calls format  
+  const calls = [
     {
       to: usdcContract as `0x${string}`,
       data: `0xa9059cbb000000000000000000000000${order.receiveAddress.slice(2)}${parseUnits(order.totalAmount, 6).toString(16).padStart(64, '0')}` as `0x${string}`,
@@ -49,11 +50,23 @@ export function PaycrestAutomatedOrderCard({
   ];
 
   const handleSuccess = () => {
+    console.log('Transaction successful!');
     setIsCompleted(true);
+    setError('');
     // Call the completion callback after a short delay to allow the transaction to propagate
     setTimeout(() => {
       onComplete();
     }, 2000);
+  };
+
+  const handleError = (error: unknown) => {
+    console.error('Transaction failed:', error);
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : (error as { error?: string; message?: string })?.error || 
+        (error as { error?: string; message?: string })?.message || 
+        'Transaction failed';
+    setError(errorMessage);
   };
 
   if (isCompleted) {
@@ -169,11 +182,9 @@ export function PaycrestAutomatedOrderCard({
 
           {/* OnchainKit Transaction */}
           <Transaction
-            contracts={transactions}
+            calls={calls}
             onSuccess={handleSuccess}
-            onError={(error) => {
-              console.error('Transaction failed:', error);
-            }}
+            onError={handleError}
           >
             <TransactionButton
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl font-bold text-base hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
@@ -184,6 +195,18 @@ export function PaycrestAutomatedOrderCard({
               <TransactionStatusAction />
             </TransactionStatus>
           </Transaction>
+
+          {/* Error Display */}
+          {error && (
+            <div className="mt-4 p-4 bg-red-500/10 border border-red-400/20 rounded-xl">
+              <div className="flex items-center space-x-2">
+                <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-red-300 text-sm font-medium">{error}</span>
+              </div>
+            </div>
+          )}
 
           {/* What happens next */}
           <div className="mt-6 p-4 bg-yellow-500/10 border border-yellow-400/20 rounded-xl">

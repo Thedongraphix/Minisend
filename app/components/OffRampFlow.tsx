@@ -257,10 +257,8 @@ export function OffRampFlow() {
       {step === 1 && (
         <CurrencySelector 
           selectedCurrency={selectedCurrency}
-          onCurrencyChange={(currency) => {
-            setSelectedCurrency(currency)
-            setStep(2)
-          }}
+          onCurrencyChange={setSelectedCurrency}
+          onContinue={() => setStep(2)}
         />
       )}
       
