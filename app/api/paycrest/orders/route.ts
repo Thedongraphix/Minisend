@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaycrestService } from '@/lib/paycrest/config';
-import { createKshMobileMoneyRecipient, PaycrestOrderRequest } from '@/lib/paycrest';
+import { createKshMobileMoneyRecipient, createNgnBankRecipient, PaycrestOrderRequest } from '@/lib/paycrest';
 import { generateRef } from '@/lib/utils/generateRef';
 
 export async function POST(request: NextRequest) {
@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
       accountName, 
       rate,
       returnAddress,
+      currency = 'KES',
       provider = 'MPESA' 
     } = body;
 
@@ -32,26 +33,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate phone number (basic Kenya format)
+    // Validate phone number based on currency
     const cleanPhone = phoneNumber.replace(/\D/g, '');
-    if (!cleanPhone.match(/^(254|0)(7|1)\d{8}$/)) {
-      return NextResponse.json(
-        { error: 'Invalid Kenyan phone number format' },
-        { status: 400 }
-      );
+    let formattedPhone: string;
+    
+    if (currency === 'KES') {
+      // Kenya phone number validation
+      if (!cleanPhone.match(/^(254|0)(7|1)\d{8}$/)) {
+        return NextResponse.json(
+          { error: 'Invalid Kenyan phone number format' },
+          { status: 400 }
+        );
+      }
+      // Format phone number for PayCrest (ensure it starts with 254)
+      formattedPhone = cleanPhone.startsWith('254') 
+        ? cleanPhone 
+        : cleanPhone.replace(/^0/, '254');
+    } else {
+      // Nigeria phone number validation
+      if (!cleanPhone.match(/^(234|0)[789]\d{8}$/)) {
+        return NextResponse.json(
+          { error: 'Invalid Nigerian phone number format' },
+          { status: 400 }
+        );
+      }
+      // Format phone number for PayCrest (ensure it starts with 234)
+      formattedPhone = cleanPhone.startsWith('234') 
+        ? cleanPhone 
+        : cleanPhone.replace(/^0/, '234');
     }
 
-    // Format phone number for PayCrest (ensure it starts with 254)
-    const formattedPhone = cleanPhone.startsWith('254') 
-      ? cleanPhone 
-      : cleanPhone.replace(/^0/, '254');
-
-    // Create PayCrest recipient
-    const recipient = createKshMobileMoneyRecipient(
-      formattedPhone,
-      accountName,
-      provider as 'MPESA' | 'AIRTEL'
-    );
+    // Create PayCrest recipient based on currency
+    const recipient = currency === 'KES' 
+      ? createKshMobileMoneyRecipient(
+          formattedPhone,
+          accountName,
+          provider as 'MPESA' | 'AIRTEL'
+        )
+      : createNgnBankRecipient(
+          formattedPhone,
+          accountName
+        );
 
     // Generate unique reference
     const reference = generateRef();
