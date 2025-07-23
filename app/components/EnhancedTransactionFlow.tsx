@@ -11,6 +11,7 @@ import {
 import { parseUnits } from 'viem';
 import { base } from 'wagmi/chains';
 import Image from 'next/image';
+import { SmartWalletConnection } from './SmartWalletConnection';
 
 interface EnhancedTransactionFlowProps {
   amount: string;
@@ -48,7 +49,9 @@ export function EnhancedTransactionFlow({
   const [orderData, setOrderData] = useState<{
     id: string;
     receiveAddress: string;
-    totalAmount: string;
+    amount: string;
+    senderFee: string;
+    transactionFee: string;
     validUntil: string;
   } | null>(null);
   const [progress, setProgress] = useState(0);
@@ -350,7 +353,23 @@ export function EnhancedTransactionFlow({
         </button>
       )}
 
-      {orderData && stage !== 'error' && stage !== 'settlement-complete' && (
+      {/* Smart Wallet Connection for Transaction */}
+      {orderData && stage === 'order-ready' && (
+        <div className="space-y-4">
+          <SmartWalletConnection 
+            showForTransaction={true}
+            onWalletReady={(address) => {
+              console.log('Wallet ready for transaction:', address);
+            }}
+            onProceedToTransaction={() => {
+              console.log('Proceeding to transaction...');
+              setStage('transaction-pending');
+            }}
+          />
+        </div>
+      )}
+
+      {orderData && (stage === 'transaction-pending' || stage === 'transaction-confirmed' || stage === 'settlement-processing') && (
         <Transaction
           chainId={base.id}
           calls={calls}
@@ -364,10 +383,9 @@ export function EnhancedTransactionFlow({
         >
           <TransactionButton
             text={
-              stage === 'order-ready' ? 'Send USDC (Coinbase Wallet)' :
               stage === 'transaction-pending' ? 'Transaction Pending...' :
               stage === 'transaction-confirmed' ? 'Processing Settlement...' :
-              'Send USDC'
+              'Send USDC via Base Pay'
             }
             disabled={stage === 'transaction-pending' || stage === 'settlement-processing'}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300"
