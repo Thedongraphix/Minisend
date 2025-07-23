@@ -3,8 +3,9 @@
 import { useState } from 'react';
 
 interface PaycrestFormProps {
-  kshAmount: number;
+  localAmount: number;
   usdcAmount: number;
+  currency: 'KES' | 'NGN';
   onSubmit: (data: {
     phoneNumber: string;
     accountName: string;
@@ -12,7 +13,7 @@ interface PaycrestFormProps {
   }) => void;
 }
 
-export function PaycrestForm({ kshAmount, usdcAmount, onSubmit }: PaycrestFormProps) {
+export function PaycrestForm({ localAmount, usdcAmount, currency, onSubmit }: PaycrestFormProps) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,14 +37,27 @@ export function PaycrestForm({ kshAmount, usdcAmount, onSubmit }: PaycrestFormPr
   const formatPhoneNumber = (value: string) => {
     const cleaned = value.replace(/\D/g, '');
     
-    if (cleaned.startsWith('254')) {
-      return cleaned.slice(0, 12);
-    } else if (cleaned.startsWith('0')) {
+    if (currency === 'KES') {
+      // Kenya phone number formatting
+      if (cleaned.startsWith('254')) {
+        return cleaned.slice(0, 12);
+      } else if (cleaned.startsWith('0')) {
+        return cleaned.slice(0, 10);
+      } else if (cleaned.length <= 9) {
+        return cleaned;
+      }
+      return cleaned.slice(0, 9);
+    } else {
+      // Nigeria phone number formatting
+      if (cleaned.startsWith('234')) {
+        return cleaned.slice(0, 13);
+      } else if (cleaned.startsWith('0')) {
+        return cleaned.slice(0, 11);
+      } else if (cleaned.length <= 10) {
+        return cleaned;
+      }
       return cleaned.slice(0, 10);
-    } else if (cleaned.length <= 9) {
-      return cleaned;
     }
-    return cleaned.slice(0, 9);
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,17 +68,28 @@ export function PaycrestForm({ kshAmount, usdcAmount, onSubmit }: PaycrestFormPr
   const displayPhoneNumber = () => {
     if (!phoneNumber) return '';
     
-    if (phoneNumber.startsWith('254')) {
-      return `+${phoneNumber}`;
-    } else if (phoneNumber.startsWith('0')) {
-      return phoneNumber;
-    } else if (phoneNumber.length === 9) {
-      return `0${phoneNumber}`;
+    if (currency === 'KES') {
+      if (phoneNumber.startsWith('254')) {
+        return `+${phoneNumber}`;
+      } else if (phoneNumber.startsWith('0')) {
+        return phoneNumber;
+      } else if (phoneNumber.length === 9) {
+        return `0${phoneNumber}`;
+      }
+    } else {
+      // Nigeria
+      if (phoneNumber.startsWith('234')) {
+        return `+${phoneNumber}`;
+      } else if (phoneNumber.startsWith('0')) {
+        return phoneNumber;
+      } else if (phoneNumber.length === 10) {
+        return `0${phoneNumber}`;
+      }
     }
     return phoneNumber;
   };
 
-  const isValid = phoneNumber.length >= 9 && accountName.length >= 2;
+  const isValid = (currency === 'KES' ? phoneNumber.length >= 9 : phoneNumber.length >= 10) && accountName.length >= 2;
 
   return (
     <div className="relative w-full max-w-md mx-auto">
@@ -100,7 +125,7 @@ export function PaycrestForm({ kshAmount, usdcAmount, onSubmit }: PaycrestFormPr
               <div>
                 <h4 className="text-blue-300 font-bold text-sm mb-1">Payment Process</h4>
                 <p className="text-blue-200 text-xs leading-relaxed">
-                  You&apos;ll get payment instructions to send USDC. KSH will be sent to your M-Pesa once confirmed.
+                  You&apos;ll get payment instructions to send USDC. {currency} will be sent to your {currency === 'KES' ? 'M-Pesa' : 'bank account'} once confirmed.
                 </p>
               </div>
             </div>
@@ -130,7 +155,7 @@ export function PaycrestForm({ kshAmount, usdcAmount, onSubmit }: PaycrestFormPr
             {/* Phone Number Input */}
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-2">
-                M-Pesa Number *
+                {currency === 'KES' ? 'M-Pesa Number' : 'Phone Number'} *
               </label>
               <input
                 type="tel"
@@ -146,7 +171,7 @@ export function PaycrestForm({ kshAmount, usdcAmount, onSubmit }: PaycrestFormPr
                 </p>
               )}
               <p className="text-gray-400 text-xs mt-1">
-                Format: 0712345678 or 254712345678
+                Format: {currency === 'KES' ? '0712345678 or 254712345678' : '08012345678 or 2348012345678'}
               </p>
             </div>
 
@@ -159,8 +184,8 @@ export function PaycrestForm({ kshAmount, usdcAmount, onSubmit }: PaycrestFormPr
                   <span className="text-white font-mono">${usdcAmount}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-300">Recipient gets (KSH)</span>
-                  <span className="text-white font-mono">KSH {kshAmount.toLocaleString()}</span>
+                  <span className="text-gray-300">Recipient gets ({currency})</span>
+                  <span className="text-white font-mono">{currency === 'KES' ? 'KSh' : '₦'} {localAmount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between border-t border-white/10 pt-2">
                   <span className="text-gray-300">Method</span>
