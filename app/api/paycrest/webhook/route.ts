@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     const webhookEventId = await WebhookService.storeWebhookEvent({
       event_type: event,
       paycrest_order_id: order.id,
-      payload: webhookEvent,
+      payload: webhookEvent as unknown as Record<string, unknown>,
       signature,
       headers: Object.fromEntries(request.headers.entries()),
       user_agent: request.headers.get('user-agent')
