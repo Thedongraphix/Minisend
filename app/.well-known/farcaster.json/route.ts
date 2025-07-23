@@ -58,7 +58,7 @@ export async function GET() {
       
       // Technical URLs
       homeUrl: URL,
-      webhookUrl: `${URL}/api/webhook`,
+      webhookUrl: `${URL}/api/webhooks`,
     }),
   });
 }

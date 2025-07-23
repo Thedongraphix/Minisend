@@ -4,18 +4,7 @@ import {
   useMiniKit,
   useAddFrame,
 } from "@coinbase/onchainkit/minikit";
-import {
-  Wallet,
-  WalletDropdown,
-  WalletDropdownDisconnect,
-  ConnectWallet,
-} from '@coinbase/onchainkit/wallet';
-import {
-  Address,
-  Avatar,
-  Name,
-  Identity,
-} from '@coinbase/onchainkit/identity';
+// Wallet components removed since we don't show wallet connection in main page anymore
 // Wallet components removed - now handled in Home component
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "./components/DemoComponents";
@@ -36,10 +25,22 @@ export default function App() {
   const addFrame = useAddFrame();
 
   useEffect(() => {
-    if (!isFrameReady) {
-      setFrameReady();
-    }
-  }, [setFrameReady, isFrameReady]);
+    const initializeFrame = async () => {
+      try {
+        console.log('MiniKit - Frame ready status:', isFrameReady);
+        console.log('MiniKit - Context:', context);
+        
+        if (!isFrameReady) {
+          await setFrameReady();
+          console.log('MiniKit - Frame marked as ready');
+        }
+      } catch (error) {
+        console.error('MiniKit - Frame initialization error:', error);
+      }
+    };
+
+    initializeFrame();
+  }, [setFrameReady, isFrameReady, context]);
 
   // Initialize analytics session when context is available
   useEffect(() => {
@@ -117,32 +118,9 @@ export default function App() {
       </div>
       
       <div className="w-full max-w-md mx-auto px-4 pb-6">
-        {(saveFrameButton || context?.user) && (
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              {context?.user && (
-                <Wallet>
-                  <ConnectWallet>
-                    <Avatar className="h-6 w-6" />
-                    <Name />
-                  </ConnectWallet>
-                  <WalletDropdown>
-                    <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                      <Avatar />
-                      <Name />
-                      <Address />
-                    </Identity>
-                    <WalletDropdownDisconnect 
-                      text="🔌 Disconnect" 
-                      className="hover:bg-red-500/20 text-red-400"
-                    />
-                  </WalletDropdown>
-                </Wallet>
-              )}
-            </div>
-            <div>
-              {saveFrameButton}
-            </div>
+        {saveFrameButton && (
+          <div className="flex justify-end mb-4">
+            {saveFrameButton}
           </div>
         )}
 

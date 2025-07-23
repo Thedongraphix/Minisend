@@ -19,7 +19,9 @@ export function Providers(props: { children: ReactNode }) {
         },
       }}
     >
-      <MiniKitProvider chain={base}>
+      <MiniKitProvider 
+        chain={base}
+      >
         {props.children}
       </MiniKitProvider>
     </OnchainKitProvider>

@@ -51,10 +51,22 @@ export function OffRampFlow() {
   const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount()
   const chainId = useChainId()
   
-  // Detect environment and use appropriate wallet
-  const isFarcaster = Boolean(context?.user)
-  const address = isFarcaster ? (context?.user as { walletAddress?: string })?.walletAddress : wagmiAddress
-  const isConnected = isFarcaster ? Boolean(address) : wagmiConnected
+  // Enhanced Farcaster detection and wallet logic
+  const isFarcaster = Boolean(context?.user || context?.client)
+  const farcasterAddress = (context?.user as { walletAddress?: string })?.walletAddress
+  const address = isFarcaster ? farcasterAddress : wagmiAddress
+  const isConnected = isFarcaster ? Boolean(farcasterAddress) : wagmiConnected
+  
+  // Debug logging
+  console.log('OffRamp - Farcaster context:', {
+    isFarcaster,
+    hasContext: Boolean(context),
+    hasUser: Boolean(context?.user),
+    hasClient: Boolean(context?.client),
+    farcasterAddress,
+    wagmiAddress,
+    isConnected
+  });
   
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('KES')
   const [usdcAmount, setUsdcAmount] = useState(0)
@@ -102,9 +114,14 @@ export function OffRampFlow() {
     setError('')
   }
 
+  // Show debug info if in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Debug - Render decision:', { isConnected, isFarcaster, address });
+  }
+
   if (!isConnected) {
     if (isFarcaster) {
-      // Farcaster frame wallet setup
+      // Enhanced Farcaster frame wallet setup with better messaging
       return (
         <div className="relative w-full max-w-md mx-auto">
           <div className="relative rounded-3xl card-shadow-lg overflow-hidden">
@@ -126,7 +143,22 @@ export function OffRampFlow() {
                 <span className="text-2xl">🎭</span>
               </div>
               <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">Wallet Setup Needed</h2>
-              <p className="text-gray-300 text-base mb-6 leading-relaxed">Please ensure you have wallet access enabled in your Farcaster client</p>
+              <p className="text-gray-300 text-base mb-6 leading-relaxed">
+                {context?.client ? 
+                  "Please enable wallet access in your Farcaster client to continue" :
+                  "This mini app requires a Farcaster client with wallet support"
+                }
+              </p>
+              
+              {/* Debug info for troubleshooting */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="bg-black/30 p-3 rounded-lg text-xs text-gray-400 mb-4">
+                  <div>Context: {context ? '✅' : '❌'}</div>
+                  <div>Client: {context?.client ? '✅' : '❌'}</div>
+                  <div>User: {context?.user ? '✅' : '❌'}</div>
+                  <div>Wallet: {farcasterAddress ? '✅' : '❌'}</div>
+                </div>
+              )}
               
               <div className="bg-purple-500/20 px-4 py-3 rounded-xl border border-purple-400/30">
                 <div className="flex items-center justify-center space-x-2 text-sm text-purple-300">
