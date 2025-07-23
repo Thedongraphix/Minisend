@@ -7,11 +7,12 @@ interface ConversionCalculatorProps {
   usdcAmount: number;
   onKshChange: (amount: number) => void;
   provider?: 'paycrest';
+  currency?: 'KES' | 'NGN';
   onRateChange?: (rate: number) => void;
 }
 
-export function ConversionCalculator({ usdcAmount, onKshChange, provider = 'paycrest', onRateChange }: ConversionCalculatorProps) {
-  const [exchangeRate] = useState(129.2) // Current USDC to KSH rate
+export function ConversionCalculator({ usdcAmount, onKshChange, provider = 'paycrest', currency = 'KES', onRateChange }: ConversionCalculatorProps) {
+  const [exchangeRate] = useState(currency === 'KES' ? 129.2 : 1528.7) // Current USDC to local currency rate
   const [fees, setFees] = useState(0)
   const [isLoadingRate, setIsLoadingRate] = useState(false)
 
@@ -22,14 +23,14 @@ export function ConversionCalculator({ usdcAmount, onKshChange, provider = 'payc
     
     setFees(calculatedFees);
     
-    const kshAmount = Math.max(0, (usdcAmount * exchangeRate) - calculatedFees);
-    onKshChange(kshAmount);
+    const localAmount = Math.max(0, (usdcAmount * exchangeRate) - calculatedFees);
+    onKshChange(localAmount);
     
     // Notify parent component of current rate
     if (onRateChange) {
       onRateChange(exchangeRate);
     }
-  }, [usdcAmount, exchangeRate, provider, onKshChange, onRateChange])
+  }, [usdcAmount, exchangeRate, provider, currency, onKshChange, onRateChange])
 
   // Function to fetch live exchange rate (placeholder)
   const refreshExchangeRate = async () => {
@@ -45,7 +46,9 @@ export function ConversionCalculator({ usdcAmount, onKshChange, provider = 'payc
     }
   }
 
-  const kshAmount = Math.max(0, (usdcAmount * exchangeRate) - fees)
+  const localAmount = Math.max(0, (usdcAmount * exchangeRate) - fees)
+  const currencySymbol = currency === 'KES' ? 'KSh' : '₦'
+  const currencyCode = currency === 'KES' ? 'KSH' : 'NGN'
 
   return (
     <div className="relative w-full max-w-md mx-auto">
@@ -93,18 +96,18 @@ export function ConversionCalculator({ usdcAmount, onKshChange, provider = 'payc
           <div className="text-center mb-8">
             <div className="text-xs text-gray-400 font-medium tracking-[0.2em] uppercase mb-3">You Receive</div>
             <div className="text-4xl font-bold text-white mb-4 tracking-tight">
-              KSH {kshAmount.toFixed(2)}
+              {currencySymbol} {localAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full border ${
               provider === 'paycrest' 
                 ? 'bg-blue-500/20 border-blue-400/30' 
                 : 'bg-green-500/20 border-green-400/30'
             }`}>
-              <span className="text-sm">{provider === 'paycrest' ? '⚡' : '🇰🇪'}</span>
+              <span className="text-sm">{provider === 'paycrest' ? '⚡' : (currency === 'KES' ? '🇰🇪' : '🇳🇬')}</span>
               <span className={`text-xs font-medium ${
                 provider === 'paycrest' ? 'text-blue-300' : 'text-green-300'
               }`}>
-                {provider === 'paycrest' ? 'Via PayCrest' : 'Direct to M-Pesa'}
+                {provider === 'paycrest' ? 'Via PayCrest' : (currency === 'KES' ? 'Direct to M-Pesa' : 'Direct to Bank')}
               </span>
           </div>
         </div>
@@ -113,14 +116,14 @@ export function ConversionCalculator({ usdcAmount, onKshChange, provider = 'payc
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
               <div className="text-xs text-gray-400 mb-1">Rate</div>
-              <div className="text-white font-bold text-sm">{exchangeRate} KSH</div>
+              <div className="text-white font-bold text-sm">{exchangeRate.toLocaleString()} {currencyCode}</div>
               <div className="text-xs text-gray-500">per USDC</div>
           </div>
           
             <div className="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
               <div className="text-xs text-gray-400 mb-1">Fee</div>
               <div className="text-orange-400 font-bold text-sm">{(fees / (usdcAmount * exchangeRate) * 100).toFixed(1)}%</div>
-              <div className="text-xs text-gray-500">KSH {fees.toFixed(2)}</div>
+              <div className="text-xs text-gray-500">{currencySymbol} {fees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             </div>
           </div>
           
