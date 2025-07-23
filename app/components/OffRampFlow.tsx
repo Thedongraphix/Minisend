@@ -238,16 +238,16 @@ export function OffRampFlow() {
   }
 
   return (
-    <div className="max-w-lg mx-auto p-4 space-y-8">
+    <div className="max-w-sm mx-auto p-3 space-y-4">
       {/* Premium Header */}
       <div className="text-center mb-8">
-        <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl flex items-center justify-center mb-6 card-shadow-lg">
-          <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-4 card-shadow-lg">
+          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
         </div>
-        <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">USDC Offramp</h1>
-        <p className="text-gray-300 text-lg font-medium">Convert your USDC to local currency</p>
+        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">USDC Convert</h1>
+        <p className="text-gray-300 text-base">Send crypto to mobile money</p>
         
 
         
@@ -272,11 +272,11 @@ export function OffRampFlow() {
           </div>
           
           {/* Progress content */}
-          <div className="relative flex items-center space-x-3 p-4">
+          <div className="relative flex items-center space-x-2 p-3">
           {[1, 2, 3, 4, 5].map((stepNum) => (
             <div key={stepNum} className="flex items-center">
               <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                   stepNum < step
                     ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg'
                     : stepNum === step
@@ -285,13 +285,13 @@ export function OffRampFlow() {
                 }`}
               >
                 {stepNum < step ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : stepNum}
               </div>
               {stepNum < 5 && (
-                <div className={`w-12 h-1 mx-2 rounded-full transition-all duration-300 ${
+                <div className={`w-8 h-1 mx-1 rounded-full transition-all duration-300 ${
                   stepNum < step ? 'bg-green-500' : 'bg-white/10'
                 }`}></div>
               )}
@@ -377,7 +377,7 @@ export function OffRampFlow() {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
                   <span className="text-white font-bold text-sm">2</span>
                 </div>
-                <h3 className="text-lg font-bold text-white tracking-tight">Amount to Convert</h3>
+                <h3 className="text-lg font-bold text-white tracking-tight">Enter Amount</h3>
               </div>
               
               {/* Amount Input */}
@@ -390,7 +390,7 @@ export function OffRampFlow() {
               value={usdcAmount || ''}
               onChange={(e) => setUsdcAmount(parseFloat(e.target.value) || 0)}
                   placeholder="0.00"
-                  className="w-full pl-12 pr-16 py-4 text-2xl font-bold bg-white/5 backdrop-blur-sm border-2 border-white/20 text-white rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10 placeholder-gray-400 transition-all duration-200"
+                  className="w-full pl-10 pr-12 py-3 text-xl font-bold bg-white/5 backdrop-blur-sm border-2 border-white/20 text-white rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10 placeholder-gray-400 transition-all duration-200"
               min="1"
               max="1000"
               step="0.01"
@@ -416,10 +416,10 @@ export function OffRampFlow() {
           {usdcAmount > 0 && step === 2 && (
             <button
               onClick={() => setStep(3)}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-xl font-bold text-base hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-bold text-sm hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                 >
                   <div className="flex items-center justify-center space-x-2">
-                    <span>Continue to Payment</span>
+                    <span>Continue</span>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
@@ -477,9 +477,9 @@ export function OffRampFlow() {
             {/* Transaction content */}
             <div className="relative z-10 p-6">
               <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-white mb-2">Send Payment</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Processing</h3>
                 <p className="text-gray-300 text-sm">
-                  Sending ${usdcAmount} USDC to {paycrestOrder.recipient.accountName}
+                  Sending ${usdcAmount} to {paycrestOrder.recipient.accountName}
                 </p>
               </div>
               
@@ -530,15 +530,15 @@ export function OffRampFlow() {
                 </div>
               </div>
               
-              <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">Processing Order</h3>
-              <p className="text-gray-300 text-base mb-6 leading-relaxed">
-                Setting up your payment...
+              <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Processing</h3>
+              <p className="text-gray-300 text-sm mb-4">
+                Almost done...
               </p>
               
               <div className="bg-blue-500/20 px-4 py-3 rounded-xl border border-blue-400/30">
                 <div className="flex items-center justify-center space-x-2 text-sm text-blue-300">
                   <span>{CURRENCIES[selectedCurrency].flag}</span>
-                  <span className="font-medium">Transaction completed successfully</span>
+                  <span className="font-medium">Complete</span>
                 </div>
               </div>
             </div>
@@ -573,10 +573,10 @@ export function OffRampFlow() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-                <h3 className="text-2xl font-bold text-white mb-3 tracking-tight">
-                  Order Created! 🚀
+                <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
+                  Success! 🚀
               </h3>
-                <p className="text-gray-300 text-base mb-4 leading-relaxed">
+                <p className="text-gray-300 text-sm mb-3">
                 {transactionResult.message}
               </p>
             </div>
@@ -646,9 +646,9 @@ export function OffRampFlow() {
             
             <button
               onClick={resetFlow}
-                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-xl font-bold text-base hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-400 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg"
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-4 rounded-xl font-bold text-sm hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-400 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg"
             >
-              Make Another Transaction
+              Send Again
             </button>
             </div>
             
@@ -675,7 +675,7 @@ export function OffRampFlow() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>Back to {step === 2 ? 'Currency' : 'Amount'}</span>
+          <span>Back</span>
         </button>
             
             {/* Subtle border */}

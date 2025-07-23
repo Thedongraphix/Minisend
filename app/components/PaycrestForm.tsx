@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { validateAndDetectKenyanNumber } from '@/lib/utils/phoneCarrier';
 
 interface PaycrestFormProps {
   localAmount: number;
@@ -17,6 +18,11 @@ export function PaycrestForm({ localAmount, usdcAmount, currency, onSubmit }: Pa
   const [phoneNumber, setPhoneNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [carrierInfo, setCarrierInfo] = useState<{
+    carrier: string;
+    displayName: string;
+    isValid: boolean;
+  } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +71,24 @@ export function PaycrestForm({ localAmount, usdcAmount, currency, onSubmit }: Pa
     setPhoneNumber(formatted);
   };
 
+  // Detect carrier when phone number changes (for KES only)
+  useEffect(() => {
+    if (currency === 'KES' && phoneNumber.length >= 9) {
+      const validation = validateAndDetectKenyanNumber(phoneNumber);
+      if (validation.isValid) {
+        setCarrierInfo({
+          carrier: validation.carrier,
+          displayName: validation.displayName || 'Mobile Money',
+          isValid: true
+        });
+      } else {
+        setCarrierInfo(null);
+      }
+    } else {
+      setCarrierInfo(null);
+    }
+  }, [phoneNumber, currency]);
+
   const displayPhoneNumber = () => {
     if (!phoneNumber) return '';
     
@@ -92,7 +116,7 @@ export function PaycrestForm({ localAmount, usdcAmount, currency, onSubmit }: Pa
   const isValid = (currency === 'KES' ? phoneNumber.length >= 9 : phoneNumber.length >= 10) && accountName.length >= 2;
 
   return (
-    <div className="relative w-full max-w-md mx-auto">
+    <div className="relative w-full max-w-sm mx-auto">
       <div className="relative rounded-3xl card-shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-[1.01]">
         {/* Premium background */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800">
@@ -113,7 +137,7 @@ export function PaycrestForm({ localAmount, usdcAmount, currency, onSubmit }: Pa
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-sm">3</span>
             </div>
-            <h3 className="text-lg font-bold text-white tracking-tight">Payment Details</h3>
+            <h3 className="text-lg font-bold text-white tracking-tight">Recipient Info</h3>
           </div>
 
           {/* Info Banner */}
@@ -123,9 +147,9 @@ export function PaycrestForm({ localAmount, usdcAmount, currency, onSubmit }: Pa
                 <span className="text-white text-sm">⚡</span>
               </div>
               <div>
-                <h4 className="text-blue-300 font-bold text-sm mb-1">Payment Process</h4>
+                <h4 className="text-blue-300 font-bold text-sm mb-1">How it works</h4>
                 <p className="text-blue-200 text-xs leading-relaxed">
-                  You&apos;ll get payment instructions to send USDC. {currency} will be sent to your {currency === 'KES' ? 'M-Pesa' : 'bank account'} once confirmed.
+                  Send USDC → Get {currency} in {currency === 'KES' ? 'M-Pesa' : 'bank account'}
                 </p>
               </div>
             </div>
@@ -142,13 +166,13 @@ export function PaycrestForm({ localAmount, usdcAmount, currency, onSubmit }: Pa
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full px-4 py-3 text-white bg-white/5 backdrop-blur-sm border-2 border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10 placeholder-gray-400 transition-all duration-200"
+                className="w-full px-3 py-2 text-white bg-white/5 backdrop-blur-sm border-2 border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10 placeholder-gray-400 transition-all duration-200"
                 required
                 minLength={2}
                 maxLength={50}
               />
               <p className="text-gray-400 text-xs mt-1">
-                Full name as registered with your mobile money account
+                Full name on account
               </p>
             </div>
             
@@ -162,13 +186,23 @@ export function PaycrestForm({ localAmount, usdcAmount, currency, onSubmit }: Pa
                 value={phoneNumber}
                 onChange={handlePhoneChange}
                 placeholder="0712345678"
-                className="w-full px-4 py-3 text-white bg-white/5 backdrop-blur-sm border-2 border-white/20 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10 placeholder-gray-400 transition-all duration-200"
+                className="w-full px-3 py-2 text-white bg-white/5 backdrop-blur-sm border-2 border-white/20 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white/10 placeholder-gray-400 transition-all duration-200"
                 required
               />
               {phoneNumber && (
-                <p className="text-blue-400 text-xs mt-1 font-mono">
-                  Will send to: {displayPhoneNumber()}
-                </p>
+                <div className="mt-1 space-y-1">
+                  <p className="text-blue-400 text-xs font-mono">
+                    Will send to: {displayPhoneNumber()}
+                  </p>
+                  {carrierInfo && (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <p className="text-green-400 text-xs font-medium">
+                        Detected: {carrierInfo.displayName}
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
               <p className="text-gray-400 text-xs mt-1">
                 Format: {currency === 'KES' ? '0712345678 or 254712345678' : '08012345678 or 2348012345678'}
@@ -201,7 +235,7 @@ export function PaycrestForm({ localAmount, usdcAmount, currency, onSubmit }: Pa
             <button
               type="submit"
               disabled={!isValid || isSubmitting}
-              className={`w-full py-4 px-6 rounded-xl font-bold text-base focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300 transform shadow-lg ${
+              className={`w-full py-3 px-4 rounded-lg font-bold text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300 transform shadow-lg ${
                 isValid && !isSubmitting
                   ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 hover:scale-[1.02] active:scale-[0.98]'
                   : 'bg-gray-600 text-gray-300 cursor-not-allowed'
@@ -210,11 +244,11 @@ export function PaycrestForm({ localAmount, usdcAmount, currency, onSubmit }: Pa
               {isSubmitting ? (
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Creating Order...</span>
+                  <span>Processing...</span>
                 </div>
               ) : (
                 <div className="flex items-center justify-center space-x-2">
-                  <span>Create Payment Order</span>
+                  <span>Continue</span>
                   <span>⚡</span>
                 </div>
               )}

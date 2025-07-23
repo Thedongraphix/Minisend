@@ -96,7 +96,7 @@ export function EnhancedTransactionFlow({
     }
   }, [amount, phoneNumber, accountName, rate, currency, provider, onError]);
 
-  // Ultra-fast settlement polling
+  // Ultra-fast settlement polling with NoBlocks-inspired optimization
   const startSettlementPolling = useCallback(async () => {
     if (!orderId) return;
 
@@ -105,10 +105,21 @@ export function EnhancedTransactionFlow({
     
     const startTime = Date.now();
     let attempts = 0;
-    const maxAttempts = 60;
+    const maxAttempts = 120; // Extended to 60 seconds
+    let pollInterval = 250; // Start with 250ms
 
     const poll = async () => {
       try {
+        // Pre-settlement check - look for transaction confirmation
+        const txResponse = await fetch(`/api/paycrest/transaction-status?orderId=${orderId}`);
+        if (txResponse.ok) {
+          const { confirmed } = await txResponse.json();
+          if (confirmed && attempts < 10) {
+            // Fast track to settlement check if tx confirmed early
+            pollInterval = 200;
+          }
+        }
+
         const response = await fetch(`/api/paycrest/orders?orderId=${orderId}`);
         const { order } = await response.json();
 
@@ -127,9 +138,19 @@ export function EnhancedTransactionFlow({
 
         attempts++;
         if (attempts < maxAttempts) {
-          // Update progress during polling
-          setProgress(75 + (attempts / maxAttempts) * 20);
-          setTimeout(poll, 500); // 500ms polling
+          // Dynamic progress with acceleration
+          const baseProgress = 75;
+          const progressIncrement = (attempts / maxAttempts) * 23;
+          setProgress(Math.min(98, baseProgress + progressIncrement));
+          
+          // Adaptive polling: slow down after initial burst
+          if (attempts > 20) {
+            pollInterval = 500; // Slow down to 500ms after 5 seconds
+          } else if (attempts > 40) {
+            pollInterval = 1000; // Further slow down after 20 seconds
+          }
+          
+          setTimeout(poll, pollInterval);
         } else {
           throw new Error('Settlement timeout - order may still complete');
         }
@@ -142,16 +163,16 @@ export function EnhancedTransactionFlow({
     poll();
   }, [orderId, onComplete, onError]);
 
-  // Handle transaction success
+  // Handle transaction success with immediate settlement start
   const handleTransactionSuccess = useCallback((txHash: string) => {
     setTransactionHash(txHash);
     setStage('transaction-confirmed');
     setProgress(70);
     
-    // Start settlement polling after transaction confirmation
+    // Start settlement polling immediately for faster processing
     setTimeout(() => {
       startSettlementPolling();
-    }, 2000);
+    }, 500); // Reduced from 2000ms to 500ms
   }, [startSettlementPolling]);
 
   // Handle transaction pending
@@ -352,10 +373,10 @@ export function EnhancedTransactionFlow({
 
       {/* Speed Optimization Info */}
       <div className="text-xs text-gray-400 space-y-1 text-center">
-        <div>• OnchainKit integration for seamless Coinbase Wallet experience</div>
-        <div>• 500ms settlement polling for ultra-fast detection</div>
-        <div>• Express priority processing via PayCrest</div>
-        <div>• Target settlement time: &lt;30 seconds</div>
+        <div>• OnchainKit integration for secure wallet experience</div>
+        <div>• Adaptive polling (250ms → 1s) for optimal speed</div>
+        <div>• NoBlocks-inspired settlement patterns</div>
+        <div>• Target settlement: &lt;20 seconds</div>
       </div>
     </div>
   );

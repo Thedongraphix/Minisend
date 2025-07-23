@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPaycrestService } from '@/lib/paycrest/config';
 import { createKshMobileMoneyRecipient, createNgnBankRecipient, PaycrestOrderRequest } from '@/lib/paycrest';
 import { generateRef } from '@/lib/utils/generateRef';
+import { validateAndDetectKenyanNumber } from '@/lib/utils/phoneCarrier';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
       rate,
       returnAddress,
       currency = 'KES',
-      provider = 'MPESA' 
+      // provider = 'MPESA' // Removed - now auto-detected
     } = body;
 
     // Validate required fields
@@ -33,42 +34,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate phone number based on currency
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    // Validate phone number and detect carrier
     let formattedPhone: string;
+    let detectedProvider: 'MPESA' | 'AIRTEL' = 'MPESA';
+    let carrierInfo: {
+      carrier: string;
+      displayName: string;
+    } | null = null;
     
     if (currency === 'KES') {
-      // Kenya phone number validation
-      if (!cleanPhone.match(/^(254|0)(7|1)\d{8}$/)) {
+      // Use enhanced Kenyan number validation with carrier detection
+      const validation = validateAndDetectKenyanNumber(phoneNumber);
+      
+      if (!validation.isValid) {
         return NextResponse.json(
-          { error: 'Invalid Kenyan phone number format' },
+          { error: validation.error || 'Invalid Kenyan phone number format' },
           { status: 400 }
         );
       }
-      // Format phone number for PayCrest (ensure it starts with 254)
-      formattedPhone = cleanPhone.startsWith('254') 
-        ? cleanPhone 
-        : cleanPhone.replace(/^0/, '254');
+      
+      formattedPhone = validation.formattedNumber;
+      detectedProvider = validation.paycrestProvider;
+      carrierInfo = {
+        carrier: validation.carrier,
+        displayName: validation.displayName || 'Mobile Money'
+      };
+      
+      console.log(`Kenyan number analysis:`, {
+        input: phoneNumber,
+        formatted: formattedPhone,
+        carrier: validation.carrier,
+        provider: detectedProvider,
+        displayName: validation.displayName
+      });
     } else {
-      // Nigeria phone number validation
+      // Nigeria phone number validation (unchanged)
+      const cleanPhone = phoneNumber.replace(/\D/g, '');
       if (!cleanPhone.match(/^(234|0)[789]\d{8}$/)) {
         return NextResponse.json(
           { error: 'Invalid Nigerian phone number format' },
           { status: 400 }
         );
       }
-      // Format phone number for PayCrest (ensure it starts with 234)
       formattedPhone = cleanPhone.startsWith('234') 
         ? cleanPhone 
         : cleanPhone.replace(/^0/, '234');
     }
 
-    // Create PayCrest recipient based on currency
+    // Create PayCrest recipient with detected provider
     const recipient = currency === 'KES' 
       ? createKshMobileMoneyRecipient(
           formattedPhone,
           accountName,
-          provider as 'MPESA' | 'AIRTEL'
+          detectedProvider // Use detected provider instead of user input
         )
       : createNgnBankRecipient(
           formattedPhone,
@@ -115,7 +133,8 @@ export async function POST(request: NextRequest) {
         recipient: {
           phoneNumber: formattedPhone,
           accountName: accountName,
-          provider: provider,
+          provider: detectedProvider,
+          carrierInfo: carrierInfo, // Include carrier detection info
         }
       }
     });

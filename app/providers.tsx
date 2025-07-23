@@ -17,6 +17,11 @@ export function Providers(props: { children: ReactNode }) {
           name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'Minisend',
           logo: process.env.NEXT_PUBLIC_ICON_URL,
         },
+        wallet: {
+          display: 'modal',
+          termsUrl: 'https://minisend.xyz/terms',
+          privacyUrl: 'https://minisend.xyz/privacy',
+        },
       }}
     >
       <MiniKitProvider 
