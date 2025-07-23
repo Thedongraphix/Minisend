@@ -221,7 +221,7 @@ export function Home({ setActiveTab }: HomeProps) {
             <span className="text-blue-300 text-xs font-medium">Built on Base</span>
           </div>
           <p className="text-gray-300 text-base leading-relaxed">
-            Convert your USDC to Kenyan Shillings via M-Pesa seamlessly and securely. 
+            Convert your USDC to KES or NGN instantly to mobile money or bank accounts. 
             Built for the African crypto economy.
           </p>
           
@@ -230,7 +230,7 @@ export function Home({ setActiveTab }: HomeProps) {
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
               <div className="text-xl mb-1">⚡</div>
               <h4 className="text-white font-semibold text-xs mb-0.5">Instant</h4>
-              <p className="text-gray-400 text-xs">Direct to M-Pesa</p>
+              <p className="text-gray-400 text-xs">Direct to wallet</p>
             </div>
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
               <div className="text-xl mb-1">🔒</div>
@@ -243,9 +243,9 @@ export function Home({ setActiveTab }: HomeProps) {
               <p className="text-gray-400 text-xs">2-4% processing</p>
             </div>
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
-              <div className="text-xl mb-1">🇰🇪</div>
+              <div className="text-xl mb-1">🌍</div>
               <h4 className="text-white font-semibold text-xs mb-0.5">Local</h4>
-              <p className="text-gray-400 text-xs">Built for Kenya</p>
+              <p className="text-gray-400 text-xs">Kenya & Nigeria</p>
             </div>
           </div>
           
