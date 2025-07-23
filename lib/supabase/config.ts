@@ -32,6 +32,9 @@ export const supabaseAdmin = createClient<Database>(
 
 // Helper function to set wallet context for RLS
 export function createUserClient(walletAddress: string) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables');
+  }
   return createClient<Database>(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
