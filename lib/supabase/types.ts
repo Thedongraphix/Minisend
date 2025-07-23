@@ -12,8 +12,8 @@ export interface Database {
           created_at: string;
           updated_at: string;
           preferred_currency: string;
-          notification_preferences: Record<string, any>;
-          metadata: Record<string, any>;
+          notification_preferences: Record<string, unknown>;
+          metadata: Record<string, unknown>;
         };
         Insert: {
           id?: string;
@@ -23,8 +23,8 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           preferred_currency?: string;
-          notification_preferences?: Record<string, any>;
-          metadata?: Record<string, any>;
+          notification_preferences?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
         };
         Update: {
           id?: string;
@@ -34,8 +34,8 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           preferred_currency?: string;
-          notification_preferences?: Record<string, any>;
-          metadata?: Record<string, any>;
+          notification_preferences?: Record<string, unknown>;
+          metadata?: Record<string, unknown>;
         };
       };
       payment_orders: {
@@ -68,8 +68,8 @@ export interface Database {
           updated_at: string;
           validated_at: string | null;
           settled_at: string | null;
-          metadata: Record<string, any>;
-          error_details: Record<string, any> | null;
+          metadata: Record<string, unknown>;
+          error_details: Record<string, unknown> | null;
         };
         Insert: {
           id?: string;
@@ -100,8 +100,8 @@ export interface Database {
           updated_at?: string;
           validated_at?: string | null;
           settled_at?: string | null;
-          metadata?: Record<string, any>;
-          error_details?: Record<string, any> | null;
+          metadata?: Record<string, unknown>;
+          error_details?: Record<string, unknown> | null;
         };
         Update: {
           id?: string;
@@ -132,8 +132,8 @@ export interface Database {
           updated_at?: string;
           validated_at?: string | null;
           settled_at?: string | null;
-          metadata?: Record<string, any>;
-          error_details?: Record<string, any> | null;
+          metadata?: Record<string, unknown>;
+          error_details?: Record<string, unknown> | null;
         };
       };
       webhook_events: {
@@ -142,13 +142,13 @@ export interface Database {
           event_type: string;
           order_id: string | null;
           paycrest_order_id: string;
-          payload: Record<string, any>;
+          payload: Record<string, unknown>;
           signature: string;
           processed: boolean;
           processed_at: string | null;
           processing_error: string | null;
           received_at: string;
-          headers: Record<string, any> | null;
+          headers: Record<string, unknown> | null;
           user_agent: string | null;
         };
         Insert: {
@@ -156,13 +156,13 @@ export interface Database {
           event_type: string;
           order_id?: string | null;
           paycrest_order_id: string;
-          payload: Record<string, any>;
+          payload: Record<string, unknown>;
           signature: string;
           processed?: boolean;
           processed_at?: string | null;
           processing_error?: string | null;
           received_at?: string;
-          headers?: Record<string, any> | null;
+          headers?: Record<string, unknown> | null;
           user_agent?: string | null;
         };
         Update: {
@@ -170,13 +170,13 @@ export interface Database {
           event_type?: string;
           order_id?: string | null;
           paycrest_order_id?: string;
-          payload?: Record<string, any>;
+          payload?: Record<string, unknown>;
           signature?: string;
           processed?: boolean;
           processed_at?: string | null;
           processing_error?: string | null;
           received_at?: string;
-          headers?: Record<string, any> | null;
+          headers?: Record<string, unknown> | null;
           user_agent?: string | null;
         };
       };
@@ -187,14 +187,14 @@ export interface Database {
           user_id: string | null;
           wallet_address: string | null;
           order_id: string | null;
-          properties: Record<string, any>;
+          properties: Record<string, unknown>;
           user_agent: string | null;
           ip_address: string | null;
           referrer: string | null;
-          farcaster_context: Record<string, any> | null;
+          farcaster_context: Record<string, unknown> | null;
           timestamp: string;
           session_id: string | null;
-          experiment_groups: Record<string, any>;
+          experiment_groups: Record<string, unknown>;
         };
         Insert: {
           id?: string;
@@ -202,14 +202,14 @@ export interface Database {
           user_id?: string | null;
           wallet_address?: string | null;
           order_id?: string | null;
-          properties?: Record<string, any>;
+          properties?: Record<string, unknown>;
           user_agent?: string | null;
           ip_address?: string | null;
           referrer?: string | null;
-          farcaster_context?: Record<string, any> | null;
+          farcaster_context?: Record<string, unknown> | null;
           timestamp?: string;
           session_id?: string | null;
-          experiment_groups?: Record<string, any>;
+          experiment_groups?: Record<string, unknown>;
         };
         Update: {
           id?: string;
@@ -217,14 +217,14 @@ export interface Database {
           user_id?: string | null;
           wallet_address?: string | null;
           order_id?: string | null;
-          properties?: Record<string, any>;
+          properties?: Record<string, unknown>;
           user_agent?: string | null;
           ip_address?: string | null;
           referrer?: string | null;
-          farcaster_context?: Record<string, any> | null;
+          farcaster_context?: Record<string, unknown> | null;
           timestamp?: string;
           session_id?: string | null;
-          experiment_groups?: Record<string, any>;
+          experiment_groups?: Record<string, unknown>;
         };
       };
       carrier_detection_logs: {

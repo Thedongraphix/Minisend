@@ -121,8 +121,8 @@ export class UserService {
     walletAddress: string,
     preferences: {
       currency?: string;
-      notifications?: Record<string, any>;
-      metadata?: Record<string, any>;
+      notifications?: Record<string, unknown>;
+      metadata?: Record<string, unknown>;
     }
   ): Promise<User> {
     const updates: UserUpdate = {};

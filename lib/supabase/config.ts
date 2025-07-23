@@ -48,7 +48,7 @@ export function createUserClient(walletAddress: string) {
 // Connection test function
 export async function testSupabaseConnection() {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('users')
       .select('count(*)')
       .limit(1);
@@ -69,7 +69,7 @@ export async function testSupabaseConnection() {
 // Database health check
 export async function getSupabaseHealth() {
   try {
-    const { data, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('payment_orders')
       .select('count(*)')
       .limit(1);

@@ -238,7 +238,7 @@ export class OrderService {
    */
   static async markOrderFailed(
     paycrestOrderId: string,
-    errorDetails: Record<string, any>
+    errorDetails: Record<string, unknown>
   ): Promise<PaymentOrder> {
     return this.updateOrder(paycrestOrderId, {
       status: 'payment_order.refunded',

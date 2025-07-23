@@ -146,13 +146,24 @@ export function OffRampFlow() {
               <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-600 to-blue-700 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
                 <span className="text-2xl">🎭</span>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">Wallet Setup Needed</h2>
-              <p className="text-gray-300 text-base mb-6 leading-relaxed">
+              <h2 className="text-xl font-bold text-white mb-3 tracking-tight">Wallet Access Needed</h2>
+              <p className="text-gray-300 text-sm mb-4 leading-relaxed">
                 {context?.client ? 
-                  "Please enable wallet access in your Farcaster client to continue" :
-                  "This mini app requires a Farcaster client with wallet support"
+                  "Enable wallet in your Farcaster app to continue" :
+                  "Open this frame in a Farcaster client with wallet support"
                 }
               </p>
+              
+              {/* Troubleshooting steps */}
+              <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-400/20 mb-4">
+                <h4 className="text-blue-300 font-bold text-sm mb-2">If you see keys.coinbase.com timeout:</h4>
+                <ul className="text-blue-200 text-xs space-y-1">
+                  <li>• Close and reopen the frame</li>
+                  <li>• Try a different Farcaster client (Warpcast recommended)</li>
+                  <li>• Ensure wallet permissions are enabled</li>
+                  <li>• Check your internet connection</li>
+                </ul>
+              </div>
               
               {/* Debug info for troubleshooting */}
               <div className="bg-black/30 p-3 rounded-lg text-xs text-gray-400 mb-4">
@@ -165,10 +176,25 @@ export function OffRampFlow() {
                 <div>Connected: {isConnected ? '✅' : '❌'}</div>
               </div>
               
-              <div className="bg-purple-500/20 px-4 py-3 rounded-xl border border-purple-400/30">
-                <div className="flex items-center justify-center space-x-2 text-sm text-purple-300">
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-bold text-sm hover:from-blue-700 hover:to-blue-800 transition-all duration-300"
+                >
+                  Retry
+                </button>
+                <button
+                  onClick={() => window.open('https://warpcast.com', '_blank')}
+                  className="flex-1 bg-gray-600 text-white py-3 px-4 rounded-lg font-bold text-sm hover:bg-gray-700 transition-all duration-300"
+                >
+                  Use Warpcast
+                </button>
+              </div>
+              
+              <div className="bg-purple-500/20 px-3 py-2 rounded-lg border border-purple-400/30 mt-4">
+                <div className="flex items-center justify-center space-x-2 text-xs text-purple-300">
                   <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                  <span className="font-medium">Powered by Farcaster MiniKit</span>
+                  <span>Powered by MiniKit</span>
                 </div>
               </div>
             </div>
@@ -205,21 +231,41 @@ export function OffRampFlow() {
               <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">Connect Wallet</h2>
               <p className="text-gray-300 text-base mb-6 leading-relaxed">Connect your wallet to start converting USDC</p>
               
-              {/* OnchainKit Wallet Component */}
-              <Wallet>
-                <ConnectWallet
-                  text="Connect Wallet"
-                  className="w-full"
-                />
-                <WalletDropdown>
-                  <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                    <Avatar />
-                    <Name />
-                    <Address />
-                  </Identity>
-                  <WalletDropdownDisconnect />
-                </WalletDropdown>
-              </Wallet>
+              {/* Farcaster-optimized wallet connection */}
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="w-12 h-12 mx-auto bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-3 shadow-lg">
+                    <span className="text-xl">🔗</span>
+                  </div>
+                  <p className="text-white font-medium mb-2">Wallet Connection Required</p>
+                  <p className="text-gray-300 text-sm mb-4">
+                    Enable wallet access in your Farcaster client to continue
+                  </p>
+                </div>
+                
+                <div className="bg-orange-500/20 p-4 rounded-xl border border-orange-400/30">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm">⚠️</span>
+                    </div>
+                    <div>
+                      <h4 className="text-orange-300 font-bold text-sm mb-1">Connection Issue Detected</h4>
+                      <p className="text-orange-200 text-xs leading-relaxed">
+                        If redirected to keys.coinbase.com, try refreshing the frame or use a different Farcaster client.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-bold text-sm hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                  >
+                    Retry Connection
+                  </button>
+                </div>
+              </div>
               
               <div className="mt-4 bg-blue-500/20 px-4 py-3 rounded-xl border border-blue-400/30">
                 <div className="flex items-center justify-center space-x-2 text-sm text-blue-300">

@@ -34,8 +34,8 @@ export class AnalyticsService {
   static async trackUserJourney(
     eventName: string,
     walletAddress: string,
-    properties: Record<string, any> = {},
-    farcasterContext?: Record<string, any>,
+    properties: Record<string, unknown> = {},
+    farcasterContext?: Record<string, unknown>,
     sessionId?: string
   ): Promise<void> {
     try {
@@ -128,8 +128,8 @@ export class AnalyticsService {
   static async trackFarcasterInteraction(
     eventName: string,
     walletAddress: string,
-    farcasterContext: Record<string, any>,
-    properties: Record<string, any> = {}
+    farcasterContext: Record<string, unknown>,
+    properties: Record<string, unknown> = {}
   ): Promise<void> {
     await this.trackUserJourney(
       `farcaster_${eventName}`,
@@ -188,7 +188,7 @@ export class AnalyticsService {
   static async getEventAnalytics(
     eventName?: string,
     days: number = 7
-  ): Promise<Record<string, any>> {
+  ): Promise<Record<string, unknown>> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 

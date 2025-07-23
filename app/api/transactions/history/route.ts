@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     let userProfile = null;
     try {
       userProfile = await UserService.getUserByWallet(walletAddress);
-    } catch (error) {
+    } catch {
       // User might not exist yet, that's okay
       console.log('User profile not found, continuing without it');
     }

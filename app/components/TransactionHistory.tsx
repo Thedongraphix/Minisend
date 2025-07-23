@@ -28,7 +28,7 @@ export function TransactionHistory({ limit = 10, showHeader = true }: Transactio
     if (address) {
       fetchTransactionHistory();
     }
-  }, [address]);
+  }, [address]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchTransactionHistory = async () => {
     try {
