@@ -44,7 +44,7 @@ export function PaycrestAutomatedOrderCard({
     {
       to: usdcContract as `0x${string}`,
       data: `0xa9059cbb000000000000000000000000${order.receiveAddress.slice(2)}${parseUnits(order.totalAmount, 6).toString(16).padStart(64, '0')}` as `0x${string}`,
-      value: '0' as const,
+      value: BigInt(0),
     },
   ];
 
