@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { DirectUSDCBalance } from './DirectUSDCBalance'
 import { ConversionCalculator } from './ConversionCalculator'
 import { PaycrestForm } from './PaycrestForm'
+import { CurrencySelector, Currency, CURRENCIES } from './CurrencySelector'
+import { PaycrestAutomatedOrderCard } from './PaycrestAutomatedOrderCard'
 import { useAccount, useChainId } from 'wagmi'
 import { getNetworkConfig, isTestnet } from '@/lib/contracts'
 import Image from 'next/image'
@@ -15,12 +17,29 @@ interface TransactionResult {
   status: string;
 }
 
+interface PaycrestOrder {
+  id: string;
+  receiveAddress: string;
+  validUntil: string;
+  senderFee: string;
+  transactionFee: string;
+  totalAmount: string;
+  status: string;
+  recipient: {
+    phoneNumber: string;
+    accountName: string;
+    provider: string;
+  };
+}
+
 export function OffRampFlow() {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('KES')
   const [usdcAmount, setUsdcAmount] = useState(0)
-  const [kshAmount, setKshAmount] = useState(0)
-  const [step, setStep] = useState(1) // 1: Amount, 2: Paycrest, 3: Processing, 4: Success
+  const [localAmount, setLocalAmount] = useState(0)
+  const [step, setStep] = useState(1) // 1: Currency, 2: Amount, 3: Form, 4: Automated Payment, 5: Success
+  const [paycrestOrder, setPaycrestOrder] = useState<PaycrestOrder | null>(null)
   const [transactionResult, setTransactionResult] = useState<TransactionResult | null>(null)
   const [error, setError] = useState('')
 
@@ -28,7 +47,7 @@ export function OffRampFlow() {
   const isTestnetNetwork = isTestnet(chainId)
 
   const handlePaycrestSubmit = async (paycrestData: { phoneNumber: string; accountName: string; amount: number }) => {
-    setStep(3)
+    setStep(4) // Go to automated payment step
     setError('')
     
     try {
@@ -40,35 +59,49 @@ export function OffRampFlow() {
           amount: usdcAmount.toString(),
           phoneNumber: paycrestData.phoneNumber,
           accountName: paycrestData.accountName,
-          rate: (kshAmount / usdcAmount).toString(), // Calculate exchange rate
+          rate: (localAmount / usdcAmount).toString(),
           returnAddress: address,
+          currency: selectedCurrency,
         })
       })
       
       const data = await response.json()
       
       if (response.ok && data.success) {
-        setTransactionResult({
-          orderId: data.order.id,
+        setPaycrestOrder({
+          id: data.order.id,
           receiveAddress: data.order.receiveAddress,
-          message: `PayCrest order created successfully. Send ${data.order.totalAmount} USDC to the address below.`,
-          status: data.order.status
+          validUntil: data.order.validUntil,
+          senderFee: data.order.senderFee,
+          transactionFee: data.order.transactionFee,
+          totalAmount: data.order.totalAmount,
+          status: data.order.status,
+          recipient: {
+            phoneNumber: paycrestData.phoneNumber,
+            accountName: paycrestData.accountName,
+            provider: selectedCurrency === 'KES' ? 'M-Pesa' : 'Bank Transfer'
+          }
         })
-        setStep(4) // Success step
       } else {
         throw new Error(data.error || 'Transaction failed')
       }
     } catch (error) {
       console.error('Off-ramp error:', error)
       setError(error instanceof Error ? error.message : 'Unknown error occurred')
-      setStep(2) // Back to Paycrest form
+      setStep(3) // Back to form step
     }
+  }
+
+  const handleAutomatedComplete = () => {
+    setStep(5) // Go to success step
   }
 
   const resetFlow = () => {
     setStep(1)
+    setSelectedCurrency('KES')
     setUsdcAmount(0)
-    setKshAmount(0)
+    setLocalAmount(0)
+    setPaycrestOrder(null)
     setTransactionResult(null)
     setError('')
   }
@@ -123,8 +156,8 @@ export function OffRampFlow() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
         </div>
-        <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">USDC to KSH</h1>
-        <p className="text-gray-300 text-lg font-medium">Convert your USDC to Kenyan Shillings</p>
+        <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">USDC Offramp</h1>
+        <p className="text-gray-300 text-lg font-medium">Convert your USDC to local currency</p>
         
 
         
@@ -220,8 +253,19 @@ export function OffRampFlow() {
       {/* USDC Balance */}
       <DirectUSDCBalance />
       
-      {/* Step 1: Premium Amount Input */}
-      {step >= 1 && (
+      {/* Step 1: Currency Selector */}
+      {step === 1 && (
+        <CurrencySelector 
+          selectedCurrency={selectedCurrency}
+          onCurrencyChange={(currency) => {
+            setSelectedCurrency(currency)
+            setStep(2)
+          }}
+        />
+      )}
+      
+      {/* Step 2: Premium Amount Input */}
+      {step >= 2 && (
         <div className="relative w-full max-w-md mx-auto">
           {/* Premium Amount Input Card */}
           <div className="relative w-full rounded-3xl card-shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-[1.02]">
@@ -243,7 +287,7 @@ export function OffRampFlow() {
               {/* Header */}
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-sm">1</span>
+                  <span className="text-white font-bold text-sm">2</span>
                 </div>
                 <h3 className="text-lg font-bold text-white tracking-tight">Amount to Convert</h3>
               </div>
@@ -281,9 +325,9 @@ export function OffRampFlow() {
           </div>
           
               {/* Continue Button */}
-          {usdcAmount > 0 && step === 1 && (
+          {usdcAmount > 0 && step === 2 && (
             <button
-              onClick={() => setStep(2)}
+              onClick={() => setStep(3)}
                   className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-xl font-bold text-base hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                 >
                   <div className="flex items-center justify-center space-x-2">
@@ -311,28 +355,40 @@ export function OffRampFlow() {
         </div>
       )}
       
-      {/* Step 2: Conversion Calculator */}
-      {step >= 2 && usdcAmount > 0 && (
+      {/* Step 3: Conversion Calculator */}
+      {step >= 3 && usdcAmount > 0 && (
         <div className="transform transition-all duration-500 ease-out">
           <ConversionCalculator 
             usdcAmount={usdcAmount} 
-            onKshChange={setKshAmount}
+            onKshChange={setLocalAmount}
             provider="paycrest"
+            currency={selectedCurrency}
           />
         </div>
       )}
       
-      {/* Step 2: PayCrest Form */}
-      {step >= 2 && step < 3 && kshAmount > 0 && (
+      {/* Step 3: PayCrest Form */}
+      {step === 3 && localAmount > 0 && (
         <PaycrestForm 
-          kshAmount={kshAmount}
+          localAmount={localAmount}
           usdcAmount={usdcAmount}
+          currency={selectedCurrency}
           onSubmit={handlePaycrestSubmit}
         />
       )}
       
-      {/* Step 3: Premium Processing */}
-      {step === 3 && (
+      {/* Step 4: Automated Payment */}
+      {step === 4 && paycrestOrder && (
+        <PaycrestAutomatedOrderCard
+          order={paycrestOrder}
+          currency={CURRENCIES[selectedCurrency].symbol}
+          localAmount={localAmount}
+          onComplete={handleAutomatedComplete}
+        />
+      )}
+      
+      {/* Step 5: Premium Success */}
+      {step === 5 && (
         <div className="relative w-full max-w-md mx-auto">
           <div className="relative rounded-3xl card-shadow-lg overflow-hidden">
             {/* Premium processing background */}
@@ -364,8 +420,8 @@ export function OffRampFlow() {
               
               <div className="bg-blue-500/20 px-4 py-3 rounded-xl border border-blue-400/30">
                 <div className="flex items-center justify-center space-x-2 text-sm text-blue-300">
-                  <span>🇰🇪</span>
-                  <span className="font-medium">Payment order being created • Follow instructions</span>
+                  <span>{CURRENCIES[selectedCurrency].flag}</span>
+                  <span className="font-medium">Transaction completed successfully</span>
                 </div>
               </div>
             </div>
@@ -376,8 +432,8 @@ export function OffRampFlow() {
         </div>
       )}
       
-      {/* Step 4: Premium Success */}
-      {step === 4 && transactionResult && (
+      {/* Legacy Success Display - Not used in automated flow */}
+      {step === 6 && transactionResult && (
         <div className="relative w-full max-w-md mx-auto">
           <div className="relative rounded-3xl card-shadow-lg overflow-hidden">
             {/* Premium success background */}
@@ -466,7 +522,7 @@ export function OffRampFlow() {
                 </li>
                   <li className="flex items-start space-x-2">
                     <span className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">3</span>
-                    <span>KSH sent to your M-Pesa number</span>
+                    <span>{CURRENCIES[selectedCurrency].symbol} sent to your account</span>
                 </li>
               </ol>
             </div>
@@ -485,8 +541,8 @@ export function OffRampFlow() {
         </div>
       )}
       
-      {/* Premium Back button for step 2 */}
-      {step === 2 && (
+      {/* Premium Back button for steps 2 and 3 */}
+      {(step === 2 || step === 3) && (
         <div className="relative w-full max-w-md mx-auto">
           <div className="relative rounded-2xl card-shadow overflow-hidden">
             {/* Premium button background */}
@@ -496,13 +552,13 @@ export function OffRampFlow() {
             
             {/* Button content */}
         <button
-          onClick={() => setStep(1)}
+          onClick={() => setStep(step - 1)}
               className="relative w-full text-gray-300 hover:text-white p-4 font-semibold transition-all duration-300 flex items-center justify-center space-x-3 hover:bg-white/5 transform hover:scale-[1.02] active:scale-[0.98]"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span>Back to Amount</span>
+          <span>Back to {step === 2 ? 'Currency' : 'Amount'}</span>
         </button>
             
             {/* Subtle border */}
