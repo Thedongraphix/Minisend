@@ -23,6 +23,10 @@ export interface PaycrestOrderRequest {
   recipient: PaycrestRecipient;
   reference: string;
   returnAddress: string;
+  // Settlement acceleration options
+  priority?: 'high' | 'normal' | 'low';
+  settlementSpeed?: 'express' | 'standard';
+  webhookUrl?: string;
 }
 
 export interface PaycrestOrder {

@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     // Generate unique reference
     const reference = generateRef();
 
-    // Create order request
+    // Create order request with settlement acceleration
     const orderRequest: PaycrestOrderRequest = {
       amount: amount.toString(),
       token: 'USDC',
@@ -87,6 +87,10 @@ export async function POST(request: NextRequest) {
       recipient,
       reference,
       returnAddress,
+      // Add settlement acceleration parameters
+      priority: 'high', // Request high priority processing
+      settlementSpeed: 'express', // Request express settlement
+      webhookUrl: `${process.env.NEXT_PUBLIC_URL}/api/paycrest/webhook-fast`,
     };
 
     // Get PayCrest service and create order
