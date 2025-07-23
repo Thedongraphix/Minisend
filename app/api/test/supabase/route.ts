@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { testSupabaseConnection, getSupabaseHealth } from '@/lib/supabase/config';
 import { UserService } from '@/lib/supabase/users';
 import { OrderService } from '@/lib/supabase/orders';
 import { AnalyticsService } from '@/lib/supabase/analytics';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('Starting Supabase integration test...');
     
