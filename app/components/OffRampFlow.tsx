@@ -5,7 +5,7 @@ import { DirectUSDCBalance } from './DirectUSDCBalance'
 import { ConversionCalculator } from './ConversionCalculator'
 import { PaycrestForm } from './PaycrestForm'
 import { CurrencySelector, Currency, CURRENCIES } from './CurrencySelector'
-import { PaycrestAutomatedOrderCard } from './PaycrestAutomatedOrderCard'
+import { EnhancedTransactionFlow } from './EnhancedTransactionFlow'
 import { useMiniKit } from '@coinbase/onchainkit/minikit'
 import { useAccount, useChainId } from 'wagmi'
 import { getNetworkConfig, isTestnet } from '@/lib/contracts'
@@ -57,49 +57,24 @@ export function OffRampFlow() {
   const isTestnetNetwork = isTestnet(chainId)
 
   const handlePaycrestSubmit = async (paycrestData: { phoneNumber: string; accountName: string; amount: number }) => {
-    setStep(4) // Go to automated payment step
+    setStep(4) // Go to enhanced transaction step
     setError('')
     
-    try {
-      // Submit to Paycrest API
-      const response = await fetch('/api/paycrest/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: usdcAmount.toString(),
-          phoneNumber: paycrestData.phoneNumber,
-          accountName: paycrestData.accountName,
-          rate: (localAmount / usdcAmount).toString(),
-          returnAddress: address,
-          currency: selectedCurrency,
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (response.ok && data.success) {
-        setPaycrestOrder({
-          id: data.order.id,
-          receiveAddress: data.order.receiveAddress,
-          validUntil: data.order.validUntil,
-          senderFee: data.order.senderFee,
-          transactionFee: data.order.transactionFee,
-          totalAmount: data.order.totalAmount,
-          status: data.order.status,
-          recipient: {
-            phoneNumber: paycrestData.phoneNumber,
-            accountName: paycrestData.accountName,
-            provider: selectedCurrency === 'KES' ? 'M-Pesa' : 'Bank Transfer'
-          }
-        })
-      } else {
-        throw new Error(data.error || 'Transaction failed')
+    // Store the form data for the enhanced transaction flow
+    setPaycrestOrder({
+      id: '', // Will be filled by EnhancedTransactionFlow
+      receiveAddress: '',
+      validUntil: '',
+      senderFee: '0',
+      transactionFee: '0',
+      totalAmount: usdcAmount.toString(),
+      status: 'pending',
+      recipient: {
+        phoneNumber: paycrestData.phoneNumber,
+        accountName: paycrestData.accountName,
+        provider: selectedCurrency === 'KES' ? 'M-Pesa' : 'Bank Transfer'
       }
-    } catch (error) {
-      console.error('Off-ramp error:', error)
-      setError(error instanceof Error ? error.message : 'Unknown error occurred')
-      setStep(3) // Back to form step
-    }
+    })
   }
 
   const handleAutomatedComplete = () => {
@@ -432,14 +407,43 @@ export function OffRampFlow() {
         />
       )}
       
-      {/* Step 4: Automated Payment */}
+      {/* Step 4: Enhanced Transaction Flow */}
       {step === 4 && paycrestOrder && (
-        <PaycrestAutomatedOrderCard
-          order={paycrestOrder}
-          currency={CURRENCIES[selectedCurrency].symbol}
-          localAmount={localAmount}
-          onComplete={handleAutomatedComplete}
-        />
+        <div className="relative w-full max-w-md mx-auto">
+          <div className="relative rounded-3xl card-shadow-lg overflow-hidden">
+            {/* Premium transaction background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-black to-purple-800">
+              <div className="absolute inset-0 gradient-mesh opacity-40"></div>
+            </div>
+            
+            {/* Transaction content */}
+            <div className="relative z-10 p-6">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-white mb-2">Send Payment</h3>
+                <p className="text-gray-300 text-sm">
+                  Sending ${usdcAmount} USDC to {paycrestOrder.recipient.accountName}
+                </p>
+              </div>
+              
+              <EnhancedTransactionFlow
+                amount={usdcAmount.toString()}
+                phoneNumber={paycrestOrder.recipient.phoneNumber}
+                accountName={paycrestOrder.recipient.accountName}
+                currency={selectedCurrency}
+                provider={paycrestOrder.recipient.provider}
+                rate={localAmount / usdcAmount}
+                onComplete={handleAutomatedComplete}
+                onError={(error) => {
+                  setError(error);
+                  setStep(3);
+                }}
+              />
+            </div>
+            
+            {/* Subtle border */}
+            <div className="absolute inset-0 rounded-3xl border border-blue-400/20"></div>
+          </div>
+        </div>
       )}
       
       {/* Step 5: Premium Success */}
