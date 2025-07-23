@@ -54,17 +54,21 @@ export function OffRampFlow() {
   // Enhanced Farcaster detection and wallet logic
   const isFarcaster = Boolean(context?.user || context?.client)
   const farcasterAddress = (context?.user as { walletAddress?: string })?.walletAddress
-  const address = isFarcaster ? farcasterAddress : wagmiAddress
-  const isConnected = isFarcaster ? Boolean(farcasterAddress) : wagmiConnected
+  
+  // Use wagmi address as fallback when in Farcaster but no farcaster address
+  const address = farcasterAddress || wagmiAddress
+  const isConnected = Boolean(address) && (wagmiConnected || Boolean(farcasterAddress))
   
   // Debug logging
-  console.log('OffRamp - Farcaster context:', {
+  console.log('OffRamp - Enhanced wallet detection:', {
     isFarcaster,
     hasContext: Boolean(context),
     hasUser: Boolean(context?.user),
     hasClient: Boolean(context?.client),
     farcasterAddress,
     wagmiAddress,
+    finalAddress: address,
+    wagmiConnected,
     isConnected
   });
   
@@ -151,14 +155,15 @@ export function OffRampFlow() {
               </p>
               
               {/* Debug info for troubleshooting */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="bg-black/30 p-3 rounded-lg text-xs text-gray-400 mb-4">
-                  <div>Context: {context ? '✅' : '❌'}</div>
-                  <div>Client: {context?.client ? '✅' : '❌'}</div>
-                  <div>User: {context?.user ? '✅' : '❌'}</div>
-                  <div>Wallet: {farcasterAddress ? '✅' : '❌'}</div>
-                </div>
-              )}
+              <div className="bg-black/30 p-3 rounded-lg text-xs text-gray-400 mb-4">
+                <div>Context: {context ? '✅' : '❌'}</div>
+                <div>Client: {context?.client ? '✅' : '❌'}</div>
+                <div>User: {context?.user ? '✅' : '❌'} (FID: {context?.user?.fid})</div>
+                <div>Farcaster Wallet: {farcasterAddress ? '✅' : '❌'}</div>
+                <div>Wagmi Wallet: {wagmiAddress ? '✅' : '❌'}</div>
+                <div>Final Address: {address ? address.slice(0,6)+'...'+address.slice(-4) : '❌'}</div>
+                <div>Connected: {isConnected ? '✅' : '❌'}</div>
+              </div>
               
               <div className="bg-purple-500/20 px-4 py-3 rounded-xl border border-purple-400/30">
                 <div className="flex items-center justify-center space-x-2 text-sm text-purple-300">
