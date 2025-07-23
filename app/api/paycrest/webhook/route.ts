@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaycrestService } from '@/lib/paycrest/config';
 import { PaycrestWebhookEvent, PaycrestOrder } from '@/lib/paycrest';
+import { WebhookService } from '@/lib/supabase/webhooks';
+import { OrderService } from '@/lib/supabase/orders';
+import { AnalyticsService } from '@/lib/supabase/analytics';
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,29 +57,29 @@ export async function POST(request: NextRequest) {
       recipient: order.recipient
     });
 
-    // Handle different order status events
+    // Handle different order status events (updated for correct Paycrest format)
     switch (order.status) {
-      case 'pending':
+      case 'payment_order.pending':
         console.log(`Order ${order.id} is pending provider assignment`);
         await handleOrderPending(order);
         break;
         
-      case 'validated':
+      case 'payment_order.validated':
         console.log(`Order ${order.id} validated - funds sent to recipient`);
         await handleOrderValidated(order);
         break;
         
-      case 'settled':
+      case 'payment_order.settled':
         console.log(`Order ${order.id} settled - completed on blockchain`);
         await handleOrderSettled(order);
         break;
         
-      case 'refunded':
+      case 'payment_order.refunded':
         console.log(`Order ${order.id} refunded to sender`);
         await handleOrderRefunded(order);
         break;
         
-      case 'expired':
+      case 'payment_order.expired':
         console.log(`Order ${order.id} expired without completion`);
         await handleOrderExpired(order);
         break;
@@ -85,8 +88,28 @@ export async function POST(request: NextRequest) {
         console.log(`Unknown order status: ${order.status} for order ${order.id}`);
     }
 
-    // TODO: Store order status in database
-    // await updateOrderInDatabase(order.id, order.status, order);
+    // Store webhook event in database
+    const webhookEventId = await WebhookService.storeWebhookEvent({
+      event_type: event,
+      paycrest_order_id: order.id,
+      payload: webhookEvent,
+      signature,
+      headers: Object.fromEntries(request.headers.entries()),
+      user_agent: request.headers.get('user-agent')
+    });
+
+    // Update order status in database
+    try {
+      await OrderService.updateOrderStatus(order.id, order.status);
+      await WebhookService.markWebhookProcessed(webhookEventId.id, true);
+    } catch (dbError) {
+      console.error('Database update failed:', dbError);
+      await WebhookService.markWebhookProcessed(
+        webhookEventId.id, 
+        false, 
+        dbError instanceof Error ? dbError.message : 'Database update failed'
+      );
+    }
 
     return NextResponse.json(
       { message: 'Webhook received successfully' },
@@ -114,15 +137,55 @@ async function handleOrderValidated(order: PaycrestOrder) {
   // This is when you can consider the transaction successful from user perspective
   console.log(`Order ${order.id} validated - recipient should have received funds`);
   
-  // TODO: Send success notification to user
-  // TODO: Update transaction status in database
-  // TODO: Trigger any post-transaction logic
+  // Log success for debugging the 50% stuck issue
+  console.log('SUCCESS: Transaction completed successfully!', {
+    orderId: order.id,
+    amount: order.amount,
+    recipient: order.recipient?.accountName,
+    phone: order.recipient?.accountIdentifier,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Track analytics event
+  try {
+    const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
+    if (dbOrder) {
+      await AnalyticsService.trackPaymentCompleted(
+        dbOrder.wallet_address,
+        dbOrder.id,
+        Number(dbOrder.amount),
+        dbOrder.currency,
+        0 // Settlement time - could be calculated from created_at to now
+      );
+    }
+  } catch (error) {
+    console.error('Failed to track payment completion analytics:', error);
+  }
 }
 
 async function handleOrderSettled(order: PaycrestOrder) {
   // Order fully completed on blockchain
   // Provider has received the stablecoin
   console.log(`Order ${order.id} settled on blockchain`);
+  
+  // Track settlement analytics
+  try {
+    const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
+    if (dbOrder) {
+      await AnalyticsService.trackEvent({
+        event_name: 'order_settled',
+        wallet_address: dbOrder.wallet_address,
+        order_id: dbOrder.id,
+        properties: {
+          amount: dbOrder.amount,
+          currency: dbOrder.currency,
+          settlement_time: new Date().toISOString()
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Failed to track settlement analytics:', error);
+  }
 }
 
 async function handleOrderRefunded(order: PaycrestOrder) {

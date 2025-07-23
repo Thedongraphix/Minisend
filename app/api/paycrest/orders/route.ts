@@ -3,6 +3,9 @@ import { getPaycrestService } from '@/lib/paycrest/config';
 import { createKshMobileMoneyRecipient, createNgnBankRecipient, PaycrestOrderRequest } from '@/lib/paycrest';
 import { generateRef } from '@/lib/utils/generateRef';
 import { validateAndDetectKenyanNumber } from '@/lib/utils/phoneCarrier';
+import { OrderService } from '@/lib/supabase/orders';
+import { UserService } from '@/lib/supabase/users';
+import { AnalyticsService } from '@/lib/supabase/analytics';
 
 export async function POST(request: NextRequest) {
   try {
@@ -115,6 +118,71 @@ export async function POST(request: NextRequest) {
     const paycrestService = await getPaycrestService();
     const order = await paycrestService.createOrderWithRetry(orderRequest);
 
+    // Create or get user
+    let user;
+    try {
+      user = await UserService.upsertUser({
+        wallet_address: returnAddress
+      });
+    } catch (userError) {
+      console.error('Failed to create/update user:', userError);
+      // Continue without user link
+      user = null;
+    }
+
+    // Store order in database
+    try {
+      await OrderService.createOrder({
+        paycrest_order_id: order.id,
+        paycrest_reference: order.reference,
+        user_id: user?.id,
+        wallet_address: returnAddress,
+        amount: parseFloat(amount),
+        token: 'USDC',
+        network: 'base',
+        currency,
+        exchange_rate: parseFloat(rate.toString()),
+        local_amount: parseFloat(amount) * parseFloat(rate.toString()),
+        sender_fee: parseFloat(order.senderFee || '0'),
+        transaction_fee: parseFloat(order.transactionFee || '0'),
+        total_amount: parseFloat(order.amount || amount),
+        recipient_name: accountName,
+        recipient_phone: formattedPhone,
+        recipient_institution: detectedProvider,
+        recipient_currency: currency,
+        receive_address: order.receiveAddress,
+        valid_until: order.validUntil,
+        status: order.status || 'payment_order.pending',
+        metadata: {
+          carrier_info: carrierInfo,
+          original_phone_input: phoneNumber,
+          api_version: 'v1'
+        }
+      });
+
+      // Track analytics
+      await AnalyticsService.trackOrderCreated(
+        returnAddress,
+        order.id,
+        parseFloat(amount),
+        currency,
+        formattedPhone
+      );
+
+      // Log carrier detection
+      if (currency === 'KES' && carrierInfo) {
+        await AnalyticsService.logCarrierDetection({
+          phone_number: formattedPhone,
+          detected_carrier: carrierInfo.carrier,
+          paycrest_provider: detectedProvider,
+          order_id: order.id
+        });
+      }
+    } catch (dbError) {
+      console.error('Database operations failed:', dbError);
+      // Continue - don't fail the API call if DB fails
+    }
+
     return NextResponse.json({
       success: true,
       order: {
@@ -123,12 +191,13 @@ export async function POST(request: NextRequest) {
         validUntil: order.validUntil,
         senderFee: order.senderFee || "0",
         transactionFee: order.transactionFee || "0",
-        totalAmount: (
+        totalAmount: order.amount || "0", // Keep original amount separate
+        totalAmountWithFees: (
           parseFloat(order.amount || "0") + 
           parseFloat(order.senderFee || "0") + 
           parseFloat(order.transactionFee || "0")
-        ).toString(),
-        status: order.status || "pending",
+        ).toString(), // This is what user actually sends
+        status: order.status || "payment_order.pending",
         reference: order.reference,
         recipient: {
           phoneNumber: formattedPhone,
@@ -170,6 +239,17 @@ export async function GET(request: NextRequest) {
 
     const paycrestService = await getPaycrestService();
     const order = await paycrestService.getOrderStatus(orderId);
+
+    // Update order status in database if changed
+    try {
+      const dbOrder = await OrderService.getOrderByPaycrestId(orderId);
+      if (dbOrder && dbOrder.status !== order.status) {
+        await OrderService.updateOrderStatus(orderId, order.status);
+      }
+    } catch (dbError) {
+      console.error('Failed to update order status in database:', dbError);
+      // Continue - don't fail the API call
+    }
 
     return NextResponse.json({
       success: true,

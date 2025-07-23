@@ -55,8 +55,8 @@ export function EnhancedTransactionFlow({
   const [settlementTime, setSettlementTime] = useState<number>(0);
   const [transactionHash, setTransactionHash] = useState<string>('');
 
-  // USDC contract on Base
-  const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+  // USDC contract on Base (correct address from Paycrest docs)
+  const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Keep this - it's correct
 
   // Create PayCrest order
   const createOrder = useCallback(async () => {
@@ -113,17 +113,42 @@ export function EnhancedTransactionFlow({
         // Pre-settlement check - look for transaction confirmation
         const txResponse = await fetch(`/api/paycrest/transaction-status?orderId=${orderId}`);
         if (txResponse.ok) {
-          const { confirmed } = await txResponse.json();
+          const { confirmed, order: txOrder, statusFlags } = await txResponse.json();
+          console.log(`Polling attempt ${attempts}: Status = ${txOrder?.status}, Confirmed = ${confirmed}`);
+          
           if (confirmed && attempts < 10) {
             // Fast track to settlement check if tx confirmed early
             pollInterval = 200;
+          }
+          
+          // Check if transaction is already complete
+          if (statusFlags?.isComplete) {
+            const endTime = Date.now();
+            setSettlementTime(Math.round((endTime - startTime) / 1000));
+            setStage('settlement-complete');
+            setProgress(100);
+            onComplete(orderId);
+            return;
+          }
+          
+          // Check if transaction failed
+          if (statusFlags?.isFailed) {
+            throw new Error(`Transaction ${txOrder?.status?.replace('payment_order.', '') || 'failed'}`);
           }
         }
 
         const response = await fetch(`/api/paycrest/orders?orderId=${orderId}`);
         const { order } = await response.json();
+        
+        console.log(`Order status polling attempt ${attempts}:`, {
+          orderId,
+          status: order?.status,
+          attempts,
+          timestamp: new Date().toISOString()
+        });
 
-        if (order.status === 'settled') {
+        // Check for 'validated' status - funds sent to recipient (per Paycrest docs)
+        if (order.status === 'payment_order.validated' || order.status === 'payment_order.settled') {
           const endTime = Date.now();
           setSettlementTime(Math.round((endTime - startTime) / 1000));
           setStage('settlement-complete');
@@ -132,8 +157,8 @@ export function EnhancedTransactionFlow({
           return;
         }
 
-        if (order.status === 'refunded' || order.status === 'expired') {
-          throw new Error(`Order ${order.status}`);
+        if (order.status === 'payment_order.refunded' || order.status === 'payment_order.expired') {
+          throw new Error(`Order ${order.status.replace('payment_order.', '')}`);
         }
 
         attempts++;
@@ -152,7 +177,9 @@ export function EnhancedTransactionFlow({
           
           setTimeout(poll, pollInterval);
         } else {
-          throw new Error('Settlement timeout - order may still complete');
+          // Log final status for debugging
+          console.log(`Final polling status: ${order?.status || 'unknown'}`);
+          throw new Error('Settlement timeout - order may still complete. Check your dashboard.');
         }
       } catch (error) {
         setStage('error');
@@ -187,11 +214,17 @@ export function EnhancedTransactionFlow({
     onError(error.message || 'Transaction failed');
   }, [onError]);
 
-  // Prepare transaction calls
+  // Prepare transaction calls with proper amount calculation
   const calls = orderData ? [
     {
       to: USDC_CONTRACT as `0x${string}`,
-      data: `0xa9059cbb${orderData.receiveAddress.slice(2).padStart(64, '0')}${parseUnits(orderData.totalAmount, 6).toString(16).padStart(64, '0')}` as `0x${string}`,
+      data: `0xa9059cbb${orderData.receiveAddress.slice(2).padStart(64, '0')}${parseUnits(
+        // Send total amount including all fees as per Paycrest docs
+        (parseFloat(orderData.amount || '0') + 
+         parseFloat(orderData.senderFee || '0') + 
+         parseFloat(orderData.transactionFee || '0')).toString(), 
+        6
+      ).toString(16).padStart(64, '0')}` as `0x${string}`,
       value: BigInt(0),
     }
   ] : [];

@@ -36,7 +36,7 @@ export interface PaycrestOrder {
   senderFee: string;
   transactionFee: string;
   amount: string;
-  status: 'pending' | 'validated' | 'settled' | 'refunded' | 'expired';
+  status: 'payment_order.pending' | 'payment_order.validated' | 'payment_order.settled' | 'payment_order.refunded' | 'payment_order.expired';
   token: string;
   network: string;
   recipient: PaycrestRecipient;
@@ -103,11 +103,11 @@ export class PaycrestService {
   }
 
   async createOrder(orderData: PaycrestOrderRequest): Promise<PaycrestOrder> {
-    return this.makeRequest<PaycrestOrder>('/v1/sender/orders', 'POST', orderData);
+    return this.makeRequest<PaycrestOrder>('/v1/orders', 'POST', orderData);
   }
 
   async getOrderStatus(orderId: string): Promise<PaycrestOrder> {
-    return this.makeRequest<PaycrestOrder>(`/v1/sender/orders/${orderId}`);
+    return this.makeRequest<PaycrestOrder>(`/v1/orders/${orderId}`);
   }
 
   verifyWebhookSignature(
@@ -152,7 +152,8 @@ export function createKshMobileMoneyRecipient(
   accountName: string,
   provider: 'MPESA' | 'AIRTEL' = 'MPESA'
 ): PaycrestRecipient {
-  const institutionCode = provider === 'MPESA' ? 'SAFAKEPC' : 'AIRTKEPC';
+  // Updated institution codes based on Paycrest docs
+  const institutionCode = provider === 'MPESA' ? 'SAFARICOM' : 'AIRTEL';
   
   return {
     institution: institutionCode,
