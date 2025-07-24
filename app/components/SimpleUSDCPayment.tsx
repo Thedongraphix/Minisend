@@ -61,9 +61,25 @@ export function SimpleUSDCPayment({
       const data = await response.json();
       console.log('PayCrest order created:', data);
       
-      if (data.success && data.order && data.order.data) {
-        // PayCrest response structure: { success: true, order: { data: { ... } } }
-        const orderData = data.order.data;
+      console.log('PayCrest response structure:', JSON.stringify(data, null, 2));
+      
+      if (data.success && data.order) {
+        let orderData;
+        
+        // Handle different response structures
+        if (data.order.data) {
+          // Structure: { success: true, order: { data: { ... } } }
+          orderData = data.order.data;
+        } else if (data.order.id || data.order.receiveAddress) {
+          // Structure: { success: true, order: { id, receiveAddress, ... } }
+          orderData = data.order;
+        } else {
+          console.error('Unexpected PayCrest response structure:', data);
+          throw new Error('Unexpected PayCrest response structure');
+        }
+
+        console.log('Extracted order data:', orderData);
+        
         setPaycrestOrder({
           id: orderData.id,
           receiveAddress: orderData.receiveAddress,
@@ -74,6 +90,7 @@ export function SimpleUSDCPayment({
         });
         setStatus('ready-to-pay');
       } else {
+        console.error('Invalid PayCrest response:', data);
         throw new Error('Invalid response from PayCrest API');
       }
     } catch (error) {

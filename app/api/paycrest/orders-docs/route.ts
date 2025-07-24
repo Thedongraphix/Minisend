@@ -123,6 +123,8 @@ export async function POST(request: NextRequest) {
     }
     
     console.log('PayCrest order created successfully:', paycrestOrder);
+    console.log('PayCrest order keys:', Object.keys(paycrestOrder));
+    console.log('PayCrest order structure:', JSON.stringify(paycrestOrder, null, 2));
 
     return NextResponse.json({
       success: true,
