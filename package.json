@@ -2,14 +2,16 @@
   "name": "minisend",
   "version": "1.0.0",
   "private": true,
-  "description": "Convert USDC to Kenyan Shillings seamlessly via PayCrest. The easiest way to cash out your crypto in Kenya.",
+  "description": "Farcaster mini app for converting USDC to mobile money via PayCrest. Seamless crypto-to-fiat transactions.",
   "keywords": [
     "usdc",
     "paycrest",
-    "kenya",
-    "crypto",
     "farcaster",
-    "offramp"
+    "miniapp",
+    "crypto",
+    "offramp",
+    "mobile-money",
+    "base-network"
   ],
   "author": "Minisend Team",
   "scripts": {
