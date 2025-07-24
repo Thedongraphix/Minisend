@@ -8,8 +8,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token') || 'USDC';
-    const network = searchParams.get('network') || 'base';
+    const amount = searchParams.get('amount') || '1';
     const currency = searchParams.get('currency') || 'KES';
+    const network = searchParams.get('network') || 'base';
 
     // Get PayCrest configuration
     const clientId = process.env.PAYCREST_API_KEY;
@@ -23,14 +24,15 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Getting PayCrest rates:', {
-      url: `${baseUrl}/v1/rates`,
+      url: `${baseUrl}/v1/rates/${token}/${amount}/${currency}?network=${network}`,
       token,
-      network,
-      currency
+      amount,
+      currency,
+      network
     });
 
-    // Get rates from PayCrest API
-    const paycrestResponse = await fetch(`${baseUrl}/v1/rates?token=${token}&network=${network}&currency=${currency}`, {
+    // Get rates from PayCrest API using new format
+    const paycrestResponse = await fetch(`${baseUrl}/v1/rates/${token}/${amount}/${currency}?network=${network}`, {
       headers: {
         'API-Key': clientId,
       },
