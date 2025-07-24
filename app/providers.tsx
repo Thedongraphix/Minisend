@@ -22,6 +22,7 @@ export function Providers(props: { children: ReactNode }) {
           termsUrl: 'https://minisend.xyz/terms',
           privacyUrl: 'https://minisend.xyz/privacy',
         },
+        enablePopups: true, // Enable popups for better mobile experience
       }}
     >
       <MiniKitProvider 

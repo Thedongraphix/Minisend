@@ -119,21 +119,23 @@ export function SmartWalletConnection({
           </p>
         </div>
         
-        {/* Full Coinbase Wallet Integration */}
-        <Wallet>
-          <ConnectWallet
-            text={showForTransaction ? "Connect for Transaction" : "Connect Wallet"}
-            className="w-full"
-          />
-          <WalletDropdown>
-            <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-              <Avatar />
-              <Name />
-              <Address />
-            </Identity>
-            <WalletDropdownDisconnect />
-          </WalletDropdown>
-        </Wallet>
+        {/* Mobile-optimized Wallet Integration */}
+        <div className="w-full">
+          <Wallet>
+            <ConnectWallet
+              text={showForTransaction ? "Connect for Transaction" : "Connect Wallet"}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-xl font-bold text-sm transition-all duration-300 shadow-lg"
+            />
+            <WalletDropdown>
+              <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                <Avatar />
+                <Name />
+                <Address />
+              </Identity>
+              <WalletDropdownDisconnect />
+            </WalletDropdown>
+          </Wallet>
+        </div>
 
         {showForTransaction && (
           <div className="bg-orange-500/20 p-3 rounded-xl border border-orange-400/30">

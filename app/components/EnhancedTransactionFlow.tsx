@@ -113,34 +113,12 @@ export function EnhancedTransactionFlow({
 
     const poll = async () => {
       try {
-        // Pre-settlement check - look for transaction confirmation
-        const txResponse = await fetch(`/api/paycrest/transaction-status?orderId=${orderId}`);
-        if (txResponse.ok) {
-          const { confirmed, order: txOrder, statusFlags } = await txResponse.json();
-          console.log(`Polling attempt ${attempts}: Status = ${txOrder?.status}, Confirmed = ${confirmed}`);
-          
-          if (confirmed && attempts < 10) {
-            // Fast track to settlement check if tx confirmed early
-            pollInterval = 200;
-          }
-          
-          // Check if transaction is already complete
-          if (statusFlags?.isComplete) {
-            const endTime = Date.now();
-            setSettlementTime(Math.round((endTime - startTime) / 1000));
-            setStage('settlement-complete');
-            setProgress(100);
-            onComplete(orderId);
-            return;
-          }
-          
-          // Check if transaction failed
-          if (statusFlags?.isFailed) {
-            throw new Error(`Transaction ${txOrder?.status?.replace('payment_order.', '') || 'failed'}`);
-          }
-        }
-
         const response = await fetch(`/api/paycrest/orders?orderId=${orderId}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch order status: ${response.status}`);
+        }
+        
         const { order } = await response.json();
         
         console.log(`Order status polling attempt ${attempts}:`, {
@@ -150,7 +128,7 @@ export function EnhancedTransactionFlow({
           timestamp: new Date().toISOString()
         });
 
-        // Check for 'validated' status - funds sent to recipient (per Paycrest docs)
+        // Check for completion statuses
         if (order.status === 'payment_order.validated' || order.status === 'payment_order.settled') {
           const endTime = Date.now();
           setSettlementTime(Math.round((endTime - startTime) / 1000));
@@ -160,8 +138,14 @@ export function EnhancedTransactionFlow({
           return;
         }
 
+        // Check for failure statuses
         if (order.status === 'payment_order.refunded' || order.status === 'payment_order.expired') {
           throw new Error(`Order ${order.status.replace('payment_order.', '')}`);
+        }
+
+        // Fast track polling for confirmed transactions
+        if (order.status === 'payment_order.validated' && attempts < 10) {
+          pollInterval = 200;
         }
 
         attempts++;
