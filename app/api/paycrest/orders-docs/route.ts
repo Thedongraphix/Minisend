@@ -29,23 +29,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current rates from PayCrest API using new format
-    const ratesResponse = await fetch(`${baseUrl}/v1/rates/USDC/${amount}/${currency}?network=base`, {
-      headers: {
-        'API-Key': clientId,
-      },
-    });
+    let currentRate = "130.0"; // fallback rate for KES
+    
+    try {
+      const ratesResponse = await fetch(`${baseUrl}/v1/rates/USDC/${amount}/${currency}?network=base`, {
+        headers: {
+          'API-Key': clientId,
+        },
+      });
 
-    let currentRate = "1.0"; // fallback rate
-    if (ratesResponse.ok) {
-      try {
+      if (ratesResponse.ok) {
         const ratesData = await ratesResponse.json();
-        currentRate = ratesData.data || ratesData.rate || currentRate;
-        console.log('Retrieved PayCrest rate:', currentRate);
-      } catch {
-        console.warn('Failed to parse rates response, using fallback rate');
+        if (ratesData.status === 'success' && ratesData.data) {
+          currentRate = ratesData.data;
+          console.log('Retrieved PayCrest rate:', currentRate);
+        }
       }
-    } else {
-      console.warn('Failed to get rates from PayCrest, using fallback rate');
+    } catch (error) {
+      console.warn('Failed to fetch rates, using fallback:', error);
     }
 
     // Map provider to institution exactly as per PayCrest standards
