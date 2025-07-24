@@ -31,11 +31,11 @@ export async function POST(request: NextRequest) {
     // Map provider to institution exactly as per PayCrest standards
     let institution;
     if (currency === 'KES') {
-      institution = provider === 'M-Pesa' ? 'SAFARICOM' : 'SAFARICOM';
+      institution = provider === 'M-Pesa' ? 'SAFAKEPC' : 'SAFAKEPC'; // Correct code for Kenyan M-Pesa
     } else if (currency === 'NGN') {
       institution = 'GTB'; // As per their example
     } else {
-      institution = 'SAFARICOM'; // Default fallback
+      institution = 'SAFAKEPC'; // Default fallback for Kenya
     }
 
     // Create PayCrest order request EXACTLY as per documentation
