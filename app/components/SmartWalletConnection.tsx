@@ -31,7 +31,8 @@ export function SmartWalletConnection({
   const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
   
   // Enhanced Farcaster detection and wallet logic
-  const isFarcaster = Boolean(context?.user || context?.client);
+  const isFarcaster = Boolean(context?.user || context?.client) || 
+                     (typeof window !== 'undefined' && window.parent !== window); // Detect iframe
   const farcasterAddress = (context?.user as { walletAddress?: string })?.walletAddress;
   
   // Use wagmi address as fallback when in Farcaster but no farcaster address
@@ -53,26 +54,29 @@ export function SmartWalletConnection({
               <span className="text-xl">🔗</span>
             </div>
             <div>
-              <h4 className="text-blue-300 font-bold text-sm mb-1">Wallet Access Needed</h4>
+              <h4 className="text-blue-300 font-bold text-sm mb-1">Connect Wallet</h4>
               <p className="text-blue-200 text-xs">
-                Enable wallet in your Farcaster app to continue
+                Tap to connect your Coinbase Wallet for USDC transactions
               </p>
             </div>
           </div>
           
-          <div className="mt-3 flex space-x-2">
-            <button
-              onClick={() => window.location.reload()}
-              className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg font-bold text-xs hover:bg-blue-700 transition-all duration-300"
-            >
-              Retry
-            </button>
-            <button
-              onClick={() => window.open('https://warpcast.com', '_blank')}
-              className="flex-1 bg-gray-600 text-white py-2 px-3 rounded-lg font-bold text-xs hover:bg-gray-700 transition-all duration-300"
-            >
-              Use Warpcast
-            </button>
+          {/* Show Coinbase Wallet connection even in Farcaster frames */}
+          <div className="mt-4">
+            <Wallet>
+              <ConnectWallet
+                text="Connect Coinbase Wallet"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-bold text-sm transition-all duration-300"
+              />
+              <WalletDropdown>
+                <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                  <Avatar />
+                  <Name />
+                  <Address />
+                </Identity>
+                <WalletDropdownDisconnect />
+              </WalletDropdown>
+            </Wallet>
           </div>
         </div>
       );

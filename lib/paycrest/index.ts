@@ -3,6 +3,7 @@
 
 export interface PaycrestConfig {
   apiKey: string;
+  clientSecret: string;
   webhookSecret: string;
   baseUrl: string;
 }
@@ -114,12 +115,20 @@ export class PaycrestService {
     payload: string,
     signature: string
   ): boolean {
+    // Use CLIENT_SECRET as per PayCrest documentation
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const crypto = require('crypto');
-    const key = Buffer.from(this.config.webhookSecret);
+    const secretKey = this.config.webhookSecret || this.config.clientSecret;
+    const key = Buffer.from(secretKey);
     const hash = crypto.createHmac('sha256', key);
     hash.update(payload);
     const calculatedSignature = hash.digest('hex');
+    
+    console.log('Webhook signature verification:', {
+      signature,
+      calculatedSignature,
+      secretUsed: secretKey ? 'present' : 'missing'
+    });
     
     return signature === calculatedSignature;
   }

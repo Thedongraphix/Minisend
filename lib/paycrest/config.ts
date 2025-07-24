@@ -1,20 +1,22 @@
 import { PaycrestConfig } from './index';
 
 export function getPaycrestConfig(): PaycrestConfig {
-  const apiKey = process.env.PAYCREST_API_KEY;
-  const webhookSecret = process.env.PAYCREST_WEBHOOK_SECRET;
-  const baseUrl = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io';
+  const apiKey = process.env.PAYCREST_CLIENT_ID || process.env.PAYCREST_API_KEY;
+  const clientSecret = process.env.PAYCREST_CLIENT_SECRET;
+  const webhookSecret = process.env.PAYCREST_WEBHOOK_SECRET || clientSecret;
+  const baseUrl = process.env.NEXT_PUBLIC_PAYCREST_API_URL || 'https://api.paycrest.io';
 
   if (!apiKey) {
-    throw new Error('PAYCREST_API_KEY environment variable is required');
+    throw new Error('PAYCREST_CLIENT_ID or PAYCREST_API_KEY environment variable is required');
   }
 
-  if (!webhookSecret) {
-    throw new Error('PAYCREST_WEBHOOK_SECRET environment variable is required');
+  if (!clientSecret) {
+    throw new Error('PAYCREST_CLIENT_SECRET environment variable is required');
   }
 
   return {
     apiKey,
+    clientSecret,
     webhookSecret,
     baseUrl,
   };
