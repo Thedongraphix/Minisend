@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { 
   Transaction, 
   TransactionButton,
@@ -59,7 +59,17 @@ export function EnhancedTransactionFlow({
   } | null>(null);
   const [progress, setProgress] = useState(0);
   const [settlementTime, setSettlementTime] = useState<number>(0);
-  const [transactionHash, setTransactionHash] = useState<string>('');
+  const [transactionHash, setTransactionHash] = useState<string>('')
+  const [transactionTimeout, setTransactionTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (transactionTimeout) {
+        clearTimeout(transactionTimeout);
+      }
+    };
+  }, [transactionTimeout]);
 
   // USDC contract on Base (correct address from Paycrest docs)
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // Keep this - it's correct
@@ -210,6 +220,7 @@ export function EnhancedTransactionFlow({
 
   // Handle transaction success with immediate settlement start
   const handleTransactionSuccess = useCallback((txHash: string) => {
+    console.log('Transaction success - starting settlement polling for hash:', txHash);
     setTransactionHash(txHash);
     setStage('transaction-confirmed');
     setProgress(70);
@@ -217,7 +228,7 @@ export function EnhancedTransactionFlow({
     // Start settlement polling immediately for faster processing
     setTimeout(() => {
       startSettlementPolling();
-    }, 500); // Reduced from 2000ms to 500ms
+    }, 1000); // Give 1 second for transaction to propagate
   }, [startSettlementPolling]);
 
   // Handle transaction pending
@@ -389,6 +400,13 @@ export function EnhancedTransactionFlow({
             calls={calls}
             onSuccess={(response) => {
               console.log('Transaction successful:', response);
+              
+              // Clear timeout
+              if (transactionTimeout) {
+                clearTimeout(transactionTimeout);
+                setTransactionTimeout(null);
+              }
+              
               const txHash = response.transactionReceipts[0]?.transactionHash;
               if (txHash) {
                 handleTransactionSuccess(txHash);
@@ -397,25 +415,56 @@ export function EnhancedTransactionFlow({
             onStatus={(status) => {
               console.log('Transaction status:', status);
               
-              // Handle different transaction states
+              // Handle different transaction states with proper progress flow
               switch (status.statusName) {
+                case 'init':
+                  setProgress(30);
+                  break;
+                case 'buildingTransaction':
+                  setStage('transaction-pending');
+                  setProgress(50);
+                  
+                  // Set timeout to prevent getting stuck
+                  const timeout = setTimeout(() => {
+                    console.warn('Transaction timeout - checking if we should proceed to settlement');
+                    if (orderId) {
+                      console.log('Transaction timed out but orderId exists, starting settlement polling');
+                      setStage('transaction-confirmed');
+                      setProgress(70);
+                      startSettlementPolling();
+                    }
+                  }, 60000); // 60 second timeout
+                  
+                  setTransactionTimeout(timeout);
+                  break;
                 case 'transactionPending':
                   handleTransactionPending();
                   break;
-                case 'buildingTransaction':
-                  setStage('creating-order');
-                  setProgress(40);
+                case 'transactionLegacyExecuted':
+                  setStage('transaction-confirmed');
+                  setProgress(70);
                   break;
                 case 'success':
                   // handleTransactionSuccess will be called via onSuccess
+                  console.log('Transaction success status received');
                   break;
                 case 'error':
+                  console.error('Transaction error status:', status.statusData);
                   handleTransactionError(status.statusData);
                   break;
+                default:
+                  console.log('Unknown transaction status:', status.statusName);
               }
             }}
             onError={(error) => {
               console.error('Transaction error:', error);
+              
+              // Don't fail on Farcaster API errors - they're not critical for transaction
+              if (error?.message?.includes('Farcaster API Error')) {
+                console.warn('Ignoring Farcaster API error - transaction may still succeed');
+                return;
+              }
+              
               handleTransactionError(error);
             }}
           >
