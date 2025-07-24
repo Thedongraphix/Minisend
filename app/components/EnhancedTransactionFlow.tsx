@@ -67,7 +67,7 @@ export function EnhancedTransactionFlow({
     setProgress(10);
 
     try {
-      const response = await fetch('/api/paycrest/orders-simple', {
+      const response = await fetch('/api/paycrest/orders-docs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,7 +75,7 @@ export function EnhancedTransactionFlow({
           phoneNumber,
           accountName,
           rate,
-          returnAddress: '0x0000000000000000000000000000000000000000',
+          returnAddress: '0x1234567890123456789012345678901234567890', // As per PayCrest docs example
           currency,
           provider
         }),
@@ -113,7 +113,7 @@ export function EnhancedTransactionFlow({
 
     const poll = async () => {
       try {
-        const response = await fetch(`/api/paycrest/orders-simple?orderId=${orderId}`);
+        const response = await fetch(`/api/paycrest/orders-docs?orderId=${orderId}`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch order status: ${response.status}`);
