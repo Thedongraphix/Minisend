@@ -107,14 +107,10 @@ export function SimpleUSDCPayment({
     const transactionFee = parseFloat(paycrestOrder.transactionFee) || 0;
     const totalAmount = baseAmount + senderFee + transactionFee;
     
-    // Use proper ERC-20 transfer encoding
-    const transferAmount = parseUnits(totalAmount.toString(), 6);
-    const transferData = `0xa9059cbb${paycrestOrder.receiveAddress.slice(2).padStart(64, '0')}${transferAmount.toString(16).padStart(64, '0')}`;
-    
     return [{
       to: USDC_CONTRACT as `0x${string}`,
-      data: transferData as `0x${string}`,
       value: BigInt(0),
+      data: `0xa9059cbb000000000000000000000000${paycrestOrder.receiveAddress.slice(2)}${parseUnits(totalAmount.toString(), 6).toString(16).padStart(64, '0')}` as `0x${string}`
     }];
   })() : [];
 
