@@ -41,6 +41,10 @@ export function DirectUSDCBalance() {
   const fetchBalance = useCallback(async () => {
     if (!address || chainId !== base.id) return
     
+    // Capture address value to prevent race conditions
+    const currentAddress = address
+    if (!currentAddress) return
+    
     setIsLoading(true)
     setError('')
     
@@ -49,7 +53,7 @@ export function DirectUSDCBalance() {
       const rpcUrl = 'https://mainnet.base.org'
       
       // ERC-20 balanceOf function call
-      const data = `0x70a08231000000000000000000000000${address.slice(2)}`
+      const data = `0x70a08231000000000000000000000000${currentAddress.slice(2)}`
       
       const response = await fetch(rpcUrl, {
         method: 'POST',

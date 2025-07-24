@@ -67,6 +67,15 @@ export function EnhancedTransactionFlow({
     setProgress(10);
 
     try {
+      console.log('Creating PayCrest order with data:', {
+        amount,
+        phoneNumber,
+        accountName,
+        rate,
+        currency,
+        provider
+      });
+
       const response = await fetch('/api/paycrest/orders-docs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,26 +84,45 @@ export function EnhancedTransactionFlow({
           phoneNumber,
           accountName,
           rate,
-          returnAddress: '0x7D6109a51781FB8dFCae01F5Cd5C70dF412a9CEc', // Your specified return address
+          returnAddress: '0x7D6109a51781FB8dFCae01F5Cd5C70dF412a9CEc',
           currency,
           provider
         }),
       });
 
+      console.log('PayCrest API response status:', response.status);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create order');
+        let errorMessage = 'Failed to create order';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          console.error('PayCrest API error response:', errorData);
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
-      const { order } = await response.json();
+      const responseData = await response.json();
+      console.log('PayCrest order created successfully:', responseData);
+
+      if (!responseData.success || !responseData.order) {
+        throw new Error('Invalid response from PayCrest API');
+      }
+
+      const { order } = responseData;
       setOrderId(order.id);
       setOrderData(order);
       setStage('order-ready');
       setProgress(25);
       return order;
     } catch (error) {
+      console.error('Order creation error:', error);
       setStage('error');
-      onError(error instanceof Error ? error.message : 'Order creation failed');
+      const errorMessage = error instanceof Error ? error.message : 'Order creation failed';
+      onError(errorMessage);
       throw error;
     }
   }, [amount, phoneNumber, accountName, rate, currency, provider, onError]);
@@ -202,7 +230,7 @@ export function EnhancedTransactionFlow({
   }, [onError]);
 
   // Prepare transaction calls with proper amount calculation
-  const calls = orderData ? [
+  const calls = orderData && orderData.receiveAddress ? [
     {
       to: USDC_CONTRACT as `0x${string}`,
       data: `0xa9059cbb${orderData.receiveAddress.slice(2).padStart(64, '0')}${parseUnits(
