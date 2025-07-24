@@ -5,6 +5,10 @@ import { WebhookService } from '@/lib/supabase/webhooks';
 import { OrderService } from '@/lib/supabase/orders';
 import { AnalyticsService } from '@/lib/supabase/analytics';
 
+// Force dynamic rendering and Node.js runtime
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Get the signature from headers
