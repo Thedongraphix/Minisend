@@ -20,7 +20,7 @@ export function Providers(props: { children: ReactNode }) {
           config={{
             appearance: {
               mode: 'auto',
-              theme: 'default',
+              theme: 'default', 
               name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || 'Minisend',
               logo: process.env.NEXT_PUBLIC_ICON_URL,
             },
@@ -29,6 +29,10 @@ export function Providers(props: { children: ReactNode }) {
               termsUrl: 'https://minisend.xyz/terms',
               privacyUrl: 'https://minisend.xyz/privacy',
             },
+            // Enable paymaster for sponsored transactions if configured
+            ...(process.env.NEXT_PUBLIC_PAYMASTER_ENDPOINT && {
+              paymaster: process.env.NEXT_PUBLIC_PAYMASTER_ENDPOINT
+            })
           }}
         >
           <MiniKitProvider 

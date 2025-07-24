@@ -7,11 +7,14 @@ import {
   TransactionStatus,
   TransactionStatusLabel,
   TransactionStatusAction,
+  TransactionToast,
+  TransactionToastIcon,
+  TransactionToastLabel,
+  TransactionToastAction,
 } from '@coinbase/onchainkit/transaction';
 import { parseUnits } from 'viem';
 import { base } from 'wagmi/chains';
 import Image from 'next/image';
-import { SmartWalletConnection } from './SmartWalletConnection';
 
 interface EnhancedTransactionFlowProps {
   amount: string;
@@ -229,20 +232,26 @@ export function EnhancedTransactionFlow({
     onError(error.message || 'Transaction failed');
   }, [onError]);
 
-  // Prepare transaction calls with proper amount calculation
+  // Prepare transaction calls using proper OnchainKit format
   const calls = orderData && orderData.receiveAddress ? [
     {
       to: USDC_CONTRACT as `0x${string}`,
       data: `0xa9059cbb${orderData.receiveAddress.slice(2).padStart(64, '0')}${parseUnits(
-        // Send total amount including all fees as per Paycrest docs
-        (parseFloat(orderData.amount || '0') + 
-         parseFloat(orderData.senderFee || '0') + 
-         parseFloat(orderData.transactionFee || '0')).toString(), 
-        6
+        // Use the exact amount from PayCrest order
+        orderData.amount.toString(), 
+        6 // USDC has 6 decimals
       ).toString(16).padStart(64, '0')}` as `0x${string}`,
-      value: BigInt(0),
+      value: BigInt(0), // Value to send with transaction
     }
   ] : [];
+
+  // Debug log the transaction calls
+  console.log('Transaction calls prepared:', {
+    orderData,
+    calls,
+    usdcContract: USDC_CONTRACT,
+    amount: orderData?.amount
+  });
 
   // Stage configurations
   const stageConfig = {
@@ -365,49 +374,78 @@ export function EnhancedTransactionFlow({
         </button>
       )}
 
-      {/* Smart Wallet Connection for Transaction */}
+      {/* Enhanced Transaction Flow with OnchainKit */}
       {orderData && stage === 'order-ready' && (
         <div className="space-y-4">
-          <SmartWalletConnection 
-            showForTransaction={true}
-            onWalletReady={(address) => {
-              console.log('Wallet ready for transaction:', address);
+          <div className="text-center mb-4">
+            <h3 className="text-lg font-bold text-white mb-2">Ready to Send</h3>
+            <p className="text-gray-300 text-sm">
+              Send ${parseFloat(orderData.amount || '0').toFixed(2)} USDC to PayCrest
+            </p>
+          </div>
+          
+          <Transaction
+            chainId={base.id}
+            calls={calls}
+            onSuccess={(response) => {
+              console.log('Transaction successful:', response);
+              const txHash = response.transactionReceipts[0]?.transactionHash;
+              if (txHash) {
+                handleTransactionSuccess(txHash);
+              }
             }}
-            onProceedToTransaction={() => {
-              console.log('Proceeding to transaction...');
-              setStage('transaction-pending');
+            onStatus={(status) => {
+              console.log('Transaction status:', status);
+              
+              // Handle different transaction states
+              switch (status.statusName) {
+                case 'transactionPending':
+                  handleTransactionPending();
+                  break;
+                case 'buildingTransaction':
+                  setStage('creating-order');
+                  setProgress(40);
+                  break;
+                case 'success':
+                  // handleTransactionSuccess will be called via onSuccess
+                  break;
+                case 'error':
+                  handleTransactionError(status.statusData);
+                  break;
+              }
             }}
-          />
+            onError={(error) => {
+              console.error('Transaction error:', error);
+              handleTransactionError(error);
+            }}
+          >
+            <TransactionButton
+              text="Send USDC via Base Pay"
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+            />
+            
+            <TransactionStatus>
+              <TransactionStatusLabel />
+              <TransactionStatusAction />
+            </TransactionStatus>
+            
+            <TransactionToast>
+              <TransactionToastIcon />
+              <TransactionToastLabel />
+              <TransactionToastAction />
+            </TransactionToast>
+          </Transaction>
         </div>
       )}
 
-      {orderData && (stage === 'transaction-pending' || stage === 'transaction-confirmed' || stage === 'settlement-processing') && (
-        <Transaction
-          chainId={base.id}
-          calls={calls}
-          onSuccess={(response) => handleTransactionSuccess(response.transactionReceipts[0].transactionHash)}
-          onStatus={(status) => {
-            if (status.statusName === 'transactionPending') {
-              handleTransactionPending();
-            }
-          }}
-          onError={handleTransactionError}
-        >
-          <TransactionButton
-            text={
-              stage === 'transaction-pending' ? 'Transaction Pending...' :
-              stage === 'transaction-confirmed' ? 'Processing Settlement...' :
-              'Send USDC via Base Pay'
-            }
-            disabled={stage === 'transaction-pending' || stage === 'settlement-processing'}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300"
-          />
-          
-          <TransactionStatus>
-            <TransactionStatusLabel />
-            <TransactionStatusAction />
-          </TransactionStatus>
-        </Transaction>
+      {/* Transaction Processing States */}
+      {(stage === 'transaction-pending' || stage === 'transaction-confirmed') && (
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-blue-400 mx-auto mb-4"></div>
+          <p className="text-white font-medium">
+            {stage === 'transaction-pending' ? 'Confirming transaction...' : 'Transaction confirmed!'}
+          </p>
+        </div>
       )}
 
       {/* Success Celebration */}
