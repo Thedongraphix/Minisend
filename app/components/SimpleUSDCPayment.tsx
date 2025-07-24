@@ -124,7 +124,7 @@ export function SimpleUSDCPayment({
       : '0'
   });
 
-  // Poll PayCrest order status as per documentation
+  // Poll PayCrest order status after successful transaction
   const pollOrderStatus = useCallback(async (orderId: string) => {
     const maxAttempts = 60; // 5 minutes with 5s intervals
     let attempts = 0;
