@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     let paycrestOrder;
     try {
       paycrestOrder = JSON.parse(responseText);
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { 
           error: 'Invalid JSON response from PayCrest',
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
     let order;
     try {
       order = JSON.parse(responseText);
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { 
           error: 'Invalid JSON response from PayCrest',
