@@ -11,7 +11,7 @@ import { Button } from "./components/DemoComponents";
 import { Icon } from "./components/DemoComponents";
 import { Home } from "./components/DemoComponents";
 import { Features } from "./components/DemoComponents";
-import { OffRampFlow } from "./components/OffRampFlow";
+import { SimpleOffRampFlow } from "./components/SimpleOffRampFlow";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
 import { getClientInfo } from "@/lib/sdk-actions";
 import Image from 'next/image';
@@ -155,7 +155,7 @@ export default function App() {
         <main className="flex-1">
           {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
           {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
-          {activeTab === "offramp" && <OffRampFlow />}
+          {activeTab === "offramp" && <SimpleOffRampFlow />}
         </main>
 
       </div>
