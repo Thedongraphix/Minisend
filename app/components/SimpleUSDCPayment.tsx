@@ -24,10 +24,12 @@ export function SimpleUSDCPayment({
   onError
 }: SimpleUSDCPaymentProps) {
   const [paycrestOrder, setPaycrestOrder] = useState<{
-    data: {
-      receiveAddress: string;
-      amount: string;
-    };
+    id: string;
+    receiveAddress: string;
+    amount: string;
+    senderFee: string;
+    transactionFee: string;
+    validUntil: string;
   } | null>(null);
   const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'success' | 'error'>('idle');
 
@@ -59,8 +61,12 @@ export function SimpleUSDCPayment({
       const data = await response.json();
       console.log('PayCrest order created:', data);
       
-      setPaycrestOrder(data.order);
-      setStatus('ready-to-pay');
+      if (data.success && data.order) {
+        setPaycrestOrder(data.order);
+        setStatus('ready-to-pay');
+      } else {
+        throw new Error('Invalid response from PayCrest API');
+      }
     } catch (error) {
       console.error('Order creation failed:', error);
       setStatus('error');
@@ -68,12 +74,73 @@ export function SimpleUSDCPayment({
     }
   }, [amount, phoneNumber, accountName, currency, onError]);
 
-  // USDC transfer transaction call using proper viem encoding
-  const calls = paycrestOrder && paycrestOrder.data?.receiveAddress ? [{
+  // USDC transfer transaction call - amount should be sum of amount + senderFee + transactionFee as per docs
+  const calls = paycrestOrder && paycrestOrder.receiveAddress ? [{
     to: USDC_CONTRACT as `0x${string}`,
-    data: `0xa9059cbb${paycrestOrder.data.receiveAddress.slice(2).padStart(64, '0')}${parseUnits(paycrestOrder.data.amount.toString(), 6).toString(16).padStart(64, '0')}` as `0x${string}`,
+    data: `0xa9059cbb${paycrestOrder.receiveAddress.slice(2).padStart(64, '0')}${parseUnits(
+      // Sum of amount + senderFee + transactionFee as per PayCrest documentation line 117
+      (parseFloat(paycrestOrder.amount) + 
+       parseFloat(paycrestOrder.senderFee) + 
+       parseFloat(paycrestOrder.transactionFee)).toString(), 
+      6
+    ).toString(16).padStart(64, '0')}` as `0x${string}`,
     value: BigInt(0),
   }] : [];
+
+  console.log('Transaction call prepared:', {
+    receiveAddress: paycrestOrder?.receiveAddress,
+    amount: paycrestOrder?.amount,
+    senderFee: paycrestOrder?.senderFee,
+    transactionFee: paycrestOrder?.transactionFee,
+    totalAmount: paycrestOrder ? (parseFloat(paycrestOrder.amount) + parseFloat(paycrestOrder.senderFee) + parseFloat(paycrestOrder.transactionFee)).toString() : '0'
+  });
+
+  // Poll PayCrest order status as per documentation
+  const pollOrderStatus = useCallback(async (orderId: string) => {
+    const maxAttempts = 60; // 5 minutes with 5s intervals
+    let attempts = 0;
+
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/paycrest/orders-docs?orderId=${orderId}`);
+        if (!response.ok) throw new Error('Failed to get order status');
+        
+        const data = await response.json();
+        const order = data.order;
+        
+        console.log(`Order status polling attempt ${attempts}:`, {
+          orderId,
+          status: order?.status,
+          attempts
+        });
+
+        // Check for success status as per documentation
+        if (order.status === 'payment_order.validated') {
+          console.log('Funds have been sent to recipient\'s bank/mobile network (value transfer confirmed)');
+          setStatus('success');
+          onSuccess();
+          return;
+        }
+
+        // Check for failure statuses
+        if (order.status === 'payment_order.refunded' || order.status === 'payment_order.expired') {
+          throw new Error(`Order ${order.status.replace('payment_order.', '')}`);
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000); // Poll every 5 seconds
+        } else {
+          throw new Error('Settlement timeout - order may still complete. Check your dashboard.');
+        }
+      } catch (error) {
+        setStatus('error');
+        onError(error instanceof Error ? error.message : 'Settlement failed');
+      }
+    };
+
+    poll();
+  }, [onSuccess, onError]);
 
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
     console.log('Transaction status:', status);
@@ -86,18 +153,25 @@ export function SimpleUSDCPayment({
         setStatus('processing');
         break;
       case 'success':
-        setStatus('success');
-        // Start polling PayCrest for settlement
-        setTimeout(() => {
-          onSuccess();
-        }, 2000);
+        console.log('Transaction successful, starting PayCrest order status polling');
+        setStatus('processing');
+        // Start polling PayCrest for order status as per documentation
+        if (paycrestOrder?.id) {
+          pollOrderStatus(paycrestOrder.id);
+        } else {
+          // Fallback if no order ID
+          setTimeout(() => {
+            setStatus('success');
+            onSuccess();
+          }, 3000);
+        }
         break;
       case 'error':
         setStatus('error');
         onError('Transaction failed');
         break;
     }
-  }, [onSuccess, onError]);
+  }, [onSuccess, onError, paycrestOrder?.id, pollOrderStatus]);
 
   return (
     <div className="space-y-6">
@@ -135,8 +209,16 @@ export function SimpleUSDCPayment({
             onStatus={handleTransactionStatus}
             onSuccess={(response) => {
               console.log('Transaction successful:', response);
-              setStatus('success');
-              setTimeout(() => onSuccess(), 2000);
+              setStatus('processing');
+              // Start polling PayCrest for order status
+              if (paycrestOrder?.id) {
+                pollOrderStatus(paycrestOrder.id);
+              } else {
+                setTimeout(() => {
+                  setStatus('success');
+                  onSuccess();
+                }, 3000);
+              }
             }}
             onError={(error) => {
               console.error('Transaction error:', error);
@@ -161,7 +243,10 @@ export function SimpleUSDCPayment({
       {status === 'processing' && (
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-4 border-white/20 border-t-blue-400 mx-auto mb-4"></div>
-          <p className="text-white">Processing transaction...</p>
+          <p className="text-white">Processing payment...</p>
+          <p className="text-gray-400 text-sm mt-2">
+            Waiting for PayCrest to process your payment to mobile money
+          </p>
         </div>
       )}
 

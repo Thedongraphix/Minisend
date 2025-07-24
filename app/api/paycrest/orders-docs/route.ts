@@ -28,6 +28,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get current rates from PayCrest API as per documentation
+    const ratesResponse = await fetch(`${baseUrl}/v1/rates?token=USDC&network=base&currency=${currency}`, {
+      headers: {
+        'API-Key': clientId,
+      },
+    });
+
+    let currentRate = "1.0"; // fallback rate
+    if (ratesResponse.ok) {
+      try {
+        const ratesData = await ratesResponse.json();
+        currentRate = ratesData.rate || currentRate;
+        console.log('Retrieved PayCrest rate:', currentRate);
+      } catch {
+        console.warn('Failed to parse rates response, using fallback rate');
+      }
+    } else {
+      console.warn('Failed to get rates from PayCrest, using fallback rate');
+    }
+
     // Map provider to institution exactly as per PayCrest standards
     let institution;
     if (currency === 'KES') {
@@ -41,9 +61,9 @@ export async function POST(request: NextRequest) {
     // Create PayCrest order request EXACTLY as per documentation
     const orderRequest = {
       amount: amount.toString(),
-      token: "USDC", // Changed from USDT to USDC as per your app
+      token: "USDC", // Using USDC as per your app
       network: "base",
-      rate: "130.0", // KES rate - you may want to make this dynamic
+      rate: currentRate, // Dynamic rate from PayCrest API
       recipient: {
         institution: institution,
         accountIdentifier: phoneNumber,
@@ -55,13 +75,13 @@ export async function POST(request: NextRequest) {
       returnAddress: returnAddress
     };
 
-    console.log('PayCrest order request (using sender endpoint):', {
+    console.log('PayCrest order request (using sender endpoint - confirmed by team):', {
       url: `${baseUrl}/v1/sender/orders`,
       headers: { 'API-Key': clientId.substring(0, 8) + '...' },
       body: orderRequest
     });
 
-    // Call PayCrest API with correct sender endpoint
+    // Call PayCrest API with sender endpoint (confirmed working by PayCrest team)
     const paycrestResponse = await fetch(`${baseUrl}/v1/sender/orders`, {
       method: 'POST',
       headers: {
@@ -151,7 +171,7 @@ export async function GET(request: NextRequest) {
       clientId: clientId.substring(0, 8) + '...'
     });
 
-    // Get order status using correct sender endpoint
+    // Get order status using sender endpoint (confirmed working by PayCrest team)
     const paycrestResponse = await fetch(`${baseUrl}/v1/sender/orders/${orderId}`, {
       headers: {
         'API-Key': clientId, // Exactly as per docs
