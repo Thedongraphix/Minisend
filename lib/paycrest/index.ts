@@ -1,5 +1,5 @@
 // PayCrest Sender API Integration
-// Handles USDC to KSH offramp functionality
+// Production-ready PayCrest API service following official documentation
 
 export interface PaycrestConfig {
   apiKey: string;
@@ -104,11 +104,32 @@ export class PaycrestService {
   }
 
   async createOrder(orderData: PaycrestOrderRequest): Promise<PaycrestOrder> {
+    // Use /v1/orders endpoint as per working configuration
     return this.makeRequest<PaycrestOrder>('/v1/orders', 'POST', orderData);
   }
 
   async getOrderStatus(orderId: string): Promise<PaycrestOrder> {
+    // Use /v1/orders endpoint for status checking
     return this.makeRequest<PaycrestOrder>(`/v1/orders/${orderId}`);
+  }
+
+  async getRates(token: string = 'USDC', amount: string = '1', currency: string = 'KES', network: string = 'base'): Promise<string> {
+    const response = await fetch(`${this.config.baseUrl}/v1/rates/${token}/${amount}/${currency}?network=${network}`, {
+      headers: {
+        'API-Key': this.config.apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      throw new PaycrestError(`Failed to get rates: ${response.statusText}`, response.status);
+    }
+
+    const data = await response.json();
+    if (data.status === 'success' && data.data) {
+      return data.data;
+    }
+    
+    throw new PaycrestError('Invalid rates response format');
   }
 
   verifyWebhookSignature(
