@@ -55,14 +55,14 @@ export async function POST(request: NextRequest) {
       returnAddress: returnAddress
     };
 
-    console.log('PayCrest order request (following docs exactly):', {
-      url: `${baseUrl}/v1/orders`,
+    console.log('PayCrest order request (using sender endpoint):', {
+      url: `${baseUrl}/v1/sender/orders`,
       headers: { 'API-Key': clientId.substring(0, 8) + '...' },
       body: orderRequest
     });
 
-    // Call PayCrest API exactly as per documentation
-    const paycrestResponse = await fetch(`${baseUrl}/v1/orders`, {
+    // Call PayCrest API with correct sender endpoint
+    const paycrestResponse = await fetch(`${baseUrl}/v1/sender/orders`, {
       method: 'POST',
       headers: {
         'API-Key': clientId, // Exactly as per docs: "API-Key: YOUR_CLIENT_ID"
@@ -147,12 +147,12 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Getting PayCrest order status:', {
-      url: `${baseUrl}/v1/orders/${orderId}`,
+      url: `${baseUrl}/v1/sender/orders/${orderId}`,
       clientId: clientId.substring(0, 8) + '...'
     });
 
-    // Get order status exactly as per PayCrest docs
-    const paycrestResponse = await fetch(`${baseUrl}/v1/orders/${orderId}`, {
+    // Get order status using correct sender endpoint
+    const paycrestResponse = await fetch(`${baseUrl}/v1/sender/orders/${orderId}`, {
       headers: {
         'API-Key': clientId, // Exactly as per docs
       },
