@@ -25,9 +25,40 @@ A Farcaster mini app that enables seamless conversion of USDC to mobile money us
 ## Getting Started
 
 1. Clone the repository
-2. Install dependencies: `npm install`
+```bash
+git clone https://github.com/your-username/mini-test.git
+cd mini-test
+```
+
+2. Install dependencies
+```bash
+npm install
+```
+
 3. Set up environment variables
-4. Run development server: `npm run dev`
+```bash
+cp .env.example .env.local
+# Edit .env.local with your actual API keys
+```
+
+4. Set up Supabase database
+```bash
+# Run the schema.sql file in your Supabase project
+```
+
+5. Run development server
+```bash
+npm run dev
+```
+
+## Environment Variables
+
+Required environment variables (see `.env.example`):
+
+- `PAYCREST_API_KEY` - Your PayCrest API key
+- `PAYCREST_CLIENT_SECRET` - PayCrest client secret
+- `SUPABASE_*` - Supabase database credentials
+- `NEXT_PUBLIC_CDP_API_KEY` - Coinbase Developer Platform API key
 
 ## Production Deployment
 
