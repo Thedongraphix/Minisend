@@ -39,8 +39,8 @@ export function SimpleOffRampFlow() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">USDC to Mobile Money</h1>
-          <p className="text-gray-300">Connect your wallet to get started</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Mini Send</h1>
+          <p className="text-gray-300">Convert USDC to mobile money via PayCrest</p>
         </div>
 
         <Wallet>
