@@ -100,22 +100,23 @@ export function SimpleUSDCPayment({
     }
   }, [amount, phoneNumber, accountName, currency, onError]);
 
-  // USDC transfer transaction call - amount should be sum of amount + senderFee + transactionFee as per docs
-  const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? [{
-    to: USDC_CONTRACT as `0x${string}`,
-    data: `0xa9059cbb${paycrestOrder.receiveAddress.slice(2).padStart(64, '0')}${parseUnits(
-      // Sum of amount + senderFee + transactionFee as per PayCrest documentation line 117
-      (() => {
-        const baseAmount = parseFloat(paycrestOrder.amount) || 0;
-        const senderFee = parseFloat(paycrestOrder.senderFee) || 0;
-        const transactionFee = parseFloat(paycrestOrder.transactionFee) || 0;
-        const total = baseAmount + senderFee + transactionFee;
-        return total > 0 ? total.toString() : '0';
-      })(), 
-      6
-    ).toString(16).padStart(64, '0')}` as `0x${string}`,
-    value: BigInt(0),
-  }] : [];
+  // USDC transfer using proper OnchainKit calls format
+  const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
+    const baseAmount = parseFloat(paycrestOrder.amount) || 0;
+    const senderFee = parseFloat(paycrestOrder.senderFee) || 0;
+    const transactionFee = parseFloat(paycrestOrder.transactionFee) || 0;
+    const totalAmount = baseAmount + senderFee + transactionFee;
+    
+    // Use proper ERC-20 transfer encoding
+    const transferAmount = parseUnits(totalAmount.toString(), 6);
+    const transferData = `0xa9059cbb${paycrestOrder.receiveAddress.slice(2).padStart(64, '0')}${transferAmount.toString(16).padStart(64, '0')}`;
+    
+    return [{
+      to: USDC_CONTRACT as `0x${string}`,
+      data: transferData as `0x${string}`,
+      value: BigInt(0),
+    }];
+  })() : [];
 
   console.log('Transaction call prepared:', {
     receiveAddress: paycrestOrder?.receiveAddress,
