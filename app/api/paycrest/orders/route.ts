@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       // Add settlement acceleration parameters
       priority: 'high', // Request high priority processing
       settlementSpeed: 'express', // Request express settlement
-      webhookUrl: `${process.env.NEXT_PUBLIC_URL}/api/paycrest/webhook-fast`,
+      webhookUrl: `${process.env.NEXT_PUBLIC_URL}/api/paycrest/webhook`,
     };
 
     // Get PayCrest service and create order
