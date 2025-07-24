@@ -61,8 +61,17 @@ export function SimpleUSDCPayment({
       const data = await response.json();
       console.log('PayCrest order created:', data);
       
-      if (data.success && data.order) {
-        setPaycrestOrder(data.order);
+      if (data.success && data.order && data.order.data) {
+        // PayCrest response structure: { success: true, order: { data: { ... } } }
+        const orderData = data.order.data;
+        setPaycrestOrder({
+          id: orderData.id,
+          receiveAddress: orderData.receiveAddress,
+          amount: orderData.amount,
+          senderFee: orderData.senderFee || '0',
+          transactionFee: orderData.transactionFee || '0',
+          validUntil: orderData.validUntil
+        });
         setStatus('ready-to-pay');
       } else {
         throw new Error('Invalid response from PayCrest API');
@@ -75,13 +84,17 @@ export function SimpleUSDCPayment({
   }, [amount, phoneNumber, accountName, currency, onError]);
 
   // USDC transfer transaction call - amount should be sum of amount + senderFee + transactionFee as per docs
-  const calls = paycrestOrder && paycrestOrder.receiveAddress ? [{
+  const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? [{
     to: USDC_CONTRACT as `0x${string}`,
     data: `0xa9059cbb${paycrestOrder.receiveAddress.slice(2).padStart(64, '0')}${parseUnits(
       // Sum of amount + senderFee + transactionFee as per PayCrest documentation line 117
-      (parseFloat(paycrestOrder.amount) + 
-       parseFloat(paycrestOrder.senderFee) + 
-       parseFloat(paycrestOrder.transactionFee)).toString(), 
+      (() => {
+        const baseAmount = parseFloat(paycrestOrder.amount) || 0;
+        const senderFee = parseFloat(paycrestOrder.senderFee) || 0;
+        const transactionFee = parseFloat(paycrestOrder.transactionFee) || 0;
+        const total = baseAmount + senderFee + transactionFee;
+        return total > 0 ? total.toString() : '0';
+      })(), 
       6
     ).toString(16).padStart(64, '0')}` as `0x${string}`,
     value: BigInt(0),
@@ -92,7 +105,9 @@ export function SimpleUSDCPayment({
     amount: paycrestOrder?.amount,
     senderFee: paycrestOrder?.senderFee,
     transactionFee: paycrestOrder?.transactionFee,
-    totalAmount: paycrestOrder ? (parseFloat(paycrestOrder.amount) + parseFloat(paycrestOrder.senderFee) + parseFloat(paycrestOrder.transactionFee)).toString() : '0'
+    totalAmount: paycrestOrder && paycrestOrder.amount 
+      ? ((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toString()
+      : '0'
   });
 
   // Poll PayCrest order status as per documentation
