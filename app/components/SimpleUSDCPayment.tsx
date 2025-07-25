@@ -37,6 +37,7 @@ export function SimpleUSDCPayment({
   } | null>(null);
   const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'converting' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState<string>('');
+  const [pollingStarted, setPollingStarted] = useState(false);
 
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -98,6 +99,15 @@ export function SimpleUSDCPayment({
         console.log('📦 Setting PayCrest order object:', paycrestOrderObj);
         setPaycrestOrder(paycrestOrderObj);
         setStatus('ready-to-pay');
+        
+        // Safety mechanism: start polling after 15 seconds if no other mechanism triggers it
+        // This handles cases where transaction callbacks fail
+        setTimeout(() => {
+          if (!pollingStarted && paycrestOrderObj.id) {
+            console.log('🔄 SAFETY: Auto-starting polling after 15 seconds for order:', paycrestOrderObj.id);
+            pollOrderStatus(paycrestOrderObj.id);
+          }
+        }, 15000);
       } else {
         console.error('Invalid PayCrest response:', data);
         throw new Error('Invalid response from PayCrest API');
@@ -107,7 +117,7 @@ export function SimpleUSDCPayment({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, accountName, currency, returnAddress, rate, onError]);
+  }, [amount, phoneNumber, accountName, currency, returnAddress, rate, onError, pollingStarted, pollOrderStatus]);
 
   // USDC transfer using proper OnchainKit calls format
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
@@ -135,7 +145,14 @@ export function SimpleUSDCPayment({
 
   // Poll PayCrest order status after successful transaction
   const pollOrderStatus = useCallback(async (orderId: string) => {
+    // Prevent multiple polling instances
+    if (pollingStarted) {
+      console.log('⚠️ Polling already started, skipping duplicate');
+      return;
+    }
+    
     console.log('🚀 POLLING STARTED for order:', orderId);
+    setPollingStarted(true);
     const maxAttempts = 60; // 3 minutes max (should complete in 1-2 minutes per docs)
     let attempts = 0;
 
@@ -249,7 +266,7 @@ export function SimpleUSDCPayment({
     };
 
     poll();
-  }, [onSuccess, onError, phoneNumber, currency]);
+  }, [onSuccess, onError, phoneNumber, currency, pollingStarted]);
 
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
     console.log('Transaction status:', status);
@@ -257,38 +274,31 @@ export function SimpleUSDCPayment({
     switch (status.statusName) {
       case 'buildingTransaction':
         setStatus('processing');
+        setStatusMessage('Preparing transaction...');
         break;
       case 'transactionPending':
-        setStatus('processing');
+        setStatus('processing'); 
+        setStatusMessage('Transaction pending...');
+        // Start polling immediately when transaction becomes pending
+        // This is more reliable than waiting for success callback
+        if (paycrestOrder?.id) {
+          console.log('🚀 Transaction pending - starting PayCrest polling early for order:', paycrestOrder.id);
+          // Give transaction a moment to be detected by PayCrest, then start polling
+          setTimeout(() => {
+            pollOrderStatus(paycrestOrder.id);
+          }, 3000);
+        }
         break;
       case 'success':
-        console.log('✅ Transaction successful, starting PayCrest order status polling');
-        console.log('🔍 PayCrest order available?', { 
-          hasOrder: !!paycrestOrder, 
-          orderId: paycrestOrder?.id,
-          orderData: paycrestOrder
-        });
-        setStatusMessage('Transaction confirmed! Processing payment...');
-        // Start polling PayCrest for order status as per documentation
-        if (paycrestOrder?.id) {
-          console.log('🎯 Starting polling with order ID:', paycrestOrder.id);
-          pollOrderStatus(paycrestOrder.id);
-        } else {
-          // Fallback if no order ID
-          console.log('⚠️ No PayCrest order ID available, using fallback');
-          setStatusMessage('✅ Payment completed successfully!');
-          setTimeout(() => {
-            setStatus('success');
-            onSuccess();
-          }, 2000);
-        }
+        console.log('✅ Transaction successful, PayCrest should detect it soon');
+        // Don't start polling here - it's already started in transactionPending
         break;
       case 'error':
         setStatus('error');
         onError('Transaction failed');
         break;
     }
-  }, [onSuccess, onError, paycrestOrder?.id, pollOrderStatus]);
+  }, [paycrestOrder?.id, pollOrderStatus]);
 
   return (
     <div className="space-y-6">
@@ -326,22 +336,13 @@ export function SimpleUSDCPayment({
             onStatus={handleTransactionStatus}
             onSuccess={(response) => {
               console.log('🎯 Transaction onSuccess callback triggered:', response);
-              console.log('🔍 PayCrest order in onSuccess?', { 
-                hasOrder: !!paycrestOrder, 
-                orderId: paycrestOrder?.id,
-                orderData: paycrestOrder
-              });
-              setStatus('processing');
-              // Start polling PayCrest for order status
+              // Backup polling start in case status callback didn't work
               if (paycrestOrder?.id) {
-                console.log('🚀 Starting polling from onSuccess with order ID:', paycrestOrder.id);
-                pollOrderStatus(paycrestOrder.id);
-              } else {
-                console.log('⚠️ No PayCrest order ID in onSuccess, using fallback');
+                console.log('🔄 Backup: ensuring polling is running for order:', paycrestOrder.id);
+                // Small delay to ensure PayCrest detects the transaction
                 setTimeout(() => {
-                  setStatus('success');
-                  onSuccess();
-                }, 2000);
+                  pollOrderStatus(paycrestOrder.id);
+                }, 5000);
               }
             }}
             onError={(error) => {
@@ -374,9 +375,15 @@ export function SimpleUSDCPayment({
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-white font-semibold text-lg">Signing Transaction</h3>
+            <h3 className="text-white font-semibold text-lg">Processing Transaction</h3>
             <p className="text-gray-300">
-              📱 Check your wallet
+              {statusMessage || '📱 Check your wallet'}
+            </p>
+          </div>
+          
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+            <p className="text-blue-300 text-xs">
+              💡 Your payment will be processed automatically after transaction
             </p>
           </div>
         </div>
