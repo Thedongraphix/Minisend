@@ -224,7 +224,7 @@ export function SimpleUSDCPayment({
           // Show helpful message and complete
           setTimeout(() => {
             onSuccess();
-          }, 3000);
+          }, 2000);
         }
       } catch (error) {
         console.error('Polling error:', error);
