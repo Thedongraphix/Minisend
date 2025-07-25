@@ -78,7 +78,7 @@ export function SimpleOffRampFlow() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Mini Send</h1>
-          <p className="text-gray-300">Convert USDC to mobile money via PayCrest</p>
+          <p className="text-gray-300">Send money to mobile wallets instantly</p>
           <p className="text-blue-300 text-sm mt-2">
             💼 Secure payments via Coinbase Wallet
           </p>
