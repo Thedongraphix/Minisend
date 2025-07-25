@@ -12,11 +12,11 @@ export function SimpleOffRampFlow() {
   const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
   const { context } = useMiniKit();
   
-  // Wallet detection
+  // Enhanced wallet detection for Farcaster miniapp
   const isFarcaster = Boolean(context?.user || context?.client);
   const farcasterAddress = (context?.user as { walletAddress?: string })?.walletAddress;
-  const address = farcasterAddress || wagmiAddress;
-  const isConnected = Boolean(address) && (wagmiConnected || Boolean(farcasterAddress));
+  const finalAddress = farcasterAddress || wagmiAddress;
+  const isConnected = Boolean(finalAddress) && (wagmiConnected || Boolean(farcasterAddress));
 
   // Form state
   const [step, setStep] = useState<'form' | 'payment' | 'success'>('form');
@@ -27,7 +27,14 @@ export function SimpleOffRampFlow() {
     currency: 'KES' as 'KES' | 'NGN'
   });
 
-  console.log('Wallet detection:', { isFarcaster, address, isConnected });
+  console.log('Enhanced wallet detection:', { 
+    farcasterAddress, 
+    finalAddress, 
+    isConnected, 
+    isFarcaster, 
+    wagmiAddress, 
+    wagmiConnected 
+  });
 
   // Show wallet connection if not connected
   if (!isConnected) {
@@ -162,6 +169,7 @@ export function SimpleOffRampFlow() {
             phoneNumber={formData.phoneNumber}
             accountName={formData.accountName}
             currency={formData.currency}
+            returnAddress={finalAddress || ''}
             onSuccess={() => setStep('success')}
             onError={(error) => {
               console.error('Payment error:', error);

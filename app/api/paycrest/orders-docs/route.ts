@@ -1,230 +1,79 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-// Force dynamic rendering and Node.js runtime
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { amount, phoneNumber, accountName, currency = 'KES', provider = 'M-Pesa', returnAddress } = body;
-
-    // Validate required fields exactly as per PayCrest docs
-    if (!amount || !phoneNumber || !accountName || !returnAddress) {
-      return NextResponse.json(
-        { error: 'Missing required fields: amount, phoneNumber, accountName, returnAddress' },
-        { status: 400 }
-      );
-    }
-
-    // Get PayCrest configuration exactly as per docs
-    const clientId = process.env.PAYCREST_API_KEY; // This is YOUR_CLIENT_ID
-    const baseUrl = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io';
-
-    if (!clientId) {
-      return NextResponse.json(
-        { error: 'PayCrest Client ID not configured' },
-        { status: 500 }
-      );
-    }
-
-    // Get current rates from PayCrest API using new format
-    let currentRate = "130.0"; // fallback rate for KES
-    
-    try {
-      const ratesResponse = await fetch(`${baseUrl}/v1/rates/USDC/${amount}/${currency}?network=base`, {
-        headers: {
-          'API-Key': clientId,
+export async function GET() {
+  const documentation = {
+    title: "Minisend PayCrest API Documentation",
+    version: "1.0.0",
+    baseUrl: "https://minisend.xyz/api/paycrest",
+    endpoints: {
+      "POST /orders": {
+        description: "Create a new USDC to mobile money order",
+        parameters: {
+          amount: "number - Amount in USDC (e.g., 1)",
+          phoneNumber: "string - Recipient phone number (e.g., '+254712345678')",
+          accountName: "string - Recipient name",
+          rate: "number - Exchange rate (KES/NGN per USDC)",
+          returnAddress: "string - Sender's wallet address",
+          currency: "string - Target currency ('KES' or 'NGN')"
         },
-      });
-
-      if (ratesResponse.ok) {
-        const ratesData = await ratesResponse.json();
-        if (ratesData.status === 'success' && ratesData.data) {
-          currentRate = ratesData.data;
-          console.log('Retrieved PayCrest rate:', currentRate);
+        example: {
+          amount: 1,
+          phoneNumber: "+254712345678",
+          accountName: "John Doe",
+          rate: 150.5,
+          returnAddress: "0x742d35Cc6634C0532925a3b8D400b6b2e5e1C6eD",
+          currency: "KES"
+        },
+        response: {
+          success: true,
+          order: {
+            id: "order-uuid",
+            receiveAddress: "0x...",
+            validUntil: "ISO-date",
+            senderFee: "0.01",
+            transactionFee: "0.005",
+            totalAmount: "1.015",
+            status: "payment_order.pending"
+          }
         }
+      },
+      "GET /orders": {
+        description: "Get order status",
+        parameters: {
+          orderId: "string - PayCrest order ID"
+        },
+        example: "GET /api/paycrest/orders?orderId=order-uuid"
+      },
+      "GET /sender/stats": {
+        description: "Get sender account statistics",
+        response: {
+          success: true,
+          data: {
+            totalOrders: 35,
+            totalOrderVolume: "5",
+            totalFeeEarnings: "0.0015"
+          }
+        }
+      },
+      "POST /webhook": {
+        description: "PayCrest webhook handler (internal use)",
+        note: "Handles PayCrest order status updates"
       }
-    } catch (error) {
-      console.warn('Failed to fetch rates, using fallback:', error);
-    }
-
-    // Map provider to institution exactly as per PayCrest standards
-    let institution;
-    if (currency === 'KES') {
-      institution = provider === 'M-Pesa' ? 'SAFAKEPC' : 'SAFAKEPC'; // Correct code for Kenyan M-Pesa
-    } else if (currency === 'NGN') {
-      institution = 'GTB'; // As per their example
-    } else {
-      institution = 'SAFAKEPC'; // Default fallback for Kenya
-    }
-
-    // Create PayCrest order request EXACTLY as per documentation
-    const orderRequest = {
-      amount: amount.toString(),
-      token: "USDC", // Using USDC as per your app
-      network: "base",
-      rate: currentRate, // Dynamic rate from PayCrest API
-      recipient: {
-        institution: institution,
-        accountIdentifier: phoneNumber,
-        accountName: accountName,
-        currency: currency,
-        memo: `USDC to ${currency} conversion via Minisend`
+    },
+    supportedCurrencies: {
+      KES: {
+        providers: ["SAFARICOM", "AIRTEL"],
+        description: "Kenyan Shillings via M-Pesa"
       },
-      reference: `minisend-${Date.now()}`,
-      returnAddress: returnAddress
-    };
-
-    console.log('PayCrest order request (using working orders endpoint):', {
-      url: `${baseUrl}/v1/orders`,
-      headers: { 'API-Key': clientId.substring(0, 8) + '...' },
-      body: orderRequest
-    });
-
-    // Call PayCrest API using working orders endpoint 
-    const paycrestResponse = await fetch(`${baseUrl}/v1/orders`, {
-      method: 'POST',
-      headers: {
-        'API-Key': clientId, // Exactly as per docs: "API-Key: YOUR_CLIENT_ID"
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orderRequest),
-    });
-
-    const responseText = await paycrestResponse.text();
-    console.log('PayCrest raw response:', {
-      status: paycrestResponse.status,
-      statusText: paycrestResponse.statusText,
-      body: responseText
-    });
-
-    if (!paycrestResponse.ok) {
-      return NextResponse.json(
-        { 
-          error: `PayCrest API error: ${paycrestResponse.status} ${paycrestResponse.statusText}`,
-          details: responseText,
-          request: orderRequest
-        },
-        { status: paycrestResponse.status }
-      );
+      NGN: {
+        providers: ["GTBNGLA"],
+        description: "Nigerian Naira via bank transfer"
+      }
     }
+  };
 
-    let paycrestOrder;
-    try {
-      paycrestOrder = JSON.parse(responseText);
-    } catch {
-      return NextResponse.json(
-        { 
-          error: 'Invalid JSON response from PayCrest',
-          response: responseText
-        },
-        { status: 500 }
-      );
-    }
-    
-    console.log('PayCrest order created successfully:', paycrestOrder);
-    console.log('PayCrest order keys:', Object.keys(paycrestOrder));
-    console.log('PayCrest order structure:', JSON.stringify(paycrestOrder, null, 2));
-
-    return NextResponse.json({
-      success: true,
-      order: paycrestOrder,
-      message: 'Order created successfully via PayCrest API',
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('PayCrest order creation error:', error);
-    
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Failed to create PayCrest order',
-        success: false 
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const orderId = searchParams.get('orderId');
-
-    if (!orderId) {
-      return NextResponse.json(
-        { error: 'Order ID is required' },
-        { status: 400 }
-      );
-    }
-
-    const clientId = process.env.PAYCREST_API_KEY;
-    const baseUrl = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io';
-
-    if (!clientId) {
-      return NextResponse.json(
-        { error: 'PayCrest Client ID not configured' },
-        { status: 500 }
-      );
-    }
-
-    console.log('Getting PayCrest order status:', {
-      url: `${baseUrl}/v1/orders/${orderId}`,
-      clientId: clientId.substring(0, 8) + '...'
-    });
-
-    // Get order status using working orders endpoint
-    const paycrestResponse = await fetch(`${baseUrl}/v1/orders/${orderId}`, {
-      headers: {
-        'API-Key': clientId, // Exactly as per docs
-      },
-    });
-
-    const responseText = await paycrestResponse.text();
-    console.log('PayCrest status response:', {
-      status: paycrestResponse.status,
-      body: responseText
-    });
-
-    if (!paycrestResponse.ok) {
-      return NextResponse.json(
-        { 
-          error: `PayCrest API error: ${paycrestResponse.status}`,
-          details: responseText
-        },
-        { status: paycrestResponse.status }
-      );
-    }
-
-    let order;
-    try {
-      order = JSON.parse(responseText);
-    } catch {
-      return NextResponse.json(
-        { 
-          error: 'Invalid JSON response from PayCrest',
-          response: responseText
-        },
-        { status: 500 }
-      );
-    }
-    
-    return NextResponse.json({
-      success: true,
-      order,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('PayCrest order status error:', error);
-    
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Failed to get order status',
-        success: false 
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(documentation);
 }

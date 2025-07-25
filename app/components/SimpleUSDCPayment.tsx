@@ -11,6 +11,7 @@ interface SimpleUSDCPaymentProps {
   phoneNumber: string;
   accountName: string;
   currency: 'KES' | 'NGN';
+  returnAddress: string;
   onSuccess: () => void;
   onError: (error: string) => void;
 }
@@ -20,6 +21,7 @@ export function SimpleUSDCPayment({
   phoneNumber,
   accountName,
   currency,
+  returnAddress,
   onSuccess,
   onError
 }: SimpleUSDCPaymentProps) {
@@ -41,7 +43,7 @@ export function SimpleUSDCPayment({
     setStatus('creating-order');
     
     try {
-      const response = await fetch('/api/paycrest/orders-docs', {
+      const response = await fetch('/api/paycrest/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -50,7 +52,7 @@ export function SimpleUSDCPayment({
           accountName,
           currency,
           provider: currency === 'KES' ? 'M-Pesa' : 'Bank Transfer',
-          returnAddress: '0x7D6109a51781FB8dFCae01F5Cd5C70dF412a9CEc'
+          returnAddress
         }),
       });
 
@@ -98,7 +100,7 @@ export function SimpleUSDCPayment({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, accountName, currency, onError]);
+  }, [amount, phoneNumber, accountName, currency, returnAddress, onError]);
 
   // USDC transfer using proper OnchainKit calls format
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
@@ -131,7 +133,7 @@ export function SimpleUSDCPayment({
 
     const poll = async () => {
       try {
-        const response = await fetch(`/api/paycrest/orders-docs?orderId=${orderId}`);
+        const response = await fetch(`/api/paycrest/orders?orderId=${orderId}`);
         if (!response.ok) throw new Error('Failed to get order status');
         
         const data = await response.json();
