@@ -174,3 +174,150 @@ For detailed webhook implementation guide including signature verification, retr
 Testing
 Paycrest supports very low minimum orders (as little as $0.50) and uses cost-effective EVM L2s, making it perfect for testing with real transactions. Start small and scale up as you gain confidence.
 There is no sandbox environment at the moment. All testing should be done on production using small amounts.
+
+For orders
+
+Response shoul be
+
+{
+  "status": "success",
+  "message": "Operation successful",
+  "data": {
+    "id": "<string>",
+    "amount": "<string>",
+    "token": "<string>",
+    "network": "base",
+    "receiveAddress": "<string>",
+    "validUntil": "2023-11-07T05:31:56Z",
+    "senderFee": 123,
+    "transactionFee": 123,
+    "reference": "<string>"
+  }
+}
+
+REQUEST SHOULD BE LIKE THIS 
+
+curl --request POST \
+  --url https://api.paycrest.io/v1/sender/orders \
+  --header 'API-Key: <api-key>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "amount": 123,
+  "token": "<string>",
+  "rate": 123,
+  "network": "base",
+  "recipient": {
+    "institution": "<string>",
+    "accountIdentifier": "<string>",
+    "accountName": "<string>",
+    "memo": "<string>",
+    "providerId": "<string>",
+    "metadata": {},
+    "currency": "<string>"
+  },
+  "reference": "<string>",
+  "returnAddress": "<string>"
+}'
+
+
+Initiate Payment Order
+POST
+/
+sender
+/
+orders
+
+Try it
+Initiate a new payment order as a sender.
+Authorizations
+​
+API-Key
+stringheaderrequired
+Body
+application/json
+​
+amount
+numberrequired
+​
+token
+stringrequired
+Token symbol (USDT, USDC, CUSD, CNGN). See Supported Stablecoins for available options.
+
+​
+rate
+numberrequired
+​
+network
+enum<string>required
+Network identifier for the blockchain
+
+Available options: base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain 
+​
+recipient
+objectrequired
+Show child attributes
+
+​
+reference
+string
+​
+returnAddress
+string
+Response
+201
+
+201
+application/json
+Payment order initiated
+
+​
+status
+string
+Example:
+"success"
+
+​
+message
+string
+Example:
+"Operation successful"
+
+​
+data
+object
+The actual response data (e.g., ReceiveAddressResponse, etc.)
+
+Hide child attributes
+
+​
+data.id
+string
+​
+data.amount
+string
+​
+data.token
+string
+Token symbol (USDT, USDC, CUSD, CNGN). See Supported Stablecoins for available options.
+
+​
+data.network
+enum<string>
+Network identifier for the blockchain
+
+Available options: base, bnb-smart-chain, lisk, tron, celo, arbitrum-one, polygon, asset-chain 
+​
+data.receiveAddress
+string
+​
+data.validUntil
+string<date-time>
+​
+data.senderFee
+number
+​
+data.transactionFee
+number
+​
+data.reference
+string

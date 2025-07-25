@@ -8,27 +8,27 @@ import { base } from 'viem/chains'
 import Image from 'next/image'
 
 export function DirectUSDCBalance() {
-  // Dual wallet system: MiniKit for Farcaster, Wagmi for web
+  // Use wagmi hooks as primary source (matches improved OffRampFlow logic)
   const { context } = useMiniKit()
-  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount()
+  const { address, isConnected } = useAccount()
   const chainId = useChainId()
   
-  // Enhanced Farcaster detection and wallet logic (matches OffRampFlow)
+  // Consistent wallet detection logic with OffRampFlow
   const isFarcaster = Boolean(context?.user || context?.client)
   const farcasterAddress = (context?.user as { walletAddress?: string })?.walletAddress
   
-  // Use wagmi address as fallback when in Farcaster but no farcaster address
-  const address = farcasterAddress || wagmiAddress
-  const isConnected = Boolean(address) && (wagmiConnected || Boolean(farcasterAddress))
+  // Use consistent wallet logic with OffRampFlow
+  const finalAddress = isConnected ? address : (isFarcaster && !isConnected ? farcasterAddress : address);
+  const finalIsConnected = isConnected || (isFarcaster && Boolean(farcasterAddress) && !isConnected);
   
   // Debug logging
   console.log('DirectUSDCBalance - Wallet detection:', {
     isFarcaster,
     farcasterAddress,
-    wagmiAddress,
-    finalAddress: address,
-    wagmiConnected,
-    isConnected
+    address,
+    finalAddress,
+    isConnected,
+    finalIsConnected
   });
   
   const [balance, setBalance] = useState<string>('0.00')
@@ -39,10 +39,10 @@ export function DirectUSDCBalance() {
   const usdcContract = getUSDCContract(chainId)
   
   const fetchBalance = useCallback(async () => {
-    if (!address || chainId !== base.id) return
+    if (!finalAddress || chainId !== base.id) return
     
     // Capture address value to prevent race conditions
-    const currentAddress = address
+    const currentAddress = finalAddress
     if (!currentAddress) return
     
     setIsLoading(true)
@@ -92,7 +92,7 @@ export function DirectUSDCBalance() {
     } finally {
       setIsLoading(false)
     }
-  }, [address, chainId, usdcContract])
+  }, [finalAddress, chainId, usdcContract])
   
   useEffect(() => {
     fetchBalance()
@@ -204,7 +204,7 @@ export function DirectUSDCBalance() {
           <div className="space-y-1">
             <p className="text-gray-400 text-[10px] font-medium tracking-[0.3em] uppercase">Wallet Address</p>
             <p className="text-white font-mono text-lg tracking-[0.15em] font-medium">
-              {address ? `${address.slice(0, 6)} •••• •••• ${address.slice(-4)}` : '•••• •••• •••• ••••'}
+              {finalAddress ? `${finalAddress.slice(0, 6)} •••• •••• ${finalAddress.slice(-4)}` : '•••• •••• •••• ••••'}
             </p>
           </div>
           

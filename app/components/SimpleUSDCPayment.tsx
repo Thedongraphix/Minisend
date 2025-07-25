@@ -319,7 +319,7 @@ export function SimpleUSDCPayment({
           
           <div className="text-center">
             <p className="text-gray-500 text-xs">
-              Please keep this page open • We'll notify you when complete
+              Please keep this page open • We&apos;ll notify you when complete
             </p>
           </div>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useDisconnect } from 'wagmi';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { SimpleUSDCPayment } from './SimpleUSDCPayment';
 import { DirectUSDCBalance } from './DirectUSDCBalance';
@@ -9,14 +9,18 @@ import { Wallet, ConnectWallet } from '@coinbase/onchainkit/wallet';
 import Image from 'next/image';
 
 export function SimpleOffRampFlow() {
-  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
   const { context } = useMiniKit();
   
-  // Enhanced wallet detection for Farcaster miniapp
+  // Improved wallet detection that respects disconnection
   const isFarcaster = Boolean(context?.user || context?.client);
   const farcasterAddress = (context?.user as { walletAddress?: string })?.walletAddress;
-  const finalAddress = farcasterAddress || wagmiAddress;
-  const isConnected = Boolean(finalAddress) && (wagmiConnected || Boolean(farcasterAddress));
+  
+  // Use wagmi connection state as primary source of truth
+  // Only fallback to Farcaster address if wagmi is not connected but we're in Farcaster context
+  const finalAddress = isConnected ? address : (isFarcaster && !isConnected ? farcasterAddress : address);
+  const finalIsConnected = isConnected || (isFarcaster && Boolean(farcasterAddress) && !isConnected);
 
   // Form state
   const [step, setStep] = useState<'form' | 'payment' | 'success'>('form');
@@ -30,13 +34,14 @@ export function SimpleOffRampFlow() {
   const [rateLoading, setRateLoading] = useState(false);
   const [rateError, setRateError] = useState<string | null>(null);
 
-  console.log('Enhanced wallet detection:', { 
+  console.log('Wallet connection state:', { 
+    address,
+    isConnected,
     farcasterAddress, 
     finalAddress, 
-    isConnected, 
-    isFarcaster, 
-    wagmiAddress, 
-    wagmiConnected 
+    finalIsConnected,
+    isFarcaster,
+    context: context ? 'present' : 'absent'
   });
 
   // Fetch exchange rates
@@ -80,7 +85,7 @@ export function SimpleOffRampFlow() {
   }, [formData.amount, formData.currency]);
 
   // Show wallet connection if not connected
-  if (!isConnected) {
+  if (!finalIsConnected) {
     return (
       <div className="max-w-md mx-auto p-6">
         <div className="text-center mb-8">
@@ -91,6 +96,15 @@ export function SimpleOffRampFlow() {
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Mini Send</h1>
           <p className="text-gray-300">Convert USDC to mobile money via PayCrest</p>
+          
+          {/* Debug info for development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mt-4 p-2 bg-gray-800 rounded text-xs text-gray-400">
+              <div>Farcaster: {isFarcaster ? 'Yes' : 'No'}</div>
+              <div>Wagmi Connected: {isConnected ? 'Yes' : 'No'}</div>
+              <div>Farcaster Address: {farcasterAddress || 'None'}</div>
+            </div>
+          )}
         </div>
 
         <Wallet>
@@ -119,6 +133,25 @@ export function SimpleOffRampFlow() {
         <div className="inline-flex items-center space-x-2 text-xs text-blue-300 bg-blue-500/10 px-3 py-1 rounded-xl mt-2 border border-blue-400/20">
           <Image src="/Base_Network_Logo.svg" alt="Base Network" width={12} height={12} />
           <span className="font-medium">Powered by Base</span>
+        </div>
+
+        {/* Wallet Info & Disconnect */}
+        <div className="mt-4 flex items-center justify-between bg-gray-800/50 rounded-lg p-3">
+          <div className="text-left">
+            <div className="text-green-400 text-xs font-medium">✅ Connected</div>
+            <div className="text-gray-300 text-xs font-mono">
+              {finalAddress ? `${finalAddress.slice(0, 6)}...${finalAddress.slice(-4)}` : 'No address'}
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              console.log('Disconnecting wallet...');
+              disconnect();
+            }}
+            className="text-gray-400 hover:text-red-400 text-xs px-2 py-1 rounded transition-colors"
+          >
+            Disconnect
+          </button>
         </div>
       </div>
 
