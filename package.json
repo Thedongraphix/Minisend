@@ -2,7 +2,7 @@
   "name": "minisend",
   "version": "1.0.0",
   "private": true,
-  "description": "Farcaster mini app for converting USDC to mobile money via PayCrest. Seamless crypto-to-fiat transactions.",
+  "description": "Farcaster mini app for converting USDC to mobile money via PayCrest. Seamless crypto-to-fiat transactions with research-based polling implementation.",
   "keywords": [
     "usdc",
     "paycrest",
@@ -11,14 +11,20 @@
     "crypto",
     "offramp",
     "mobile-money",
-    "base-network"
+    "base-network",
+    "polling",
+    "settlement-detection",
+    "supabase"
   ],
   "author": "Minisend Team",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup-supabase": "node scripts/setup-supabase.js",
+    "test-supabase": "node -e \"require('./lib/supabase/config').testConnection().then(console.log)\"",
+    "health-check": "node -e \"require('./lib/supabase/config').checkHealth().then(console.log)\""
   },
   "dependencies": {
     "@coinbase/onchainkit": "latest",
@@ -33,6 +39,7 @@
     "next": "^15.3.3",
     "node-fetch": "^3.3.2",
     "node-forge": "^1.3.1",
+    "pg": "^8.11.3",
     "react": "^18",
     "react-dom": "^18",
     "viem": "^2.27.2",
@@ -40,6 +47,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.9",
+    "@types/pg": "^8.15.4",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",

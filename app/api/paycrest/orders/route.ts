@@ -156,7 +156,8 @@ export async function POST(request: NextRequest) {
 
     // Store order in database
     try {
-      await OrderService.createOrder({
+      const orderService = new OrderService();
+      await orderService.createOrder({
         paycrest_order_id: order.id,
         paycrest_reference: order.reference,
         user_id: user?.id,
@@ -175,8 +176,7 @@ export async function POST(request: NextRequest) {
         recipient_institution: detectedProvider,
         recipient_currency: currency,
         receive_address: order.receiveAddress,
-        valid_until: order.validUntil,
-        status: order.status || 'initiated',
+        valid_until: new Date(order.validUntil),
         metadata: {
           carrier_info: carrierInfo,
           original_phone_input: phoneNumber,
@@ -185,7 +185,8 @@ export async function POST(request: NextRequest) {
       });
 
       // Track analytics
-      await AnalyticsService.trackOrderCreated(
+      const analyticsService = new AnalyticsService();
+      await analyticsService.trackOrderCreated(
         returnAddress,
         order.id,
         parseFloat(amount),
@@ -195,7 +196,7 @@ export async function POST(request: NextRequest) {
 
       // Log carrier detection
       if (currency === 'KES' && carrierInfo) {
-        await AnalyticsService.logCarrierDetection({
+        await analyticsService.logCarrierDetection({
           phone_number: formattedPhone,
           detected_carrier: carrierInfo.carrier,
           paycrest_provider: detectedProvider,
@@ -267,9 +268,10 @@ export async function GET(request: NextRequest) {
 
     // Update order status in database if changed
     try {
-      const dbOrder = await OrderService.getOrderByPaycrestId(orderId);
+      const orderService = new OrderService();
+      const dbOrder = await orderService.getOrderByPaycrestId(orderId);
       if (dbOrder && dbOrder.status !== order.status) {
-        await OrderService.updateOrderStatus(orderId, order.status);
+        await orderService.updateOrderStatus(orderId, order.status);
       }
     } catch (dbError) {
       console.error('Failed to update order status in database:', dbError);

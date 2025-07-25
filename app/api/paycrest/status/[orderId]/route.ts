@@ -20,70 +20,98 @@ export async function GET(
       );
     }
 
-    // First try to get order from our database (updated by webhooks)
-    let dbOrder;
-    try {
-      dbOrder = await OrderService.getOrderByPaycrestId(orderId);
-    } catch (dbError) {
-      console.error('Failed to get order from database:', dbError);
-    }
+    console.log(`🔍 RESEARCH-BASED: Checking order status for ${orderId}`);
 
-    // Also get fresh status from PayCrest API
+    // RESEARCH-BASED: Get fresh status from PayCrest API (primary source)
     let paycrestOrder;
     try {
       const paycrestService = await getPaycrestService();
       paycrestOrder = await paycrestService.getOrderStatus(orderId);
+      console.log(`📊 PayCrest API status for ${orderId}:`, paycrestOrder.status);
     } catch (paycrestError) {
       console.error('Failed to get order from PayCrest API:', paycrestError);
+      // RESEARCH-BASED: Fallback to database if API fails
+      try {
+        const orderService = new OrderService();
+        const dbOrder = await orderService.getOrderByPaycrestId(orderId);
+        if (dbOrder) {
+          console.log(`📊 Database fallback status for ${orderId}:`, dbOrder.status);
+          paycrestOrder = {
+            id: dbOrder.paycrest_order_id,
+            status: dbOrder.status,
+            amount: dbOrder.amount.toString(),
+            token: 'USDC',
+            network: 'base',
+            recipient: {
+              accountName: dbOrder.recipient_name,
+              accountIdentifier: dbOrder.recipient_phone,
+              currency: dbOrder.currency
+            },
+            reference: dbOrder.paycrest_reference,
+            receiveAddress: dbOrder.receive_address,
+            validUntil: dbOrder.valid_until,
+            senderFee: dbOrder.sender_fee.toString(),
+            transactionFee: dbOrder.transaction_fee.toString()
+          };
+        }
+      } catch (dbError) {
+        console.error('Database fallback also failed:', dbError);
+      }
     }
 
-    // Use the most recent status (prefer PayCrest if available, fallback to DB)
-    const currentOrder = paycrestOrder || dbOrder;
-    
-    if (!currentOrder) {
+    if (!paycrestOrder) {
       return NextResponse.json(
         { error: 'Order not found' },
         { status: 404 }
       );
     }
 
-    // Update database if PayCrest status is newer
-    if (paycrestOrder && dbOrder && dbOrder.status !== paycrestOrder.status) {
-      try {
-        await OrderService.updateOrderStatus(orderId, paycrestOrder.status);
+    // RESEARCH-BASED: Update database with fresh PayCrest status
+    try {
+      const orderService = new OrderService();
+      const dbOrder = await orderService.getOrderByPaycrestId(orderId);
+      if (dbOrder && dbOrder.status !== paycrestOrder.status) {
+        await orderService.updateOrderStatus(orderId, paycrestOrder.status);
         console.log(`📊 Updated order ${orderId} status from ${dbOrder.status} to ${paycrestOrder.status}`);
-      } catch (updateError) {
-        console.error('Failed to update order status:', updateError);
       }
+    } catch (updateError) {
+      console.error('Failed to update order status in database:', updateError);
+      // Don't fail the request if DB update fails
     }
 
-    // Handle different response formats between PayCrest API and database
-    const isPaycrestOrder = 'id' in currentOrder && 'receiveAddress' in currentOrder;
-    const isDatabaseOrder = 'paycrest_order_id' in currentOrder && 'wallet_address' in currentOrder;
-
+    // RESEARCH-BASED: Enhanced response with settlement detection
     const response = {
       success: true,
       order: {
-        id: isPaycrestOrder ? currentOrder.id : isDatabaseOrder ? (currentOrder as { paycrest_order_id: string }).paycrest_order_id : 'unknown',
-        status: currentOrder.status,
-        amount: isPaycrestOrder ? currentOrder.amount : isDatabaseOrder ? (currentOrder as { amount: number }).amount : 0,
-        token: isPaycrestOrder ? currentOrder.token : 'USDC',
-        network: isPaycrestOrder ? currentOrder.network : 'base',
-        currency: isPaycrestOrder ? currentOrder.recipient?.currency : isDatabaseOrder ? (currentOrder as { currency: string }).currency : 'KES',
-        recipient: isPaycrestOrder ? currentOrder.recipient : isDatabaseOrder ? {
-          accountName: (currentOrder as { recipient_name: string }).recipient_name,
-          accountIdentifier: (currentOrder as { recipient_phone: string }).recipient_phone,
-          currency: (currentOrder as { currency: string }).currency
-        } : undefined,
-        reference: isPaycrestOrder ? currentOrder.reference : isDatabaseOrder ? (currentOrder as { paycrest_reference: string }).paycrest_reference : undefined,
-        receiveAddress: isPaycrestOrder ? currentOrder.receiveAddress : isDatabaseOrder ? (currentOrder as { receive_address: string }).receive_address : undefined,
-        validUntil: isPaycrestOrder ? currentOrder.validUntil : isDatabaseOrder ? (currentOrder as { valid_until: string }).valid_until : undefined,
-        senderFee: isPaycrestOrder ? currentOrder.senderFee : isDatabaseOrder ? (currentOrder as { sender_fee: number }).sender_fee : 0,
-        transactionFee: isPaycrestOrder ? currentOrder.transactionFee : isDatabaseOrder ? (currentOrder as { transaction_fee: number }).transaction_fee : 0,
-        created_at: isDatabaseOrder ? (currentOrder as { created_at: string }).created_at : undefined,
-        updated_at: isDatabaseOrder ? (currentOrder as { updated_at: string }).updated_at : new Date().toISOString()
+        id: paycrestOrder.id,
+        status: paycrestOrder.status,
+        amount: paycrestOrder.amount,
+        token: paycrestOrder.token,
+        network: paycrestOrder.network,
+        currency: paycrestOrder.recipient?.currency || 'KES',
+        recipient: paycrestOrder.recipient,
+        reference: paycrestOrder.reference,
+        receiveAddress: paycrestOrder.receiveAddress,
+        validUntil: paycrestOrder.validUntil,
+        senderFee: paycrestOrder.senderFee,
+        transactionFee: paycrestOrder.transactionFee,
+        // RESEARCH-BASED: Add settlement-specific fields
+        isSettled: paycrestOrder.status === 'settled',
+        isFailed: ['failed', 'cancelled'].includes(paycrestOrder.status),
+        isProcessing: ['initiated', 'pending'].includes(paycrestOrder.status),
+        // Add transaction hash if available for settlement verification
+        txHash: paycrestOrder.txHash,
+        // Add settlement timestamp
+        settledAt: paycrestOrder.status === 'settled' ? new Date().toISOString() : undefined
       }
     };
+
+    console.log(`✅ RESEARCH-BASED: Order status response for ${orderId}:`, {
+      status: paycrestOrder.status,
+      isSettled: response.order.isSettled,
+      isFailed: response.order.isFailed,
+      isProcessing: response.order.isProcessing
+    });
 
     return NextResponse.json(response);
 
