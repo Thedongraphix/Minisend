@@ -210,11 +210,26 @@ async function handleOrderSettled(order: PaycrestOrder) {
 async function handleOrderRefunded(order: PaycrestOrder) {
   // Funds refunded to sender
   // Something went wrong with the transaction
-  console.log(`Order ${order.id} was refunded - transaction failed`);
+  console.log(`⚠️ Order ${order.id} was refunded - transaction failed`);
   
-  // TODO: Notify user of refund
-  // TODO: Update transaction status
-  // TODO: Handle refund logic
+  // Track refund analytics
+  try {
+    const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
+    if (dbOrder) {
+      await AnalyticsService.trackEvent({
+        event_name: 'order_refunded',
+        wallet_address: dbOrder.wallet_address,
+        order_id: dbOrder.id,
+        properties: {
+          amount: dbOrder.amount,
+          currency: dbOrder.currency,
+          refund_reason: 'payment_processing_failed'
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Failed to track refund analytics:', error);
+  }
 }
 
 async function handleOrderExpired(order: PaycrestOrder) {
