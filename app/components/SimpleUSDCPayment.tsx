@@ -372,10 +372,13 @@ export function SimpleUSDCPayment({
           
           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
             <p className="text-green-300 text-sm">
-              ⏱️ Usually takes 2-3 minutes
+              ⏱️ Usually takes 1-3 minutes
             </p>
             <p className="text-gray-400 text-xs mt-1">
               Sending to {phoneNumber}
+            </p>
+            <p className="text-gray-400 text-xs mt-1">
+              💡 Your payment is being processed securely
             </p>
           </div>
         </div>
