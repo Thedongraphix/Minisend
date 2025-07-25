@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLabel, TransactionStatusAction } from '@coinbase/onchainkit/transaction';
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
@@ -100,14 +100,7 @@ export function SimpleUSDCPayment({
         setPaycrestOrder(paycrestOrderObj);
         setStatus('ready-to-pay');
         
-        // Safety mechanism: start polling after 15 seconds if no other mechanism triggers it
-        // This handles cases where transaction callbacks fail
-        setTimeout(() => {
-          if (!pollingStarted && paycrestOrderObj.id) {
-            console.log('🔄 SAFETY: Auto-starting polling after 15 seconds for order:', paycrestOrderObj.id);
-            pollOrderStatus(paycrestOrderObj.id);
-          }
-        }, 15000);
+        // Safety mechanism will be set up after pollOrderStatus is defined
       } else {
         console.error('Invalid PayCrest response:', data);
         throw new Error('Invalid response from PayCrest API');
@@ -117,7 +110,7 @@ export function SimpleUSDCPayment({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, accountName, currency, returnAddress, rate, onError, pollingStarted, pollOrderStatus]);
+  }, [amount, phoneNumber, accountName, currency, returnAddress, rate, onError]);
 
   // USDC transfer using proper OnchainKit calls format
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
@@ -268,6 +261,20 @@ export function SimpleUSDCPayment({
     poll();
   }, [onSuccess, onError, phoneNumber, currency, pollingStarted]);
 
+  // Safety mechanism: start polling after 15 seconds if no other mechanism triggers it
+  useEffect(() => {
+    if (paycrestOrder?.id && status === 'ready-to-pay') {
+      const timer = setTimeout(() => {
+        if (!pollingStarted && paycrestOrder.id) {
+          console.log('🔄 SAFETY: Auto-starting polling after 15 seconds for order:', paycrestOrder.id);
+          pollOrderStatus(paycrestOrder.id);
+        }
+      }, 15000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [paycrestOrder?.id, status, pollingStarted, pollOrderStatus]);
+
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
     console.log('Transaction status:', status);
     
@@ -298,7 +305,7 @@ export function SimpleUSDCPayment({
         onError('Transaction failed');
         break;
     }
-  }, [paycrestOrder?.id, pollOrderStatus]);
+  }, [paycrestOrder?.id, pollOrderStatus, onError]);
 
   return (
     <div className="space-y-6">
