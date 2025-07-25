@@ -67,7 +67,7 @@ export function SimpleUSDCPayment({
       const data = await response.json();
       console.log('PayCrest order created:', data);
       
-      console.log('PayCrest response structure:', JSON.stringify(data, null, 2));
+      console.log('🎯 PayCrest response structure:', JSON.stringify(data, null, 2));
       
       if (data.success && data.order) {
         let orderData;
@@ -84,16 +84,19 @@ export function SimpleUSDCPayment({
           throw new Error('Unexpected PayCrest response structure');
         }
 
-        console.log('Extracted order data:', orderData);
+        console.log('🎯 Extracted order data:', orderData);
         
-        setPaycrestOrder({
+        const paycrestOrderObj = {
           id: orderData.id,
           receiveAddress: orderData.receiveAddress,
           amount: orderData.amount,
           senderFee: orderData.senderFee || '0',
           transactionFee: orderData.transactionFee || '0',
           validUntil: orderData.validUntil
-        });
+        };
+        
+        console.log('📦 Setting PayCrest order object:', paycrestOrderObj);
+        setPaycrestOrder(paycrestOrderObj);
         setStatus('ready-to-pay');
       } else {
         console.error('Invalid PayCrest response:', data);
@@ -132,12 +135,14 @@ export function SimpleUSDCPayment({
 
   // Poll PayCrest order status after successful transaction
   const pollOrderStatus = useCallback(async (orderId: string) => {
+    console.log('🚀 POLLING STARTED for order:', orderId);
     const maxAttempts = 60; // 3 minutes max (should complete in 1-2 minutes per docs)
     let attempts = 0;
 
     // Start with converting status
     setStatus('converting');
     setStatusMessage('Payment received! Processing conversion...');
+    console.log('📱 UI Status set to converting, message updated');
 
     const poll = async () => {
       try {
@@ -148,11 +153,12 @@ export function SimpleUSDCPayment({
         const data = await response.json();
         const order = data.order;
         
-        console.log(`Order status polling attempt ${attempts + 1}/${maxAttempts}:`, {
+        console.log(`🔍 Order status polling attempt ${attempts + 1}/${maxAttempts}:`, {
           orderId,
           status: order?.status,
           attempts: attempts + 1,
-          timeElapsed: `${Math.round((attempts * 3) / 60 * 10) / 10} minutes`
+          timeElapsed: `${Math.round((attempts * 3) / 60 * 10) / 10} minutes`,
+          orderData: order
         });
 
         // Update status message based on progress and status  
@@ -170,20 +176,23 @@ export function SimpleUSDCPayment({
           }
         } else if (order.status === 'settled') {
           // SUCCESS! Payment has been completed and settled
-          console.log('🎉 SUCCESS: Payment completed and settled!');
-          console.log('Payment completion details:', {
+          console.log('🎉🎉🎉 SUCCESS DETECTED: Payment completed and settled!');
+          console.log('🎯 Payment completion details:', {
             orderId,
             finalStatus: order.status,
             totalTime: `${timeElapsed} minutes`,
             recipient: phoneNumber,
-            currency: currency
+            currency: currency,
+            fullOrderData: order
           });
           
           setStatusMessage(`✅ Payment successful! ${currency} sent to ${phoneNumber}`);
           setStatus('success');
           
+          console.log('🚀 About to call onSuccess after 2 second delay...');
           // Show success message for a moment before calling onSuccess
           setTimeout(() => {
+            console.log('🎊 Calling onSuccess now!');
             onSuccess();
           }, 2000);
           return;
@@ -254,12 +263,19 @@ export function SimpleUSDCPayment({
         break;
       case 'success':
         console.log('✅ Transaction successful, starting PayCrest order status polling');
+        console.log('🔍 PayCrest order available?', { 
+          hasOrder: !!paycrestOrder, 
+          orderId: paycrestOrder?.id,
+          orderData: paycrestOrder
+        });
         setStatusMessage('Transaction confirmed! Processing payment...');
         // Start polling PayCrest for order status as per documentation
         if (paycrestOrder?.id) {
+          console.log('🎯 Starting polling with order ID:', paycrestOrder.id);
           pollOrderStatus(paycrestOrder.id);
         } else {
           // Fallback if no order ID
+          console.log('⚠️ No PayCrest order ID available, using fallback');
           setStatusMessage('✅ Payment completed successfully!');
           setTimeout(() => {
             setStatus('success');
@@ -309,12 +325,19 @@ export function SimpleUSDCPayment({
             calls={calls}
             onStatus={handleTransactionStatus}
             onSuccess={(response) => {
-              console.log('Transaction successful:', response);
+              console.log('🎯 Transaction onSuccess callback triggered:', response);
+              console.log('🔍 PayCrest order in onSuccess?', { 
+                hasOrder: !!paycrestOrder, 
+                orderId: paycrestOrder?.id,
+                orderData: paycrestOrder
+              });
               setStatus('processing');
               // Start polling PayCrest for order status
               if (paycrestOrder?.id) {
+                console.log('🚀 Starting polling from onSuccess with order ID:', paycrestOrder.id);
                 pollOrderStatus(paycrestOrder.id);
               } else {
+                console.log('⚠️ No PayCrest order ID in onSuccess, using fallback');
                 setTimeout(() => {
                   setStatus('success');
                   onSuccess();
