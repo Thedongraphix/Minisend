@@ -248,7 +248,7 @@ export function SimpleUSDCPayment({
         break;
       case 'success':
         console.log('✅ Transaction successful, starting PayCrest order status polling');
-        setStatusMessage('Transaction confirmed!');
+        setStatusMessage('Transaction confirmed! Processing payment...');
         // Start polling PayCrest for order status as per documentation
         if (paycrestOrder?.id) {
           pollOrderStatus(paycrestOrder.id);
