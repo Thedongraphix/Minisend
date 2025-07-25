@@ -139,22 +139,14 @@ export class PaycrestService {
   }
 
   async getRates(token: string = 'USDC', amount: string = '1', currency: string = 'KES', network: string = 'base'): Promise<string> {
-    const response = await fetch(`${this.config.baseUrl}/v1/rates/${token}/${amount}/${currency}?network=${network}`, {
-      headers: {
-        'API-Key': this.config.apiKey,
-      },
-    });
-
-    if (!response.ok) {
-      throw new PaycrestError(`Failed to get rates: ${response.statusText}`, response.status);
-    }
-
-    const data = await response.json();
-    if (data.status === 'success' && data.data) {
-      return data.data;
-    }
+    console.log(`Fetching rates: ${token}/${amount}/${currency} on ${network}`);
     
-    throw new PaycrestError('Invalid rates response format');
+    // Use makeRequest for consistent logging and error handling
+    const data = await this.makeRequest<string>(`/v1/rates/${token}/${amount}/${currency}?network=${network}`);
+    
+    // PayCrest rates API returns the rate as a string in the data field
+    // makeRequest already extracts result.data, so data should be the rate string
+    return data;
   }
 
   // Sender endpoints - Only what we need for offramp
