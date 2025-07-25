@@ -35,7 +35,8 @@ export function SimpleUSDCPayment({
     transactionFee: string;
     validUntil: string;
   } | null>(null);
-  const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'converting' | 'success' | 'error'>('idle');
+  const [statusMessage, setStatusMessage] = useState<string>('');
 
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -134,6 +135,10 @@ export function SimpleUSDCPayment({
     const maxAttempts = 90; // 7.5 minutes with 5s intervals (accounts for 2-3 min processing time)
     let attempts = 0;
 
+    // Start with converting status
+    setStatus('converting');
+    setStatusMessage('Converting USDC...');
+
     const poll = async () => {
       try {
         const response = await fetch(`/api/paycrest/orders?orderId=${orderId}`);
@@ -149,16 +154,27 @@ export function SimpleUSDCPayment({
           timeElapsed: `${Math.round((attempts * 5) / 60 * 10) / 10} minutes`
         });
 
+        // Update status message based on progress
+        const timeElapsed = Math.round((attempts * 5) / 60 * 10) / 10;
+        if (attempts < 12) {
+          setStatusMessage(`Converting... ${timeElapsed}m`);
+        } else if (attempts < 36) {
+          setStatusMessage(`Processing... ${timeElapsed}m`);
+        } else {
+          setStatusMessage(`Finalizing... ${timeElapsed}m`);
+        }
+
         // Check for success status as per documentation
         if (order.status === 'payment_order.validated' || order.status === 'payment_order.settled') {
           console.log('🎉 SUCCESS: Funds have been sent to recipient\'s mobile money/bank account!');
           console.log('Payment completion details:', {
             orderId,
             finalStatus: order.status,
-            totalTime: `${Math.round((attempts * 5) / 60 * 10) / 10} minutes`,
+            totalTime: `${timeElapsed} minutes`,
             recipient: phoneNumber,
             currency: currency
           });
+          setStatusMessage(`✅ ${currency} sent to ${phoneNumber}`);
           setStatus('success');
           onSuccess();
           return;
@@ -177,6 +193,7 @@ export function SimpleUSDCPayment({
           setTimeout(poll, interval);
         } else {
           console.warn('⚠️ Polling timeout reached - order may still be processing');
+          setStatusMessage('Processing delayed...');
           throw new Error('Processing is taking longer than expected. Your payment may still complete. Please check back in a few minutes or contact support.');
         }
       } catch (error) {
@@ -200,13 +217,14 @@ export function SimpleUSDCPayment({
         setStatus('processing');
         break;
       case 'success':
-        console.log('Transaction successful, starting PayCrest order status polling');
-        setStatus('processing');
+        console.log('✅ Transaction successful, starting PayCrest order status polling');
+        setStatusMessage('Transaction confirmed!');
         // Start polling PayCrest for order status as per documentation
         if (paycrestOrder?.id) {
           pollOrderStatus(paycrestOrder.id);
         } else {
           // Fallback if no order ID
+          setStatusMessage('✅ Payment complete!');
           setTimeout(() => {
             setStatus('success');
             onSuccess();
@@ -236,7 +254,7 @@ export function SimpleUSDCPayment({
       {status === 'creating-order' && (
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-4 border-white/20 border-t-blue-400 mx-auto mb-4"></div>
-          <p className="text-white">Creating PayCrest order...</p>
+          <p className="text-white">Creating order...</p>
         </div>
       )}
 
@@ -246,7 +264,7 @@ export function SimpleUSDCPayment({
           <div className="text-center">
             <h3 className="text-white font-bold">Ready to Send</h3>
             <p className="text-gray-300 text-sm">
-              Send ${amount} USDC to PayCrest for conversion
+              Send ${amount} USDC
             </p>
           </div>
           
@@ -297,29 +315,37 @@ export function SimpleUSDCPayment({
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-white font-semibold text-lg">Processing Payment</h3>
+            <h3 className="text-white font-semibold text-lg">Signing Transaction</h3>
             <p className="text-gray-300">
-              Converting your USDC to {currency} via PayCrest...
+              📱 Check your wallet
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Converting */}
+      {status === 'converting' && (
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-green-400 mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-white font-semibold text-lg">Converting to {currency}</h3>
+            <p className="text-gray-300">
+              {statusMessage || `Converting USDC...`}
             </p>
           </div>
           
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-            <div className="flex items-center justify-center space-x-2 mb-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-            </div>
-            <p className="text-blue-300 text-sm">
-              ⏱️ Typical processing time: 2-3 minutes
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+            <p className="text-green-300 text-sm">
+              ⏱️ Usually takes 2-3 minutes
             </p>
             <p className="text-gray-400 text-xs mt-1">
-              Your {currency} will be sent to {phoneNumber} once processing completes
-            </p>
-          </div>
-          
-          <div className="text-center">
-            <p className="text-gray-500 text-xs">
-              Please keep this page open • We&apos;ll notify you when complete
+              Sending to {phoneNumber}
             </p>
           </div>
         </div>
@@ -329,18 +355,10 @@ export function SimpleUSDCPayment({
       {status === 'success' && (
         <div className="text-center space-y-4">
           <div className="text-6xl mb-4">🎉</div>
-          <h3 className="text-white font-bold text-xl">Payment Successful!</h3>
+          <h3 className="text-white font-bold text-xl">Payment Sent!</h3>
           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
             <p className="text-green-400 font-medium">
-              ✅ Funds have been sent successfully!
-            </p>
-            <p className="text-gray-300 text-sm mt-2">
-              Your {currency} has been delivered to {phoneNumber}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-400 text-xs">
-              🚀 Powered by PayCrest • Transaction completed in ~2-3 minutes
+              ✅ {currency} sent to {phoneNumber}
             </p>
           </div>
         </div>
