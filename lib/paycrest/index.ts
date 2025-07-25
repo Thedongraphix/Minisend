@@ -74,47 +74,72 @@ export class PaycrestService {
   ): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`;
     
+    console.log(`PayCrest API Request: ${method} ${url}`);
+    if (body) {
+      console.log('Request body:', JSON.stringify(body, null, 2));
+    }
+    
+    const headers: Record<string, string> = {
+      'API-Key': this.config.apiKey,
+      'Content-Type': 'application/json',
+    };
+
     const response = await fetch(url, {
       method,
-      headers: {
-        'API-Key': this.config.apiKey,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
+
+    const responseText = await response.text();
+    console.log(`PayCrest API Response (${response.status}):`, responseText);
 
     if (!response.ok) {
       let errorMessage = `PayCrest API error: ${response.statusText}`;
       
       try {
-        const errorBody = await response.json();
-        errorMessage = errorBody.message || errorMessage;
+        const errorBody = JSON.parse(responseText);
+        errorMessage = errorBody.message || errorBody.error || errorMessage;
+        
+        // Log detailed error for debugging
+        console.error('PayCrest API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorBody,
+          url,
+          headers
+        });
       } catch {
-        // If we can't parse the error body, use the status text
+        console.error('PayCrest API Raw Error:', responseText);
       }
 
       throw new PaycrestError(errorMessage, response.status);
     }
 
-    const result = await response.json();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse PayCrest response:', parseError);
+      throw new PaycrestError('Invalid JSON response from PayCrest API');
+    }
     
     // PayCrest API returns data in a nested structure: { status, message, data }
-    // Extract the data field if it exists
+    // Extract the data field if it exists, otherwise return the full result
     return result.data || result;
   }
 
   async createOrder(orderData: PaycrestOrderRequest): Promise<PaycrestOrder> {
-    // Use /sender/orders endpoint as per PayCrest documentation
-    return this.makeRequest<PaycrestOrder>('/sender/orders', 'POST', orderData);
+    // Use /v1/sender/orders endpoint as per PayCrest documentation
+    return this.makeRequest<PaycrestOrder>('/v1/sender/orders', 'POST', orderData);
   }
 
   async getOrderStatus(orderId: string): Promise<PaycrestOrder> {
-    // Use /sender/orders endpoint for status checking
-    return this.makeRequest<PaycrestOrder>(`/sender/orders/${orderId}`);
+    // Use /v1/sender/orders endpoint for status checking
+    return this.makeRequest<PaycrestOrder>(`/v1/sender/orders/${orderId}`);
   }
 
   async getRates(token: string = 'USDC', amount: string = '1', currency: string = 'KES', network: string = 'base'): Promise<string> {
-    const response = await fetch(`${this.config.baseUrl}/rates/${token}/${amount}/${currency}?network=${network}`, {
+    const response = await fetch(`${this.config.baseUrl}/v1/rates/${token}/${amount}/${currency}?network=${network}`, {
       headers: {
         'API-Key': this.config.apiKey,
       },
@@ -134,11 +159,11 @@ export class PaycrestService {
 
   // Sender endpoints - Only what we need for offramp
   async getSenderStats(): Promise<unknown> {
-    return this.makeRequest('/sender/stats');
+    return this.makeRequest('/v1/sender/stats');
   }
 
   async listSenderOrders(page: number = 1, pageSize: number = 20): Promise<unknown> {
-    return this.makeRequest(`/sender/orders?page=${page}&pageSize=${pageSize}`);
+    return this.makeRequest(`/v1/sender/orders?page=${page}&pageSize=${pageSize}`);
   }
 
   verifyWebhookSignature(
