@@ -137,7 +137,7 @@ export function SimpleUSDCPayment({
 
     // Start with converting status
     setStatus('converting');
-    setStatusMessage('Payment confirmed! Converting to local currency...');
+    setStatusMessage('Payment received! Processing conversion...');
 
     const poll = async () => {
       try {
