@@ -223,16 +223,20 @@ export class PaycrestService {
     // Use CLIENT_SECRET as per PayCrest documentation
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const crypto = require('crypto');
-    const secretKey = this.config.webhookSecret || this.config.clientSecret;
+    const secretKey = this.config.clientSecret; // Use CLIENT_SECRET as shown in PayCrest dashboard example
+    
+    // PayCrest webhook signature verification (matches dashboard example)
     const key = Buffer.from(secretKey);
     const hash = crypto.createHmac('sha256', key);
     hash.update(payload);
     const calculatedSignature = hash.digest('hex');
     
-    console.log('Webhook signature verification:', {
-      signature,
-      calculatedSignature,
-      secretUsed: secretKey ? 'present' : 'missing'
+    console.log('PayCrest webhook signature verification:', {
+      receivedSignature: signature,
+      calculatedSignature: calculatedSignature,
+      secretKeyPresent: secretKey ? 'yes' : 'no',
+      payloadLength: payload.length,
+      match: signature === calculatedSignature
     });
     
     return signature === calculatedSignature;

@@ -131,7 +131,7 @@ export function SimpleUSDCPayment({
 
   // Poll PayCrest order status after successful transaction
   const pollOrderStatus = useCallback(async (orderId: string) => {
-    const maxAttempts = 60; // 5 minutes with 5s intervals
+    const maxAttempts = 90; // 7.5 minutes with 5s intervals (accounts for 2-3 min processing time)
     let attempts = 0;
 
     const poll = async () => {
@@ -142,15 +142,23 @@ export function SimpleUSDCPayment({
         const data = await response.json();
         const order = data.order;
         
-        console.log(`Order status polling attempt ${attempts}:`, {
+        console.log(`Order status polling attempt ${attempts + 1}/${maxAttempts}:`, {
           orderId,
           status: order?.status,
-          attempts
+          attempts: attempts + 1,
+          timeElapsed: `${Math.round((attempts * 5) / 60 * 10) / 10} minutes`
         });
 
         // Check for success status as per documentation
-        if (order.status === 'payment_order.validated') {
-          console.log('Funds have been sent to recipient\'s bank/mobile network (value transfer confirmed)');
+        if (order.status === 'payment_order.validated' || order.status === 'payment_order.settled') {
+          console.log('🎉 SUCCESS: Funds have been sent to recipient\'s mobile money/bank account!');
+          console.log('Payment completion details:', {
+            orderId,
+            finalStatus: order.status,
+            totalTime: `${Math.round((attempts * 5) / 60 * 10) / 10} minutes`,
+            recipient: phoneNumber,
+            currency: currency
+          });
           setStatus('success');
           onSuccess();
           return;
@@ -158,23 +166,28 @@ export function SimpleUSDCPayment({
 
         // Check for failure statuses
         if (order.status === 'payment_order.refunded' || order.status === 'payment_order.expired') {
-          throw new Error(`Order ${order.status.replace('payment_order.', '')}`);
+          console.error(`❌ Order failed with status: ${order.status}`);
+          throw new Error(`Order ${order.status.replace('payment_order.', '')} - Please contact support if funds were deducted.`);
         }
 
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(poll, 5000); // Poll every 5 seconds
+          // Use progressive intervals: 5s first minute, then 10s
+          const interval = attempts < 12 ? 5000 : 10000;
+          setTimeout(poll, interval);
         } else {
-          throw new Error('Settlement timeout - order may still complete. Check your dashboard.');
+          console.warn('⚠️ Polling timeout reached - order may still be processing');
+          throw new Error('Processing is taking longer than expected. Your payment may still complete. Please check back in a few minutes or contact support.');
         }
       } catch (error) {
+        console.error('Polling error:', error);
         setStatus('error');
         onError(error instanceof Error ? error.message : 'Settlement failed');
       }
     };
 
     poll();
-  }, [onSuccess, onError]);
+  }, [onSuccess, onError, phoneNumber, currency]);
 
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
     console.log('Transaction status:', status);
@@ -275,23 +288,61 @@ export function SimpleUSDCPayment({
 
       {/* Processing */}
       {status === 'processing' && (
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-4 border-white/20 border-t-blue-400 mx-auto mb-4"></div>
-          <p className="text-white">Processing payment...</p>
-          <p className="text-gray-400 text-sm mt-2">
-            Waiting for PayCrest to process your payment to mobile money
-          </p>
+        <div className="text-center space-y-4">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-blue-400 mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-6 h-6 bg-blue-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <h3 className="text-white font-semibold text-lg">Processing Payment</h3>
+            <p className="text-gray-300">
+              Converting your USDC to {currency} via PayCrest...
+            </p>
+          </div>
+          
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <div className="flex items-center justify-center space-x-2 mb-2">
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            </div>
+            <p className="text-blue-300 text-sm">
+              ⏱️ Typical processing time: 2-3 minutes
+            </p>
+            <p className="text-gray-400 text-xs mt-1">
+              Your {currency} will be sent to {phoneNumber} once processing completes
+            </p>
+          </div>
+          
+          <div className="text-center">
+            <p className="text-gray-500 text-xs">
+              Please keep this page open • We'll notify you when complete
+            </p>
+          </div>
         </div>
       )}
 
       {/* Success */}
       {status === 'success' && (
-        <div className="text-center">
-          <div className="text-4xl mb-4">🎉</div>
-          <h3 className="text-white font-bold text-lg">Payment Sent!</h3>
-          <p className="text-gray-300">
-            Your {currency} will be sent to {phoneNumber} shortly.
-          </p>
+        <div className="text-center space-y-4">
+          <div className="text-6xl mb-4">🎉</div>
+          <h3 className="text-white font-bold text-xl">Payment Successful!</h3>
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+            <p className="text-green-400 font-medium">
+              ✅ Funds have been sent successfully!
+            </p>
+            <p className="text-gray-300 text-sm mt-2">
+              Your {currency} has been delivered to {phoneNumber}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-gray-400 text-xs">
+              🚀 Powered by PayCrest • Transaction completed in ~2-3 minutes
+            </p>
+          </div>
         </div>
       )}
     </div>
