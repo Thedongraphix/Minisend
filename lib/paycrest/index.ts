@@ -37,11 +37,22 @@ export interface PaycrestOrder {
   senderFee: string;
   transactionFee: string;
   amount: string;
-  status: 'initiated' | 'pending' | 'settled' | 'expired' | 'refunded';
+  status: 'initiated' | 'pending' | 'settled' | 'expired' | 'refunded' | 'failed' | 'cancelled';
   token: string;
   network: string;
   recipient: PaycrestRecipient;
   reference: string;
+  // RESEARCH-BASED: Settlement verification fields
+  txHash?: string;
+  amountPaid?: string;
+  settledAt?: string;
+  transactions?: Array<{
+    id: string;
+    status: string;
+    type: string;
+    amount: string;
+    timestamp: string;
+  }>;
 }
 
 export interface PaycrestWebhookEvent {
