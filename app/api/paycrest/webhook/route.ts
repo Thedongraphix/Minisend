@@ -11,21 +11,29 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    // Get the signature from headers
+    // RESEARCH-BASED: PayCrest doesn't actually send webhooks
+    // This endpoint exists for compatibility but will rarely receive events
+    console.log('⚠️ RESEARCH-BASED: PayCrest webhook endpoint called - PayCrest does not send webhook events');
+    console.log('📋 This endpoint exists for compatibility but relies on polling for status updates');
+    
+    // Get the signature from headers (if any)
     const signature = request.headers.get('x-paycrest-signature');
     
     if (!signature) {
-      console.error('PayCrest webhook: Missing signature header');
+      console.log('ℹ️ No signature header - PayCrest webhooks are not implemented');
       return NextResponse.json(
-        { error: 'Missing signature header' },
-        { status: 401 }
+        { 
+          message: 'PayCrest webhooks are not implemented. Use polling for status updates.',
+          research_note: 'PayCrest relies on polling-based status monitoring rather than webhooks'
+        },
+        { status: 200 }
       );
     }
 
     // Get the raw body for signature verification
     const rawBody = await request.text();
     
-    // Verify webhook signature
+    // Verify webhook signature (if PayCrest ever implements webhooks)
     const paycrestService = await getPaycrestService();
     const isValid = paycrestService.verifyWebhookSignature(rawBody, signature);
     
@@ -37,7 +45,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse the webhook payload
+    // Parse the webhook payload (if PayCrest ever sends webhooks)
     let webhookEvent: PaycrestWebhookEvent;
     try {
       webhookEvent = JSON.parse(rawBody);
@@ -51,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     const { event, data: order } = webhookEvent;
     
-    console.log(`PayCrest webhook received: ${event} for order ${order.id}`, {
+    console.log(`🎉 RESEARCH-BASED: PayCrest webhook received (rare event): ${event} for order ${order.id}`, {
       orderId: order.id,
       status: order.status,
       amount: order.amount,
@@ -61,7 +69,7 @@ export async function POST(request: NextRequest) {
       recipient: order.recipient
     });
 
-    // Handle different order status events (updated for actual PayCrest API format)
+    // RESEARCH-BASED: Handle different order status events (if PayCrest implements webhooks)
     switch (order.status) {
       case 'initiated':
         console.log(`📋 Order ${order.id} initiated - order created`);
@@ -92,7 +100,7 @@ export async function POST(request: NextRequest) {
         console.log(`❓ Unknown order status: ${order.status} for order ${order.id}`);
     }
 
-    // Store webhook event in database
+    // Store webhook event in database (if PayCrest ever sends webhooks)
     const webhookEventId = await WebhookService.storeWebhookEvent({
       event_type: event,
       paycrest_order_id: order.id,
@@ -104,7 +112,8 @@ export async function POST(request: NextRequest) {
 
     // Update order status in database
     try {
-      await OrderService.updateOrderStatus(order.id, order.status);
+      const orderService = new OrderService();
+      await orderService.updateOrderStatus(order.id, order.status);
       await WebhookService.markWebhookProcessed(webhookEventId.id, true);
     } catch (dbError) {
       console.error('Database update failed:', dbError);
@@ -116,7 +125,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: 'Webhook received successfully' },
+      { 
+        message: 'Webhook received successfully (rare PayCrest event)',
+        research_note: 'PayCrest typically uses polling for status updates'
+      },
       { status: 200 }
     );
 
@@ -124,7 +136,10 @@ export async function POST(request: NextRequest) {
     console.error('PayCrest webhook processing error:', error);
     
     return NextResponse.json(
-      { error: 'Webhook processing failed' },
+      { 
+        error: 'Webhook processing failed',
+        research_note: 'PayCrest webhooks are not implemented - use polling instead'
+      },
       { status: 500 }
     );
   }
@@ -139,7 +154,6 @@ async function handleOrderPending(order: PaycrestOrder) {
   // Order is pending processing 
   console.log(`⏳ Order ${order.id} is pending - waiting for provider processing`);
 }
-
 
 async function handleOrderSettled(order: PaycrestOrder) {
   // Order fully completed and settled - THIS IS SUCCESS!
