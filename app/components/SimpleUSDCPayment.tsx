@@ -254,11 +254,11 @@ export function SimpleUSDCPayment({
           pollOrderStatus(paycrestOrder.id);
         } else {
           // Fallback if no order ID
-          setStatusMessage('✅ Payment complete!');
+          setStatusMessage('✅ Payment completed successfully!');
           setTimeout(() => {
             setStatus('success');
             onSuccess();
-          }, 3000);
+          }, 2000);
         }
         break;
       case 'error':
