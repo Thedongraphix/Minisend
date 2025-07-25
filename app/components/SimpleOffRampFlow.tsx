@@ -104,7 +104,7 @@ export function SimpleOffRampFlow() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2">USDC Convert</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Mini Send</h1>
         <p className="text-gray-300">Send crypto to mobile money</p>
         
         <div className="inline-flex items-center space-x-2 text-xs text-blue-300 bg-blue-500/10 px-3 py-1 rounded-xl mt-2 border border-blue-400/20">
@@ -120,7 +120,7 @@ export function SimpleOffRampFlow() {
       {step === 'form' && (
         <div className="space-y-4">
           <div>
-            <label className="block text-white text-sm font-medium mb-2">Amount (USDC)</label>
+            <label className="block text-white text-sm font-medium mb-2">Amount ($)</label>
             <input
               type="number"
               value={formData.amount}
@@ -159,7 +159,7 @@ export function SimpleOffRampFlow() {
                   ) : currentRate ? (
                     <div>
                       <div className="text-white font-medium">
-                        1 USDC = {currentRate.toLocaleString()} {formData.currency}
+                        1 USD = {currentRate.toLocaleString()} {formData.currency}
                       </div>
                       <div className="text-xs text-gray-400">
                         You&apos;ll receive ≈ {(parseFloat(formData.amount) * currentRate).toLocaleString()} {formData.currency}
@@ -220,7 +220,7 @@ export function SimpleOffRampFlow() {
             <div className="space-y-1 text-sm">
               <div className="flex justify-between text-gray-300">
                 <span>Amount:</span>
-                <span>${formData.amount} USDC</span>
+                <span>${formData.amount}</span>
               </div>
               <div className="flex justify-between text-gray-300">
                 <span>To:</span>
@@ -258,21 +258,45 @@ export function SimpleOffRampFlow() {
 
       {/* Success Step */}
       {step === 'success' && (
-        <div className="text-center space-y-4">
-          <div className="text-6xl">🎉</div>
+        <div className="text-center space-y-6">
+          <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
-          <p className="text-gray-300">
-            Your {formData.currency} will be sent to {formData.phoneNumber} shortly.
-          </p>
-          <button
-            onClick={() => {
-              setStep('form');
-              setFormData({ amount: '', phoneNumber: '', accountName: '', currency: 'KES' });
-            }}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
-          >
-            Send Another Payment
-          </button>
+          
+          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-6 space-y-3">
+            <div className="flex items-center justify-center space-x-2 text-green-400">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span className="font-semibold">Payment Sent Successfully</span>
+            </div>
+            
+            <p className="text-gray-300 text-sm">
+              Your {formData.currency} has been sent to <span className="font-medium text-white">{formData.phoneNumber}</span>
+            </p>
+            
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mt-4">
+              <p className="text-blue-300 text-xs">
+                📱 {formData.phoneNumber} will receive their {formData.currency} within the next minute
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setStep('form');
+                setFormData({ amount: '', phoneNumber: '', accountName: '', currency: 'KES' });
+                setCurrentRate(null);
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
+            >
+              Send Another Payment
+            </button>
+            
+            <p className="text-gray-400 text-xs">
+              Thank you for using Mini Send! 🚀
+            </p>
+          </div>
         </div>
       )}
     </div>

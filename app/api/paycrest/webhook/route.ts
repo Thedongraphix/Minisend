@@ -142,25 +142,40 @@ async function handleOrderValidated(order: PaycrestOrder) {
   console.log(`Order ${order.id} validated - recipient should have received funds`);
   
   // Log success for debugging the 50% stuck issue
-  console.log('SUCCESS: Transaction completed successfully!', {
+  console.log('🎉 SUCCESS: Transaction completed successfully!', {
     orderId: order.id,
     amount: order.amount,
     recipient: order.recipient?.accountName,
     phone: order.recipient?.accountIdentifier,
-    timestamp: new Date().toISOString()
+    currency: order.recipient?.currency,
+    timestamp: new Date().toISOString(),
+    status: 'payment_order.validated'
   });
   
   // Track analytics event
   try {
     const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
     if (dbOrder) {
+      const settlementTime = Math.floor(
+        (new Date().getTime() - new Date(dbOrder.created_at).getTime()) / 1000
+      );
+      
       await AnalyticsService.trackPaymentCompleted(
         dbOrder.wallet_address,
         dbOrder.id,
         Number(dbOrder.amount),
         dbOrder.currency,
-        0 // Settlement time - could be calculated from created_at to now
+        settlementTime
       );
+      
+      console.log(`📊 Analytics tracked for successful payment:`, {
+        orderId: order.id,
+        walletAddress: dbOrder.wallet_address,
+        amount: dbOrder.amount,
+        currency: dbOrder.currency,
+        settlementTimeSeconds: settlementTime,
+        phone: order.recipient?.accountIdentifier
+      });
     }
   } catch (error) {
     console.error('Failed to track payment completion analytics:', error);
