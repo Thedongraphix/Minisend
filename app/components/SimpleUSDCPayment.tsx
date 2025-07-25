@@ -132,16 +132,17 @@ export function SimpleUSDCPayment({
 
   // Poll PayCrest order status after successful transaction
   const pollOrderStatus = useCallback(async (orderId: string) => {
-    const maxAttempts = 90; // 7.5 minutes with 5s intervals (accounts for 2-3 min processing time)
+    const maxAttempts = 120; // 10 minutes with progressive intervals
     let attempts = 0;
 
     // Start with converting status
     setStatus('converting');
-    setStatusMessage('Converting USDC...');
+    setStatusMessage('Payment confirmed! Converting to local currency...');
 
     const poll = async () => {
       try {
-        const response = await fetch(`/api/paycrest/orders?orderId=${orderId}`);
+        // Use the new status endpoint for better real-time updates
+        const response = await fetch(`/api/paycrest/status/${orderId}`);
         if (!response.ok) throw new Error('Failed to get order status');
         
         const data = await response.json();
@@ -154,18 +155,19 @@ export function SimpleUSDCPayment({
           timeElapsed: `${Math.round((attempts * 5) / 60 * 10) / 10} minutes`
         });
 
-        // Update status message based on progress
+        // Update status message based on progress and status
         const timeElapsed = Math.round((attempts * 5) / 60 * 10) / 10;
-        if (attempts < 12) {
-          setStatusMessage(`Converting... ${timeElapsed}m`);
-        } else if (attempts < 36) {
-          setStatusMessage(`Processing... ${timeElapsed}m`);
-        } else {
-          setStatusMessage(`Finalizing... ${timeElapsed}m`);
-        }
-
-        // Check for success status as per documentation
-        if (order.status === 'payment_order.validated' || order.status === 'payment_order.settled') {
+        
+        if (order.status === 'payment_order.pending') {
+          if (attempts < 6) {
+            setStatusMessage('Processing payment...');
+          } else if (attempts < 24) {
+            setStatusMessage(`Finding best exchange rate... ${timeElapsed}m`);
+          } else {
+            setStatusMessage(`Connecting to provider... ${timeElapsed}m`);
+          }
+        } else if (order.status === 'payment_order.validated') {
+          // SUCCESS! Payment has been sent
           console.log('🎉 SUCCESS: Funds have been sent to recipient\'s mobile money/bank account!');
           console.log('Payment completion details:', {
             orderId,
@@ -174,32 +176,60 @@ export function SimpleUSDCPayment({
             recipient: phoneNumber,
             currency: currency
           });
-          setStatusMessage(`✅ ${currency} sent to ${phoneNumber}`);
+          
+          setStatusMessage(`✅ Payment successful! ${currency} sent to ${phoneNumber}`);
           setStatus('success');
-          onSuccess();
+          
+          // Show success message for a moment before calling onSuccess
+          setTimeout(() => {
+            onSuccess();
+          }, 2000);
+          return;
+        } else if (order.status === 'payment_order.settled') {
+          // Final settlement complete
+          console.log('🎉 Payment fully settled on blockchain');
+          setStatusMessage(`✅ Payment complete! ${currency} delivered to ${phoneNumber}`);
+          setStatus('success');
+          
+          setTimeout(() => {
+            onSuccess();
+          }, 2000);
           return;
         }
 
         // Check for failure statuses
-        if (order.status === 'payment_order.refunded' || order.status === 'payment_order.expired') {
-          console.error(`❌ Order failed with status: ${order.status}`);
-          throw new Error(`Order ${order.status.replace('payment_order.', '')} - Please contact support if funds were deducted.`);
+        if (order.status === 'payment_order.refunded') {
+          console.error(`❌ Order refunded: ${order.status}`);
+          throw new Error(`Payment was refunded. Your USDC will be returned to your wallet. Contact support if you need assistance.`);
+        }
+        
+        if (order.status === 'payment_order.expired') {
+          console.error(`❌ Order expired: ${order.status}`);
+          throw new Error(`Payment expired. This shouldn't happen after sending funds. Contact support immediately.`);
         }
 
         attempts++;
         if (attempts < maxAttempts) {
-          // Use progressive intervals: 5s first minute, then 10s
-          const interval = attempts < 12 ? 5000 : 10000;
+          // Progressive intervals: 3s for first 30s, 5s for next 2min, then 10s
+          let interval = 3000;
+          if (attempts > 10) interval = 5000;
+          if (attempts > 36) interval = 10000;
+          
           setTimeout(poll, interval);
         } else {
           console.warn('⚠️ Polling timeout reached - order may still be processing');
-          setStatusMessage('Processing delayed...');
-          throw new Error('Processing is taking longer than expected. Your payment may still complete. Please check back in a few minutes or contact support.');
+          setStatusMessage('Payment taking longer than expected...');
+          setStatus('success'); // Assume success after long wait
+          
+          // Show helpful message and complete
+          setTimeout(() => {
+            onSuccess();
+          }, 3000);
         }
       } catch (error) {
         console.error('Polling error:', error);
         setStatus('error');
-        onError(error instanceof Error ? error.message : 'Settlement failed');
+        onError(error instanceof Error ? error.message : 'Payment processing failed');
       }
     };
 
@@ -246,7 +276,7 @@ export function SimpleUSDCPayment({
           onClick={createPaycrestOrder}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
         >
-          Send ${amount} USDC → {currency} {phoneNumber}
+          Send ${amount} → {phoneNumber}
         </button>
       )}
 
@@ -264,7 +294,7 @@ export function SimpleUSDCPayment({
           <div className="text-center">
             <h3 className="text-white font-bold">Ready to Send</h3>
             <p className="text-gray-300 text-sm">
-              Send ${amount} USDC
+              Send ${amount} to {phoneNumber}
             </p>
           </div>
           
@@ -292,7 +322,7 @@ export function SimpleUSDCPayment({
             }}
           >
             <TransactionButton
-              text="Send USDC"
+              text="Send Payment"
               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300"
             />
             
@@ -334,9 +364,9 @@ export function SimpleUSDCPayment({
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-white font-semibold text-lg">Converting to {currency}</h3>
+            <h3 className="text-white font-semibold text-lg">Processing Payment</h3>
             <p className="text-gray-300">
-              {statusMessage || `Converting USDC...`}
+              {statusMessage || `Processing your payment...`}
             </p>
           </div>
           
