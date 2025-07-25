@@ -1,34 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react'
-import { useMiniKit } from '@coinbase/onchainkit/minikit'
 import { useAccount, useChainId } from 'wagmi'
 import { getNetworkConfig, getUSDCContract } from '@/lib/contracts'
 import { base } from 'viem/chains'
 import Image from 'next/image'
 
 export function DirectUSDCBalance() {
-  // Use wagmi hooks as primary source (matches improved OffRampFlow logic)
-  const { context } = useMiniKit()
+  // Use wagmi hooks for Coinbase Wallet connection
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   
-  // Consistent wallet detection logic with OffRampFlow
-  const isFarcaster = Boolean(context?.user || context?.client)
-  const farcasterAddress = (context?.user as { walletAddress?: string })?.walletAddress
-  
-  // Use consistent wallet logic with OffRampFlow
-  const finalAddress = isConnected ? address : (isFarcaster && !isConnected ? farcasterAddress : address);
-  const finalIsConnected = isConnected || (isFarcaster && Boolean(farcasterAddress) && !isConnected);
-  
   // Debug logging
-  console.log('DirectUSDCBalance - Wallet detection:', {
-    isFarcaster,
-    farcasterAddress,
+  console.log('DirectUSDCBalance - Coinbase Wallet:', {
     address,
-    finalAddress,
     isConnected,
-    finalIsConnected
+    chainId
   });
   
   const [balance, setBalance] = useState<string>('0.00')
@@ -39,10 +26,10 @@ export function DirectUSDCBalance() {
   const usdcContract = getUSDCContract(chainId)
   
   const fetchBalance = useCallback(async () => {
-    if (!finalAddress || chainId !== base.id) return
+    if (!address || chainId !== base.id) return
     
     // Capture address value to prevent race conditions
-    const currentAddress = finalAddress
+    const currentAddress = address
     if (!currentAddress) return
     
     setIsLoading(true)
@@ -92,7 +79,7 @@ export function DirectUSDCBalance() {
     } finally {
       setIsLoading(false)
     }
-  }, [finalAddress, chainId, usdcContract])
+  }, [address, chainId, usdcContract])
   
   useEffect(() => {
     fetchBalance()
@@ -202,9 +189,9 @@ export function DirectUSDCBalance() {
           
           {/* Center Section - Card Number */}
           <div className="space-y-1">
-            <p className="text-gray-400 text-[10px] font-medium tracking-[0.3em] uppercase">Wallet Address</p>
+            <p className="text-gray-400 text-[10px] font-medium tracking-[0.3em] uppercase">Coinbase Wallet</p>
             <p className="text-white font-mono text-lg tracking-[0.15em] font-medium">
-              {finalAddress ? `${finalAddress.slice(0, 6)} •••• •••• ${finalAddress.slice(-4)}` : '•••• •••• •••• ••••'}
+              {address ? `${address.slice(0, 6)} •••• •••• ${address.slice(-4)}` : '•••• •••• •••• ••••'}
             </p>
           </div>
           
