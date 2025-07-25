@@ -129,8 +129,45 @@ export class PaycrestService {
   }
 
   async createOrder(orderData: PaycrestOrderRequest): Promise<PaycrestOrder> {
-    // Use /v1/sender/orders endpoint as per PayCrest documentation
-    return this.makeRequest<PaycrestOrder>('/v1/sender/orders', 'POST', orderData);
+    console.log('Creating PayCrest order with data:', JSON.stringify(orderData, null, 2));
+    
+    // Call PayCrest orders API directly as per their documentation
+    const url = `${this.config.baseUrl}/sender/orders`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'API-Key': this.config.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(orderData),
+    });
+
+    const responseText = await response.text();
+    console.log(`PayCrest orders response (${response.status}):`, responseText);
+
+    if (!response.ok) {
+      let errorMessage = `PayCrest orders API error: ${response.statusText}`;
+      
+      try {
+        const errorBody = JSON.parse(responseText);
+        errorMessage = errorBody.message || errorMessage;
+        console.error('PayCrest orders API error details:', errorBody);
+      } catch {
+        console.error('PayCrest orders API raw error:', responseText);
+      }
+
+      throw new PaycrestError(errorMessage, response.status);
+    }
+
+    const result = JSON.parse(responseText);
+    console.log('PayCrest orders result:', result);
+
+    if (result.status === 'success' && result.data) {
+      return result.data;
+    }
+
+    throw new PaycrestError('Invalid orders response format');
   }
 
   async getOrderStatus(orderId: string): Promise<PaycrestOrder> {
@@ -139,14 +176,35 @@ export class PaycrestService {
   }
 
   async getRates(token: string = 'USDC', amount: string = '1', currency: string = 'KES', network: string = 'base'): Promise<string> {
-    console.log(`Fetching rates: ${token}/${amount}/${currency} on ${network}`);
+    console.log(`Fetching PayCrest rates: ${token}/${amount}/${currency} on ${network}`);
     
-    // Use makeRequest for consistent logging and error handling
-    const data = await this.makeRequest<string>(`/v1/rates/${token}/${amount}/${currency}?network=${network}`);
+    // Call PayCrest rates API directly as per their documentation
+    const url = `${this.config.baseUrl}/rates/${token}/${amount}/${currency}?network=${network}`;
     
-    // PayCrest rates API returns the rate as a string in the data field
-    // makeRequest already extracts result.data, so data should be the rate string
-    return data;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'API-Key': this.config.apiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log(`PayCrest rates response (${response.status}):`, response.statusText);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('PayCrest rates API error:', errorText);
+      throw new PaycrestError(`Failed to get rates: ${response.statusText}`, response.status);
+    }
+
+    const result = await response.json();
+    console.log('PayCrest rates data:', result);
+
+    if (result.status === 'success' && result.data) {
+      return result.data;
+    }
+
+    throw new PaycrestError('Invalid rates response format');
   }
 
   // Sender endpoints - Only what we need for offramp
@@ -208,8 +266,8 @@ export function createKshMobileMoneyRecipient(
   accountName: string,
   provider: 'MPESA' | 'AIRTEL' = 'MPESA'
 ): PaycrestRecipient {
-  // Updated institution codes based on Paycrest docs
-  const institutionCode = provider === 'MPESA' ? 'SAFARICOM' : 'AIRTEL';
+  // Updated institution codes based on PayCrest API /v1/institutions/KES
+  const institutionCode = provider === 'MPESA' ? 'SAFAKEPC' : 'AIRTKEPC';
   
   return {
     institution: institutionCode,

@@ -3,7 +3,7 @@ import { PaycrestConfig } from './index';
 export function getPaycrestConfig(): PaycrestConfig {
   const apiKey = process.env.PAYCREST_API_KEY || process.env.PAYCREST_CLIENT_ID;
   const clientSecret = process.env.PAYCREST_CLIENT_SECRET;
-  const baseUrl = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io';
+  const baseUrl = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 
   if (!apiKey) {
     throw new Error('PAYCREST_API_KEY environment variable is required');
