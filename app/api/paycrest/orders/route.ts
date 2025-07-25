@@ -213,9 +213,10 @@ export async function POST(request: NextRequest) {
         id: order.id,
         receiveAddress: order.receiveAddress,
         validUntil: order.validUntil,
+        amount: order.amount || "0", // The PayCrest order amount for transaction calculation
         senderFee: order.senderFee || "0",
         transactionFee: order.transactionFee || "0",
-        totalAmount: order.amount || "0", // Keep original amount separate
+        totalAmount: order.amount || "0", // Keep for backward compatibility
         totalAmountWithFees: (
           parseFloat(order.amount || "0") + 
           parseFloat(order.senderFee || "0") + 
