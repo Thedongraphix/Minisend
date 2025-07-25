@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { SimpleUSDCPayment } from './SimpleUSDCPayment';
@@ -26,6 +26,9 @@ export function SimpleOffRampFlow() {
     accountName: '',
     currency: 'KES' as 'KES' | 'NGN'
   });
+  const [currentRate, setCurrentRate] = useState<number | null>(null);
+  const [rateLoading, setRateLoading] = useState(false);
+  const [rateError, setRateError] = useState<string | null>(null);
 
   console.log('Enhanced wallet detection:', { 
     farcasterAddress, 
@@ -35,6 +38,46 @@ export function SimpleOffRampFlow() {
     wagmiAddress, 
     wagmiConnected 
   });
+
+  // Fetch exchange rates
+  const fetchRate = async (amount: string, currency: string) => {
+    if (!amount || parseFloat(amount) <= 0) {
+      setCurrentRate(null);
+      return;
+    }
+    
+    setRateLoading(true);
+    setRateError(null);
+    
+    try {
+      const response = await fetch(`/api/paycrest/rates?token=USDC&amount=${amount}&fiat=${currency}&network=base`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setCurrentRate(parseFloat(data.data.rate));
+      } else {
+        throw new Error(data.error || 'Failed to fetch rate');
+      }
+    } catch (error) {
+      console.error('Rate fetch error:', error);
+      setRateError(error instanceof Error ? error.message : 'Failed to fetch rate');
+      // Set fallback rates
+      setCurrentRate(currency === 'KES' ? 150.5 : 1650.0);
+    } finally {
+      setRateLoading(false);
+    }
+  };
+
+  // Auto-fetch rates when amount or currency changes
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (formData.amount && formData.currency) {
+        fetchRate(formData.amount, formData.currency);
+      }
+    }, 500); // Debounce for 500ms
+
+    return () => clearTimeout(debounceTimer);
+  }, [formData.amount, formData.currency]);
 
   // Show wallet connection if not connected
   if (!isConnected) {
@@ -111,6 +154,41 @@ export function SimpleOffRampFlow() {
             </select>
           </div>
 
+          {/* Exchange Rate Display */}
+          {formData.amount && (
+            <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-300">Exchange Rate:</span>
+                <div className="text-right">
+                  {rateLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-sm text-gray-300">Loading...</span>
+                    </div>
+                  ) : currentRate ? (
+                    <div>
+                      <div className="text-white font-medium">
+                        1 USDC = {currentRate.toLocaleString()} {formData.currency}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        You&apos;ll receive ≈ {(parseFloat(formData.amount) * currentRate).toLocaleString()} {formData.currency}
+                      </div>
+                    </div>
+                  ) : rateError ? (
+                    <div className="text-red-400 text-xs">
+                      Rate unavailable
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+              {rateError && (
+                <div className="mt-2 text-xs text-yellow-400">
+                  Using fallback rate - order will use live rates
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="block text-white text-sm font-medium mb-2">Phone Number</label>
             <input
@@ -170,6 +248,7 @@ export function SimpleOffRampFlow() {
             accountName={formData.accountName}
             currency={formData.currency}
             returnAddress={finalAddress || ''}
+            rate={currentRate} // Pass the fetched rate
             onSuccess={() => setStep('success')}
             onError={(error) => {
               console.error('Payment error:', error);

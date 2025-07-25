@@ -24,10 +24,10 @@ export async function POST(request: NextRequest) {
       // provider = 'MPESA' // Removed - now auto-detected
     } = body;
 
-    // Validate required fields
-    if (!amount || !phoneNumber || !accountName || !rate || !returnAddress) {
+    // Validate required fields (rate is optional - will be fetched dynamically)
+    if (!amount || !phoneNumber || !accountName || !returnAddress) {
       return NextResponse.json(
-        { error: 'Missing required fields: amount, phoneNumber, accountName, rate, returnAddress' },
+        { error: 'Missing required fields: amount, phoneNumber, accountName, returnAddress' },
         { status: 400 }
       );
     }
@@ -88,6 +88,26 @@ export async function POST(request: NextRequest) {
         : cleanPhone.replace(/^0/, '234');
     }
 
+    // Get dynamic exchange rate if not provided
+    let finalRate = rate;
+    if (!finalRate) {
+      try {
+        console.log(`Fetching dynamic rate for ${amount} USDC to ${currency}`);
+        const paycrestService = await getPaycrestService();
+        const dynamicRate = await paycrestService.getRates('USDC', amount.toString(), currency, 'base');
+        finalRate = parseFloat(dynamicRate);
+        console.log(`Dynamic rate fetched: ${finalRate}`);
+      } catch (error) {
+        console.error('Failed to fetch dynamic rate:', error);
+        // Use fallback rates
+        finalRate = currency === 'KES' ? 150.5 : 1650.0;
+        console.log(`Using fallback rate: ${finalRate}`);
+      }
+    } else {
+      finalRate = parseFloat(rate);
+      console.log(`Using provided rate: ${finalRate}`);
+    }
+
     // Create PayCrest recipient with detected provider
     const recipient = currency === 'KES' 
       ? createKshMobileMoneyRecipient(
@@ -108,7 +128,7 @@ export async function POST(request: NextRequest) {
       amount: amount.toString(),
       token: 'USDC',
       network: 'base',
-      rate: rate.toString(),
+      rate: finalRate.toString(),
       recipient,
       reference,
       returnAddress,
@@ -145,8 +165,8 @@ export async function POST(request: NextRequest) {
         token: 'USDC',
         network: 'base',
         currency,
-        exchange_rate: parseFloat(rate.toString()),
-        local_amount: parseFloat(amount) * parseFloat(rate.toString()),
+        exchange_rate: finalRate,
+        local_amount: parseFloat(amount) * finalRate,
         sender_fee: parseFloat(order.senderFee || '0'),
         transaction_fee: parseFloat(order.transactionFee || '0'),
         total_amount: parseFloat(order.amount || amount),

@@ -12,6 +12,7 @@ interface SimpleUSDCPaymentProps {
   accountName: string;
   currency: 'KES' | 'NGN';
   returnAddress: string;
+  rate?: number | null; // Optional rate - will be fetched dynamically if not provided
   onSuccess: () => void;
   onError: (error: string) => void;
 }
@@ -22,6 +23,7 @@ export function SimpleUSDCPayment({
   accountName,
   currency,
   returnAddress,
+  rate,
   onSuccess,
   onError
 }: SimpleUSDCPaymentProps) {
@@ -52,7 +54,8 @@ export function SimpleUSDCPayment({
           accountName,
           currency,
           provider: currency === 'KES' ? 'M-Pesa' : 'Bank Transfer',
-          returnAddress
+          returnAddress,
+          ...(rate && { rate }) // Include rate only if provided
         }),
       });
 
@@ -100,7 +103,7 @@ export function SimpleUSDCPayment({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, accountName, currency, returnAddress, onError]);
+  }, [amount, phoneNumber, accountName, currency, returnAddress, rate, onError]);
 
   // USDC transfer using proper OnchainKit calls format
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
