@@ -132,59 +132,13 @@ export class PaycrestService {
     throw new PaycrestError('Invalid rates response format');
   }
 
-  // Sender endpoints
+  // Sender endpoints - Only what we need for offramp
   async getSenderStats(): Promise<unknown> {
     return this.makeRequest('/sender/stats');
   }
 
   async listSenderOrders(page: number = 1, pageSize: number = 20): Promise<unknown> {
     return this.makeRequest(`/sender/orders?page=${page}&pageSize=${pageSize}`);
-  }
-
-  // Provider endpoints
-  async getProviderOrders(): Promise<unknown> {
-    return this.makeRequest('/provider/orders');
-  }
-
-  async getProviderRates(token: string, fiat: string): Promise<unknown> {
-    return this.makeRequest(`/provider/rates/${token}/${fiat}`);
-  }
-
-  async getProviderStats(): Promise<unknown> {
-    return this.makeRequest('/provider/stats');
-  }
-
-  async getNodeInfo(): Promise<unknown> {
-    return this.makeRequest('/provider/node-info');
-  }
-
-  // General endpoints
-  async getCurrencies(): Promise<unknown> {
-    return this.makeRequest('/currencies');
-  }
-
-  async getInstitutions(currencyCode: string): Promise<unknown> {
-    return this.makeRequest(`/institutions/${currencyCode}`);
-  }
-
-  async getTokens(): Promise<unknown> {
-    return this.makeRequest('/tokens');
-  }
-
-  async getAggregatorPublicKey(): Promise<unknown> {
-    return this.makeRequest('/pubkey');
-  }
-
-  async verifyBankAccount(accountData: unknown): Promise<unknown> {
-    return this.makeRequest('/verify-account', 'POST', accountData);
-  }
-
-  async getLockPaymentOrderStatus(chainId: string, id: string): Promise<unknown> {
-    return this.makeRequest(`/orders/${chainId}/${id}`);
-  }
-
-  async reindexTransaction(network: string, txHash: string): Promise<unknown> {
-    return this.makeRequest(`/reindex/${network}/${txHash}`);
   }
 
   verifyWebhookSignature(
