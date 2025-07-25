@@ -1,382 +1,332 @@
-import { supabaseAdmin } from './config';
-import { AnalyticsEvent, AnalyticsEventInsert, CarrierDetectionLog, CarrierDetectionLogInsert } from './types';
+import { createClient } from '@supabase/supabase-js';
+
+// Analytics event interface
+export interface AnalyticsEvent {
+  id: string;
+  event_name: string;
+  wallet_address: string;
+  order_id?: string;
+  properties: Record<string, unknown>;
+  created_at: Date;
+}
+
+// Create analytics event interface
+export interface CreateAnalyticsEventData {
+  event_name: string;
+  wallet_address: string;
+  order_id?: string;
+  properties?: Record<string, unknown>;
+}
+
+// Carrier detection interface
+export interface CarrierDetection {
+  id: string;
+  phone_number: string;
+  detected_carrier: string;
+  paycrest_provider: string;
+  order_id?: string;
+  created_at: Date;
+}
 
 export class AnalyticsService {
-  
-  /**
-   * Track an analytics event
-   */
-  static async trackEvent(eventData: AnalyticsEventInsert): Promise<AnalyticsEvent> {
-    const { data, error } = await supabaseAdmin
-      .from('analytics_events')
-      .insert(eventData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error tracking analytics event:', error);
-      // Don't throw error for analytics - log and continue
-      return eventData as AnalyticsEvent;
-    }
-
-    console.log('Analytics event tracked:', {
-      id: data.id,
-      event_name: data.event_name,
-      wallet_address: data.wallet_address
-    });
-
-    return data;
+  // Static methods for convenience
+  static async trackPaymentCompleted(walletAddress: string, orderId: string, amount: number, currency: string, settlementTimeSeconds: number): Promise<void> {
+    const service = new AnalyticsService();
+    return service.trackPaymentCompleted(walletAddress, orderId, amount, currency, settlementTimeSeconds);
   }
 
-  /**
-   * Track user journey event
-   */
-  static async trackUserJourney(
-    eventName: string,
-    walletAddress: string,
-    properties: Record<string, unknown> = {},
-    farcasterContext?: Record<string, unknown>,
-    sessionId?: string
-  ): Promise<void> {
+  static async trackEvent(data: CreateAnalyticsEventData): Promise<AnalyticsEvent> {
+    const service = new AnalyticsService();
+    return service.trackEvent(data);
+  }
+  private supabase = createClient(
+    (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL)!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  // Track a general analytics event
+  async trackEvent(data: CreateAnalyticsEventData): Promise<AnalyticsEvent> {
     try {
-      await this.trackEvent({
-        event_name: eventName,
-        wallet_address: walletAddress,
-        properties,
-        farcaster_context: farcasterContext,
-        session_id: sessionId
+      const { data: event, error } = await this.supabase
+        .from('analytics_events')
+        .insert({
+          event_name: data.event_name,
+          wallet_address: data.wallet_address,
+          order_id: data.order_id,
+          properties: data.properties || {}
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('📊 Analytics event tracked:', {
+        event_name: event.event_name,
+        wallet_address: event.wallet_address,
+        order_id: event.order_id
       });
+
+      return event;
     } catch (error) {
-      console.error('Failed to track user journey:', error);
+      console.error('❌ Failed to track analytics event:', error);
+      throw new Error(`Failed to track analytics event: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  /**
-   * Track order creation
-   */
-  static async trackOrderCreated(
-    walletAddress: string,
-    orderId: string,
-    amount: number,
-    currency: string,
-    recipientPhone: string,
-    sessionId?: string
-  ): Promise<void> {
-    await this.trackUserJourney(
-      'order_created',
-      walletAddress,
-      {
-        order_id: orderId,
+  // Track order creation
+  async trackOrderCreated(walletAddress: string, orderId: string, amount: number, currency: string, phoneNumber: string): Promise<void> {
+    await this.trackEvent({
+      event_name: 'order_created',
+      wallet_address: walletAddress,
+      order_id: orderId,
+      properties: {
         amount,
         currency,
-        recipient_phone: recipientPhone
-      },
-      undefined,
-      sessionId
-    );
+        phone_number: phoneNumber,
+        timestamp: new Date().toISOString()
+      }
+    });
   }
 
-  /**
-   * Track transaction started
-   */
-  static async trackTransactionStarted(
-    walletAddress: string,
-    orderId: string,
-    transactionHash: string,
-    sessionId?: string
-  ): Promise<void> {
-    await this.trackUserJourney(
-      'transaction_started',
-      walletAddress,
-      {
-        order_id: orderId,
-        transaction_hash: transactionHash
-      },
-      undefined,
-      sessionId
-    );
-  }
-
-  /**
-   * Track payment completed
-   */
-  static async trackPaymentCompleted(
-    walletAddress: string,
-    orderId: string,
-    amount: number,
-    currency: string,
-    settlementTime: number,
-    sessionId?: string
-  ): Promise<void> {
-    await this.trackUserJourney(
-      'payment_completed',
-      walletAddress,
-      {
-        order_id: orderId,
+  // Track payment completion (RESEARCH-BASED)
+  async trackPaymentCompleted(walletAddress: string, orderId: string, amount: number, currency: string, settlementTimeSeconds: number): Promise<void> {
+    await this.trackEvent({
+      event_name: 'payment_completed',
+      wallet_address: walletAddress,
+      order_id: orderId,
+      properties: {
         amount,
         currency,
-        settlement_time_seconds: settlementTime
-      },
-      undefined,
-      sessionId
-    );
-  }
-
-  /**
-   * Track Farcaster frame interactions
-   */
-  static async trackFarcasterInteraction(
-    eventName: string,
-    walletAddress: string,
-    farcasterContext: Record<string, unknown>,
-    properties: Record<string, unknown> = {}
-  ): Promise<void> {
-    await this.trackUserJourney(
-      `farcaster_${eventName}`,
-      walletAddress,
-      properties,
-      farcasterContext
-    );
-  }
-
-  /**
-   * Log carrier detection result
-   */
-  static async logCarrierDetection(detectionData: CarrierDetectionLogInsert): Promise<CarrierDetectionLog> {
-    const { data, error } = await supabaseAdmin
-      .from('carrier_detection_logs')
-      .insert(detectionData)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error logging carrier detection:', error);
-      throw new Error(`Failed to log carrier detection: ${error.message}`);
-    }
-
-    console.log('Carrier detection logged:', {
-      id: data.id,
-      phone_number: data.phone_number,
-      detected_carrier: data.detected_carrier,
-      paycrest_provider: data.paycrest_provider
-    });
-
-    return data;
-  }
-
-  /**
-   * Get daily analytics
-   */
-  static async getDailyAnalytics(days: number = 30) {
-    const { data, error } = await supabaseAdmin
-      .from('daily_analytics')
-      .select('*')
-      .order('date', { ascending: false })
-      .limit(days);
-
-    if (error) {
-      console.error('Error fetching daily analytics:', error);
-      throw new Error(`Failed to fetch daily analytics: ${error.message}`);
-    }
-
-    return data || [];
-  }
-
-  /**
-   * Get event analytics
-   */
-  static async getEventAnalytics(
-    eventName?: string,
-    days: number = 7
-  ): Promise<Record<string, unknown>> {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    let query = supabaseAdmin
-      .from('analytics_events')
-      .select('event_name, timestamp, properties, wallet_address')
-      .gte('timestamp', startDate.toISOString());
-
-    if (eventName) {
-      query = query.eq('event_name', eventName);
-    }
-
-    const { data, error } = await query.order('timestamp', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching event analytics:', error);
-      throw new Error(`Failed to fetch event analytics: ${error.message}`);
-    }
-
-    const events = data || [];
-    
-    // Aggregate analytics
-    const eventCounts = events.reduce((acc, event) => {
-      acc[event.event_name] = (acc[event.event_name] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const uniqueUsers = new Set(events.map(e => e.wallet_address)).size;
-    
-    const dailyBreakdown = events.reduce((acc, event) => {
-      const date = new Date(event.timestamp).toISOString().split('T')[0];
-      if (!acc[date]) {
-        acc[date] = { events: 0, unique_users: new Set() };
-      }
-      acc[date].events++;
-      acc[date].unique_users.add(event.wallet_address);
-      return acc;
-    }, {} as Record<string, { events: number; unique_users: Set<string> }>);
-
-    // Convert sets to counts
-    const dailyStats = Object.entries(dailyBreakdown).map(([date, stats]) => ({
-      date,
-      events: stats.events,
-      unique_users: stats.unique_users.size
-    }));
-
-    return {
-      total_events: events.length,
-      event_counts: eventCounts,
-      unique_users: uniqueUsers,
-      daily_breakdown: dailyStats,
-      period_days: days
-    };
-  }
-
-  /**
-   * Get carrier detection accuracy
-   */
-  static async getCarrierDetectionStats() {
-    const { data, error } = await supabaseAdmin
-      .from('carrier_detection_logs')
-      .select('detected_carrier, paycrest_provider, is_correct, detected_at');
-
-    if (error) {
-      console.error('Error fetching carrier detection stats:', error);
-      throw new Error(`Failed to fetch carrier detection stats: ${error.message}`);
-    }
-
-    const logs = data || [];
-    
-    const carrierBreakdown = logs.reduce((acc, log) => {
-      acc[log.detected_carrier] = (acc[log.detected_carrier] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const accuracyLogs = logs.filter(log => log.is_correct !== null);
-    const accuracy = accuracyLogs.length > 0 
-      ? accuracyLogs.filter(log => log.is_correct).length / accuracyLogs.length 
-      : null;
-
-    return {
-      total_detections: logs.length,
-      carrier_breakdown: carrierBreakdown,
-      accuracy_rate: accuracy,
-      accuracy_sample_size: accuracyLogs.length
-    };
-  }
-
-  /**
-   * Get user behavior funnel
-   */
-  static async getUserFunnel(days: number = 7) {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    const { data, error } = await supabaseAdmin
-      .from('analytics_events')
-      .select('event_name, wallet_address, timestamp')
-      .gte('timestamp', startDate.toISOString())
-      .in('event_name', [
-        'farcaster_frame_opened',
-        'wallet_connected',
-        'order_created',
-        'transaction_started',
-        'payment_completed'
-      ])
-      .order('timestamp', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching user funnel:', error);
-      throw new Error(`Failed to fetch user funnel: ${error.message}`);
-    }
-
-    const events = data || [];
-    
-    // Count unique users at each stage
-    const funnelStages = {
-      frame_opened: new Set(),
-      wallet_connected: new Set(),
-      order_created: new Set(),
-      transaction_started: new Set(),
-      payment_completed: new Set()
-    };
-
-    events.forEach(event => {
-      switch (event.event_name) {
-        case 'farcaster_frame_opened':
-          funnelStages.frame_opened.add(event.wallet_address);
-          break;
-        case 'wallet_connected':
-          funnelStages.wallet_connected.add(event.wallet_address);
-          break;
-        case 'order_created':
-          funnelStages.order_created.add(event.wallet_address);
-          break;
-        case 'transaction_started':
-          funnelStages.transaction_started.add(event.wallet_address);
-          break;
-        case 'payment_completed':
-          funnelStages.payment_completed.add(event.wallet_address);
-          break;
+        settlement_time_seconds: settlementTimeSeconds,
+        timestamp: new Date().toISOString()
       }
     });
-
-    return {
-      frame_opened: funnelStages.frame_opened.size,
-      wallet_connected: funnelStages.wallet_connected.size,
-      order_created: funnelStages.order_created.size,
-      transaction_started: funnelStages.transaction_started.size,
-      payment_completed: funnelStages.payment_completed.size,
-      conversion_rates: {
-        frame_to_wallet: funnelStages.frame_opened.size > 0 
-          ? funnelStages.wallet_connected.size / funnelStages.frame_opened.size 
-          : 0,
-        wallet_to_order: funnelStages.wallet_connected.size > 0 
-          ? funnelStages.order_created.size / funnelStages.wallet_connected.size 
-          : 0,
-        order_to_transaction: funnelStages.order_created.size > 0 
-          ? funnelStages.transaction_started.size / funnelStages.order_created.size 
-          : 0,
-        transaction_to_completion: funnelStages.transaction_started.size > 0 
-          ? funnelStages.payment_completed.size / funnelStages.transaction_started.size 
-          : 0
-      }
-    };
   }
 
-  /**
-   * Clean up old analytics events
-   */
-  static async cleanupOldAnalytics(daysOld: number = 90): Promise<number> {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+  // Track polling attempts (RESEARCH-BASED)
+  async trackPollingAttempt(walletAddress: string, orderId: string, attemptNumber: number, status: string, responseTimeMs?: number): Promise<void> {
+    await this.trackEvent({
+      event_name: 'polling_attempt',
+      wallet_address: walletAddress,
+      order_id: orderId,
+      properties: {
+        attempt_number: attemptNumber,
+        status,
+        response_time_ms: responseTimeMs,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
 
-    const { data, error } = await supabaseAdmin
-      .from('analytics_events')
-      .delete()
-      .lt('timestamp', cutoffDate.toISOString())
-      .select('id');
+  // Track settlement (RESEARCH-BASED)
+  async trackSettlement(walletAddress: string, orderId: string, status: string, settlementTimeSeconds?: number, txHash?: string): Promise<void> {
+    await this.trackEvent({
+      event_name: 'settlement',
+      wallet_address: walletAddress,
+      order_id: orderId,
+      properties: {
+        status,
+        settlement_time_seconds: settlementTimeSeconds,
+        tx_hash: txHash,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
 
-    if (error) {
-      console.error('Error cleaning up analytics:', error);
-      throw new Error(`Failed to cleanup analytics: ${error.message}`);
+  // Track carrier detection
+  async logCarrierDetection(data: {
+    phone_number: string;
+    detected_carrier: string;
+    paycrest_provider: string;
+    order_id?: string;
+  }): Promise<CarrierDetection> {
+    try {
+      const { data: detection, error } = await this.supabase
+        .from('carrier_detections')
+        .insert({
+          phone_number: data.phone_number,
+          detected_carrier: data.detected_carrier,
+          paycrest_provider: data.paycrest_provider,
+          order_id: data.order_id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('📱 Carrier detection logged:', {
+        phone_number: detection.phone_number,
+        detected_carrier: detection.detected_carrier,
+        paycrest_provider: detection.paycrest_provider
+      });
+
+      return detection;
+    } catch (error) {
+      console.error('❌ Failed to log carrier detection:', error);
+      throw new Error(`Failed to log carrier detection: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
 
-    const deletedCount = data?.length || 0;
-    console.log(`Cleaned up ${deletedCount} old analytics events`);
-    
-    return deletedCount;
+  // Get analytics summary
+  async getAnalyticsSummary(): Promise<{
+    total_events: number;
+    total_orders: number;
+    total_settlements: number;
+    average_settlement_time: number;
+    top_events: Array<{ event_name: string; count: number }>;
+  }> {
+    try {
+      // Get all events
+      const { data: events, error } = await this.supabase
+        .from('analytics_events')
+        .select('event_name, properties');
+
+      if (error) throw error;
+
+      const totalEvents = events?.length || 0;
+      const totalOrders = events?.filter(e => e.event_name === 'order_created').length || 0;
+      const totalSettlements = events?.filter(e => e.event_name === 'payment_completed').length || 0;
+      
+      // Calculate average settlement time
+      const settlementEvents = events?.filter(e => e.event_name === 'payment_completed') || [];
+      const settlementTimes = settlementEvents
+        .map(e => e.properties?.settlement_time_seconds)
+        .filter(time => time !== undefined);
+      const averageSettlementTime = settlementTimes.length > 0 
+        ? settlementTimes.reduce((sum, time) => sum + time, 0) / settlementTimes.length 
+        : 0;
+
+      // Get top events
+      const eventCounts = events?.reduce((acc, event) => {
+        acc[event.event_name] = (acc[event.event_name] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      const topEvents = Object.entries(eventCounts)
+        .map(([event_name, count]) => ({ event_name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      return {
+        total_events: totalEvents,
+        total_orders: totalOrders,
+        total_settlements: totalSettlements,
+        average_settlement_time: averageSettlementTime,
+        top_events: topEvents
+      };
+    } catch (error) {
+      console.error('❌ Failed to get analytics summary:', error);
+      return {
+        total_events: 0,
+        total_orders: 0,
+        total_settlements: 0,
+        average_settlement_time: 0,
+        top_events: []
+      };
+    }
+  }
+
+  // Get wallet analytics
+  async getWalletAnalytics(walletAddress: string): Promise<{
+    total_events: number;
+    total_orders: number;
+    total_settlements: number;
+    average_settlement_time: number;
+    recent_events: AnalyticsEvent[];
+  }> {
+    try {
+      // Get events for this wallet
+      const { data: events, error } = await this.supabase
+        .from('analytics_events')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      const totalEvents = events?.length || 0;
+      const totalOrders = events?.filter(e => e.event_name === 'order_created').length || 0;
+      const totalSettlements = events?.filter(e => e.event_name === 'payment_completed').length || 0;
+      
+      // Calculate average settlement time
+      const settlementEvents = events?.filter(e => e.event_name === 'payment_completed') || [];
+      const settlementTimes = settlementEvents
+        .map(e => e.properties?.settlement_time_seconds)
+        .filter(time => time !== undefined);
+      const averageSettlementTime = settlementTimes.length > 0 
+        ? settlementTimes.reduce((sum, time) => sum + time, 0) / settlementTimes.length 
+        : 0;
+
+      return {
+        total_events: totalEvents,
+        total_orders: totalOrders,
+        total_settlements: totalSettlements,
+        average_settlement_time: averageSettlementTime,
+        recent_events: events || []
+      };
+    } catch (error) {
+      console.error('❌ Failed to get wallet analytics:', error);
+      return {
+        total_events: 0,
+        total_orders: 0,
+        total_settlements: 0,
+        average_settlement_time: 0,
+        recent_events: []
+      };
+    }
+  }
+
+  // Get polling analytics (RESEARCH-BASED)
+  async getPollingAnalytics(orderId: string): Promise<{
+    total_attempts: number;
+    average_response_time: number;
+    success_rate: number;
+    attempts: Array<{
+      attempt_number: number;
+      status: string;
+      response_time_ms: number;
+      error_message?: string;
+      created_at: Date;
+    }>;
+  }> {
+    try {
+      const { data: attempts, error } = await this.supabase
+        .from('polling_attempts')
+        .select('*')
+        .eq('order_id', orderId)
+        .order('attempt_number', { ascending: true });
+
+      if (error) throw error;
+
+      const totalAttempts = attempts?.length || 0;
+      const responseTimes = attempts?.map(a => a.response_time_ms).filter(time => time !== null) || [];
+      const averageResponseTime = responseTimes.length > 0 
+        ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length 
+        : 0;
+      const successfulAttempts = attempts?.filter(a => a.status === 'settled').length || 0;
+      const successRate = totalAttempts > 0 ? successfulAttempts / totalAttempts : 0;
+
+      return {
+        total_attempts: totalAttempts,
+        average_response_time: averageResponseTime,
+        success_rate: successRate,
+        attempts: attempts?.map(attempt => ({
+          attempt_number: attempt.attempt_number,
+          status: attempt.status,
+          response_time_ms: attempt.response_time_ms,
+          error_message: attempt.error_message,
+          created_at: attempt.created_at
+        })) || []
+      };
+    } catch (error) {
+      console.error('❌ Failed to get polling analytics:', error);
+      return {
+        total_attempts: 0,
+        average_response_time: 0,
+        success_rate: 0,
+        attempts: []
+      };
+    }
   }
 }
