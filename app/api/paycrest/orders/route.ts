@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
         recipient_currency: currency,
         receive_address: order.receiveAddress,
         valid_until: order.validUntil,
-        status: order.status || 'payment_order.pending',
+        status: order.status || 'initiated',
         metadata: {
           carrier_info: carrierInfo,
           original_phone_input: phoneNumber,
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
           parseFloat(order.senderFee || "0") + 
           parseFloat(order.transactionFee || "0")
         ).toString(), // This is what user actually sends
-        status: order.status || "payment_order.pending",
+        status: order.status || "initiated",
         reference: order.reference,
         recipient: {
           phoneNumber: formattedPhone,

@@ -51,7 +51,7 @@ export async function GET(
     if (paycrestOrder && dbOrder && dbOrder.status !== paycrestOrder.status) {
       try {
         await OrderService.updateOrderStatus(orderId, paycrestOrder.status);
-        console.log(`Updated order ${orderId} status from ${dbOrder.status} to ${paycrestOrder.status}`);
+        console.log(`📊 Updated order ${orderId} status from ${dbOrder.status} to ${paycrestOrder.status}`);
       } catch (updateError) {
         console.error('Failed to update order status:', updateError);
       }

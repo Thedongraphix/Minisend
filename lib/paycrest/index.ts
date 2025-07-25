@@ -37,7 +37,7 @@ export interface PaycrestOrder {
   senderFee: string;
   transactionFee: string;
   amount: string;
-  status: 'payment_order.pending' | 'payment_order.validated' | 'payment_order.settled' | 'payment_order.refunded' | 'payment_order.expired';
+  status: 'initiated' | 'pending' | 'settled' | 'expired' | 'refunded';
   token: string;
   network: string;
   recipient: PaycrestRecipient;
@@ -278,7 +278,7 @@ export function createKshMobileMoneyRecipient(
     accountIdentifier: phoneNumber,
     accountName,
     currency: 'KES',
-    memo: 'MiniSend USDC to KES conversion'
+    memo: 'MiniSend payment transfer'
   };
 }
 
@@ -296,7 +296,7 @@ export function createNgnBankRecipient(
     accountIdentifier: phoneNumber, // This should be account number in production
     accountName,
     currency: 'NGN',
-    memo: 'MiniSend USDC to NGN conversion'
+    memo: 'MiniSend payment transfer'
   };
 }
 

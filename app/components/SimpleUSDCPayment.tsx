@@ -132,7 +132,7 @@ export function SimpleUSDCPayment({
 
   // Poll PayCrest order status after successful transaction
   const pollOrderStatus = useCallback(async (orderId: string) => {
-    const maxAttempts = 120; // 10 minutes with progressive intervals
+    const maxAttempts = 60; // 3 minutes max (should complete in 1-2 minutes per docs)
     let attempts = 0;
 
     // Start with converting status
@@ -152,23 +152,25 @@ export function SimpleUSDCPayment({
           orderId,
           status: order?.status,
           attempts: attempts + 1,
-          timeElapsed: `${Math.round((attempts * 5) / 60 * 10) / 10} minutes`
+          timeElapsed: `${Math.round((attempts * 3) / 60 * 10) / 10} minutes`
         });
 
-        // Update status message based on progress and status
-        const timeElapsed = Math.round((attempts * 5) / 60 * 10) / 10;
+        // Update status message based on progress and status  
+        const timeElapsed = Math.round((attempts * 3) / 60 * 10) / 10;
         
-        if (order.status === 'payment_order.pending') {
+        if (order.status === 'initiated') {
+          setStatusMessage('Payment initiated...');
+        } else if (order.status === 'pending') {
           if (attempts < 6) {
             setStatusMessage('Processing payment...');
-          } else if (attempts < 24) {
+          } else if (attempts < 12) {
             setStatusMessage(`Finding best exchange rate... ${timeElapsed}m`);
           } else {
-            setStatusMessage(`Connecting to provider... ${timeElapsed}m`);
+            setStatusMessage(`Processing with provider... ${timeElapsed}m`);
           }
-        } else if (order.status === 'payment_order.validated') {
-          // SUCCESS! Payment has been sent
-          console.log('🎉 SUCCESS: Funds have been sent to recipient\'s mobile money/bank account!');
+        } else if (order.status === 'settled') {
+          // SUCCESS! Payment has been completed and settled
+          console.log('🎉 SUCCESS: Payment completed and settled!');
           console.log('Payment completion details:', {
             orderId,
             finalStatus: order.status,
@@ -185,46 +187,50 @@ export function SimpleUSDCPayment({
             onSuccess();
           }, 2000);
           return;
-        } else if (order.status === 'payment_order.settled') {
-          // Final settlement complete
-          console.log('🎉 Payment fully settled on blockchain');
-          setStatusMessage(`✅ Payment complete! ${currency} delivered to ${phoneNumber}`);
-          setStatus('success');
-          
-          setTimeout(() => {
-            onSuccess();
-          }, 2000);
-          return;
         }
 
         // Check for failure statuses
-        if (order.status === 'payment_order.refunded') {
+        if (order.status === 'refunded') {
           console.error(`❌ Order refunded: ${order.status}`);
           throw new Error(`Payment was refunded. Your USDC will be returned to your wallet. Contact support if you need assistance.`);
         }
         
-        if (order.status === 'payment_order.expired') {
+        if (order.status === 'expired') {
           console.error(`❌ Order expired: ${order.status}`);
           throw new Error(`Payment expired. This shouldn't happen after sending funds. Contact support immediately.`);
         }
 
         attempts++;
         if (attempts < maxAttempts) {
-          // Progressive intervals: 3s for first 30s, 5s for next 2min, then 10s
-          let interval = 3000;
-          if (attempts > 10) interval = 5000;
-          if (attempts > 36) interval = 10000;
+          // Faster intervals for new PayCrest processing times: 2s for first 30s, then 3s
+          let interval = 2000;
+          if (attempts > 15) interval = 3000; // After 30 seconds, poll every 3s
           
           setTimeout(poll, interval);
         } else {
-          console.warn('⚠️ Polling timeout reached - order may still be processing');
-          setStatusMessage('Payment taking longer than expected...');
-          setStatus('success'); // Assume success after long wait
+          console.warn('⚠️ Polling timeout reached after 3 minutes - payment may have issues');
+          setStatusMessage('Payment processing delayed - checking status...');
           
-          // Show helpful message and complete
-          setTimeout(() => {
-            onSuccess();
-          }, 2000);
+          // Don't assume success after 3 minutes - something might be wrong
+          // Try one final status check
+          setTimeout(async () => {
+            try {
+              const finalResponse = await fetch(`/api/paycrest/status/${orderId}`);
+              const finalData = await finalResponse.json();
+              const finalOrder = finalData.order;
+              
+              if (finalOrder.status === 'settled') {
+                setStatus('success');
+                onSuccess();
+              } else {
+                setStatus('error');
+                onError('Payment processing timed out. Please check your transaction status or contact support.');
+              }
+            } catch {
+              setStatus('error'); 
+              onError('Unable to verify payment status. Please check your transaction or contact support.');
+            }
+          }, 5000);
         }
       } catch (error) {
         console.error('Polling error:', error);

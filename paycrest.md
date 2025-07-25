@@ -407,3 +407,164 @@ Before going live, ensure you have:
  Documentation updated
 This backend structure can be done in any custom way depending on your app as long as the webhook validates and stores the correct payload sent to it.
 Choose this method if you want a simple, offchain integration for your platform or business.
+
+NEW UPDATES
+
+Get started with Paycrest in minutes - Learn how to create payment orders and integrate with the API
+
+This guide will walk you through creating your first payment order and integrating with the Paycrest API.
+​
+Prerequisites
+Before you begin, make sure you have:
+A Paycrest account with API access
+KYC verification completed (required for all participants)
+API credentials (API key and secret)
+Basic knowledge of REST APIs
+Get API Credentials
+
+KYC Requirements
+
+​
+Create Your First Payment Order
+Let’s create a simple payment order to send USDT to a Nigerian bank account.
+​
+Step 1: Get Exchange Rate
+cURL
+JavaScript
+Python
+Go
+
+Copy
+curl -X GET "https://api.paycrest.io/v1/rates/USDT/100/NGN" \
+  -H "API-Key: YOUR_API_KEY"
+Response:
+
+Copy
+{
+  "status": "success",
+  "message": "Rate fetched successfully",
+  "data": "1250.50"
+}
+Always fetch the latest rate before creating a payment order. Rates can change frequently, and using an outdated rate may cause your order to be refunded.
+1
+Get Exchange Rate
+
+Fetch the current exchange rate for your token and currency pair.
+2
+Prepare Your Request
+
+Set up your API key and prepare the payment order data with recipient details.
+3
+Send the Request
+
+Make a POST request to the orders endpoint with your payment details.
+4
+Handle the Response
+
+Process the response to get your order ID and payment instructions.
+5
+Monitor Status
+
+Track your order status and handle webhooks for real-time updates.
+​
+Step 2: Create Payment Order
+cURL
+JavaScript
+Python
+Go
+
+Copy
+curl -X POST "https://api.paycrest.io/v1/sender/orders" \
+  -H "API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": "100",
+    "token": "USDT",
+    "network": "base",
+    "rate": "1250.50",
+    "recipient": {
+      "institution": "GTB",
+      "accountIdentifier": "1234567890",
+      "accountName": "John Doe",
+      "currency": "NGN",
+      "memo": "Salary payment for January 2024"
+    },
+    "reference": "payment-123",
+    "returnAddress": "0x1234567890123456789012345678901234567890"
+  }'
+​
+Response
+
+Copy
+{
+  "status": "success",
+  "message": "Payment order initiated successfully",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "amount": "100",
+    "token": "USDT",
+    "network": "base",
+    "receiveAddress": "0x9876543210987654321098765432109876543210",
+    "validUntil": "2024-01-15T10:30:00Z",
+    "senderFee": "0.5",
+    "transactionFee": "2.5",
+    "reference": "payment-123"
+  }
+}
+​
+Check Order Status
+cURL
+JavaScript
+Python
+Go
+
+Copy
+curl -X GET "https://api.paycrest.io/v1/sender/orders/550e8400-e29b-41d4-a716-446655440000" \
+  -H "API-Key: YOUR_API_KEY"
+Order Statuses
+pending: Order created, waiting for provider assignment
+processing: Provider assigned, fulfillment in progress
+fulfilled: Payment completed by provider
+validated: Payment validated and confirmed
+settled: Order fully completed on blockchain
+cancelled: Order cancelled (with reason)
+refunded: Funds refunded to sender
+Response Time
+Order Processing: < 30 seconds (creation → validation)
+Settlement: +15 seconds (onchain settlement)
+Total Time: ~1-2 minutes
+Auto-Refund: If not completed within 5 minutes
+​
+Handle Webhooks (Optional)
+Set up webhooks to receive real-time updates through your Sender dashboard:
+Log into your Sender dashboard at app.paycrest.io
+Navigate to Settings → Webhooks
+Enter your webhook URL (e.g., https://your-domain.com/webhooks/paycrest)
+Save the configuration
+Your webhook endpoint will receive notifications for all order status changes automatically.
+​
+Webhook Payload Example
+
+Copy
+{
+  "event": "order.fulfilled",
+  "orderId": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "fulfilled",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "data": {
+    "txHash": "0x1234567890abcdef...",
+    "providerId": "provider-123",
+    "settlementAmount": "50000"
+  }
+}
+​
+Get Supported Currencies
+Check available currencies and institutions:
+
+Copy
+# Get supported currencies
+curl -X GET "https://api.paycrest.io/v1/currencies"
+
+# Get institutions for a currency
+curl -X GET "https://api.paycrest.io/v1/institutions/NGN"
+​

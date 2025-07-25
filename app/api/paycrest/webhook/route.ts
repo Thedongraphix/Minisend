@@ -61,35 +61,35 @@ export async function POST(request: NextRequest) {
       recipient: order.recipient
     });
 
-    // Handle different order status events (updated for correct Paycrest format)
+    // Handle different order status events (updated for actual PayCrest API format)
     switch (order.status) {
-      case 'payment_order.pending':
-        console.log(`Order ${order.id} is pending provider assignment`);
+      case 'initiated':
+        console.log(`📋 Order ${order.id} initiated - order created`);
+        await handleOrderInitiated(order);
+        break;
+        
+      case 'pending':
+        console.log(`⏳ Order ${order.id} is pending - waiting for processing`);
         await handleOrderPending(order);
         break;
         
-      case 'payment_order.validated':
-        console.log(`Order ${order.id} validated - funds sent to recipient`);
-        await handleOrderValidated(order);
-        break;
-        
-      case 'payment_order.settled':
-        console.log(`Order ${order.id} settled - completed on blockchain`);
+      case 'settled':
+        console.log(`🎉 Order ${order.id} settled - payment completed successfully!`);
         await handleOrderSettled(order);
         break;
         
-      case 'payment_order.refunded':
-        console.log(`Order ${order.id} refunded to sender`);
+      case 'refunded':
+        console.log(`⚠️ Order ${order.id} refunded to sender`);
         await handleOrderRefunded(order);
         break;
         
-      case 'payment_order.expired':
-        console.log(`Order ${order.id} expired without completion`);
+      case 'expired':
+        console.log(`⏰ Order ${order.id} expired without completion`);
         await handleOrderExpired(order);
         break;
         
       default:
-        console.log(`Unknown order status: ${order.status} for order ${order.id}`);
+        console.log(`❓ Unknown order status: ${order.status} for order ${order.id}`);
     }
 
     // Store webhook event in database
@@ -130,29 +130,33 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleOrderPending(order: PaycrestOrder) {
-  // Order created, waiting for provider assignment
-  // You might want to update UI status or notify user
-  console.log(`Order ${order.id} is pending, waiting for provider assignment`);
+async function handleOrderInitiated(order: PaycrestOrder) {
+  // Order has been created and initiated
+  console.log(`📋 Order ${order.id} initiated - order created successfully`);
 }
 
-async function handleOrderValidated(order: PaycrestOrder) {
-  // Funds have been sent to recipient's bank/mobile network
-  // This is when you can consider the transaction successful from user perspective
-  console.log(`Order ${order.id} validated - recipient should have received funds`);
+async function handleOrderPending(order: PaycrestOrder) {
+  // Order is pending processing 
+  console.log(`⏳ Order ${order.id} is pending - waiting for provider processing`);
+}
+
+
+async function handleOrderSettled(order: PaycrestOrder) {
+  // Order fully completed and settled - THIS IS SUCCESS!
+  console.log(`🎉 Order ${order.id} settled - payment completed successfully!`);
   
-  // Log success for debugging the 50% stuck issue
-  console.log('🎉 SUCCESS: Transaction completed successfully!', {
+  // Log success for debugging
+  console.log('✅ SUCCESS: Payment settled successfully!', {
     orderId: order.id,
     amount: order.amount,
     recipient: order.recipient?.accountName,
     phone: order.recipient?.accountIdentifier,
     currency: order.recipient?.currency,
     timestamp: new Date().toISOString(),
-    status: 'payment_order.validated'
+    status: 'settled'
   });
   
-  // Track analytics event
+  // Track success analytics - this is the main success event now
   try {
     const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
     if (dbOrder) {
@@ -160,6 +164,7 @@ async function handleOrderValidated(order: PaycrestOrder) {
         (new Date().getTime() - new Date(dbOrder.created_at).getTime()) / 1000
       );
       
+      // Track payment completion
       await AnalyticsService.trackPaymentCompleted(
         dbOrder.wallet_address,
         dbOrder.id,
@@ -168,29 +173,7 @@ async function handleOrderValidated(order: PaycrestOrder) {
         settlementTime
       );
       
-      console.log(`📊 Analytics tracked for successful payment:`, {
-        orderId: order.id,
-        walletAddress: dbOrder.wallet_address,
-        amount: dbOrder.amount,
-        currency: dbOrder.currency,
-        settlementTimeSeconds: settlementTime,
-        phone: order.recipient?.accountIdentifier
-      });
-    }
-  } catch (error) {
-    console.error('Failed to track payment completion analytics:', error);
-  }
-}
-
-async function handleOrderSettled(order: PaycrestOrder) {
-  // Order fully completed on blockchain
-  // Provider has received the stablecoin
-  console.log(`Order ${order.id} settled on blockchain`);
-  
-  // Track settlement analytics
-  try {
-    const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
-    if (dbOrder) {
+      // Also track settlement event
       await AnalyticsService.trackEvent({
         event_name: 'order_settled',
         wallet_address: dbOrder.wallet_address,
@@ -198,8 +181,18 @@ async function handleOrderSettled(order: PaycrestOrder) {
         properties: {
           amount: dbOrder.amount,
           currency: dbOrder.currency,
-          settlement_time: new Date().toISOString()
+          settlementTimeSeconds: settlementTime,
+          phone: order.recipient?.accountIdentifier
         }
+      });
+      
+      console.log(`📊 Analytics tracked for settled payment:`, {
+        orderId: order.id,
+        walletAddress: dbOrder.wallet_address,
+        amount: dbOrder.amount,
+        currency: dbOrder.currency,
+        settlementTimeSeconds: settlementTime,
+        phone: order.recipient?.accountIdentifier
       });
     }
   } catch (error) {
@@ -234,8 +227,7 @@ async function handleOrderRefunded(order: PaycrestOrder) {
 
 async function handleOrderExpired(order: PaycrestOrder) {
   // Order expired without completion
-  // User didn't send funds within the time limit
-  console.log(`⏰ Order ${order.id} expired - user didn't send funds in time`);
+  console.log(`⏰ Order ${order.id} expired - no payment received in time`);
   
   // Track expiration analytics
   try {
