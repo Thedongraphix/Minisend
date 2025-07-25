@@ -104,17 +104,17 @@ export class PaycrestService {
   }
 
   async createOrder(orderData: PaycrestOrderRequest): Promise<PaycrestOrder> {
-    // Use /v1/orders endpoint as per working configuration
-    return this.makeRequest<PaycrestOrder>('/v1/orders', 'POST', orderData);
+    // Use /sender/orders endpoint as per PayCrest documentation
+    return this.makeRequest<PaycrestOrder>('/sender/orders', 'POST', orderData);
   }
 
   async getOrderStatus(orderId: string): Promise<PaycrestOrder> {
-    // Use /v1/orders endpoint for status checking
-    return this.makeRequest<PaycrestOrder>(`/v1/orders/${orderId}`);
+    // Use /sender/orders endpoint for status checking
+    return this.makeRequest<PaycrestOrder>(`/sender/orders/${orderId}`);
   }
 
   async getRates(token: string = 'USDC', amount: string = '1', currency: string = 'KES', network: string = 'base'): Promise<string> {
-    const response = await fetch(`${this.config.baseUrl}/v1/rates/${token}/${amount}/${currency}?network=${network}`, {
+    const response = await fetch(`${this.config.baseUrl}/rates/${token}/${amount}/${currency}?network=${network}`, {
       headers: {
         'API-Key': this.config.apiKey,
       },
@@ -130,6 +130,61 @@ export class PaycrestService {
     }
     
     throw new PaycrestError('Invalid rates response format');
+  }
+
+  // Sender endpoints
+  async getSenderStats(): Promise<unknown> {
+    return this.makeRequest('/sender/stats');
+  }
+
+  async listSenderOrders(page: number = 1, pageSize: number = 20): Promise<unknown> {
+    return this.makeRequest(`/sender/orders?page=${page}&pageSize=${pageSize}`);
+  }
+
+  // Provider endpoints
+  async getProviderOrders(): Promise<unknown> {
+    return this.makeRequest('/provider/orders');
+  }
+
+  async getProviderRates(token: string, fiat: string): Promise<unknown> {
+    return this.makeRequest(`/provider/rates/${token}/${fiat}`);
+  }
+
+  async getProviderStats(): Promise<unknown> {
+    return this.makeRequest('/provider/stats');
+  }
+
+  async getNodeInfo(): Promise<unknown> {
+    return this.makeRequest('/provider/node-info');
+  }
+
+  // General endpoints
+  async getCurrencies(): Promise<unknown> {
+    return this.makeRequest('/currencies');
+  }
+
+  async getInstitutions(currencyCode: string): Promise<unknown> {
+    return this.makeRequest(`/institutions/${currencyCode}`);
+  }
+
+  async getTokens(): Promise<unknown> {
+    return this.makeRequest('/tokens');
+  }
+
+  async getAggregatorPublicKey(): Promise<unknown> {
+    return this.makeRequest('/pubkey');
+  }
+
+  async verifyBankAccount(accountData: unknown): Promise<unknown> {
+    return this.makeRequest('/verify-account', 'POST', accountData);
+  }
+
+  async getLockPaymentOrderStatus(chainId: string, id: string): Promise<unknown> {
+    return this.makeRequest(`/orders/${chainId}/${id}`);
+  }
+
+  async reindexTransaction(network: string, txHash: string): Promise<unknown> {
+    return this.makeRequest(`/reindex/${network}/${txHash}`);
   }
 
   verifyWebhookSignature(

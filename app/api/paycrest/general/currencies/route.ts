@@ -7,15 +7,15 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const paycrestService = await getPaycrestService();
-    const nodeInfo = await paycrestService.getNodeInfo();
+    const currencies = await paycrestService.getCurrencies();
 
     return NextResponse.json({
       success: true,
-      data: nodeInfo
+      data: currencies
     });
 
   } catch (error) {
-    console.error('PayCrest provider node-info error:', error);
+    console.error('PayCrest currencies error:', error);
     
     if (error instanceof Error) {
       return NextResponse.json(
@@ -25,7 +25,7 @@ export async function GET() {
     }
 
     return NextResponse.json(
-      { error: 'Failed to get provider node info' },
+      { error: 'Failed to get currencies' },
       { status: 500 }
     );
   }
