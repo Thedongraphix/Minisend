@@ -235,8 +235,24 @@ async function handleOrderRefunded(order: PaycrestOrder) {
 async function handleOrderExpired(order: PaycrestOrder) {
   // Order expired without completion
   // User didn't send funds within the time limit
-  console.log(`Order ${order.id} expired - user didn't send funds in time`);
+  console.log(`⏰ Order ${order.id} expired - user didn't send funds in time`);
   
-  // TODO: Notify user that order expired
-  // TODO: Clean up any pending state
+  // Track expiration analytics
+  try {
+    const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
+    if (dbOrder) {
+      await AnalyticsService.trackEvent({
+        event_name: 'order_expired',
+        wallet_address: dbOrder.wallet_address,
+        order_id: dbOrder.id,
+        properties: {
+          amount: dbOrder.amount,
+          currency: dbOrder.currency,
+          expiry_reason: 'no_payment_received'
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Failed to track expiration analytics:', error);
+  }
 }
