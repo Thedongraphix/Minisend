@@ -312,7 +312,7 @@ export function SimpleUSDCPayment({
                 setTimeout(() => {
                   setStatus('success');
                   onSuccess();
-                }, 3000);
+                }, 2000);
               }
             }}
             onError={(error) => {
