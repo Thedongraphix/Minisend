@@ -7,7 +7,7 @@ import { OrderService } from '@/lib/supabase/orders';
 import { UserService } from '@/lib/supabase/users';
 import { AnalyticsService } from '@/lib/supabase/analytics';
 
-// Force dynamic rendering and Node.js runtime
+// Force dynamic rendering and Node.js runtime  
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
