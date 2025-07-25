@@ -127,8 +127,8 @@ export function SimpleOffRampFlow() {
               onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
               placeholder="0.00"
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-              min="1"
-              max="1000"
+              min="0.50"
+              max="10000"
               step="0.01"
             />
           </div>
