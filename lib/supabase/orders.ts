@@ -1,283 +1,394 @@
-import { supabaseAdmin } from './config';
-import { PaymentOrder, PaymentOrderInsert, PaymentOrderUpdate } from './types';
+import { createClient } from '@supabase/supabase-js';
+
+// Order interface matching database schema
+export interface Order {
+  id: string;
+  paycrest_order_id: string;
+  paycrest_reference: string;
+  user_id?: string;
+  wallet_address: string;
+  amount: number;
+  token: string;
+  network: string;
+  currency: string;
+  exchange_rate: number;
+  local_amount: number;
+  sender_fee: number;
+  transaction_fee: number;
+  total_amount: number;
+  recipient_name: string;
+  recipient_phone: string;
+  recipient_institution: string;
+  recipient_currency: string;
+  receive_address: string;
+  valid_until: Date;
+  status: 'initiated' | 'pending' | 'settled' | 'failed' | 'cancelled';
+  settled_at?: Date;
+  settlement_time_seconds?: number;
+  tx_hash?: string;
+  amount_paid?: number;
+  metadata: Record<string, unknown>;
+  created_at: Date;
+  updated_at: Date;
+}
+
+// Create order interface
+export interface CreateOrderData {
+  paycrest_order_id: string;
+  paycrest_reference: string;
+  user_id?: string;
+  wallet_address: string;
+  amount: number;
+  token: string;
+  network: string;
+  currency: string;
+  exchange_rate: number;
+  local_amount: number;
+  sender_fee: number;
+  transaction_fee: number;
+  total_amount: number;
+  recipient_name: string;
+  recipient_phone: string;
+  recipient_institution: string;
+  recipient_currency: string;
+  receive_address: string;
+  valid_until: Date;
+  metadata?: Record<string, unknown>;
+}
+
+// Update order status interface
+export interface UpdateOrderStatusData {
+  status: 'initiated' | 'pending' | 'settled' | 'failed' | 'cancelled';
+  settled_at?: Date;
+  settlement_time_seconds?: number;
+  tx_hash?: string;
+  amount_paid?: number;
+}
 
 export class OrderService {
-  
-  /**
-   * Create a new payment order in the database
-   */
-  static async createOrder(orderData: PaymentOrderInsert): Promise<PaymentOrder> {
-    const { data, error } = await supabaseAdmin
-      .from('payment_orders')
-      .insert(orderData)
-      .select()
-      .single();
+  // Static methods for compatibility with polling service
+  static async getOrderByPaycrestId(paycrestOrderId: string): Promise<Order | null> {
+    const service = new OrderService();
+    return service.getOrderByPaycrestId(paycrestOrderId);
+  }
 
-    if (error) {
-      console.error('Error creating order:', error);
-      throw new Error(`Failed to create order: ${error.message}`);
-    }
-
-    console.log('Order created successfully:', {
-      id: data.id,
-      paycrest_order_id: data.paycrest_order_id,
-      wallet_address: data.wallet_address,
-      amount: data.amount,
-      currency: data.currency
+  static async updateOrderWithSettlement(paycrestOrderId: string, settlementData: {
+    status: string;
+    settled_at: string;
+    settlement_time_seconds: number;
+    tx_hash?: string;
+    amount_paid?: number;
+  }): Promise<Order | null> {
+    const service = new OrderService();
+    return service.updateOrderStatus(paycrestOrderId, settlementData.status, {
+      settled_at: new Date(settlementData.settled_at),
+      settlement_time_seconds: settlementData.settlement_time_seconds,
+      tx_hash: settlementData.tx_hash,
+      amount_paid: settlementData.amount_paid
     });
-
-    return data;
   }
 
-  /**
-   * Update an existing payment order
-   */
-  static async updateOrder(
-    paycrestOrderId: string, 
-    updates: PaymentOrderUpdate
-  ): Promise<PaymentOrder> {
-    const { data, error } = await supabaseAdmin
-      .from('payment_orders')
-      .update(updates)
-      .eq('paycrest_order_id', paycrestOrderId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating order:', error);
-      throw new Error(`Failed to update order: ${error.message}`);
-    }
-
-    console.log('Order updated successfully:', {
-      id: data.id,
-      paycrest_order_id: data.paycrest_order_id,
-      status: data.status,
-      updates: Object.keys(updates)
-    });
-
-    return data;
+  static async getOrdersByWallet(walletAddress: string, limit: number = 10, offset: number = 0): Promise<Order[]> {
+    const service = new OrderService();
+    return service.getOrdersByWallet(walletAddress, limit, offset);
   }
 
-  /**
-   * Update order status from webhook
-   */
-  static async updateOrderStatus(
-    paycrestOrderId: string,
-    status: string,
-    additionalData?: Partial<PaymentOrderUpdate>
-  ): Promise<PaymentOrder> {
-    const updates: PaymentOrderUpdate = {
-      status,
-      ...additionalData
-    };
-
-    // Set timestamp based on status
-    if (status === 'payment_order.validated') {
-      updates.validated_at = new Date().toISOString();
-    } else if (status === 'payment_order.settled') {
-      updates.settled_at = new Date().toISOString();
-    }
-
-    return this.updateOrder(paycrestOrderId, updates);
-  }
-
-  /**
-   * Get order by PayCrest order ID
-   */
-  static async getOrderByPaycrestId(paycrestOrderId: string): Promise<PaymentOrder | null> {
-    const { data, error } = await supabaseAdmin
-      .from('payment_orders')
-      .select('*')
-      .eq('paycrest_order_id', paycrestOrderId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows found
-        return null;
-      }
-      console.error('Error fetching order:', error);
-      throw new Error(`Failed to fetch order: ${error.message}`);
-    }
-
-    return data;
-  }
-
-  /**
-   * Get orders by wallet address
-   */
-  static async getOrdersByWallet(
-    walletAddress: string,
-    limit: number = 10,
-    offset: number = 0
-  ): Promise<PaymentOrder[]> {
-    const { data, error } = await supabaseAdmin
-      .from('payment_orders')
-      .select('*')
-      .eq('wallet_address', walletAddress)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (error) {
-      console.error('Error fetching user orders:', error);
-      throw new Error(`Failed to fetch user orders: ${error.message}`);
-    }
-
-    return data || [];
-  }
-
-  /**
-   * Get order statistics for a wallet
-   */
   static async getWalletStats(walletAddress: string) {
-    const { data, error } = await supabaseAdmin
-      .from('payment_orders')
-      .select('status, amount, local_amount, currency, created_at')
-      .eq('wallet_address', walletAddress);
+    const service = new OrderService();
+    return service.getWalletStats(walletAddress);
+  }
+  private supabase = createClient(
+    (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL)!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-    if (error) {
-      console.error('Error fetching wallet stats:', error);
-      throw new Error(`Failed to fetch wallet stats: ${error.message}`);
+  // Create a new order
+  async createOrder(data: CreateOrderData): Promise<Order> {
+    try {
+      const { data: order, error } = await this.supabase
+        .from('orders')
+        .insert({
+          paycrest_order_id: data.paycrest_order_id,
+          paycrest_reference: data.paycrest_reference,
+          user_id: data.user_id,
+          wallet_address: data.wallet_address,
+          amount: data.amount,
+          token: data.token,
+          network: data.network,
+          currency: data.currency,
+          exchange_rate: data.exchange_rate,
+          local_amount: data.local_amount,
+          sender_fee: data.sender_fee,
+          transaction_fee: data.transaction_fee,
+          total_amount: data.total_amount,
+          recipient_name: data.recipient_name,
+          recipient_phone: data.recipient_phone,
+          recipient_institution: data.recipient_institution,
+          recipient_currency: data.recipient_currency,
+          receive_address: data.receive_address,
+          valid_until: data.valid_until,
+          metadata: data.metadata || {}
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('✅ Order created in Supabase:', {
+        id: order.id,
+        paycrest_order_id: order.paycrest_order_id,
+        status: order.status,
+        wallet_address: order.wallet_address
+      });
+
+      // Update user statistics
+      await this.updateUserStats(order.wallet_address);
+      
+      return order;
+    } catch (error) {
+      console.error('❌ Failed to create order in Supabase:', error);
+      throw new Error(`Failed to create order: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    const orders = data || [];
-    
-    return {
-      total_transactions: orders.length,
-      successful_transactions: orders.filter(o => o.status === 'payment_order.validated').length,
-      pending_transactions: orders.filter(o => o.status === 'payment_order.pending').length,
-      failed_transactions: orders.filter(o => 
-        o.status === 'payment_order.refunded' || o.status === 'payment_order.expired'
-      ).length,
-      total_volume_usdc: orders.reduce((sum, o) => sum + Number(o.amount), 0),
-      total_volume_local: orders.reduce((sum, o) => sum + Number(o.local_amount), 0),
-      currencies_used: [...new Set(orders.map(o => o.currency))],
-      first_transaction: orders.length > 0 ? orders[orders.length - 1].created_at : null,
-      last_transaction: orders.length > 0 ? orders[0].created_at : null
-    };
   }
 
-  /**
-   * Search orders by recipient phone number
-   */
-  static async searchOrdersByPhone(phoneNumber: string): Promise<PaymentOrder[]> {
-    const { data, error } = await supabaseAdmin
-      .from('payment_orders')
-      .select('*')
-      .eq('recipient_phone', phoneNumber)
-      .order('created_at', { ascending: false });
+  // Get order by PayCrest order ID
+  async getOrderByPaycrestId(paycrestOrderId: string): Promise<Order | null> {
+    try {
+      const { data: order, error } = await this.supabase
+        .from('orders')
+        .select('*')
+        .eq('paycrest_order_id', paycrestOrderId)
+        .single();
 
-    if (error) {
-      console.error('Error searching orders by phone:', error);
-      throw new Error(`Failed to search orders: ${error.message}`);
+      if (error && error.code !== 'PGRST116') throw error;
+      return order;
+    } catch (error) {
+      console.error('❌ Failed to get order by PayCrest ID:', error);
+      return null;
     }
-
-    return data || [];
   }
 
-  /**
-   * Get recent orders (for admin/analytics)
-   */
-  static async getRecentOrders(limit: number = 50): Promise<PaymentOrder[]> {
-    const { data, error } = await supabaseAdmin
-      .from('payment_orders')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(limit);
+  // Get order by database ID
+  async getOrderById(id: string): Promise<Order | null> {
+    try {
+      const { data: order, error } = await this.supabase
+        .from('orders')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    if (error) {
-      console.error('Error fetching recent orders:', error);
-      throw new Error(`Failed to fetch recent orders: ${error.message}`);
+      if (error && error.code !== 'PGRST116') throw error;
+      return order;
+    } catch (error) {
+      console.error('❌ Failed to get order by ID:', error);
+      return null;
     }
-
-    return data || [];
   }
 
-  /**
-   * Get orders by status
-   */
-  static async getOrdersByStatus(
-    status: string,
-    limit: number = 50
-  ): Promise<PaymentOrder[]> {
-    const { data, error } = await supabaseAdmin
-      .from('payment_orders')
-      .select('*')
-      .eq('status', status)
-      .order('created_at', { ascending: false })
-      .limit(limit);
+  // Update order status (RESEARCH-BASED)
+  async updateOrderStatus(paycrestOrderId: string, status: string, additionalData?: Partial<UpdateOrderStatusData>): Promise<Order | null> {
+    try {
+      const updateData: Record<string, unknown> = {
+        status,
+        updated_at: new Date().toISOString()
+      };
 
-    if (error) {
-      console.error('Error fetching orders by status:', error);
-      throw new Error(`Failed to fetch orders by status: ${error.message}`);
+      if (additionalData?.settled_at) updateData.settled_at = additionalData.settled_at;
+      if (additionalData?.settlement_time_seconds) updateData.settlement_time_seconds = additionalData.settlement_time_seconds;
+      if (additionalData?.tx_hash) updateData.tx_hash = additionalData.tx_hash;
+      if (additionalData?.amount_paid) updateData.amount_paid = additionalData.amount_paid;
+
+      const { data: order, error } = await this.supabase
+        .from('orders')
+        .update(updateData)
+        .eq('paycrest_order_id', paycrestOrderId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (order) {
+        console.log('✅ Order status updated:', {
+          paycrest_order_id: order.paycrest_order_id,
+          old_status: order.status,
+          new_status: status,
+          settled_at: order.settled_at
+        });
+
+        // Track settlement if status is 'settled'
+        if (status === 'settled' && order.settled_at) {
+          await this.trackSettlement(order.id, status, order.settlement_time_seconds, order.tx_hash, order.amount_paid);
+        }
+      }
+
+      return order;
+    } catch (error) {
+      console.error('❌ Failed to update order status:', error);
+      return null;
     }
-
-    return data || [];
   }
 
-  /**
-   * Update transaction hash when blockchain transaction is sent
-   */
-  static async updateTransactionHash(
-    paycrestOrderId: string,
-    transactionHash: string,
-    blockNumber?: number,
-    gasUsed?: number
-  ): Promise<PaymentOrder> {
-    const updates: PaymentOrderUpdate = {
-      transaction_hash: transactionHash,
-      ...(blockNumber && { block_number: blockNumber }),
-      ...(gasUsed && { gas_used: gasUsed })
-    };
+  // Get orders by wallet address
+  async getOrdersByWallet(walletAddress: string, limit: number = 10, offset: number = 0): Promise<Order[]> {
+    try {
+      const { data: orders, error } = await this.supabase
+        .from('orders')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
-    return this.updateOrder(paycrestOrderId, updates);
-  }
-
-  /**
-   * Mark order as failed with error details
-   */
-  static async markOrderFailed(
-    paycrestOrderId: string,
-    errorDetails: Record<string, unknown>
-  ): Promise<PaymentOrder> {
-    return this.updateOrder(paycrestOrderId, {
-      status: 'payment_order.refunded',
-      error_details: errorDetails
-    });
-  }
-
-  /**
-   * Get pending orders (for monitoring)
-   */
-  static async getPendingOrders(): Promise<PaymentOrder[]> {
-    const { data, error } = await supabaseAdmin
-      .from('payment_orders')
-      .select('*')
-      .eq('status', 'payment_order.pending')
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching pending orders:', error);
-      throw new Error(`Failed to fetch pending orders: ${error.message}`);
+      if (error) throw error;
+      return orders || [];
+    } catch (error) {
+      console.error('❌ Failed to get orders by wallet:', error);
+      return [];
     }
-
-    return data || [];
   }
 
-  /**
-   * Delete order (admin only, for testing)
-   */
-  static async deleteOrder(paycrestOrderId: string): Promise<void> {
-    const { error } = await supabaseAdmin
-      .from('payment_orders')
-      .delete()
-      .eq('paycrest_order_id', paycrestOrderId);
+  // Get wallet statistics
+  async getWalletStats(walletAddress: string): Promise<{
+    total_orders: number;
+    total_volume: number;
+    successful_orders: number;
+    average_settlement_time: number;
+    preferred_currency: string;
+  }> {
+    try {
+      // Get orders for this wallet
+      const { data: orders, error } = await this.supabase
+        .from('orders')
+        .select('amount, status, settlement_time_seconds')
+        .eq('wallet_address', walletAddress);
 
-    if (error) {
-      console.error('Error deleting order:', error);
-      throw new Error(`Failed to delete order: ${error.message}`);
+      if (error) throw error;
+
+      const totalOrders = orders?.length || 0;
+      const totalVolume = orders?.reduce((sum, order) => sum + Number(order.amount), 0) || 0;
+      const successfulOrders = orders?.filter(order => order.status === 'settled').length || 0;
+      const settlementTimes = orders?.filter(order => order.settlement_time_seconds).map(order => order.settlement_time_seconds) || [];
+      const averageSettlementTime = settlementTimes.length > 0 
+        ? settlementTimes.reduce((sum, time) => sum + time, 0) / settlementTimes.length 
+        : 0;
+
+      // Get user preferences
+      const { data: user } = await this.supabase
+        .from('users')
+        .select('preferred_currency')
+        .eq('wallet_address', walletAddress)
+        .single();
+
+      return {
+        total_orders: totalOrders,
+        total_volume: totalVolume,
+        successful_orders: successfulOrders,
+        average_settlement_time: averageSettlementTime,
+        preferred_currency: user?.preferred_currency || 'KES'
+      };
+    } catch (error) {
+      console.error('❌ Failed to get wallet stats:', error);
+      return {
+        total_orders: 0,
+        total_volume: 0,
+        successful_orders: 0,
+        average_settlement_time: 0,
+        preferred_currency: 'KES'
+      };
     }
+  }
 
-    console.log('Order deleted successfully:', paycrestOrderId);
+  // Track polling attempt (RESEARCH-BASED)
+  async trackPollingAttempt(orderId: string, attemptNumber: number, status: string, responseTimeMs?: number, errorMessage?: string): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('polling_attempts')
+        .insert({
+          order_id: orderId,
+          attempt_number: attemptNumber,
+          status,
+          response_time_ms: responseTimeMs,
+          error_message: errorMessage
+        });
+
+      if (error) throw error;
+      console.log('📊 Polling attempt tracked:', { orderId, attemptNumber, status, responseTimeMs });
+    } catch (error) {
+      console.error('❌ Failed to track polling attempt:', error);
+    }
+  }
+
+  // Track settlement (RESEARCH-BASED)
+  async trackSettlement(orderId: string, status: string, settlementTimeSeconds?: number, txHash?: string, amountPaid?: number): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('settlements')
+        .insert({
+          order_id: orderId,
+          status,
+          settlement_time_seconds: settlementTimeSeconds,
+          tx_hash: txHash,
+          amount_paid: amountPaid
+        });
+
+      if (error) throw error;
+      console.log('🎉 Settlement tracked:', { orderId, status, settlementTimeSeconds, txHash });
+    } catch (error) {
+      console.error('❌ Failed to track settlement:', error);
+    }
+  }
+
+  // Update user statistics
+  private async updateUserStats(walletAddress: string): Promise<void> {
+    try {
+      // Get order counts and volume
+      const { data: orders, error } = await this.supabase
+        .from('orders')
+        .select('amount')
+        .eq('wallet_address', walletAddress);
+
+      if (error) throw error;
+
+      const totalOrders = orders?.length || 0;
+      const totalVolume = orders?.reduce((sum, order) => sum + Number(order.amount), 0) || 0;
+
+      // Update user stats
+      const { error: updateError } = await this.supabase
+        .from('users')
+        .upsert({
+          wallet_address: walletAddress,
+          total_orders: totalOrders,
+          total_volume: totalVolume,
+          last_active_at: new Date().toISOString()
+        }, {
+          onConflict: 'wallet_address'
+        });
+
+      if (updateError) throw updateError;
+    } catch (error) {
+      console.error('❌ Failed to update user stats:', error);
+    }
+  }
+
+  // Get orders with settlement analytics
+  async getOrdersWithAnalytics(limit: number = 50): Promise<Order[]> {
+    try {
+      const { data: orders, error } = await this.supabase
+        .from('orders')
+        .select(`
+          *,
+          users!inner(
+            total_orders,
+            total_volume
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return orders || [];
+    } catch (error) {
+      console.error('❌ Failed to get orders with analytics:', error);
+      return [];
+    }
   }
 }
