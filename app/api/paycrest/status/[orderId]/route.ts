@@ -6,6 +6,41 @@ import { getPaycrestService } from '@/lib/paycrest/config';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Based on PayCrest API docs: Check if payment is actually settled
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isPaymentSettled(order: any): boolean {
+  console.log('📋 API Docs Settlement Check:', {
+    orderId: order.id,
+    status: order.status,
+    amountPaid: order.amountPaid,
+    transactionLogs: order.transactionLogs?.length || 0
+  });
+
+  // According to docs: order.status should be the primary indicator
+  if (order.status === 'settled') {
+    return true;
+  }
+
+  // According to docs: Check transactionLogs for actual settlement
+  if (order.transactionLogs && order.transactionLogs.length > 0) {
+    // Look for settled status in transaction logs as shown in API docs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const hasSettledLog = order.transactionLogs.some((log: any) => log.status === 'settled');
+    const hasAmountPaid = order.amountPaid && order.amountPaid > 0;
+    
+    console.log('📋 Transaction Logs Check:', {
+      hasSettledLog,
+      hasAmountPaid,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      logStatuses: order.transactionLogs.map((log: any) => log.status)
+    });
+
+    return hasSettledLog && hasAmountPaid;
+  }
+
+  return false;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
@@ -95,10 +130,14 @@ export async function GET(
         validUntil: paycrestOrder.validUntil,
         senderFee: paycrestOrder.senderFee,
         transactionFee: paycrestOrder.transactionFee,
-        // RESEARCH-BASED: Add settlement-specific fields
-        isSettled: paycrestOrder.status === 'settled',
+        // Based on PayCrest API docs: settlement detection
+        isSettled: isPaymentSettled(paycrestOrder),
         isFailed: ['failed', 'cancelled'].includes(paycrestOrder.status),
         isProcessing: ['initiated', 'pending'].includes(paycrestOrder.status),
+        // Add new critical fields from API docs
+        amountPaid: paycrestOrder.amountPaid,
+        amountReturned: paycrestOrder.amountReturned,
+        transactionLogs: paycrestOrder.transactionLogs,
         // Add transaction hash if available for settlement verification
         txHash: paycrestOrder.txHash,
         // Add settlement timestamp

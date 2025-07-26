@@ -44,8 +44,18 @@ export interface PaycrestOrder {
   reference: string;
   // RESEARCH-BASED: Settlement verification fields
   txHash?: string;
-  amountPaid?: string;
+  amountPaid?: string | number;  // API returns number according to docs
+  amountReturned?: string | number;  // Important for failed payments
   settledAt?: string;
+  // CRITICAL: Transaction logs contain actual settlement status
+  transactionLogs?: Array<{
+    id: string;
+    gateway_id: string;
+    status: string;  // This might be the real settlement status!
+    tx_hash: string;
+    created_at: string;
+  }>;
+  // Legacy support for transactions field
   transactions?: Array<{
     id: string;
     status: string;
@@ -53,6 +63,14 @@ export interface PaycrestOrder {
     amount: string;
     timestamp: string;
   }>;
+  // Additional fields from API docs
+  rate?: number;
+  gatewayId?: string;
+  fromAddress?: string;
+  returnAddress?: string;
+  feeAddress?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PaycrestWebhookEvent {

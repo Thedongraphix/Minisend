@@ -96,11 +96,13 @@ export class PaycrestPollingService {
           responseTimeMs: responseTime,
           elapsedTimeMinutes: Math.round(elapsedTime / 60000 * 10) / 10,
           txHash: order.txHash,
-          amountPaid: order.amountPaid
+          amountPaid: order.amountPaid,
+          transactionLogs: order.transactionLogs?.length || 0,
+          transactionLogStatuses: order.transactionLogs?.map(log => log.status) || []
         });
 
-        // RESEARCH-BASED: Check for definitive completion - ONLY 'settled' is success
-        if (order.status === 'settled') {
+        // Based on PayCrest API docs: Check settlement
+        if (this.isOrderSettled(order)) {
           const totalTime = Date.now() - startTime;
           console.log('🎉 SETTLEMENT DETECTED - POLLING COMPLETE:', {
             orderId,
@@ -243,7 +245,7 @@ export class PaycrestPollingService {
       // Layer 3: Amount Confirmation
       if (order.amountPaid) {
         const originalAmount = parseFloat(order.amount);
-        const paidAmount = parseFloat(order.amountPaid);
+        const paidAmount = parseFloat(order.amountPaid.toString());
         const amountMatch = Math.abs(originalAmount - paidAmount) < 0.01;
 
         if (!amountMatch) {
@@ -275,6 +277,39 @@ export class PaycrestPollingService {
         reason: `Verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
+  }
+
+  /**
+   * Based on PayCrest API docs: Simple settlement check
+   */
+  private isOrderSettled(order: PaycrestOrder): boolean {
+    console.log('📋 API Docs Settlement Check:', {
+      orderId: order.id,
+      status: order.status,
+      amountPaid: order.amountPaid,
+      transactionLogs: order.transactionLogs?.length || 0
+    });
+
+    // Primary check from API docs
+    if (order.status === 'settled') {
+      return true;
+    }
+
+    // Secondary check: transaction logs from API docs
+    if (order.transactionLogs && order.transactionLogs.length > 0) {
+      const hasSettledLog = order.transactionLogs.some(log => log.status === 'settled');
+      const hasAmountPaid = Boolean(order.amountPaid && parseFloat(order.amountPaid.toString()) > 0);
+      
+      console.log('📋 Transaction Logs:', {
+        hasSettledLog,
+        hasAmountPaid,
+        logStatuses: order.transactionLogs.map(log => log.status)
+      });
+
+      return hasSettledLog && hasAmountPaid;
+    }
+
+    return false;
   }
 
   /**
@@ -362,7 +397,7 @@ export class PaycrestPollingService {
           status: order.status,
           settlement_time_seconds: settlementTimeSeconds,
           tx_hash: order.txHash,
-          amount_paid: order.amountPaid ? parseFloat(order.amountPaid) : undefined,
+          amount_paid: order.amountPaid ? parseFloat(order.amountPaid.toString()) : undefined,
           recipient_phone: order.recipient?.accountIdentifier,
           recipient_name: order.recipient?.accountName,
           currency: order.recipient?.currency
@@ -383,7 +418,7 @@ export class PaycrestPollingService {
         settled_at: new Date().toISOString(),
         settlement_time_seconds: settlementTimeSeconds,
         tx_hash: order.txHash,
-        amount_paid: order.amountPaid ? parseFloat(order.amountPaid) : undefined
+        amount_paid: order.amountPaid ? parseFloat(order.amountPaid.toString()) : undefined
       });
 
       console.log('📊 Settlement tracking completed:', {
