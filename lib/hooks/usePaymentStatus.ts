@@ -82,6 +82,18 @@ export function usePaymentStatus({
     }
   }, []);
 
+  const stopPolling = useCallback(() => {
+    console.log('🛑 Stopping payment status polling');
+    
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    
+    setIsPolling(false);
+    pollStartTime.current = null;
+  }, []);
+
   const startPolling = useCallback((orderIdToCheck: string) => {
     if (!enabled || isPolling) return;
 
@@ -133,19 +145,7 @@ export function usePaymentStatus({
 
     // Set up interval
     intervalRef.current = setInterval(poll, pollInterval);
-  }, [enabled, isPolling, maxPollDuration, pollInterval, checkPaymentStatus, onStatusUpdate, onSettled, onFailed]);
-
-  const stopPolling = useCallback(() => {
-    console.log('🛑 Stopping payment status polling');
-    
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    
-    setIsPolling(false);
-    pollStartTime.current = null;
-  }, []);
+  }, [enabled, isPolling, maxPollDuration, pollInterval, checkPaymentStatus, onStatusUpdate, onSettled, onFailed, stopPolling]);
 
   const refreshStatus = useCallback(async () => {
     if (!orderId) return null;

@@ -362,7 +362,7 @@ export function SimpleUSDCPayment({
                 </div>
               </div>
               <p className="text-blue-300 text-xs mt-2">
-                💡 Click "Send Payment" to process transfer
+                💡 Click &quot;Send Payment&quot; to process transfer
               </p>
               <p className="text-gray-400 text-xs mt-1">
                 {currency} will be sent to recipient automatically
