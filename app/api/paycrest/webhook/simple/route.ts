@@ -7,7 +7,7 @@ const WEBHOOK_SECRET = process.env.PAYCREST_API_SECRET;
 const orderStatuses = new Map<string, {
   status: string;
   timestamp: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }>();
 
 function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {

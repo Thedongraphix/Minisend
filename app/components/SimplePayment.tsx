@@ -26,7 +26,13 @@ export function SimplePayment({
   onError
 }: SimplePaymentProps) {
   const [currentStep, setCurrentStep] = useState<'quote' | 'send' | 'processing' | 'success' | 'error'>('quote');
-  const [orderData, setOrderData] = useState<any>(null);
+  const [orderData, setOrderData] = useState<{
+    id: string;
+    receiveAddress: string;
+    amount: string;
+    senderFee: string;
+    transactionFee: string;
+  } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
 
   // USDC contract on Base
@@ -103,7 +109,9 @@ export function SimplePayment({
         setCurrentStep('processing');
         setStatusMessage('Payment sent to PayCrest. Funds will be sent to your mobile money.');
         // Start checking webhook status
-        checkPaymentStatus(orderData.id);
+        if (orderData?.id) {
+          checkPaymentStatus(orderData.id);
+        }
         break;
       case 'error':
         setCurrentStep('error');
@@ -117,7 +125,7 @@ export function SimplePayment({
     let attempts = 0;
     const maxAttempts = 60; // Check for 5 minutes
     
-    const checkStatus = async () => {
+    const checkStatus = async (): Promise<void> => {
       try {
         const response = await fetch(`/api/paycrest/status/${orderId}`);
         
