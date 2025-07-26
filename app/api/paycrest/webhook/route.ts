@@ -4,6 +4,7 @@ import { PaycrestWebhookEvent, PaycrestOrder } from '@/lib/paycrest';
 import { WebhookService } from '@/lib/supabase/webhooks';
 import { OrderService } from '@/lib/supabase/orders';
 import { AnalyticsService } from '@/lib/supabase/analytics';
+import { broadcastPaymentUpdate, broadcastPaymentValidated, broadcastPaymentSettled } from '@/lib/paycrest/broadcast';
 
 // Force dynamic rendering and Node.js runtime
 export const runtime = 'nodejs';
@@ -77,21 +78,48 @@ export async function POST(request: NextRequest) {
         console.log(`🎉 Order ${order.id} validated - funds sent to recipient's bank/mobile network!`);
         console.log(`✅ TRANSACTION SUCCESSFUL - User can be notified of successful payment`);
         await handleOrderValidated(order);
+        
+        // Broadcast real-time update to UI
+        broadcastPaymentValidated(order.id, {
+          amount: order.amount,
+          amountPaid: order.amountPaid,
+          recipient: order.recipient,
+          txHash: order.txHash
+        });
         break;
         
       case 'payment_order.settled':
         console.log(`🔗 Order ${order.id} settled - order fully completed on blockchain`);
         await handleOrderSettled(order);
+        
+        // Broadcast real-time update to UI
+        broadcastPaymentSettled(order.id, {
+          amount: order.amount,
+          amountPaid: order.amountPaid,
+          recipient: order.recipient,
+          txHash: order.txHash
+        });
         break;
         
       case 'payment_order.refunded':
         console.log(`⚠️ Order ${order.id} refunded - funds refunded to sender`);
         await handleOrderRefunded(order);
+        
+        // Broadcast real-time update to UI
+        broadcastPaymentUpdate(order.id, 'refunded', {
+          message: 'Payment was refunded',
+          reason: 'Transaction failed'
+        });
         break;
         
       case 'payment_order.expired':
         console.log(`⏰ Order ${order.id} expired - order expired without completion`);
         await handleOrderExpired(order);
+        
+        // Broadcast real-time update to UI  
+        broadcastPaymentUpdate(order.id, 'expired', {
+          message: 'Payment expired - no funds received in time'
+        });
         break;
         
       default:
@@ -100,6 +128,12 @@ export async function POST(request: NextRequest) {
         if (order.status === 'validated' || order.status === 'settled') {
           await handleOrderValidated(order);
         }
+        
+        // Broadcast general status update for unknown events
+        broadcastPaymentUpdate(order.id, order.status, {
+          event,
+          message: `Status updated to ${order.status}`
+        });
     }
 
     // Store webhook event in database
