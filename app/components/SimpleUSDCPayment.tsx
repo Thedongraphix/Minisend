@@ -5,6 +5,8 @@ import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLab
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
+import { usePaymentStatus } from '@/lib/hooks/usePaymentStatus';
+import { useRealtimePaymentStatus } from '@/lib/paycrest/realtime';
 
 interface SimpleUSDCPaymentProps {
   amount: string;
@@ -37,9 +39,68 @@ export function SimpleUSDCPayment({
   } | null>(null);
   const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'converting' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState<string>('');
+  const [transactionCompleted, setTransactionCompleted] = useState(false);
 
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+
+  // Enhanced payment monitoring with dual approach: polling + real-time
+  const paymentStatus = usePaymentStatus({
+    orderId: paycrestOrder?.id || null,
+    enabled: transactionCompleted && status === 'converting',
+    pollInterval: 3000, // Poll every 3 seconds
+    maxPollDuration: 180000, // Stop after 3 minutes
+    onStatusUpdate: (update) => {
+      console.log('📊 Payment status update via polling:', update);
+      setStatusMessage(update.message || 'Processing payment...');
+    },
+    onSettled: (update) => {
+      console.log('✅ Payment settled via polling:', update);
+      setStatus('success');
+      setStatusMessage(`✅ Payment sent! ${currency} delivered to ${phoneNumber}`);
+      setTimeout(() => onSuccess(), 2000);
+    },
+    onFailed: (update) => {
+      console.log('❌ Payment failed via polling:', update);
+      setStatus('error');
+      onError(update.message || 'Payment failed');
+    }
+  });
+
+  // Real-time updates via Server-Sent Events
+  const realtimeStatus = useRealtimePaymentStatus(
+    paycrestOrder?.id || null,
+    (event) => {
+      console.log('🔔 Real-time payment event:', event);
+      
+      switch (event.type) {
+        case 'validation':
+          console.log('🎉 Real-time: Payment validated!');
+          setStatus('success');
+          setStatusMessage(`✅ Payment sent! ${currency} delivered to ${phoneNumber}`);
+          setTimeout(() => onSuccess(), 2000);
+          break;
+          
+        case 'settlement':
+          console.log('🔗 Real-time: Payment settled!');
+          if (status !== 'success') {
+            setStatus('success');
+            setStatusMessage(`✅ Payment sent! ${currency} delivered to ${phoneNumber}`);
+            setTimeout(() => onSuccess(), 2000);
+          }
+          break;
+          
+        case 'status_update':
+          if (event.status === 'refunded' || event.status === 'expired') {
+            setStatus('error');
+            onError(event.message || `Payment ${event.status}`);
+          } else {
+            setStatusMessage(event.message || 'Processing payment...');
+          }
+          break;
+      }
+    }
+  );
 
   // Create PayCrest order
   const createPaycrestOrder = useCallback(async () => {
@@ -213,12 +274,18 @@ export function SimpleUSDCPayment({
       case 'success':
         setStatus('converting');
         setStatusMessage(`Converting USDC to ${currency}...`);
-        // Check initial status, then rely on webhooks
+        setTransactionCompleted(true);
+        
+        // Start comprehensive monitoring
         if (paycrestOrder?.id) {
-          console.log('Transaction successful, checking status and waiting for webhooks');
+          console.log('🚀 Transaction successful, starting comprehensive monitoring');
+          
+          // Initial status check after transaction
           setTimeout(() => {
             checkInitialStatus(paycrestOrder.id);
-          }, 5000); // Give PayCrest time to detect the transaction
+          }, 3000);
+          
+          // The polling and real-time hooks will handle ongoing monitoring
         }
         break;
       case 'error':
@@ -263,15 +330,17 @@ export function SimpleUSDCPayment({
             calls={calls}
             onStatus={handleTransactionStatus}
             onSuccess={(response) => {
-              console.log('Transaction successful:', response);
+              console.log('🎯 Transaction successful:', response);
               setStatus('converting');
               setStatusMessage(`Converting USDC to ${currency}...`);
+              setTransactionCompleted(true);
               
-              // Check status once, then rely on webhooks
+              // Start comprehensive monitoring
               if (paycrestOrder?.id) {
+                console.log('🚀 Starting comprehensive payment monitoring');
                 setTimeout(() => {
                   checkInitialStatus(paycrestOrder.id);
-                }, 5000);
+                }, 3000);
               }
             }}
             onError={(error) => {
@@ -335,7 +404,7 @@ export function SimpleUSDCPayment({
             </p>
           </div>
           
-          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 space-y-2">
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-center space-x-2">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
               <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -347,12 +416,39 @@ export function SimpleUSDCPayment({
             <p className="text-gray-400 text-xs">
               Sending to {phoneNumber}
             </p>
-            <p className="text-gray-400 text-xs">
-              ⏱️ This usually takes 1-3 minutes
-            </p>
-            <p className="text-gray-400 text-xs">
-              🔔 You&apos;ll be notified when complete
-            </p>
+            
+            {/* Enhanced monitoring status */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-400">Polling Status:</span>
+                <span className={`${paymentStatus.isPolling ? 'text-green-400' : 'text-gray-500'}`}>
+                  {paymentStatus.isPolling ? '🔄 Active' : '⏸️ Standby'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-400">Real-time Updates:</span>
+                <span className={`${realtimeStatus.isConnected ? 'text-green-400' : 'text-yellow-400'}`}>
+                  {realtimeStatus.isConnected ? '🔔 Connected' : '⚡ Connecting...'}
+                </span>
+              </div>
+              {paymentStatus.currentStatus && (
+                <div className="text-xs text-blue-300">
+                  Last Status: {paymentStatus.currentStatus.status}
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t border-green-500/20 pt-2 space-y-1">
+              <p className="text-gray-400 text-xs">
+                ⏱️ Usually completes in 1-3 minutes
+              </p>
+              <p className="text-gray-400 text-xs">
+                🔔 You&apos;ll get instant notifications when complete
+              </p>
+              <p className="text-green-300 text-xs">
+                💡 Dual monitoring: Polling + Real-time webhooks
+              </p>
+            </div>
           </div>
         </div>
       )}
