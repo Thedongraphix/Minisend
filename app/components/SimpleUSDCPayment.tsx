@@ -180,7 +180,16 @@ export function SimpleUSDCPayment({
         switch (order?.status) {
           case 'pending':
             console.log('Order is pending provider assignment');
-            setStatusMessage('Processing payment through liquidity providers...');
+            // Check if crypto was already deposited (amountPaid > 0 or isSettled)
+            if (order.amountPaid || order.isSettled) {
+              console.log('🎯 Crypto received, processing fiat transfer...', {
+                amountPaid: order.amountPaid,
+                isSettled: order.isSettled
+              });
+              setStatusMessage('✅ Crypto received! Converting to mobile money...');
+            } else {
+              setStatusMessage('Processing payment through liquidity providers...');
+            }
             break;
             
           case 'validated':
@@ -235,7 +244,10 @@ export function SimpleUSDCPayment({
             
           default:
             console.log(`📋 Order status: ${order?.status} - continuing to monitor...`);
-            if (order?.status) {
+            // Show crypto received feedback if we have settlement data
+            if (order?.isSettled || order?.amountPaid) {
+              setStatusMessage(`✅ Crypto received! Converting to ${currency}...`);
+            } else if (order?.status) {
               setStatusMessage(`Converting payment... (${order.status})`);
             }
         }
@@ -338,6 +350,10 @@ export function SimpleUSDCPayment({
         break;
       case 'success':
         console.log('✅ Transaction successful, PayCrest should detect it soon');
+        // IMMEDIATE FEEDBACK: Let user know their crypto transaction succeeded
+        setStatus('converting');
+        setStatusMessage('✅ Crypto sent successfully! Processing payment...');
+        console.log('🎯 IMMEDIATE FEEDBACK: Crypto transaction completed, starting conversion');
         // Don't start polling here - it's already started in transactionPending
         break;
       case 'error':
@@ -383,7 +399,13 @@ export function SimpleUSDCPayment({
             onStatus={handleTransactionStatus}
             onSuccess={(response) => {
               console.log('🎯 Transaction onSuccess callback triggered:', response);
-              // RESEARCH-BASED: Backup polling start in case status callback didn't work
+              
+              // IMMEDIATE USER FEEDBACK: Crypto transaction completed successfully
+              setStatus('converting');
+              setStatusMessage('✅ Crypto sent successfully! Converting to mobile money...');
+              console.log('🎊 IMMEDIATE FEEDBACK: Transaction success - user gets confirmation');
+              
+              // Backup polling start in case status callback didn't work
               if (paycrestOrder?.id) {
                 console.log('🔄 Backup: ensuring polling is running for order:', paycrestOrder.id);
                 // Small delay to ensure PayCrest detects the transaction
