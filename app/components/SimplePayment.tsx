@@ -37,7 +37,7 @@ export function SimplePayment({
     setCurrentStep('quote');
     
     try {
-      const response = await fetch('/api/paycrest/orders/simple', {
+      const response = await fetch('/api/paycrest/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -119,22 +119,22 @@ export function SimplePayment({
     
     const checkStatus = async () => {
       try {
-        const response = await fetch(`/api/paycrest/webhook/simple?orderId=${orderId}`);
+        const response = await fetch(`/api/paycrest/status/${orderId}`);
         
         if (response.ok) {
           const result = await response.json();
           
           if (result.success && result.order) {
-            const status = result.order.status;
+            const order = result.order;
             
-            if (status === 'validated' || status === 'settled') {
+            if (order.isSettled || order.status === 'validated' || order.status === 'settled') {
               setCurrentStep('success');
               setStatusMessage(`Payment completed! ${currency} sent to ${phoneNumber}`);
               setTimeout(() => onSuccess(), 2000);
               return;
-            } else if (status === 'refunded' || status === 'expired') {
+            } else if (order.isFailed || order.status === 'refunded' || order.status === 'expired') {
               setCurrentStep('error');
-              onError(`Payment ${status}`);
+              onError(`Payment ${order.status}`);
               return;
             }
           }

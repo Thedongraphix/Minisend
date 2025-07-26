@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PAYCREST_API_URL = 'https://api.paycrest.io/v1';
+const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 
 export async function POST(request: NextRequest) {

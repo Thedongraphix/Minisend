@@ -4,8 +4,10 @@ export async function GET() {
   try {
     const apiKey = process.env.PAYCREST_API_KEY;
     
+    const baseUrl = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
+    
     // Test rate API
-    const rateResponse = await fetch('https://api.paycrest.io/v1/rates/USDC/5/KES', {
+    const rateResponse = await fetch(`${baseUrl}/rates/USDC/5/KES`, {
       headers: {
         'API-Key': apiKey!,
       },

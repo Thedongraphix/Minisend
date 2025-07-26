@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-const WEBHOOK_SECRET = process.env.PAYCREST_WEBHOOK_SECRET;
+const WEBHOOK_SECRET = process.env.PAYCREST_API_SECRET;
 
 // Simple in-memory store for order status
 const orderStatuses = new Map<string, {
