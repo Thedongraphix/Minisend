@@ -38,12 +38,31 @@ export function SimplePayment({
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
-  // Step 1: Get quote and create order
+  // Step 1: Get live rate and create order
   const createOrder = useCallback(async () => {
     setCurrentStep('quote');
     
     try {
-      const response = await fetch('/api/paycrest/orders', {
+      // First, get live rate from PayCrest
+      setStatusMessage('Getting live exchange rate...');
+      
+      const rateResponse = await fetch(`/api/paycrest/rates/USDC/${amount}/${currency}`);
+      
+      if (!rateResponse.ok) {
+        throw new Error('Failed to fetch live exchange rate');
+      }
+      
+      const rateData = await rateResponse.json();
+      
+      if (!rateData.success || !rateData.rate) {
+        throw new Error('Invalid rate response');
+      }
+      
+      console.log('Live rate fetched:', rateData);
+      setStatusMessage(`Rate: 1 USDC = ${rateData.rate} ${currency}. Creating order...`);
+      
+      // Create order with live rate
+      const orderResponse = await fetch('/api/paycrest/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -52,17 +71,18 @@ export function SimplePayment({
           accountName,
           currency,
           returnAddress,
+          rate: rateData.rate, // Use live rate
         }),
       });
 
-      if (!response.ok) {
+      if (!orderResponse.ok) {
         throw new Error('Failed to create order');
       }
 
-      const data = await response.json();
+      const orderData = await orderResponse.json();
       
-      if (data.success && data.order) {
-        setOrderData(data.order);
+      if (orderData.success && orderData.order) {
+        setOrderData(orderData.order);
         setCurrentStep('send');
       } else {
         throw new Error('Invalid order response');
@@ -173,12 +193,19 @@ export function SimplePayment({
     <div className="space-y-6">
       {/* Step 1: Quote */}
       {currentStep === 'quote' && (
-        <button
-          onClick={createOrder}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
-        >
-          Send ${amount} → {phoneNumber}
-        </button>
+        <div className="space-y-4">
+          <button
+            onClick={createOrder}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
+          >
+            Get Live Rate & Create Order
+          </button>
+          {statusMessage && (
+            <div className="text-center">
+              <p className="text-blue-300 text-sm">{statusMessage}</p>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Step 2: Send Payment */}
