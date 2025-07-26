@@ -290,14 +290,17 @@ export class PaycrestPollingService {
       transactionLogs: order.transactionLogs?.length || 0
     });
 
-    // Primary check from API docs
-    if (order.status === 'settled') {
+    // Primary check from API docs - include 'validated' status
+    if (order.status === 'settled' || order.status === 'validated') {
+      console.log('🎉 POLLING: Settlement via main status:', order.status);
       return true;
     }
 
     // Secondary check: transaction logs from API docs
     if (order.transactionLogs && order.transactionLogs.length > 0) {
-      const hasSettledLog = order.transactionLogs.some(log => log.status === 'settled');
+      const hasSettledLog = order.transactionLogs.some(log => 
+        log.status === 'settled' || log.status === 'validated'
+      );
       const hasAmountPaid = Boolean(order.amountPaid && parseFloat(order.amountPaid.toString()) > 0);
       
       console.log('📋 Transaction Logs:', {

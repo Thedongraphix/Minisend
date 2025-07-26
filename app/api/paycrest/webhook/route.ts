@@ -11,29 +11,23 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    // RESEARCH-BASED: PayCrest doesn't actually send webhooks
-    // This endpoint exists for compatibility but will rarely receive events
-    console.log('⚠️ RESEARCH-BASED: PayCrest webhook endpoint called - PayCrest does not send webhook events');
-    console.log('📋 This endpoint exists for compatibility but relies on polling for status updates');
+    console.log('🎯 PayCrest webhook endpoint called - processing settlement event');
     
-    // Get the signature from headers (if any)
+    // Get the signature from headers
     const signature = request.headers.get('x-paycrest-signature');
     
     if (!signature) {
-      console.log('ℹ️ No signature header - PayCrest webhooks are not implemented');
+      console.log('⚠️ No signature header in webhook request');
       return NextResponse.json(
-        { 
-          message: 'PayCrest webhooks are not implemented. Use polling for status updates.',
-          research_note: 'PayCrest relies on polling-based status monitoring rather than webhooks'
-        },
-        { status: 200 }
+        { message: 'Missing webhook signature' },
+        { status: 400 }
       );
     }
 
     // Get the raw body for signature verification
     const rawBody = await request.text();
     
-    // Verify webhook signature (if PayCrest ever implements webhooks)
+    // Verify webhook signature
     const paycrestService = await getPaycrestService();
     const isValid = paycrestService.verifyWebhookSignature(rawBody, signature);
     
@@ -45,7 +39,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse the webhook payload (if PayCrest ever sends webhooks)
+    // Parse the webhook payload
     let webhookEvent: PaycrestWebhookEvent;
     try {
       webhookEvent = JSON.parse(rawBody);
@@ -59,17 +53,19 @@ export async function POST(request: NextRequest) {
 
     const { event, data: order } = webhookEvent;
     
-    console.log(`🎉 RESEARCH-BASED: PayCrest webhook received (rare event): ${event} for order ${order.id}`, {
+    console.log(`🎯 PayCrest webhook received: ${event} for order ${order.id}`, {
       orderId: order.id,
       status: order.status,
       amount: order.amount,
+      amountPaid: order.amountPaid,
+      txHash: order.txHash,
       token: order.token,
       network: order.network,
       reference: order.reference,
       recipient: order.recipient
     });
 
-    // RESEARCH-BASED: Handle different order status events (if PayCrest implements webhooks)
+    // Handle different order status events
     switch (order.status) {
       case 'initiated':
         console.log(`📋 Order ${order.id} initiated - order created`);
@@ -82,7 +78,8 @@ export async function POST(request: NextRequest) {
         break;
         
       case 'settled':
-        console.log(`🎉 Order ${order.id} settled - payment completed successfully!`);
+      case 'validated':
+        console.log(`🎉 Order ${order.id} ${order.status} - payment completed successfully!`);
         await handleOrderSettled(order);
         break;
         
@@ -100,7 +97,7 @@ export async function POST(request: NextRequest) {
         console.log(`❓ Unknown order status: ${order.status} for order ${order.id}`);
     }
 
-    // Store webhook event in database (if PayCrest ever sends webhooks)
+    // Store webhook event in database
     const webhookEventId = await WebhookService.storeWebhookEvent({
       event_type: event,
       paycrest_order_id: order.id,
@@ -110,13 +107,55 @@ export async function POST(request: NextRequest) {
       user_agent: request.headers.get('user-agent')
     });
 
-    // Update order status in database
+    // Update order status in database with FULL settlement info
     try {
       const orderService = new OrderService();
-      await orderService.updateOrderStatus(order.id, order.status);
+      
+      if (order.status === 'settled' || order.status === 'validated') {
+        // For settled/validated orders, update with complete settlement information
+        console.log('🎉 WEBHOOK: Updating order with settlement info:', {
+          orderId: order.id,
+          status: order.status,
+          amountPaid: order.amountPaid,
+          txHash: order.txHash,
+          settledAt: new Date().toISOString()
+        });
+        
+        await orderService.updateOrderStatus(order.id, 'settled', {
+          settled_at: new Date(),
+          tx_hash: order.txHash,
+          amount_paid: order.amountPaid ? parseFloat(order.amountPaid.toString()) : undefined
+        });
+
+        // Also populate the settlements table directly
+        const supabase = (await import('@/lib/supabase/config')).supabase;
+        const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
+        
+        if (dbOrder) {
+          const settlementTime = Math.floor((new Date().getTime() - new Date(dbOrder.created_at).getTime()) / 1000);
+          
+          await supabase.from('settlements').insert({
+            order_id: dbOrder.id,
+            status: order.status,
+            settlement_time_seconds: settlementTime,
+            tx_hash: order.txHash,
+            amount_paid: order.amountPaid ? parseFloat(order.amountPaid.toString()) : undefined,
+            recipient_phone: order.recipient?.accountIdentifier,
+            recipient_name: order.recipient?.accountName,
+            currency: order.recipient?.currency
+          });
+
+          console.log('✅ WEBHOOK: Settlement record created in settlements table');
+        }
+      } else {
+        // For other statuses, just update the status
+        await orderService.updateOrderStatus(order.id, order.status);
+      }
+      
       await WebhookService.markWebhookProcessed(webhookEventId.id, true);
+      console.log('✅ WEBHOOK: Database updated successfully for order:', order.id);
     } catch (dbError) {
-      console.error('Database update failed:', dbError);
+      console.error('❌ WEBHOOK: Database update failed:', dbError);
       await WebhookService.markWebhookProcessed(
         webhookEventId.id, 
         false, 
@@ -126,8 +165,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { 
-        message: 'Webhook received successfully (rare PayCrest event)',
-        research_note: 'PayCrest typically uses polling for status updates'
+        message: 'Webhook processed successfully',
+        orderId: order.id,
+        status: order.status
       },
       { status: 200 }
     );
@@ -138,7 +178,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Webhook processing failed',
-        research_note: 'PayCrest webhooks are not implemented - use polling instead'
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

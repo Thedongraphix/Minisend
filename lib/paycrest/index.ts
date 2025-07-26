@@ -37,7 +37,7 @@ export interface PaycrestOrder {
   senderFee: string;
   transactionFee: string;
   amount: string;
-  status: 'initiated' | 'pending' | 'settled' | 'expired' | 'refunded' | 'failed' | 'cancelled';
+  status: 'initiated' | 'pending' | 'settled' | 'validated' | 'expired' | 'refunded' | 'failed' | 'cancelled';
   token: string;
   network: string;
   recipient: PaycrestRecipient;

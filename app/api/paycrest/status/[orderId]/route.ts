@@ -17,15 +17,18 @@ function isPaymentSettled(order: any): boolean {
   });
 
   // According to docs: order.status should be the primary indicator
-  if (order.status === 'settled') {
+  if (order.status === 'settled' || order.status === 'validated') {
+    console.log('🎉 SETTLEMENT via main status:', order.status);
     return true;
   }
 
   // According to docs: Check transactionLogs for actual settlement
   if (order.transactionLogs && order.transactionLogs.length > 0) {
-    // Look for settled status in transaction logs as shown in API docs
+    // Look for settled/validated status in transaction logs as shown in API docs
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hasSettledLog = order.transactionLogs.some((log: any) => log.status === 'settled');
+    const hasSettledLog = order.transactionLogs.some((log: any) => 
+      log.status === 'settled' || log.status === 'validated'
+    );
     const hasAmountPaid = order.amountPaid && order.amountPaid > 0;
     
     console.log('📋 Transaction Logs Check:', {
@@ -62,7 +65,7 @@ export async function GET(
     try {
       const paycrestService = await getPaycrestService();
       paycrestOrder = await paycrestService.getOrderStatus(orderId);
-      console.log(`📊 PayCrest API status for ${orderId}:`, paycrestOrder.status);
+      console.log(`📊 FULL PayCrest API response for ${orderId}:`, JSON.stringify(paycrestOrder, null, 2));
     } catch (paycrestError) {
       console.error('Failed to get order from PayCrest API:', paycrestError);
       // RESEARCH-BASED: Fallback to database if API fails
