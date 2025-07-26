@@ -132,7 +132,7 @@ export function SimpleUSDCPayment({
       : '0'
   });
 
-  // RESEARCH-BASED: Intelligent PayCrest polling using dedicated polling service
+  // Simple PayCrest status polling following official PayCrest guide
   const pollPayCrestOrder = useCallback(async (orderId: string) => {
     // Prevent multiple polling instances
     if (pollingStarted) {
@@ -140,7 +140,7 @@ export function SimpleUSDCPayment({
       return;
     }
     
-    console.log('🚀 RESEARCH-BASED POLLING STARTED for order:', orderId);
+    console.log('🚀 SIMPLE POLLING STARTED for order:', orderId);
     setPollingStarted(true);
     
     // Start with converting status
@@ -148,89 +148,162 @@ export function SimpleUSDCPayment({
     setStatusMessage('Payment received! Processing conversion...');
     console.log('📱 UI Status set to converting, message updated');
 
-    try {
-      // RESEARCH-BASED: Use dedicated polling endpoint with intelligent backoff
-      const response = await fetch(`/api/paycrest/poll/${orderId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          maxAttempts: 20,
-          baseDelay: 3000,
-          timeoutMs: 600000 // 10 minutes
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to start PayCrest polling');
-      }
-
-      const result = await response.json();
-      
-      console.log('🔍 POLLING RESULT:', {
-        orderId,
-        success: result.success,
-        completed: result.completed,
-        settled: result.settled,
-        message: result.message,
-        timeoutReached: result.timeoutReached
-      });
-
-      if (result.success && result.settled) {
-        // RESEARCH-BASED: Payment settled successfully
-        console.log('🎉🎉🎉 PAYMENT COMPLETED: PayCrest marked as SETTLED!');
-        console.log('🎯 Settlement verification:', {
-          orderId,
-          finalStatus: result.order?.status,
-          recipient: phoneNumber,
-          currency: currency,
-          txHash: result.order?.txHash,
-          amountPaid: result.order?.amountPaid,
-          message: result.message
-        });
+    let attempts = 0;
+    const maxAttempts = 40; // 40 attempts over ~10 minutes
+    const pollInterval = 15000; // 15 seconds between polls
+    
+    const checkStatus = async (): Promise<void> => {
+      try {
+        attempts++;
+        console.log(`🔍 Status check attempt ${attempts}/${maxAttempts} for order:`, orderId);
         
-        setStatusMessage(`✅ Payment delivered! ${currency} sent to ${phoneNumber}`);
-        setStatus('success');
+        // Simple status check using our status endpoint
+        const response = await fetch(`/api/paycrest/status/${orderId}`);
         
-        console.log('🚀 Calling onSuccess after 2 second delay...');
-        setTimeout(() => {
-          console.log('🎊 Payment completion confirmed!');
-          onSuccess();
-        }, 2000);
-        return;
-      }
+        if (!response.ok) {
+          throw new Error('Failed to get order status');
+        }
 
-      if (!result.success && result.completed) {
-        // RESEARCH-BASED: Payment failed or timeout
-        console.error('❌ Payment failed or timeout:', {
+        const result = await response.json();
+        const order = result.order;
+        
+        console.log('📊 Order status check:', {
           orderId,
-          error: result.error,
-          timeoutReached: result.timeoutReached,
-          message: result.message
+          status: order?.status,
+          isSettled: order?.isSettled,
+          isFailed: order?.isFailed,
+          txHash: order?.txHash,
+          amountPaid: order?.amountPaid
         });
 
-        const errorMessage = result.timeoutReached
-          ? 'Payment monitoring timeout - please check status manually'
-          : result.error || 'Payment processing failed';
+        // Following PayCrest official guide: handle different statuses
+        switch (order?.status) {
+          case 'pending':
+            console.log('Order is pending provider assignment');
+            setStatusMessage('Processing payment through liquidity providers...');
+            break;
+            
+          case 'validated':
+            // SUCCESS: Funds have been sent to recipient's bank/mobile network
+            console.log('🎉 Funds have been sent to recipient\'s bank/mobile network (value transfer confirmed)');
+            console.log('🎯 Payment SUCCESS - validated status:', {
+              orderId,
+              recipient: phoneNumber,
+              currency: currency,
+              txHash: order.txHash,
+              amountPaid: order.amountPaid
+            });
+            
+            setStatusMessage(`✅ Payment delivered! ${currency} sent to ${phoneNumber}`);
+            setStatus('success');
+            
+            console.log('🚀 Calling onSuccess after 2 second delay...');
+            setTimeout(() => {
+              console.log('🎊 Payment completion confirmed!');
+              onSuccess();
+            }, 2000);
+            return;
+            
+          case 'settled':
+            // SUCCESS: Order has been settled on blockchain (also successful)
+            console.log('🔗 Order has been settled on blockchain');
+            console.log('🎯 Payment SUCCESS - settled status:', {
+              orderId,
+              recipient: phoneNumber,
+              currency: currency,
+              txHash: order.txHash,
+              amountPaid: order.amountPaid
+            });
+            
+            setStatusMessage(`✅ Payment delivered! ${currency} sent to ${phoneNumber}`);
+            setStatus('success');
+            
+            console.log('🚀 Calling onSuccess after 2 second delay...');
+            setTimeout(() => {
+              console.log('🎊 Payment completion confirmed!');
+              onSuccess();
+            }, 2000);
+            return;
+            
+          case 'refunded':
+            console.log('❌ Order was refunded to the sender');
+            throw new Error('Payment was refunded - transaction failed');
+            
+          case 'expired':
+            console.log('⏰ Order expired without completion');
+            throw new Error('Payment expired - no payment received in time');
+            
+          default:
+            console.log(`📋 Order status: ${order?.status} - continuing to monitor...`);
+            if (order?.status) {
+              setStatusMessage(`Converting payment... (${order.status})`);
+            }
+        }
 
-        throw new Error(errorMessage);
+        // Check if we should continue polling
+        if (attempts >= maxAttempts) {
+          throw new Error('Payment monitoring timeout - please check status manually');
+        }
+
+        // Continue polling after delay
+        setTimeout(checkStatus, pollInterval);
+        
+      } catch (error) {
+        console.error('PayCrest status check error:', error);
+        setStatus('error');
+        onError(error instanceof Error ? error.message : 'Payment processing failed');
       }
+    };
 
-      // Unexpected state
-      throw new Error('Unexpected polling result state');
-
-    } catch (error) {
-      console.error('PayCrest polling error:', error);
-      setStatus('error');
-      onError(error instanceof Error ? error.message : 'Payment processing failed');
-    }
+    // Start the polling loop
+    checkStatus();
   }, [onSuccess, onError, phoneNumber, currency, pollingStarted]);
 
 
-  // RESEARCH-BASED: Safety mechanism - start polling after 15 seconds if no other mechanism triggers it
+  // Check if order is already settled when component loads (e.g., page refresh)
   useEffect(() => {
     if (paycrestOrder?.id && status === 'ready-to-pay') {
+      const checkInitialStatus = async () => {
+        try {
+          console.log('🔍 Checking if order is already settled:', paycrestOrder.id);
+          const response = await fetch(`/api/paycrest/status/${paycrestOrder.id}`);
+          
+          if (response.ok) {
+            const result = await response.json();
+            const order = result.order;
+            
+            // If already settled, show success immediately
+            if (order?.status === 'settled' || order?.status === 'validated') {
+              console.log('🎉 Order already settled/validated, showing success:', {
+                orderId: paycrestOrder.id,
+                status: order.status
+              });
+              
+              setStatusMessage(`✅ Payment delivered! ${currency} sent to ${phoneNumber}`);
+              setStatus('success');
+              setTimeout(() => onSuccess(), 2000);
+              return;
+            }
+            
+            // If failed, show error
+            if (['refunded', 'expired', 'failed', 'cancelled'].includes(order?.status)) {
+              console.log('❌ Order failed, status:', order.status);
+              setStatus('error');
+              onError(`Payment ${order.status}`);
+              return;
+            }
+            
+            console.log('📋 Order not yet settled, will start polling if transaction occurs');
+          }
+        } catch (error) {
+          console.error('Initial status check failed:', error);
+          // Don't fail the component, just log the error
+        }
+      };
+      
+      checkInitialStatus();
+      
+      // Safety mechanism - start polling after 15 seconds if no transaction triggers it
       const timer = setTimeout(() => {
         if (!pollingStarted && paycrestOrder.id) {
           console.log('🔄 SAFETY: Auto-starting polling after 15 seconds for order:', paycrestOrder.id);
@@ -240,7 +313,7 @@ export function SimpleUSDCPayment({
 
       return () => clearTimeout(timer);
     }
-  }, [paycrestOrder?.id, status, pollingStarted, pollPayCrestOrder]);
+  }, [paycrestOrder?.id, status, pollingStarted, pollPayCrestOrder, currency, phoneNumber, onSuccess, onError]);
 
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
     console.log('Transaction status:', status);
