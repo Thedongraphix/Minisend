@@ -11,23 +11,23 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🎯 PayCrest webhook endpoint called - processing settlement event');
+    console.log('🎯 PayCrest webhook endpoint called - processing payment order event');
     
-    // Get the signature from headers
-    const signature = request.headers.get('x-paycrest-signature');
+    // Get the signature from headers (official PayCrest header name)
+    const signature = request.headers.get('X-Paycrest-Signature');
     
     if (!signature) {
-      console.log('⚠️ No signature header in webhook request');
+      console.log('⚠️ No X-Paycrest-Signature header in webhook request');
       return NextResponse.json(
         { message: 'Missing webhook signature' },
-        { status: 400 }
+        { status: 401 }
       );
     }
 
     // Get the raw body for signature verification
     const rawBody = await request.text();
     
-    // Verify webhook signature
+    // Verify webhook signature using official PayCrest method
     const paycrestService = await getPaycrestService();
     const isValid = paycrestService.verifyWebhookSignature(rawBody, signature);
     
@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
     console.log(`🎯 PayCrest webhook received: ${event} for order ${order.id}`, {
       orderId: order.id,
       status: order.status,
+      event: event,
       amount: order.amount,
       amountPaid: order.amountPaid,
       txHash: order.txHash,
@@ -65,36 +66,40 @@ export async function POST(request: NextRequest) {
       recipient: order.recipient
     });
 
-    // Handle different order status events
-    switch (order.status) {
-      case 'initiated':
-        console.log(`📋 Order ${order.id} initiated - order created`);
-        await handleOrderInitiated(order);
-        break;
-        
-      case 'pending':
-        console.log(`⏳ Order ${order.id} is pending - waiting for processing`);
+    // Handle different payment order events (following official PayCrest specification)
+    switch (event) {
+      case 'payment_order.pending':
+        console.log(`⏳ Order ${order.id} pending - waiting for provider assignment`);
         await handleOrderPending(order);
         break;
         
-      case 'settled':
-      case 'validated':
-        console.log(`🎉 Order ${order.id} ${order.status} - payment completed successfully!`);
+      case 'payment_order.validated':
+        console.log(`🎉 Order ${order.id} validated - funds sent to recipient's bank/mobile network!`);
+        console.log(`✅ TRANSACTION SUCCESSFUL - User can be notified of successful payment`);
+        await handleOrderValidated(order);
+        break;
+        
+      case 'payment_order.settled':
+        console.log(`🔗 Order ${order.id} settled - order fully completed on blockchain`);
         await handleOrderSettled(order);
         break;
         
-      case 'refunded':
-        console.log(`⚠️ Order ${order.id} refunded to sender`);
+      case 'payment_order.refunded':
+        console.log(`⚠️ Order ${order.id} refunded - funds refunded to sender`);
         await handleOrderRefunded(order);
         break;
         
-      case 'expired':
-        console.log(`⏰ Order ${order.id} expired without completion`);
+      case 'payment_order.expired':
+        console.log(`⏰ Order ${order.id} expired - order expired without completion`);
         await handleOrderExpired(order);
         break;
         
       default:
-        console.log(`❓ Unknown order status: ${order.status} for order ${order.id}`);
+        console.log(`❓ Unknown payment order event: ${event} for order ${order.id}`);
+        // Still handle the order based on status for backward compatibility
+        if (order.status === 'validated' || order.status === 'settled') {
+          await handleOrderValidated(order);
+        }
     }
 
     // Store webhook event in database
@@ -107,27 +112,29 @@ export async function POST(request: NextRequest) {
       user_agent: request.headers.get('user-agent')
     });
 
-    // Update order status in database with FULL settlement info
+    // Update order status in database following PayCrest specification
     try {
       const orderService = new OrderService();
       
-      if (order.status === 'settled' || order.status === 'validated') {
-        // For settled/validated orders, update with complete settlement information
-        console.log('🎉 WEBHOOK: Updating order with settlement info:', {
+      // Handle validated status (TRANSACTION SUCCESS - funds sent to recipient)
+      if (event === 'payment_order.validated' || order.status === 'validated') {
+        console.log('🎉 WEBHOOK: Processing VALIDATED order - transaction successful:', {
           orderId: order.id,
+          event: event,
           status: order.status,
           amountPaid: order.amountPaid,
           txHash: order.txHash,
-          settledAt: new Date().toISOString()
+          validatedAt: new Date().toISOString()
         });
         
+        // Update order as settled since validated means successful transaction
         await orderService.updateOrderStatus(order.id, 'settled', {
           settled_at: new Date(),
           tx_hash: order.txHash,
           amount_paid: order.amountPaid ? parseFloat(order.amountPaid.toString()) : undefined
         });
 
-        // Also populate the settlements table directly
+        // Create settlement record for validated orders
         const supabase = (await import('@/lib/supabase/config')).supabase;
         const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
         
@@ -136,7 +143,7 @@ export async function POST(request: NextRequest) {
           
           await supabase.from('settlements').insert({
             order_id: dbOrder.id,
-            status: order.status,
+            status: 'validated', // Keep original status for tracking
             settlement_time_seconds: settlementTime,
             tx_hash: order.txHash,
             amount_paid: order.amountPaid ? parseFloat(order.amountPaid.toString()) : undefined,
@@ -145,10 +152,33 @@ export async function POST(request: NextRequest) {
             currency: order.recipient?.currency
           });
 
-          console.log('✅ WEBHOOK: Settlement record created in settlements table');
+          console.log('✅ WEBHOOK: Settlement record created for VALIDATED transaction');
         }
-      } else {
-        // For other statuses, just update the status
+      }
+      // Handle settled status (blockchain completion)
+      else if (event === 'payment_order.settled' || order.status === 'settled') {
+        console.log('🔗 WEBHOOK: Processing SETTLED order - blockchain completion:', {
+          orderId: order.id,
+          event: event,
+          status: order.status,
+          txHash: order.txHash
+        });
+        
+        // Just update the database record - transaction was already successful at validated
+        await orderService.updateOrderStatus(order.id, 'settled', {
+          settled_at: new Date(),
+          tx_hash: order.txHash,
+          amount_paid: order.amountPaid ? parseFloat(order.amountPaid.toString()) : undefined
+        });
+      }
+      // Handle other statuses
+      else {
+        console.log('📋 WEBHOOK: Updating order status:', {
+          orderId: order.id,
+          event: event,
+          status: order.status
+        });
+        
         await orderService.updateOrderStatus(order.id, order.status);
       }
       
@@ -185,32 +215,45 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleOrderInitiated(order: PaycrestOrder) {
-  // Order has been created and initiated
-  console.log(`📋 Order ${order.id} initiated - order created successfully`);
-}
-
 async function handleOrderPending(order: PaycrestOrder) {
-  // Order is pending processing 
-  console.log(`⏳ Order ${order.id} is pending - waiting for provider processing`);
+  // Order created, waiting for provider assignment (official PayCrest specification)
+  console.log(`⏳ Order ${order.id} pending - waiting for provider assignment`);
+  
+  // Track pending event
+  try {
+    const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
+    if (dbOrder) {
+      await AnalyticsService.trackEvent({
+        event_name: 'order_pending',
+        wallet_address: dbOrder.wallet_address,
+        order_id: dbOrder.id,
+        properties: {
+          amount: dbOrder.amount,
+          currency: dbOrder.currency,
+          phone: order.recipient?.accountIdentifier
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Failed to track pending analytics:', error);
+  }
 }
 
-async function handleOrderSettled(order: PaycrestOrder) {
-  // Order fully completed and settled - THIS IS SUCCESS!
-  console.log(`🎉 Order ${order.id} settled - payment completed successfully!`);
-  
-  // Log success for debugging
-  console.log('✅ SUCCESS: Payment settled successfully!', {
+async function handleOrderValidated(order: PaycrestOrder) {
+  // Funds have been sent to recipient's bank/mobile network (TRANSACTION SUCCESS!)
+  console.log(`🎉 Order ${order.id} validated - transaction successful!`);
+  console.log(`✅ SUCCESS: Funds sent to recipient's bank/mobile network`, {
     orderId: order.id,
     amount: order.amount,
+    amountPaid: order.amountPaid,
     recipient: order.recipient?.accountName,
     phone: order.recipient?.accountIdentifier,
     currency: order.recipient?.currency,
     timestamp: new Date().toISOString(),
-    status: 'settled'
+    status: 'validated'
   });
   
-  // Track success analytics - this is the main success event now
+  // Track success analytics - this is the main success event for PayCrest
   try {
     const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
     if (dbOrder) {
@@ -218,7 +261,7 @@ async function handleOrderSettled(order: PaycrestOrder) {
         (new Date().getTime() - new Date(dbOrder.created_at).getTime()) / 1000
       );
       
-      // Track payment completion
+      // Track payment completion (validated = successful transaction)
       await AnalyticsService.trackPaymentCompleted(
         dbOrder.wallet_address,
         dbOrder.id,
@@ -227,20 +270,22 @@ async function handleOrderSettled(order: PaycrestOrder) {
         settlementTime
       );
       
-      // Also track settlement event
+      // Track validation event
       await AnalyticsService.trackEvent({
-        event_name: 'order_settled',
+        event_name: 'order_validated',
         wallet_address: dbOrder.wallet_address,
         order_id: dbOrder.id,
         properties: {
           amount: dbOrder.amount,
           currency: dbOrder.currency,
           settlementTimeSeconds: settlementTime,
-          phone: order.recipient?.accountIdentifier
+          phone: order.recipient?.accountIdentifier,
+          txHash: order.txHash,
+          amountPaid: order.amountPaid
         }
       });
       
-      console.log(`📊 Analytics tracked for settled payment:`, {
+      console.log(`📊 Analytics tracked for validated payment:`, {
         orderId: order.id,
         walletAddress: dbOrder.wallet_address,
         amount: dbOrder.amount,
@@ -250,7 +295,62 @@ async function handleOrderSettled(order: PaycrestOrder) {
       });
     }
   } catch (error) {
-    console.error('Failed to track settlement analytics:', error);
+    console.error('Failed to track validation analytics:', error);
+  }
+}
+
+async function handleOrderSettled(order: PaycrestOrder) {
+  // Order fully completed on blockchain (following official PayCrest specification)
+  console.log(`🔗 Order ${order.id} settled - order fully completed on blockchain`);
+  console.log('📋 NOTE: Blockchain completion event (transaction was already successful at validated status)');
+  
+  // Log blockchain completion for debugging
+  console.log('🔗 BLOCKCHAIN: Order completed on blockchain', {
+    orderId: order.id,
+    amount: order.amount,
+    txHash: order.txHash,
+    recipient: order.recipient?.accountName,
+    phone: order.recipient?.accountIdentifier,
+    currency: order.recipient?.currency,
+    timestamp: new Date().toISOString(),
+    status: 'settled'
+  });
+  
+  // Track blockchain settlement analytics (separate from transaction success)
+  try {
+    const dbOrder = await OrderService.getOrderByPaycrestId(order.id);
+    if (dbOrder) {
+      const settlementTime = Math.floor(
+        (new Date().getTime() - new Date(dbOrder.created_at).getTime()) / 1000
+      );
+      
+      // Track blockchain settlement event (not transaction success - that happened at validated)
+      await AnalyticsService.trackEvent({
+        event_name: 'order_blockchain_settled',
+        wallet_address: dbOrder.wallet_address,
+        order_id: dbOrder.id,
+        properties: {
+          amount: dbOrder.amount,
+          currency: dbOrder.currency,
+          settlementTimeSeconds: settlementTime,
+          phone: order.recipient?.accountIdentifier,
+          txHash: order.txHash,
+          blockchain_completion: true
+        }
+      });
+      
+      console.log(`📊 Analytics tracked for blockchain settlement:`, {
+        orderId: order.id,
+        walletAddress: dbOrder.wallet_address,
+        amount: dbOrder.amount,
+        currency: dbOrder.currency,
+        settlementTimeSeconds: settlementTime,
+        phone: order.recipient?.accountIdentifier,
+        txHash: order.txHash
+      });
+    }
+  } catch (error) {
+    console.error('Failed to track blockchain settlement analytics:', error);
   }
 }
 

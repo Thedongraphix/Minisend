@@ -6,39 +6,45 @@ import { getPaycrestService } from '@/lib/paycrest/config';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Based on PayCrest API docs: Check if payment is actually settled
+// Based on official PayCrest specification: Check if payment is successful
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isPaymentSettled(order: any): boolean {
-  console.log('📋 API Docs Settlement Check:', {
+  console.log('📋 PayCrest Official Settlement Check:', {
     orderId: order.id,
     status: order.status,
     amountPaid: order.amountPaid,
     transactionLogs: order.transactionLogs?.length || 0
   });
 
-  // According to docs: order.status should be the primary indicator
-  if (order.status === 'settled' || order.status === 'validated') {
-    console.log('🎉 SETTLEMENT via main status:', order.status);
+  // OFFICIAL PAYCREST SPEC: 'validated' means transaction successful (funds sent to recipient)
+  if (order.status === 'validated') {
+    console.log('🎉 TRANSACTION SUCCESSFUL via validated status - funds sent to recipient!');
     return true;
   }
 
-  // According to docs: Check transactionLogs for actual settlement
+  // 'settled' means blockchain completion (also successful)
+  if (order.status === 'settled') {
+    console.log('🔗 TRANSACTION SUCCESSFUL via settled status - blockchain completion');
+    return true;
+  }
+
+  // Check transactionLogs for validation/settlement
   if (order.transactionLogs && order.transactionLogs.length > 0) {
-    // Look for settled/validated status in transaction logs as shown in API docs
+    // Look for validated/settled status in transaction logs
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hasSettledLog = order.transactionLogs.some((log: any) => 
-      log.status === 'settled' || log.status === 'validated'
+    const hasValidatedLog = order.transactionLogs.some((log: any) => 
+      log.status === 'validated' || log.status === 'settled'
     );
     const hasAmountPaid = order.amountPaid && order.amountPaid > 0;
     
     console.log('📋 Transaction Logs Check:', {
-      hasSettledLog,
+      hasValidatedLog,
       hasAmountPaid,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       logStatuses: order.transactionLogs.map((log: any) => log.status)
     });
 
-    return hasSettledLog && hasAmountPaid;
+    return hasValidatedLog && hasAmountPaid;
   }
 
   return false;

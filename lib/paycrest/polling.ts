@@ -280,36 +280,42 @@ export class PaycrestPollingService {
   }
 
   /**
-   * Based on PayCrest API docs: Simple settlement check
+   * Based on official PayCrest specification: Transaction success check
    */
   private isOrderSettled(order: PaycrestOrder): boolean {
-    console.log('📋 API Docs Settlement Check:', {
+    console.log('📋 PayCrest Official Transaction Success Check:', {
       orderId: order.id,
       status: order.status,
       amountPaid: order.amountPaid,
       transactionLogs: order.transactionLogs?.length || 0
     });
 
-    // Primary check from API docs - include 'validated' status
-    if (order.status === 'settled' || order.status === 'validated') {
-      console.log('🎉 POLLING: Settlement via main status:', order.status);
+    // OFFICIAL PAYCREST SPEC: 'validated' means transaction successful (funds sent to recipient)
+    if (order.status === 'validated') {
+      console.log('🎉 POLLING: TRANSACTION SUCCESSFUL - validated status (funds sent to recipient)');
       return true;
     }
 
-    // Secondary check: transaction logs from API docs
+    // 'settled' means blockchain completion (also successful)
+    if (order.status === 'settled') {
+      console.log('🔗 POLLING: TRANSACTION SUCCESSFUL - settled status (blockchain completion)');
+      return true;
+    }
+
+    // Secondary check: transaction logs
     if (order.transactionLogs && order.transactionLogs.length > 0) {
-      const hasSettledLog = order.transactionLogs.some(log => 
-        log.status === 'settled' || log.status === 'validated'
+      const hasValidatedLog = order.transactionLogs.some(log => 
+        log.status === 'validated' || log.status === 'settled'
       );
       const hasAmountPaid = Boolean(order.amountPaid && parseFloat(order.amountPaid.toString()) > 0);
       
-      console.log('📋 Transaction Logs:', {
-        hasSettledLog,
+      console.log('📋 Transaction Logs Check:', {
+        hasValidatedLog,
         hasAmountPaid,
         logStatuses: order.transactionLogs.map(log => log.status)
       });
 
-      return hasSettledLog && hasAmountPaid;
+      return hasValidatedLog && hasAmountPaid;
     }
 
     return false;
