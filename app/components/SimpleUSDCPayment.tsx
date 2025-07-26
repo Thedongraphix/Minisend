@@ -37,7 +37,6 @@ export function SimpleUSDCPayment({
   } | null>(null);
   const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'converting' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState<string>('');
-  const [pollingStarted, setPollingStarted] = useState(false);
 
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -132,200 +131,72 @@ export function SimpleUSDCPayment({
       : '0'
   });
 
-  // Simple PayCrest status polling following official PayCrest guide
-  const pollPayCrestOrder = useCallback(async (orderId: string) => {
-    // Prevent multiple polling instances
-    if (pollingStarted) {
-      console.log('⚠️ Polling already started, skipping duplicate');
-      return;
-    }
-    
-    console.log('🚀 SIMPLE POLLING STARTED for order:', orderId);
-    setPollingStarted(true);
-    
-    // Start with converting status
-    setStatus('converting');
-    setStatusMessage('Payment received! Processing conversion...');
-    console.log('📱 UI Status set to converting, message updated');
-
-    let attempts = 0;
-    const maxAttempts = 40; // 40 attempts over ~10 minutes
-    const pollInterval = 15000; // 15 seconds between polls
-    
-    const checkStatus = async (): Promise<void> => {
-      try {
-        attempts++;
-        console.log(`🔍 Status check attempt ${attempts}/${maxAttempts} for order:`, orderId);
-        
-        // Simple status check using our status endpoint
-        const response = await fetch(`/api/paycrest/status/${orderId}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to get order status');
-        }
-
-        const result = await response.json();
-        const order = result.order;
-        
-        console.log('📊 Order status check:', {
-          orderId,
-          status: order?.status,
-          isSettled: order?.isSettled,
-          isFailed: order?.isFailed,
-          txHash: order?.txHash,
-          amountPaid: order?.amountPaid
-        });
-
-        // Following PayCrest official guide: handle different statuses
-        switch (order?.status) {
-          case 'pending':
-            console.log('Order is pending provider assignment');
-            // Check if crypto was already deposited (amountPaid > 0 or isSettled)
-            if (order.amountPaid || order.isSettled) {
-              console.log('🎯 Crypto received, processing fiat transfer...', {
-                amountPaid: order.amountPaid,
-                isSettled: order.isSettled
-              });
-              setStatusMessage('✅ Crypto received! Converting to mobile money...');
-            } else {
-              setStatusMessage('Processing payment through liquidity providers...');
-            }
-            break;
-            
-          case 'validated':
-            // SUCCESS: Funds have been sent to recipient's bank/mobile network
-            console.log('🎉 Funds have been sent to recipient\'s bank/mobile network (value transfer confirmed)');
-            console.log('🎯 Payment SUCCESS - validated status:', {
-              orderId,
-              recipient: phoneNumber,
-              currency: currency,
-              txHash: order.txHash,
-              amountPaid: order.amountPaid
-            });
-            
-            setStatusMessage(`✅ Payment delivered! ${currency} sent to ${phoneNumber}`);
-            setStatus('success');
-            
-            console.log('🚀 Calling onSuccess after 2 second delay...');
-            setTimeout(() => {
-              console.log('🎊 Payment completion confirmed!');
-              onSuccess();
-            }, 2000);
-            return;
-            
-          case 'settled':
-            // SUCCESS: Order has been settled on blockchain (also successful)
-            console.log('🔗 Order has been settled on blockchain');
-            console.log('🎯 Payment SUCCESS - settled status:', {
-              orderId,
-              recipient: phoneNumber,
-              currency: currency,
-              txHash: order.txHash,
-              amountPaid: order.amountPaid
-            });
-            
-            setStatusMessage(`✅ Payment delivered! ${currency} sent to ${phoneNumber}`);
-            setStatus('success');
-            
-            console.log('🚀 Calling onSuccess after 2 second delay...');
-            setTimeout(() => {
-              console.log('🎊 Payment completion confirmed!');
-              onSuccess();
-            }, 2000);
-            return;
-            
-          case 'refunded':
-            console.log('❌ Order was refunded to the sender');
-            throw new Error('Payment was refunded - transaction failed');
-            
-          case 'expired':
-            console.log('⏰ Order expired without completion');
-            throw new Error('Payment expired - no payment received in time');
-            
-          default:
-            console.log(`📋 Order status: ${order?.status} - continuing to monitor...`);
-            // Show crypto received feedback if we have settlement data
-            if (order?.isSettled || order?.amountPaid) {
-              setStatusMessage(`✅ Crypto received! Converting to ${currency}...`);
-            } else if (order?.status) {
-              setStatusMessage(`Converting payment... (${order.status})`);
-            }
-        }
-
-        // Check if we should continue polling
-        if (attempts >= maxAttempts) {
-          throw new Error('Payment monitoring timeout - please check status manually');
-        }
-
-        // Continue polling after delay
-        setTimeout(checkStatus, pollInterval);
-        
-      } catch (error) {
-        console.error('PayCrest status check error:', error);
-        setStatus('error');
-        onError(error instanceof Error ? error.message : 'Payment processing failed');
+  // Webhook-only approach: Check status once after transaction, then rely on webhooks
+  const checkInitialStatus = useCallback(async (orderId: string) => {
+    try {
+      console.log('🔍 Checking initial status for order:', orderId);
+      const response = await fetch(`/api/paycrest/status/${orderId}`);
+      
+      if (!response.ok) {
+        console.error('Failed to get initial status');
+        return;
       }
-    };
+      
+      const result = await response.json();
+      const order = result.order;
+      
+      console.log('Initial order status:', order?.status);
 
-    // Start the polling loop
-    checkStatus();
-  }, [onSuccess, onError, phoneNumber, currency, pollingStarted]);
+      // PayCrest docs: Handle conclusive responses immediately
+      switch (order?.status) {
+        case 'validated':
+          console.log('✅ Payment already validated');
+          setStatusMessage(`✅ Payment sent! ${currency} delivered to ${phoneNumber}`);
+          setStatus('success');
+          setTimeout(() => onSuccess(), 2000);
+          return;
+          
+        case 'settled':
+          console.log('✅ Payment already settled');
+          setStatusMessage(`✅ Payment sent! ${currency} delivered to ${phoneNumber}`);
+          setStatus('success');
+          setTimeout(() => onSuccess(), 2000);
+          return;
+          
+        case 'expired':
+          console.log('❌ Payment expired');
+          setStatus('error');
+          onError('Payment expired');
+          return;
+          
+        case 'refunded':
+          console.log('❌ Payment refunded');
+          setStatus('error');
+          onError('Payment was refunded');
+          return;
+          
+        default:
+          // Payment pending - webhooks will update us
+          console.log('Payment pending - waiting for webhook updates');
+          setStatus('converting');
+          setStatusMessage(`Converting USDC to ${currency}...`);
+      }
+      
+    } catch (error) {
+      console.error('Initial status check error:', error);
+      // Don't fail, just continue with webhook waiting
+      setStatus('converting');
+      setStatusMessage(`Converting USDC to ${currency}...`);
+    }
+  }, [onSuccess, onError, phoneNumber, currency]);
 
 
-  // Check if order is already settled when component loads (e.g., page refresh)
+  // Check if order is already completed when component loads
   useEffect(() => {
     if (paycrestOrder?.id && status === 'ready-to-pay') {
-      const checkInitialStatus = async () => {
-        try {
-          console.log('🔍 Checking if order is already settled:', paycrestOrder.id);
-          const response = await fetch(`/api/paycrest/status/${paycrestOrder.id}`);
-          
-          if (response.ok) {
-            const result = await response.json();
-            const order = result.order;
-            
-            // If already settled, show success immediately
-            if (order?.status === 'settled' || order?.status === 'validated') {
-              console.log('🎉 Order already settled/validated, showing success:', {
-                orderId: paycrestOrder.id,
-                status: order.status
-              });
-              
-              setStatusMessage(`✅ Payment delivered! ${currency} sent to ${phoneNumber}`);
-              setStatus('success');
-              setTimeout(() => onSuccess(), 2000);
-              return;
-            }
-            
-            // If failed, show error
-            if (['refunded', 'expired', 'failed', 'cancelled'].includes(order?.status)) {
-              console.log('❌ Order failed, status:', order.status);
-              setStatus('error');
-              onError(`Payment ${order.status}`);
-              return;
-            }
-            
-            console.log('📋 Order not yet settled, will start polling if transaction occurs');
-          }
-        } catch (error) {
-          console.error('Initial status check failed:', error);
-          // Don't fail the component, just log the error
-        }
-      };
-      
-      checkInitialStatus();
-      
-      // Safety mechanism - start polling after 15 seconds if no transaction triggers it
-      const timer = setTimeout(() => {
-        if (!pollingStarted && paycrestOrder.id) {
-          console.log('🔄 SAFETY: Auto-starting polling after 15 seconds for order:', paycrestOrder.id);
-          pollPayCrestOrder(paycrestOrder.id);
-        }
-      }, 15000);
-
-      return () => clearTimeout(timer);
+      checkInitialStatus(paycrestOrder.id);
     }
-  }, [paycrestOrder?.id, status, pollingStarted, pollPayCrestOrder, currency, phoneNumber, onSuccess, onError]);
+  }, [paycrestOrder?.id, status, checkInitialStatus]);
 
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
     console.log('Transaction status:', status);
@@ -338,30 +209,24 @@ export function SimpleUSDCPayment({
       case 'transactionPending':
         setStatus('processing'); 
         setStatusMessage('Transaction pending...');
-        // RESEARCH-BASED: Start polling immediately when transaction becomes pending
-        // This is more reliable than waiting for success callback
-        if (paycrestOrder?.id) {
-          console.log('🚀 Transaction pending - starting PayCrest polling early for order:', paycrestOrder.id);
-          // Give transaction a moment to be detected by PayCrest, then start polling
-          setTimeout(() => {
-            pollPayCrestOrder(paycrestOrder.id);
-          }, 3000);
-        }
         break;
       case 'success':
-        console.log('✅ Transaction successful, PayCrest should detect it soon');
-        // IMMEDIATE FEEDBACK: Let user know their crypto transaction succeeded
         setStatus('converting');
-        setStatusMessage('✅ Crypto sent successfully! Processing payment...');
-        console.log('🎯 IMMEDIATE FEEDBACK: Crypto transaction completed, starting conversion');
-        // Don't start polling here - it's already started in transactionPending
+        setStatusMessage(`Converting USDC to ${currency}...`);
+        // Check initial status, then rely on webhooks
+        if (paycrestOrder?.id) {
+          console.log('Transaction successful, checking status and waiting for webhooks');
+          setTimeout(() => {
+            checkInitialStatus(paycrestOrder.id);
+          }, 5000); // Give PayCrest time to detect the transaction
+        }
         break;
       case 'error':
         setStatus('error');
         onError('Transaction failed');
         break;
     }
-  }, [paycrestOrder?.id, pollPayCrestOrder, onError]);
+  }, [paycrestOrder?.id, checkInitialStatus, onError, currency]);
 
   return (
     <div className="space-y-6">
@@ -398,19 +263,14 @@ export function SimpleUSDCPayment({
             calls={calls}
             onStatus={handleTransactionStatus}
             onSuccess={(response) => {
-              console.log('🎯 Transaction onSuccess callback triggered:', response);
-              
-              // IMMEDIATE USER FEEDBACK: Crypto transaction completed successfully
+              console.log('Transaction successful:', response);
               setStatus('converting');
-              setStatusMessage('✅ Crypto sent successfully! Converting to mobile money...');
-              console.log('🎊 IMMEDIATE FEEDBACK: Transaction success - user gets confirmation');
+              setStatusMessage(`Converting USDC to ${currency}...`);
               
-              // Backup polling start in case status callback didn't work
+              // Check status once, then rely on webhooks
               if (paycrestOrder?.id) {
-                console.log('🔄 Backup: ensuring polling is running for order:', paycrestOrder.id);
-                // Small delay to ensure PayCrest detects the transaction
                 setTimeout(() => {
-                  pollPayCrestOrder(paycrestOrder.id);
+                  checkInitialStatus(paycrestOrder.id);
                 }, 5000);
               }
             }}
@@ -469,21 +329,29 @@ export function SimpleUSDCPayment({
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-white font-semibold text-lg">Processing Payment</h3>
+            <h3 className="text-white font-semibold text-lg">Converting Payment</h3>
             <p className="text-gray-300">
-              {statusMessage || `Processing your payment...`}
+              {statusMessage || 'Processing your payment...'}
             </p>
           </div>
           
-          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 space-y-2">
+            <div className="flex items-center justify-center space-x-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
             <p className="text-green-300 text-sm">
-              ⏱️ Usually takes 1-3 minutes
+              Converting USDC to {currency}
             </p>
-            <p className="text-gray-400 text-xs mt-1">
+            <p className="text-gray-400 text-xs">
               Sending to {phoneNumber}
             </p>
-            <p className="text-gray-400 text-xs mt-1">
-              💡 Your payment is being processed securely
+            <p className="text-gray-400 text-xs">
+              ⏱️ This usually takes 1-3 minutes
+            </p>
+            <p className="text-gray-400 text-xs">
+              🔔 You&apos;ll be notified when complete
             </p>
           </div>
         </div>
