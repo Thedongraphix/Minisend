@@ -168,28 +168,45 @@ export function SimpleUSDCPayment({
     }
   }, [amount, phoneNumber, accountName, currency, returnAddress, rate, onError]);
 
-  // USDC transfer using proper OnchainKit calls format
+  // USDC transfer using proper contract interaction (following PayCrest documentation)
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
     const baseAmount = parseFloat(paycrestOrder.amount) || 0;
     const senderFee = parseFloat(paycrestOrder.senderFee) || 0;
     const transactionFee = parseFloat(paycrestOrder.transactionFee) || 0;
-    const totalAmount = baseAmount + senderFee + transactionFee;
+    
+    // PayCrest docs: "The amount you send to the receive address should be the sum of amount, senderFee, and transactionFee"
+    const totalAmountToSend = baseAmount + senderFee + transactionFee;
+    
+    console.log('💰 USDC Transfer Calculation:', {
+      baseAmount,
+      senderFee,
+      transactionFee,
+      totalAmountToSend,
+      receiveAddress: paycrestOrder.receiveAddress
+    });
+    
+    // Use proper ERC-20 transfer function encoding
+    const transferFunctionSelector = '0xa9059cbb'; // transfer(address,uint256)
+    const recipientAddress = paycrestOrder.receiveAddress.slice(2).padStart(64, '0');
+    const amountHex = parseUnits(totalAmountToSend.toString(), 6).toString(16).padStart(64, '0');
     
     return [{
       to: USDC_CONTRACT as `0x${string}`,
       value: BigInt(0),
-      data: `0xa9059cbb000000000000000000000000${paycrestOrder.receiveAddress.slice(2)}${parseUnits(totalAmount.toString(), 6).toString(16).padStart(64, '0')}` as `0x${string}`
+      data: `${transferFunctionSelector}000000000000000000000000${recipientAddress}${amountHex}` as `0x${string}`
     }];
   })() : [];
 
-  console.log('Transaction call prepared:', {
+  console.log('🎯 Transaction call prepared for PayCrest:', {
     receiveAddress: paycrestOrder?.receiveAddress,
-    amount: paycrestOrder?.amount,
+    baseAmount: paycrestOrder?.amount,
     senderFee: paycrestOrder?.senderFee,
     transactionFee: paycrestOrder?.transactionFee,
-    totalAmount: paycrestOrder && paycrestOrder.amount 
+    totalAmountToSend: paycrestOrder && paycrestOrder.amount 
       ? ((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toString()
-      : '0'
+      : '0',
+    usdcContract: USDC_CONTRACT,
+    callsLength: calls.length
   });
 
   // Webhook-only approach: Check status once after transaction, then rely on webhooks
@@ -240,7 +257,7 @@ export function SimpleUSDCPayment({
           // Payment pending - webhooks will update us
           console.log('Payment pending - waiting for webhook updates');
           setStatus('converting');
-          setStatusMessage(`Converting USDC to ${currency}...`);
+          setStatusMessage(`Converting to ${currency}...`);
       }
       
     } catch (error) {
@@ -273,7 +290,7 @@ export function SimpleUSDCPayment({
         break;
       case 'success':
         setStatus('converting');
-        setStatusMessage(`Converting USDC to ${currency}...`);
+        setStatusMessage(`Converting to ${currency}...`);
         setTransactionCompleted(true);
         
         // Start comprehensive monitoring
@@ -318,11 +335,39 @@ export function SimpleUSDCPayment({
       {/* Ready to Pay - Transaction Component */}
       {status === 'ready-to-pay' && paycrestOrder && (
         <div className="space-y-4">
-          <div className="text-center">
-            <h3 className="text-white font-bold">Ready to Send</h3>
-            <p className="text-gray-300 text-sm">
-              Send ${amount} to {phoneNumber}
+          <div className="text-center space-y-2">
+            <h3 className="text-white font-bold text-lg">Ready to Send Payment</h3>
+            <p className="text-gray-300">
+              Send ${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} → {currency} to {phoneNumber}
             </p>
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+              <div className="text-xs text-blue-300 space-y-1">
+                <div className="flex justify-between">
+                  <span>Payment Amount:</span>
+                  <span>${paycrestOrder.amount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Service Fee:</span>
+                  <span>${paycrestOrder.senderFee}</span>
+                </div>
+                {parseFloat(paycrestOrder.transactionFee) > 0 && (
+                  <div className="flex justify-between">
+                    <span>Network Fee:</span>
+                    <span>${paycrestOrder.transactionFee}</span>
+                  </div>
+                )}
+                <div className="border-t border-blue-500/20 pt-1 flex justify-between font-semibold">
+                  <span>Total to Send:</span>
+                  <span>${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)}</span>
+                </div>
+              </div>
+              <p className="text-blue-300 text-xs mt-2">
+                💡 Click "Send Payment" to process transfer
+              </p>
+              <p className="text-gray-400 text-xs mt-1">
+                {currency} will be sent to recipient automatically
+              </p>
+            </div>
           </div>
           
           <Transaction
@@ -332,7 +377,7 @@ export function SimpleUSDCPayment({
             onSuccess={(response) => {
               console.log('🎯 Transaction successful:', response);
               setStatus('converting');
-              setStatusMessage(`Converting USDC to ${currency}...`);
+              setStatusMessage(`Converting to ${currency}...`);
               setTransactionCompleted(true);
               
               // Start comprehensive monitoring
@@ -350,7 +395,7 @@ export function SimpleUSDCPayment({
             }}
           >
             <TransactionButton
-              text="Send Payment"
+              text={`Send Payment $${((parseFloat(paycrestOrder?.amount || '0') || 0) + (parseFloat(paycrestOrder?.senderFee || '0') || 0) + (parseFloat(paycrestOrder?.transactionFee || '0') || 0)).toFixed(2)}`}
               className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300"
             />
             
@@ -373,15 +418,15 @@ export function SimpleUSDCPayment({
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-white font-semibold text-lg">Processing Transaction</h3>
+            <h3 className="text-white font-semibold text-lg">Processing Transfer</h3>
             <p className="text-gray-300">
-              {statusMessage || '📱 Check your wallet'}
+              {statusMessage || '📱 Confirm transfer in your wallet'}
             </p>
           </div>
           
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
             <p className="text-blue-300 text-xs">
-              💡 Your payment will be processed automatically after transaction
+              💡 Transfer → Convert to {currency} → Deliver to {phoneNumber}
             </p>
           </div>
         </div>
@@ -398,7 +443,7 @@ export function SimpleUSDCPayment({
           </div>
           
           <div className="space-y-2">
-            <h3 className="text-white font-semibold text-lg">Converting Payment</h3>
+            <h3 className="text-white font-semibold text-lg">Processing Payment</h3>
             <p className="text-gray-300">
               {statusMessage || 'Processing your payment...'}
             </p>
@@ -411,10 +456,10 @@ export function SimpleUSDCPayment({
               <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
             </div>
             <p className="text-green-300 text-sm">
-              Converting USDC to {currency}
+              ✅ Transfer sent → Converting to {currency}
             </p>
             <p className="text-gray-400 text-xs">
-              Sending to {phoneNumber}
+              Processing payment to {phoneNumber}
             </p>
             
             {/* Enhanced monitoring status */}
@@ -444,9 +489,6 @@ export function SimpleUSDCPayment({
               </p>
               <p className="text-gray-400 text-xs">
                 🔔 You&apos;ll get instant notifications when complete
-              </p>
-              <p className="text-green-300 text-xs">
-                💡 Dual monitoring: Polling + Real-time webhooks
               </p>
             </div>
           </div>
