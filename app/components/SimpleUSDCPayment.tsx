@@ -37,6 +37,7 @@ export function SimpleUSDCPayment({
   } | null>(null);
   const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState<string>('');
+  const [fallbackMonitoringStarted, setFallbackMonitoringStarted] = useState(false);
 
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -235,6 +236,17 @@ export function SimpleUSDCPayment({
       case 'buildingTransaction':
         setStatus('processing');
         setStatusMessage('Preparing transaction...');
+        
+        // Start fallback monitoring after 30 seconds if transaction doesn't complete normally
+        if (!fallbackMonitoringStarted && paycrestOrder?.id) {
+          setFallbackMonitoringStarted(true);
+          console.log('⏰ Starting fallback monitoring timer for order:', paycrestOrder.id);
+          setTimeout(() => {
+            console.log('🔄 Fallback: Starting status monitoring after 30s delay');
+            setStatusMessage(`Payment sent! Converting to ${currency}...`);
+            checkPaymentStatus(paycrestOrder.id);
+          }, 30000); // 30 seconds fallback
+        }
         break;
       case 'transactionPending':
         setStatus('processing'); 
@@ -258,7 +270,7 @@ export function SimpleUSDCPayment({
         onError('Transaction failed');
         break;
     }
-  }, [paycrestOrder?.id, checkPaymentStatus, onError, currency]);
+  }, [paycrestOrder?.id, checkPaymentStatus, onError, currency, fallbackMonitoringStarted]);
 
   return (
     <div className="space-y-6">
