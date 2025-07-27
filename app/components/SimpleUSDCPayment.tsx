@@ -153,7 +153,7 @@ export function SimpleUSDCPayment({
     }
   }, [amount, phoneNumber, accountName, currency, returnAddress, rate, onError]);
 
-  // USDC transfer using proper contract interaction (following PayCrest documentation)
+  // USDC transfer using OnchainKit standard format for proper gas estimation
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
     const baseAmount = parseFloat(paycrestOrder.amount) || 0;
     const senderFee = parseFloat(paycrestOrder.senderFee) || 0;
@@ -161,24 +161,34 @@ export function SimpleUSDCPayment({
     
     // PayCrest docs: "The amount you send to the receive address should be the sum of amount, senderFee, and transactionFee"
     const totalAmountToSend = baseAmount + senderFee + transactionFee;
+    const totalAmountWei = parseUnits(totalAmountToSend.toString(), 6);
     
     console.log('💰 USDC Transfer Calculation:', {
       baseAmount,
       senderFee,
       transactionFee,
       totalAmountToSend,
+      totalAmountWei: totalAmountWei.toString(),
       receiveAddress: paycrestOrder.receiveAddress
     });
     
-    // Use proper ERC-20 transfer function encoding
-    const transferFunctionSelector = '0xa9059cbb'; // transfer(address,uint256)
-    const recipientAddress = paycrestOrder.receiveAddress.slice(2).padStart(64, '0');
-    const amountHex = parseUnits(totalAmountToSend.toString(), 6).toString(16).padStart(64, '0');
-    
+    // Use standard ContractFunctionParameters format for OnchainKit
     return [{
-      to: USDC_CONTRACT as `0x${string}`,
-      value: BigInt(0),
-      data: `${transferFunctionSelector}000000000000000000000000${recipientAddress}${amountHex}` as `0x${string}`
+      address: USDC_CONTRACT as `0x${string}`,
+      abi: [
+        {
+          name: 'transfer',
+          type: 'function',
+          stateMutability: 'nonpayable',
+          inputs: [
+            { name: 'to', type: 'address' },
+            { name: 'amount', type: 'uint256' }
+          ],
+          outputs: [{ name: '', type: 'bool' }]
+        }
+      ] as const,
+      functionName: 'transfer',
+      args: [paycrestOrder.receiveAddress as `0x${string}`, totalAmountWei]
     }];
   })() : [];
 
