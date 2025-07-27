@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLabel, TransactionStatusAction } from '@coinbase/onchainkit/transaction';
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
@@ -45,6 +45,7 @@ export function SimpleUSDCPayment({
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
   // Enhanced payment monitoring with dual approach: polling + real-time
+  // Only start monitoring after user clicks transaction button and it's successful
   const paymentStatus = usePaymentStatus({
     orderId: paycrestOrder?.id || null,
     enabled: transactionCompleted && status === 'converting',
@@ -68,8 +69,9 @@ export function SimpleUSDCPayment({
   });
 
   // Real-time updates via Server-Sent Events
+  // Only connect after user clicks transaction button and it's successful
   const realtimeStatus = useRealtimePaymentStatus(
-    paycrestOrder?.id || null,
+    transactionCompleted ? paycrestOrder?.id || null : null,
     (event) => {
       console.log('🔔 Real-time payment event:', event);
       
@@ -269,12 +271,7 @@ export function SimpleUSDCPayment({
   }, [onSuccess, onError, phoneNumber, currency]);
 
 
-  // Check if order is already completed when component loads
-  useEffect(() => {
-    if (paycrestOrder?.id && status === 'ready-to-pay') {
-      checkInitialStatus(paycrestOrder.id);
-    }
-  }, [paycrestOrder?.id, status, checkInitialStatus]);
+  // Don't auto-check status - wait for user to click transaction button
 
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
     console.log('Transaction status:', status);
