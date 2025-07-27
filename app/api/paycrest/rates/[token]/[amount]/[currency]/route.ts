@@ -5,9 +5,10 @@ const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { token: string; amount: string; currency: string } }
+  context: { params: Promise<{ token: string; amount: string; currency: string }> }
 ) {
   try {
+    const params = await context.params;
     const { token, amount, currency } = params;
 
     // Validate parameters
