@@ -126,12 +126,12 @@ export function SimplePayment({
         setStatusMessage('Transaction pending...');
         break;
       case 'success':
-        setCurrentStep('processing');
-        setStatusMessage('Payment sent to PayCrest. Funds will be sent to your mobile money.');
-        // Start checking webhook status
-        if (orderData?.id) {
-          checkPaymentStatus(orderData.id);
-        }
+        setCurrentStep('success');
+        const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
+        setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
+        
+        // Call onSuccess immediately - user has successfully sent funds to PayCrest
+        setTimeout(() => onSuccess(), 2000);
         break;
       case 'error':
         setCurrentStep('error');
