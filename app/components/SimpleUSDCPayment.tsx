@@ -76,7 +76,7 @@ export function SimpleUSDCPayment({
         } else {
           setStatusMessage('Payment is processing. You will be notified when complete.');
         }
-      } catch (error) {
+      } catch {
         attempts++;
         if (attempts < maxAttempts) {
           setTimeout(pollStatus, 5000);
@@ -254,7 +254,7 @@ export function SimpleUSDCPayment({
             </p>
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
               <p className="text-yellow-300 text-sm font-medium">
-                🔐 You'll need to approve this transaction in your wallet
+                🔐 You&apos;ll need to approve this transaction in your wallet
               </p>
               <p className="text-yellow-200 text-xs mt-1">
                 Base Pay will ask you to confirm spending USDC from your wallet
