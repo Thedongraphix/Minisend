@@ -286,7 +286,7 @@ export function SimpleUSDCPayment({
         break;
       case 'transactionPending':
         setStatus('processing'); 
-        setStatusMessage('Transaction pending...');
+        setStatusMessage('🔐 Waiting for wallet approval... Please confirm in your wallet');
         break;
       case 'success':
         setStatus('converting');
@@ -338,8 +338,16 @@ export function SimpleUSDCPayment({
           <div className="text-center space-y-2">
             <h3 className="text-white font-bold text-lg">Ready to Send Payment</h3>
             <p className="text-gray-300">
-              Send ${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} → {currency} to {phoneNumber}
+              Send ${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC → {currency} to {phoneNumber}
             </p>
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
+              <p className="text-yellow-300 text-sm font-medium">
+                🔐 You'll need to approve this transaction in your wallet
+              </p>
+              <p className="text-yellow-200 text-xs mt-1">
+                Base Pay will ask you to confirm spending USDC from your wallet
+              </p>
+            </div>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
               <div className="text-xs text-blue-300 space-y-1">
                 <div className="flex justify-between">
@@ -362,7 +370,7 @@ export function SimpleUSDCPayment({
                 </div>
               </div>
               <p className="text-blue-300 text-xs mt-2">
-                💡 Click &quot;Send Payment&quot; to process transfer
+                💡 Click to approve USDC transfer from your wallet
               </p>
               <p className="text-gray-400 text-xs mt-1">
                 {currency} will be sent to recipient automatically
@@ -395,8 +403,8 @@ export function SimpleUSDCPayment({
             }}
           >
             <TransactionButton
-              text={`Send Payment $${((parseFloat(paycrestOrder?.amount || '0') || 0) + (parseFloat(paycrestOrder?.senderFee || '0') || 0) + (parseFloat(paycrestOrder?.transactionFee || '0') || 0)).toFixed(2)}`}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300"
+              text={`🔐 Approve & Send ${((parseFloat(paycrestOrder?.amount || '0') || 0) + (parseFloat(paycrestOrder?.senderFee || '0') || 0) + (parseFloat(paycrestOrder?.transactionFee || '0') || 0)).toFixed(2)} USDC`}
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg"
             />
             
             <TransactionStatus>
