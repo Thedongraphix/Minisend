@@ -43,18 +43,29 @@ export function SimpleUSDCPayment({
 
   // Simple status checking - poll PayCrest API after transaction
   const checkPaymentStatus = useCallback(async (orderId: string) => {
+    console.log('🔍 Starting status polling for order:', orderId);
     let attempts = 0;
     const maxAttempts = 60; // 5 minutes max
     
     const pollStatus = async () => {
       try {
+        console.log(`📡 Polling attempt ${attempts + 1}/${maxAttempts} for order:`, orderId);
         const response = await fetch(`/api/paycrest/status/${orderId}`);
-        if (!response.ok) return;
+        
+        if (!response.ok) {
+          console.log('❌ API response not OK:', response.status);
+          return;
+        }
         
         const result = await response.json();
         const order = result.order;
         
-        console.log('Payment status:', order?.status);
+        console.log('📊 Payment status response:', { 
+          orderId, 
+          status: order?.status, 
+          attempt: attempts + 1,
+          orderData: order 
+        });
         
         if (order?.status === 'fulfilled' || order?.status === 'validated' || order?.status === 'settled') {
           setStatus('success');
@@ -230,13 +241,16 @@ export function SimpleUSDCPayment({
         setStatusMessage('🔐 Waiting for wallet approval... Please confirm in your wallet');
         break;
       case 'success':
+        console.log('✅ Transaction status: SUCCESS - starting monitoring');
         setStatus('processing');
         setStatusMessage(`Payment sent! Converting to ${currency}...`);
         
         // Start simple status checking
         if (paycrestOrder?.id) {
-          console.log('🚀 Transaction successful, starting status monitoring');
+          console.log('🚀 Transaction successful, starting status monitoring for order:', paycrestOrder.id);
           checkPaymentStatus(paycrestOrder.id);
+        } else {
+          console.error('❌ No PayCrest order ID in status handler');
         }
         break;
       case 'error':
@@ -318,13 +332,16 @@ export function SimpleUSDCPayment({
             onStatus={handleTransactionStatus}
             onSuccess={(response) => {
               console.log('🎯 Transaction successful:', response);
+              console.log('🔍 PayCrest order ID available:', paycrestOrder?.id);
               setStatus('processing');
               setStatusMessage(`Payment sent! Converting to ${currency}...`);
               
               // Start simple status monitoring
               if (paycrestOrder?.id) {
-                console.log('🚀 Starting payment status monitoring');
+                console.log('🚀 Starting payment status monitoring for order:', paycrestOrder.id);
                 checkPaymentStatus(paycrestOrder.id);
+              } else {
+                console.error('❌ No PayCrest order ID available for status monitoring');
               }
             }}
             onError={(error) => {
