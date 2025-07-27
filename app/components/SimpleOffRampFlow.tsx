@@ -38,11 +38,11 @@ export function SimpleOffRampFlow() {
     setRateError(null);
     
     try {
-      const response = await fetch(`/api/paycrest/rates?token=USDC&amount=${amount}&fiat=${currency}&network=base`);
+      const response = await fetch(`/api/paycrest/rates/USDC/${amount}/${currency}`);
       const data = await response.json();
       
       if (data.success) {
-        setCurrentRate(parseFloat(data.data.rate));
+        setCurrentRate(data.rate);
       } else {
         throw new Error(data.error || 'Failed to fetch rate');
       }
