@@ -155,7 +155,7 @@ export function SimplePayment({
           if (result.success && result.order) {
             const order = result.order;
             
-            if (order.isSettled || order.status === 'validated' || order.status === 'settled') {
+            if (order.isSettled || order.status === 'fulfilled' || order.status === 'validated' || order.status === 'settled') {
               setCurrentStep('success');
               setStatusMessage(`Payment completed! ${currency} sent to ${phoneNumber}`);
               setTimeout(() => onSuccess(), 2000);

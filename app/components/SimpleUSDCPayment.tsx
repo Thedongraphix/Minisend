@@ -56,7 +56,7 @@ export function SimpleUSDCPayment({
         
         console.log('Payment status:', order?.status);
         
-        if (order?.status === 'validated' || order?.status === 'settled') {
+        if (order?.status === 'fulfilled' || order?.status === 'validated' || order?.status === 'settled') {
           setStatus('success');
           setStatusMessage(`✅ Payment sent! ${currency} delivered to ${phoneNumber}`);
           setTimeout(() => onSuccess(), 2000);
@@ -67,6 +67,18 @@ export function SimpleUSDCPayment({
           setStatus('error');
           onError(`Payment ${order.status}`);
           return;
+        }
+        
+        // Update status message based on PayCrest flow
+        switch (order?.status) {
+          case 'pending':
+            setStatusMessage('Order created, finding payment provider...');
+            break;
+          case 'processing':
+            setStatusMessage(`Converting to ${currency}...`);
+            break;
+          default:
+            setStatusMessage(`Processing payment to ${phoneNumber}...`);
         }
         
         // Continue polling
