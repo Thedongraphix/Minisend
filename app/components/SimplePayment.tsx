@@ -143,7 +143,7 @@ export function SimplePayment({
         onError('Transaction failed');
         break;
     }
-  }, [orderData?.id, onError]);
+  }, [orderData?.id, onError, currency, onSuccess, startPolling]);
 
   // Pure polling implementation for reliable status tracking
   const startPolling = useCallback((orderId: string) => {

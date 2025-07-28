@@ -77,7 +77,7 @@ export function SimpleOffRampFlow() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Mini Send</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">MiniSend</h1>
           <p className="text-gray-300">Send money to mobile wallets instantly</p>
           <p className="text-blue-300 text-sm mt-2">
             💼 Secure payments via Coinbase Wallet
@@ -99,13 +99,6 @@ export function SimpleOffRampFlow() {
     <div className="max-w-md mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="text-center">
-        <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-4">
-          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <h1 className="text-3xl font-bold text-white mb-2">Mini Send</h1>
-        <p className="text-gray-300">Send crypto to mobile money</p>
         
         <div className="inline-flex items-center space-x-2 text-xs text-blue-300 bg-blue-500/10 px-3 py-1 rounded-xl mt-2 border border-blue-400/20">
           <Image src="/Base_Network_Logo.svg" alt="Base Network" width={12} height={12} />

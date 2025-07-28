@@ -2,7 +2,6 @@
 
 import { type ReactNode } from "react";
 import { useAccount } from "wagmi";
-import Image from 'next/image';
 import {
   ConnectWallet,
   Wallet,
