@@ -143,7 +143,7 @@ export function SimplePayment({
         onError('Transaction failed');
         break;
     }
-  }, [orderData?.id, onError, currency, onSuccess, startPolling]);
+  }, [orderData?.id, onError]);
 
   // Pure polling implementation for reliable status tracking
   const startPolling = useCallback((orderId: string) => {
@@ -248,7 +248,7 @@ export function SimplePayment({
     
     // Start polling after 10 seconds to allow PayCrest processing time
     setTimeout(poll, 10000);
-  }, [onError]);
+  }, [onError, currency]);
 
 
   return (
