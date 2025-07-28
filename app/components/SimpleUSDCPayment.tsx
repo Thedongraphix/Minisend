@@ -42,74 +42,71 @@ export function SimpleUSDCPayment({
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
-  // Simple status checking - poll PayCrest API after transaction
-  const checkPaymentStatus = useCallback(async (orderId: string) => {
-    console.log('🔍 Starting status polling for order:', orderId);
+  // Pure polling implementation for reliable status tracking
+  const startPolling = useCallback((orderId: string) => {
+    console.log('🔍 Starting PayCrest status polling for order:', orderId);
     let attempts = 0;
-    const maxAttempts = 60; // 5 minutes max
+    const maxAttempts = 180; // 15 minutes max (5s interval)
     
-    const pollStatus = async () => {
+    const poll = async () => {
       try {
         console.log(`📡 Polling attempt ${attempts + 1}/${maxAttempts} for order:`, orderId);
         const response = await fetch(`/api/paycrest/status/${orderId}`);
         
         if (!response.ok) {
           console.log('❌ API response not OK:', response.status);
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 5000);
+          }
           return;
         }
         
         const result = await response.json();
         const order = result.order;
         
-        console.log('📊 Payment status response:', { 
+        console.log('📊 Payment status:', { 
           orderId, 
           status: order?.status, 
-          attempt: attempts + 1,
-          orderData: order 
+          attempt: attempts + 1
         });
         
+        // Success states - payment delivered to user
         if (order?.status === 'fulfilled' || order?.status === 'validated' || order?.status === 'settled') {
-          setStatus('success');
-          setStatusMessage(`✅ Payment sent! ${currency} delivered to ${phoneNumber}`);
-          setTimeout(() => onSuccess(), 2000);
+          console.log('✅ Payment delivered successfully');
+          // Don't change UI - user already saw "Payment sent" success
           return;
         }
         
-        if (order?.status === 'refunded' || order?.status === 'expired') {
+        // Failure states - provider couldn't complete payment
+        if (order?.status === 'refunded' || order?.status === 'expired' || order?.status === 'cancelled') {
+          console.log('❌ Payment failed:', order.status);
           setStatus('error');
-          onError(`Payment ${order.status}`);
+          onError(`Payment ${order.status}. Please try again.`);
           return;
         }
         
-        // Update status message based on PayCrest flow
-        switch (order?.status) {
-          case 'pending':
-            setStatusMessage('Order created, finding payment provider...');
-            break;
-          case 'processing':
-            setStatusMessage(`Converting to ${currency}...`);
-            break;
-          default:
-            setStatusMessage(`Processing payment to ${phoneNumber}...`);
+        // Continue polling for in-progress states
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000); // Poll every 5 seconds
+        } else {
+          console.log('⏰ Polling timeout - payment may still be processing');
+          // Don't change UI - let user's success state remain
         }
         
-        // Continue polling
+      } catch (error) {
+        console.error('📡 Polling error:', error);
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(pollStatus, 5000);
-        } else {
-          setStatusMessage('Payment is processing. You will be notified when complete.');
-        }
-      } catch {
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(pollStatus, 5000);
+          setTimeout(poll, 5000);
         }
       }
     };
     
-    setTimeout(pollStatus, 3000); // Start after 3 seconds
-  }, [currency, phoneNumber, onSuccess, onError]);
+    // Start polling after 10 seconds to allow PayCrest processing time
+    setTimeout(poll, 10000);
+  }, [onError]);
 
   // Create PayCrest order
   const createPaycrestOrder = useCallback(async () => {
@@ -245,7 +242,11 @@ export function SimpleUSDCPayment({
             console.log('🔄 Fallback: Assuming transaction completed after 30s delay');
             setStatus('success');
             const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-        setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
+            setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
+            
+            // Start background polling
+            startPolling(paycrestOrder.id);
+            
             setTimeout(() => onSuccess(), 2000);
           }, 30000); // 30 seconds fallback
         }
@@ -260,6 +261,12 @@ export function SimpleUSDCPayment({
         const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
         setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
         
+        // Start background polling to track delivery and handle failures
+        if (paycrestOrder?.id) {
+          console.log('🚀 Starting background polling for order:', paycrestOrder.id);
+          startPolling(paycrestOrder.id);
+        }
+        
         // Call onSuccess immediately - user has successfully sent funds to PayCrest
         setTimeout(() => onSuccess(), 2000);
         break;
@@ -268,7 +275,7 @@ export function SimpleUSDCPayment({
         onError('Transaction failed');
         break;
     }
-  }, [paycrestOrder?.id, checkPaymentStatus, onError, currency, fallbackMonitoringStarted]);
+  }, [paycrestOrder?.id, startPolling, onError, currency, fallbackMonitoringStarted, onSuccess]);
 
   return (
     <div className="space-y-6">
@@ -344,7 +351,13 @@ export function SimpleUSDCPayment({
               console.log('🎯 Transaction successful:', response);
               setStatus('success');
               const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-        setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
+              setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
+              
+              // Start background polling to track delivery and handle failures
+              if (paycrestOrder?.id) {
+                console.log('🚀 Starting background polling for order:', paycrestOrder.id);
+                startPolling(paycrestOrder.id);
+              }
               
               // Call onSuccess immediately - user has successfully sent funds to PayCrest
               setTimeout(() => onSuccess(), 2000);

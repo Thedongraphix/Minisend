@@ -130,6 +130,11 @@ export function SimplePayment({
         const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
         setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
         
+        // Start background polling for provider failures
+        if (orderData?.id) {
+          startPolling(orderData.id);
+        }
+        
         // Call onSuccess immediately - user has successfully sent funds to PayCrest
         setTimeout(() => onSuccess(), 2000);
         break;
@@ -138,56 +143,74 @@ export function SimplePayment({
         onError('Transaction failed');
         break;
     }
-  }, [orderData?.id, onError]);
+  }, [orderData?.id, onError, currency, onSuccess, startPolling]);
 
-  // Step 4: Check payment status via webhook
-  const checkPaymentStatus = useCallback(async (orderId: string) => {
+  // Pure polling implementation for reliable status tracking
+  const startPolling = useCallback((orderId: string) => {
+    console.log('🔍 Starting PayCrest status polling for order:', orderId);
     let attempts = 0;
-    const maxAttempts = 60; // Check for 5 minutes
+    const maxAttempts = 180; // 15 minutes max (5s interval)
     
-    const checkStatus = async (): Promise<void> => {
+    const poll = async () => {
       try {
+        console.log(`📡 Polling attempt ${attempts + 1}/${maxAttempts} for order:`, orderId);
         const response = await fetch(`/api/paycrest/status/${orderId}`);
         
-        if (response.ok) {
-          const result = await response.json();
-          
-          if (result.success && result.order) {
-            const order = result.order;
-            
-            if (order.isSettled || order.status === 'fulfilled' || order.status === 'validated' || order.status === 'settled') {
-              setCurrentStep('success');
-              setStatusMessage(`Payment completed! ${currency} sent to ${phoneNumber}`);
-              setTimeout(() => onSuccess(), 2000);
-              return;
-            } else if (order.isFailed || order.status === 'refunded' || order.status === 'expired') {
-              setCurrentStep('error');
-              onError(`Payment ${order.status}`);
-              return;
-            }
+        if (!response.ok) {
+          console.log('❌ API response not OK:', response.status);
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 5000);
           }
+          return;
         }
         
-        // Continue checking if not terminal status
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(checkStatus, 5000); // Check every 5 seconds
-        } else {
-          setStatusMessage('Payment is still processing. You will be notified when complete.');
+        const result = await response.json();
+        const order = result.order;
+        
+        console.log('📊 Payment status:', { 
+          orderId, 
+          status: order?.status, 
+          attempt: attempts + 1
+        });
+        
+        // Success states - payment delivered to user
+        if (order?.status === 'fulfilled' || order?.status === 'validated' || order?.status === 'settled') {
+          console.log('✅ Payment delivered successfully');
+          // Don't change UI - user already saw "Payment sent" success
+          return;
         }
-      } catch (error) {
-        console.error('Status check error:', error);
-        // Continue checking on errors
+        
+        // Failure states - provider couldn't complete payment
+        if (order?.status === 'refunded' || order?.status === 'expired' || order?.status === 'cancelled') {
+          console.log('❌ Payment failed:', order.status);
+          setCurrentStep('error');
+          onError(`Payment ${order.status}. Please try again.`);
+          return;
+        }
+        
+        // Continue polling for in-progress states
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(checkStatus, 5000);
+          setTimeout(poll, 5000); // Poll every 5 seconds
+        } else {
+          console.log('⏰ Polling timeout - payment may still be processing');
+          // Don't change UI - let user's success state remain
+        }
+        
+      } catch (error) {
+        console.error('📡 Polling error:', error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000);
         }
       }
     };
     
-    // Start checking after a delay
-    setTimeout(checkStatus, 3000);
-  }, [currency, phoneNumber, onSuccess, onError]);
+    // Start polling after 10 seconds to allow PayCrest processing time
+    setTimeout(poll, 10000);
+  }, [onError]);
+
 
   return (
     <div className="space-y-6">

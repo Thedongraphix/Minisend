@@ -1,54 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { OrderService } from '@/lib/supabase/orders';
-import { getPaycrestService } from '@/lib/paycrest/config';
 
 // Force dynamic rendering and Node.js runtime
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-// Based on official PayCrest specification: Check if payment is successful
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isPaymentSettled(order: any): boolean {
-  console.log('📋 PayCrest Official Settlement Check:', {
-    orderId: order.id,
-    status: order.status,
-    amountPaid: order.amountPaid,
-    transactionLogs: order.transactionLogs?.length || 0
-  });
-
-  // OFFICIAL PAYCREST SPEC: 'validated' means transaction successful (funds sent to recipient)
-  if (order.status === 'validated') {
-    console.log('🎉 TRANSACTION SUCCESSFUL via validated status - funds sent to recipient!');
-    return true;
-  }
-
-  // 'settled' means blockchain completion (also successful)
-  if (order.status === 'settled') {
-    console.log('🔗 TRANSACTION SUCCESSFUL via settled status - blockchain completion');
-    return true;
-  }
-
-  // Check transactionLogs for validation/settlement
-  if (order.transactionLogs && order.transactionLogs.length > 0) {
-    // Look for validated/settled status in transaction logs
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const hasValidatedLog = order.transactionLogs.some((log: any) => 
-      log.status === 'validated' || log.status === 'settled'
-    );
-    const hasAmountPaid = order.amountPaid && order.amountPaid > 0;
-    
-    console.log('📋 Transaction Logs Check:', {
-      hasValidatedLog,
-      hasAmountPaid,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      logStatuses: order.transactionLogs.map((log: any) => log.status)
-    });
-
-    return hasValidatedLog && hasAmountPaid;
-  }
-
-  return false;
-}
 
 export async function GET(
   request: NextRequest,
@@ -64,104 +18,80 @@ export async function GET(
       );
     }
 
-    console.log(`🔍 RESEARCH-BASED: Checking order status for ${orderId}`);
+    console.log(`🔍 Checking PayCrest order status for ${orderId}`);
 
-    // RESEARCH-BASED: Get fresh status from PayCrest API (primary source)
-    let paycrestOrder;
-    try {
-      const paycrestService = await getPaycrestService();
-      paycrestOrder = await paycrestService.getOrderStatus(orderId);
-      console.log(`📊 FULL PayCrest API response for ${orderId}:`, JSON.stringify(paycrestOrder, null, 2));
-    } catch (paycrestError) {
-      console.error('Failed to get order from PayCrest API:', paycrestError);
-      // RESEARCH-BASED: Fallback to database if API fails
-      try {
-        const orderService = new OrderService();
-        const dbOrder = await orderService.getOrderByPaycrestId(orderId);
-        if (dbOrder) {
-          console.log(`📊 Database fallback status for ${orderId}:`, dbOrder.status);
-          paycrestOrder = {
-            id: dbOrder.paycrest_order_id,
-            status: dbOrder.status,
-            amount: dbOrder.amount.toString(),
-            token: 'USDC',
-            network: 'base',
-            recipient: {
-              accountName: dbOrder.recipient_name,
-              accountIdentifier: dbOrder.recipient_phone,
-              currency: dbOrder.currency
-            },
-            reference: dbOrder.paycrest_reference,
-            receiveAddress: dbOrder.receive_address,
-            validUntil: dbOrder.valid_until,
-            senderFee: dbOrder.sender_fee.toString(),
-            transactionFee: dbOrder.transaction_fee.toString()
-          };
-        }
-      } catch (dbError) {
-        console.error('Database fallback also failed:', dbError);
-      }
+    // Get order status from PayCrest API
+    const paycrestApiKey = process.env.PAYCREST_API_KEY;
+    const paycrestBaseUrl = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
+
+    if (!paycrestApiKey) {
+      return NextResponse.json(
+        { error: 'PayCrest API key not configured' },
+        { status: 500 }
+      );
     }
 
-    if (!paycrestOrder) {
+    const response = await fetch(`${paycrestBaseUrl}/sender/orders/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'API-Key': paycrestApiKey,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`PayCrest API error: ${response.status}`);
+      return NextResponse.json(
+        { error: 'Failed to get order status from PayCrest' },
+        { status: response.status }
+      );
+    }
+
+    const paycrestOrder = await response.json();
+    console.log(`📊 PayCrest order status:`, {
+      orderId,
+      status: paycrestOrder.data?.status,
+      response: paycrestOrder
+    });
+
+    const order = paycrestOrder.data;
+    if (!order) {
       return NextResponse.json(
         { error: 'Order not found' },
         { status: 404 }
       );
     }
 
-    // RESEARCH-BASED: Update database with fresh PayCrest status
-    try {
-      const orderService = new OrderService();
-      const dbOrder = await orderService.getOrderByPaycrestId(orderId);
-      if (dbOrder && dbOrder.status !== paycrestOrder.status) {
-        await orderService.updateOrderStatus(orderId, paycrestOrder.status);
-        console.log(`📊 Updated order ${orderId} status from ${dbOrder.status} to ${paycrestOrder.status}`);
-      }
-    } catch (updateError) {
-      console.error('Failed to update order status in database:', updateError);
-      // Don't fail the request if DB update fails
-    }
-
-    // RESEARCH-BASED: Enhanced response with settlement detection
-    const response = {
+    // Simple response format
+    const statusResponse = {
       success: true,
       order: {
-        id: paycrestOrder.id,
-        status: paycrestOrder.status,
-        amount: paycrestOrder.amount,
-        token: paycrestOrder.token,
-        network: paycrestOrder.network,
-        currency: paycrestOrder.recipient?.currency || 'KES',
-        recipient: paycrestOrder.recipient,
-        reference: paycrestOrder.reference,
-        receiveAddress: paycrestOrder.receiveAddress,
-        validUntil: paycrestOrder.validUntil,
-        senderFee: paycrestOrder.senderFee,
-        transactionFee: paycrestOrder.transactionFee,
-        // Based on PayCrest API docs: settlement detection
-        isSettled: isPaymentSettled(paycrestOrder),
-        isFailed: ['failed', 'cancelled'].includes(paycrestOrder.status),
-        isProcessing: ['initiated', 'pending'].includes(paycrestOrder.status),
-        // Add new critical fields from API docs
-        amountPaid: paycrestOrder.amountPaid,
-        amountReturned: paycrestOrder.amountReturned,
-        transactionLogs: paycrestOrder.transactionLogs,
-        // Add transaction hash if available for settlement verification
-        txHash: paycrestOrder.txHash,
-        // Add settlement timestamp
-        settledAt: paycrestOrder.status === 'settled' ? new Date().toISOString() : undefined
+        id: order.id,
+        status: order.status,
+        amount: order.amount,
+        token: order.token,
+        network: order.network,
+        currency: order.recipient?.currency || 'KES',
+        recipient: order.recipient,
+        reference: order.reference,
+        receiveAddress: order.receiveAddress,
+        validUntil: order.validUntil,
+        senderFee: order.senderFee,
+        transactionFee: order.transactionFee,
+        // Settlement flags
+        isSettled: ['fulfilled', 'validated', 'settled'].includes(order.status),
+        isFailed: ['refunded', 'expired', 'cancelled'].includes(order.status),
+        isProcessing: ['pending', 'processing'].includes(order.status)
       }
     };
 
-    console.log(`✅ RESEARCH-BASED: Order status response for ${orderId}:`, {
-      status: paycrestOrder.status,
-      isSettled: response.order.isSettled,
-      isFailed: response.order.isFailed,
-      isProcessing: response.order.isProcessing
+    console.log(`✅ Order status response for ${orderId}:`, {
+      status: order.status,
+      isSettled: statusResponse.order.isSettled,
+      isFailed: statusResponse.order.isFailed
     });
 
-    return NextResponse.json(response);
+    return NextResponse.json(statusResponse);
 
   } catch (error) {
     console.error('Order status check error:', error);
