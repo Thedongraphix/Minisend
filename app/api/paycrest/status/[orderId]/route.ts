@@ -26,7 +26,7 @@ export async function GET(
 
     if (!paycrestApiKey) {
       return NextResponse.json(
-        { error: 'PayCrest API key not configured' },
+        { error: 'PayCrest API secret not configured' },
         { status: 500 }
       );
     }
