@@ -53,7 +53,7 @@ export function Button({
   ];
 
   const variantClasses = {
-    primary: "bg-gradient-to-r from-blue-600 to-blue-700 text-white border border-blue-500/20 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl",
+    primary: "!bg-gradient-to-r !from-blue-600 !to-blue-700 !text-white !border !border-blue-500/20 hover:!from-blue-700 hover:!to-blue-800 !shadow-lg hover:!shadow-xl",
     secondary: "bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 hover:border-white/30",
     outlined: "bg-transparent text-white border border-white/30 hover:bg-white/10 hover:border-white/50 backdrop-blur-sm",
     ghost: "hover:bg-white/10 text-gray-300 hover:text-white backdrop-blur-sm",
@@ -145,56 +145,88 @@ type FeaturesProps = {
 
 export function Features({ setActiveTab }: FeaturesProps) {
   return (
-    <div className="space-y-8 animate-fade-in">
-      <Card title="Enterprise Features">
-        <ul className="space-y-5 mb-8">
+    <div className="space-y-6 animate-fade-in">
+      <Card>
+        <div className="space-y-6">
+          <div className="text-center">
+            <h3 className="text-white font-bold text-lg mb-2">What We Offer</h3>
+            <p className="text-gray-400 text-sm">Simple, reliable USDC to mobile money conversion</p>
+          </div>
           
-          
-          <li className="flex items-start space-x-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-              <Icon name="check" className="text-white" size="sm" />
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-1">OnchainKit Integration</h4>
-              <span className="text-gray-300 leading-relaxed">
-                Built with Coinbase&apos;s enterprise web3 toolkit
-              </span>
-            </div>
-          </li>
-          <li className="flex items-start space-x-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-              <Icon name="check" className="text-white" size="sm" />
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-1">Multi-Wallet Support</h4>
-              <span className="text-gray-300 leading-relaxed">
-                MetaMask, Coinbase Wallet, Phantom, Rabby, Trust, Frame
-              </span>
-            </div>
-          </li>
-          <li className="flex items-start space-x-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-              <Icon name="check" className="text-white" size="sm" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-2 mb-1">
-                <Image 
-                  src="/Base_Network_Logo.svg" 
-                  alt="Base Network" 
-                  width={16}
-                  height={16}
-                />
-                <h4 className="text-white font-semibold">Base Network Ready</h4>
+          <ul className="space-y-4">
+            <li className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon name="check" className="text-white" size="sm" />
               </div>
-              <span className="text-gray-300 leading-relaxed">
-                Production and testnet environments supported
-              </span>
-            </div>
-          </li>
-        </ul>
-        <Button variant="outlined" onClick={() => setActiveTab("home")} fullWidth>
-          Back to Home
-        </Button>
+              <div>
+                <h4 className="text-white font-medium mb-1">M-Pesa Integration</h4>
+                <span className="text-gray-300 text-sm">
+                  Direct transfers to Kenyan mobile money accounts
+                </span>
+              </div>
+            </li>
+            
+            <li className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon name="check" className="text-white" size="sm" />
+              </div>
+              <div>
+                <h4 className="text-white font-medium mb-1">Nigerian Banks</h4>
+                <span className="text-gray-300 text-sm">
+                  Send directly to bank accounts across Nigeria
+                </span>
+              </div>
+            </li>
+            
+            <li className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon name="check" className="text-white" size="sm" />
+              </div>
+              <div>
+                <h4 className="text-white font-medium mb-1">Base Network</h4>
+                <span className="text-gray-300 text-sm">
+                  Fast, low-cost transactions on Coinbase&apos;s L2
+                </span>
+              </div>
+            </li>
+            
+            <li className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon name="check" className="text-white" size="sm" />
+              </div>
+              <div>
+                <h4 className="text-white font-medium mb-1">Live Exchange Rates</h4>
+                <span className="text-gray-300 text-sm">
+                  Real-time USD to KES/NGN conversion rates
+                </span>
+              </div>
+            </li>
+            
+            <li className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Icon name="check" className="text-white" size="sm" />
+              </div>
+              <div>
+                <h4 className="text-white font-medium mb-1">Instant Processing</h4>
+                <span className="text-gray-300 text-sm">
+                  Payments typically complete within 1-2 minutes
+                </span>
+              </div>
+            </li>
+          </ul>
+          
+          <div className="pt-4 border-t border-gray-700">
+            <Button
+              onClick={() => setActiveTab("offramp")}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 mb-3"
+            >
+              Try It Now
+            </Button>
+            <Button variant="outlined" onClick={() => setActiveTab("home")} fullWidth size="medium">
+              Back to Home
+            </Button>
+          </div>
+        </div>
       </Card>
     </div>
   );
@@ -235,7 +267,7 @@ export function Home({ setActiveTab }: HomeProps) {
             <div className="flex justify-center">
               <Wallet>
                 <ConnectWallet 
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  className="!bg-blue-600 hover:!bg-blue-700 !text-white px-6 py-3 rounded-lg font-medium transition-colors !border-none"
                   disconnectedLabel="Connect Wallet"
                 >
                   <Avatar className="h-5 w-5" />
@@ -255,7 +287,9 @@ export function Home({ setActiveTab }: HomeProps) {
             {isConnected && (
               <Button
                 onClick={() => setActiveTab("offramp")}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300"
+                variant="primary"
+                size="large"
+                fullWidth
               >
                 Send USDC → Mobile Money
               </Button>
