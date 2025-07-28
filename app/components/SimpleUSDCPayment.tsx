@@ -447,11 +447,11 @@ export function SimpleUSDCPayment({
       {/* Success */}
       {status === 'success' && (
         <div className="text-center space-y-4">
-          <div className="text-6xl mb-4">🎉</div>
-          <h3 className="text-white font-bold text-xl">Payment Sent!</h3>
+          <div className="text-6xl mb-4">✅</div>
+          <h3 className="text-white font-bold text-xl">Payment Successful</h3>
           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-            <p className="text-green-400 font-medium">
-              ✅ {currency} sent to {phoneNumber}
+            <p className="text-green-400 font-medium text-sm">
+              {statusMessage}
             </p>
           </div>
         </div>

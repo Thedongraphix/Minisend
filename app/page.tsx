@@ -107,14 +107,14 @@ export default function App() {
       <div className="w-full text-center py-6">
         <div className="flex items-center justify-center space-x-3 mb-2">
           <Image 
-            src="/minisend-icon.svg" 
+            src="/logo-new.svg" 
             alt="Minisend" 
-            width={32}
-            height={32}
+            width={40}
+            height={40}
           />
           <h1 className="text-2xl font-bold text-white">Minisend</h1>
         </div>
-        <p className="text-gray-400 text-sm">USDC to KES/NGN • Kenya & Nigeria</p>
+        <p className="text-gray-400 text-sm">USDC → Mobile Money</p>
       </div>
       
       <div className="w-full max-w-md mx-auto px-4 pb-6">

@@ -1,7 +1,7 @@
 {
   "name": "Minisend",
   "short_name": "Minisend",
-  "description": "Convert USDC to KES or NGN instantly",
+  "description": "USDC to mobile money instantly",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
@@ -24,7 +24,7 @@
       "purpose": "maskable"
     },
     {
-      "src": "https://minisend.xyz/minisend-icon.svg",
+      "src": "https://minisend.xyz/logo-new.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"

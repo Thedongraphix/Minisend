@@ -210,94 +210,68 @@ export function Home({ setActiveTab }: HomeProps) {
   return (
     <div className="space-y-6 animate-fade-in">
       <Card>
-        <div className="space-y-4">
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            <Image 
-              src="/Base_Network_Logo.svg" 
-              alt="Base Network" 
-              width={16}
-              height={16}
-            />
-            <span className="text-blue-300 text-xs font-medium">Built on Base</span>
-          </div>
+        <div className="space-y-4 text-center">
           <p className="text-gray-300 text-base leading-relaxed">
-            Convert your USDC to KES or NGN instantly to mobile money or bank accounts. 
-            Built for the African crypto economy.
+            Convert USDC to mobile money instantly. Send directly to M-Pesa and bank accounts in Kenya & Nigeria.
           </p>
           
-          {/* Feature highlights */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
-              <div className="text-xl mb-1">⚡</div>
-              <h4 className="text-white font-semibold text-xs mb-0.5">Instant</h4>
-              <p className="text-gray-400 text-xs">Direct to wallet</p>
+          <div className="flex justify-center space-x-6 text-sm text-gray-400">
+            <div className="flex items-center space-x-1">
+              <span>⚡</span>
+              <span>Instant</span>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
-              <div className="text-xl mb-1">🔒</div>
-              <h4 className="text-white font-semibold text-xs mb-0.5">Secure</h4>
-              <p className="text-gray-400 text-xs">Enterprise grade</p>
+            <div className="flex items-center space-x-1">
+              <span>🔒</span>
+              <span>Secure</span>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
-              <div className="text-xl mb-1">💰</div>
-              <h4 className="text-white font-semibold text-xs mb-0.5">Low Fees</h4>
-              <p className="text-gray-400 text-xs">2-4% processing</p>
-            </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-3 border border-white/10">
-              <div className="text-xl mb-1">🌍</div>
-              <h4 className="text-white font-semibold text-xs mb-0.5">Local</h4>
-              <p className="text-gray-400 text-xs">Kenya & Nigeria</p>
+            <div className="flex items-center space-x-1">
+              <span>💰</span>
+              <span>Low Fees</span>
             </div>
           </div>
           
-          {/* Wallet Connection Area */}
           <div className="space-y-3">
-            <div className="text-center">
-              <div className="text-gray-400 text-sm mb-3">Connect your wallet to get started</div>
-              <div className="flex justify-center">
-                <Wallet>
-                  <ConnectWallet 
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                    disconnectedLabel="Connect Wallet"
-                  >
-                    <Avatar className="h-5 w-5" />
+            <div className="text-gray-400 text-sm">Connect your wallet to get started</div>
+            <div className="flex justify-center">
+              <Wallet>
+                <ConnectWallet 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  disconnectedLabel="Connect Wallet"
+                >
+                  <Avatar className="h-5 w-5" />
+                  <Name />
+                </ConnectWallet>
+                <WalletDropdown>
+                  <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                    <Avatar />
                     <Name />
-                  </ConnectWallet>
-                  <WalletDropdown>
-                    <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                      <Avatar />
-                      <Name />
-                      <Address />
-                      <EthBalance />
-                    </Identity>
-                    <WalletDropdownDisconnect />
-                  </WalletDropdown>
-                </Wallet>
-              </div>
-              {isConnected && (
-                <div className="mt-4">
-                  <Button
-                    onClick={() => setActiveTab("offramp")}
-                    iconName="arrow-right"
-                    fullWidth
-                    size="medium"
-                  >
-                    Start Off-Ramp
-                  </Button>
-                </div>
-              )}
+                    <Address />
+                    <EthBalance />
+                  </Identity>
+                  <WalletDropdownDisconnect />
+                </WalletDropdown>
+              </Wallet>
             </div>
+            {isConnected && (
+              <Button
+                onClick={() => setActiveTab("offramp")}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300"
+              >
+                Send USDC → Mobile Money
+              </Button>
+            )}
           </div>
-          
-          <Button
-            onClick={() => setActiveTab("features")}
-            variant="outlined"
-            fullWidth
-            size="medium"
-          >
-            View Features
-          </Button>
         </div>
       </Card>
+      
+      {!isConnected && (
+        <div className="text-center">
+          <div className="flex justify-center space-x-4 text-xs text-gray-500">
+            <span>🇰🇪 Kenya</span>
+            <span>🇳🇬 Nigeria</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
