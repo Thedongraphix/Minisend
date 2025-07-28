@@ -71,18 +71,57 @@ export function SimpleUSDCPayment({
           attempt: attempts + 1
         });
         
-        // Success states - payment delivered to user
-        if (order?.status === 'fulfilled' || order?.status === 'validated' || order?.status === 'settled') {
-          console.log('✅ Payment delivered successfully');
-          // Don't change UI - user already saw "Payment sent" success
+        // Handle specific status updates per PayCrest docs
+        switch (order?.status) {
+          case 'pending':
+            console.log('Order is pending provider assignment');
+            break;
+            
+          case 'processing':
+            console.log('Provider assigned, fulfillment in progress');
+            break;
+            
+          case 'validated':
+            console.log('Funds have been sent to recipient\'s bank/mobile network (value transfer confirmed)');
+            // Show delivery confirmation - this is when M-Pesa actually gets the money
+            setStatus('success');
+            const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
+            setStatusMessage(`🎉 ${currency} delivered to your ${deliveryMethod}! Check your mobile for confirmation.`);
+            return;
+            
+          case 'settled':
+            console.log('Order has been settled on blockchain');
+            // Already delivered, just log
+            return;
+            
+          case 'fulfilled':
+            console.log('Payment completed by provider');
+            // Show delivery confirmation
+            setStatus('success');
+            const method = currency === 'NGN' ? 'bank account' : 'mobile number';
+            setStatusMessage(`🎉 ${currency} delivered to your ${method}! Check your mobile for confirmation.`);
+            return;
+        }
+        
+        // Handle failure states per PayCrest docs
+        if (order?.status === 'refunded') {
+          console.log('Order was refunded to the sender');
+          setStatus('error');
+          onError('Payment was refunded. Please try again.');
           return;
         }
         
-        // Failure states - provider couldn't complete payment
-        if (order?.status === 'refunded' || order?.status === 'expired' || order?.status === 'cancelled') {
-          console.log('❌ Payment failed:', order.status);
+        if (order?.status === 'expired') {
+          console.log('Order expired without completion');
           setStatus('error');
-          onError(`Payment ${order.status}. Please try again.`);
+          onError('Payment expired. Please try again.');
+          return;
+        }
+        
+        if (order?.status === 'cancelled') {
+          console.log('Order was cancelled');
+          setStatus('error');
+          onError('Payment was cancelled. Please try again.');
           return;
         }
         
