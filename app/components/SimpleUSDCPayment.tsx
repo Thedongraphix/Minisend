@@ -152,7 +152,7 @@ export function SimpleUSDCPayment({
     setStatus('creating-order');
     
     try {
-      const response = await fetch('/api/paycrest/orders', {
+      const response = await fetch('/api/paycrest/orders/simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -62,7 +62,7 @@ export function SimplePayment({
       setStatusMessage(`Rate: 1 USDC = ${rateData.rate} ${currency}. Creating order...`);
       
       // Create order with live rate
-      const orderResponse = await fetch('/api/paycrest/orders', {
+      const orderResponse = await fetch('/api/paycrest/orders/simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
