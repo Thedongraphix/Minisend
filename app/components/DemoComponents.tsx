@@ -245,22 +245,7 @@ export function Home({ setActiveTab }: HomeProps) {
           <p className="text-gray-300 text-base leading-relaxed">
             Convert USDC to mobile money instantly. Send directly to M-Pesa and bank accounts in Kenya & Nigeria.
           </p>
-          
-          <div className="flex justify-center space-x-6 text-sm text-gray-400">
-            <div className="flex items-center space-x-1">
-              <span>⚡</span>
-              <span>Instant</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <span>🔒</span>
-              <span>Secure</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <span>💰</span>
-              <span>Low Fees</span>
-            </div>
-          </div>
-          
+            
           <div className="space-y-3">
             <div className="text-gray-400 text-sm">Connect your wallet to get started</div>
             <div className="flex justify-center">

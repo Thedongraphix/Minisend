@@ -269,10 +269,10 @@ export function SimpleOffRampFlow() {
             
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mt-4">
               <p className="text-blue-300 text-xs">
-                📱 {formData.phoneNumber} will receive their {formData.currency} within 1-2 minutes
+                {formData.phoneNumber} will receive their {formData.currency} within 1-2 minutes
               </p>
               <p className="text-blue-200 text-xs mt-1">
-                ✨ Funds delivered directly to mobile wallet
+                Funds delivered directly to mobile wallet
               </p>
             </div>
           </div>
