@@ -114,7 +114,6 @@ export default function App() {
           />
           <h1 className="text-2xl font-bold text-white">Minisend</h1>
         </div>
-        <p className="text-gray-400 text-sm">USDC → Mobile Money</p>
       </div>
       
       <div className="w-full max-w-md mx-auto px-4 pb-6">
