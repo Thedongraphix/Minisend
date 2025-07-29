@@ -309,7 +309,7 @@ export function SimplePayment({
           </div>
           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
             <p className="text-green-300 text-sm">
-              ✅ Payment sent to PayCrest. Funds will be delivered to {phoneNumber} shortly.
+              ✅ Payment initiated. Funds will be delivered to {phoneNumber} shortly.
             </p>
           </div>
         </div>
