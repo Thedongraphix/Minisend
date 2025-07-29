@@ -318,11 +318,33 @@ export function SimplePayment({
       {/* Step 4: Success */}
       {currentStep === 'success' && (
         <div className="text-center space-y-4">
-          <div className="text-6xl mb-4">✅</div>
+          <div className="flex justify-center mb-4">
+            <div className="relative">
+              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                <svg 
+                  className="w-8 h-8 text-white animate-bounce" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={3} 
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <div className="absolute inset-0 w-16 h-16 bg-blue-400/30 rounded-full animate-ping"></div>
+            </div>
+          </div>
           <h3 className="text-white font-bold text-xl">Payment Successful</h3>
-          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-            <p className="text-green-400 font-medium text-sm">
-              {statusMessage}
+          <div className="space-y-2">
+            <p className="text-gray-300 text-base">
+              Your KES has been sent to {phoneNumber}
+            </p>
+            <p className="text-gray-400 text-sm">
+              It will take approximately 1-2 minutes to receive the fiat
             </p>
           </div>
         </div>
