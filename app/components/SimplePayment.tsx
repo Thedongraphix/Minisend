@@ -339,8 +339,8 @@ export function SimplePayment({
             </div>
           </div>
           <h3 className="text-white font-bold text-xl">Payment Successful</h3>
-          <div className="space-y-2">
-            <p className="text-gray-300 text-base">
+          <div className="space-y-3">
+            <p className="text-gray-300 text-base font-medium">
               Your KES has been sent to {phoneNumber}
             </p>
             <p className="text-gray-400 text-sm">
