@@ -132,7 +132,10 @@ export function SimplePayment({
         
         // Start background polling for provider failures
         if (orderData?.id) {
-          startPolling(orderData.id);
+          // Using setTimeout to avoid dependency issues with useCallback
+          setTimeout(() => {
+            if (orderData?.id) startPolling(orderData.id);
+          }, 0);
         }
         
         // Call onSuccess immediately - user has successfully sent funds to PayCrest
