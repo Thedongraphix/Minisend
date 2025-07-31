@@ -21,29 +21,58 @@ export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
   const [frameAdded, setFrameAdded] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
+  const [mounted, setMounted] = useState(false);
 
   const addFrame = useAddFrame();
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     const initializeFrame = async () => {
-      try {
-        console.log('MiniKit - Frame ready status:', isFrameReady);
-        console.log('MiniKit - Context:', context);
-        
-        if (!isFrameReady) {
-          await setFrameReady();
-          console.log('MiniKit - Frame marked as ready');
+      let retryCount = 0;
+      const maxRetries = 3;
+      const retryDelay = 2000; // 2 seconds
+
+      const attemptInitialization = async () => {
+        try {
+          console.log('MiniKit - Frame ready status:', isFrameReady);
+          console.log('MiniKit - Context:', context);
+          
+          if (!isFrameReady) {
+            // Add timeout to setFrameReady
+            const timeout = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Frame initialization timeout')), 15000)
+            );
+            
+            await Promise.race([setFrameReady(), timeout]);
+            console.log('MiniKit - Frame marked as ready');
+          }
+        } catch (error) {
+          console.error(`MiniKit - Frame initialization error (attempt ${retryCount + 1}):`, error);
+          
+          if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`MiniKit - Retrying initialization in ${retryDelay}ms...`);
+            setTimeout(attemptInitialization, retryDelay);
+          } else {
+            console.error('MiniKit - Max retry attempts reached, initialization failed');
+          }
         }
-      } catch (error) {
-        console.error('MiniKit - Frame initialization error:', error);
-      }
+      };
+
+      attemptInitialization();
     };
 
     initializeFrame();
-  }, [setFrameReady, isFrameReady, context]);
+  }, [mounted, setFrameReady, isFrameReady, context]);
 
   // Initialize analytics session when context is available
   useEffect(() => {
+    if (!mounted || !context || !isFrameReady) return;
     if (context && isFrameReady) {
       const session = initializeUserSession(context);
       const clientInfo = getClientInfo(context);
@@ -55,10 +84,11 @@ export default function App() {
         isFrameAdded: clientInfo.isFrameAdded,
       });
     }
-  }, [context, isFrameReady]);
+  }, [mounted, context, isFrameReady]);
 
   // Track tab changes for analytics
   useEffect(() => {
+    if (!mounted || !context) return;
     if (context) {
       const clientInfo = getClientInfo(context);
       trackEvent("tab_changed", {
@@ -67,7 +97,7 @@ export default function App() {
         clientName: clientInfo.clientName,
       });
     }
-  }, [activeTab, context]);
+  }, [mounted, activeTab, context]);
 
   const handleAddFrame = useCallback(async () => {
     const frameAdded = await addFrame();
@@ -75,6 +105,7 @@ export default function App() {
   }, [addFrame]);
 
   const saveFrameButton = useMemo(() => {
+    if (!mounted) return null;
     if (context && !context.client.added) {
       return (
         <Button
@@ -99,7 +130,23 @@ export default function App() {
     }
 
     return null;
-  }, [context, frameAdded, handleAddFrame]);
+  }, [mounted, context, frameAdded, handleAddFrame]);
+
+  if (!mounted) {
+    return (
+      <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme">
+        <div className="w-full text-center py-6">
+          <div className="flex items-center justify-center space-x-3 mb-2">
+            <div className="animate-pulse bg-gray-700 h-10 w-10 rounded"></div>
+            <div className="animate-pulse bg-gray-700 h-8 w-24 rounded"></div>
+          </div>
+        </div>
+        <div className="w-full max-w-md mx-auto px-4 pb-6">
+          <div className="animate-pulse bg-gray-800 h-64 rounded-3xl"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme">
@@ -107,7 +154,7 @@ export default function App() {
       <div className="w-full text-center py-6">
         <div className="flex items-center justify-center space-x-3 mb-2">
           <Image 
-            src="/logo-new.svg" 
+            src="/minisend logo.png" 
             alt="Minisend" 
             width={40}
             height={40}
