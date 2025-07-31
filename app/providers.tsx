@@ -8,7 +8,19 @@ import { WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { wagmiConfig } from "../wagmi.config";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      retryDelay: 1000,
+      staleTime: 60000,
+    },
+    mutations: {
+      retry: 2,
+      retryDelay: 1000,
+    },
+  },
+});
 
 export function Providers(props: { children: ReactNode }) {
   return (
