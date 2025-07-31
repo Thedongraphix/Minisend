@@ -40,6 +40,7 @@ export function Providers(props: { children: ReactNode }) {
               display: 'modal',
               termsUrl: 'https://minisend.xyz/terms',
               privacyUrl: 'https://minisend.xyz/privacy',
+              signUpEnabled: true,
             },
             // Enable paymaster for sponsored transactions if configured
             ...(process.env.NEXT_PUBLIC_PAYMASTER_ENDPOINT && {
