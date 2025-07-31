@@ -1,22 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
+const PAYCREST_API_URL = 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 
 export async function POST(request: NextRequest) {
   try {
-    // Check API key first
-    if (!PAYCREST_API_KEY) {
-      console.error('PAYCREST_API_SECRET not configured');
-      return NextResponse.json(
-        { error: 'PayCrest API secret not configured' },
-        { status: 500 }
-      );
-    }
-
     const body = await request.json();
-    console.log('Received order request:', body);
-    
     const { 
       amount, 
       phoneNumber, 
@@ -49,17 +38,17 @@ export async function POST(request: NextRequest) {
 
     // Format phone number
     const cleanPhone = phoneNumber.replace(/\D/g, '');
-    let accountIdentifier: string;
+    let formattedPhone: string;
     let institution: string;
 
     if (currency === 'KES') {
       // Kenya phone number
-      accountIdentifier = cleanPhone.startsWith('254') ? cleanPhone : cleanPhone.replace(/^0/, '254');
-      institution = 'SAFAKEPC'; // M-PESA code
+      formattedPhone = cleanPhone.startsWith('254') ? cleanPhone : cleanPhone.replace(/^0/, '254');
+      institution = 'MPESA';
     } else if (currency === 'NGN') {
-      // Nigeria phone number  
-      accountIdentifier = cleanPhone.startsWith('234') ? cleanPhone : cleanPhone.replace(/^0/, '234');
-      institution = 'GTB'; // Default bank - need to check correct code
+      // Nigeria phone number
+      formattedPhone = cleanPhone.startsWith('234') ? cleanPhone : cleanPhone.replace(/^0/, '234');
+      institution = 'GTB'; // Default bank
     } else {
       throw new Error('Unsupported currency');
     }
@@ -72,16 +61,13 @@ export async function POST(request: NextRequest) {
       rate: rate.toString(),
       recipient: {
         institution,
-        accountIdentifier,
+        accountIdentifier: formattedPhone,
         accountName,
         currency,
-        memo: `Payment to ${accountName} - ${phoneNumber}`
       },
       reference: `order_${Date.now()}`,
       returnAddress,
     };
-
-    console.log('Sending order to PayCrest:', JSON.stringify(orderData, null, 2));
 
     const orderResponse = await fetch(`${PAYCREST_API_URL}/sender/orders`, {
       method: 'POST',
@@ -93,14 +79,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (!orderResponse.ok) {
-      const errorData = await orderResponse.json().catch(() => ({}));
-      console.error('PayCrest API Error:', {
-        status: orderResponse.status,
-        statusText: orderResponse.statusText,
-        errorData,
-        orderData
-      });
-      throw new Error(errorData.message || `PayCrest API error: ${orderResponse.status}`);
+      const errorData = await orderResponse.json();
+      throw new Error(errorData.message || 'Failed to create order');
     }
 
     const order = await orderResponse.json();

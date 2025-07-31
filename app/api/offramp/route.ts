@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const { 
       walletAddress, 
       usdcAmount, 
-      kshAmount, 
+      kshAmount,
       phoneNumber, 
       provider = 'paycrest',
       accountName,
