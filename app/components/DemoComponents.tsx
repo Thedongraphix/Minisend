@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import {
   ConnectWallet,
@@ -237,6 +237,40 @@ type HomeProps = {
 
 export function Home({ setActiveTab }: HomeProps) {
   const { isConnected } = useAccount();
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Prevent hydration mismatch by not rendering wallet-dependent content on server
+  if (!mounted) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Card>
+          <div className="space-y-4 text-center">
+            <p className="text-gray-300 text-base leading-relaxed">
+              Convert USDC to mobile money instantly. Send directly to M-Pesa and bank accounts in Kenya & Nigeria.
+            </p>
+              
+            <div className="space-y-3">
+              <div className="text-gray-400 text-sm">Connect your wallet to get started</div>
+              <div className="flex justify-center">
+                <div className="animate-pulse bg-gray-700 h-12 w-32 rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+        </Card>
+        
+        <div className="text-center">
+          <div className="flex justify-center space-x-4 text-xs text-gray-500">
+            <span>🇰🇪 Kenya</span>
+            <span>🇳🇬 Nigeria</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6 animate-fade-in">
