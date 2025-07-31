@@ -10,6 +10,11 @@ export function DirectUSDCBalance() {
   // Use wagmi hooks for Coinbase Wallet connection
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
   
   // Debug logging
   console.log('DirectUSDCBalance - Coinbase Wallet:', {
@@ -85,7 +90,7 @@ export function DirectUSDCBalance() {
     fetchBalance()
   }, [fetchBalance])
 
-  if (!isConnected) {
+  if (!mounted || !isConnected) {
     return (
       <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 p-8 rounded-2xl shadow-2xl">
         <div className="text-center">

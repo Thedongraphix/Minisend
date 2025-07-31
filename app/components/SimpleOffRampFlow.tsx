@@ -9,6 +9,11 @@ import Image from 'next/image';
 
 export function SimpleOffRampFlow() {
   const { address, isConnected } = useAccount();
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Form state
   const [step, setStep] = useState<'form' | 'payment' | 'success'>('form');
@@ -67,8 +72,8 @@ export function SimpleOffRampFlow() {
     return () => clearTimeout(debounceTimer);
   }, [formData.amount, formData.currency]);
 
-  // Show wallet connection if not connected
-  if (!isConnected) {
+  // Show wallet connection if not connected or not mounted
+  if (!mounted || !isConnected) {
     return (
       <div className="max-w-md mx-auto p-6">
         <div className="text-center mb-8">
