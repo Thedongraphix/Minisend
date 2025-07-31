@@ -10,8 +10,8 @@ export const wagmiConfig = createConfig({
   connectors: [
     coinbaseWallet({
       appName: 'Minisend',
-      appLogoUrl: 'https://minisend.xyz/minisend-logo.svg',
-      preference: 'smartWalletOnly', // Prioritize Coinbase Smart Wallet
+      appLogoUrl: '/minisend logo.png',
+      preference: 'smartWalletOnly',
     })
   ]
 })
