@@ -23,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
       url: URL,
       siteName: "Minisend",
       images: [{
-        url: process.env.NEXT_PUBLIC_APP_OG_IMAGE || '/minisend logo.png',
+        url: process.env.NEXT_PUBLIC_APP_OG_IMAGE || '/minisend-logo.png',
         width: 120,
         height: 40,
         alt: 'Minisend',
@@ -37,16 +37,16 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary_large_image',
       title: "Minisend - USDC to Mobile Money",
       description: "USDC to mobile money instantly. Kenya & Nigeria.",
-      images: [process.env.NEXT_PUBLIC_APP_OG_IMAGE || '/minisend logo.png'],
+      images: [process.env.NEXT_PUBLIC_APP_OG_IMAGE || '/minisend-logo.png'],
     },
 
     // Icons
     icons: {
       icon: [
         { url: '/favicon.svg', type: 'image/svg+xml' },
-        { url: '/minisend logo.png', type: 'image/png', sizes: '32x32' },
+        { url: '/minisend-logo.png', type: 'image/png', sizes: '32x32' },
       ],
-      apple: '/minisend logo.png',
+      apple: '/minisend-logo.png',
     },
 
     other: {

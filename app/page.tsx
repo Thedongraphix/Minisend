@@ -154,7 +154,7 @@ export default function App() {
       <div className="w-full text-center py-6">
         <div className="flex items-center justify-center space-x-3 mb-2">
           <Image 
-            src="/minisend logo.png" 
+            src="/minisend-logo.png" 
             alt="Minisend" 
             width={40}
             height={40}
