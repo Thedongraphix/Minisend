@@ -5,6 +5,7 @@ import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLab
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
+import type { ContractFunctionParameters } from 'viem';
 
 interface SimplePaymentProps {
   amount: string;
@@ -94,22 +95,40 @@ export function SimplePayment({
     }
   }, [amount, phoneNumber, accountName, currency, returnAddress, onError]);
 
-  // Step 2: Create transaction calls for Base Pay
-  const calls = orderData ? (() => {
+  // USDC ERC20 ABI for transfer function
+  const USDC_ABI = [
+    {
+      name: 'transfer',
+      type: 'function',
+      stateMutability: 'nonpayable',
+      inputs: [
+        { name: 'to', type: 'address' },
+        { name: 'amount', type: 'uint256' }
+      ],
+      outputs: [{ name: 'success', type: 'bool' }]
+    }
+  ] as const;
+
+  // Step 2: Create transaction calls for Base Pay using proper ContractFunctionParameters
+  const calls: ContractFunctionParameters[] = orderData ? (() => {
     const totalAmount = parseFloat(orderData.amount) + 
                        parseFloat(orderData.senderFee || '0') + 
                        parseFloat(orderData.transactionFee || '0');
     
-    console.log('💰 Creating USDC transfer:', {
+    const amountWei = parseUnits(totalAmount.toString(), 6);
+    
+    console.log('💰 Creating USDC transfer with ContractFunctionParameters:', {
+      contract: USDC_CONTRACT,
       to: orderData.receiveAddress,
       amount: totalAmount,
-      amountWei: parseUnits(totalAmount.toString(), 6).toString()
+      amountWei: amountWei.toString()
     });
     
     return [{
-      to: USDC_CONTRACT as `0x${string}`,
-      value: BigInt(0),
-      data: `0xa9059cbb000000000000000000000000${orderData.receiveAddress.slice(2).padStart(64, '0')}${parseUnits(totalAmount.toString(), 6).toString(16).padStart(64, '0')}` as `0x${string}`
+      address: USDC_CONTRACT as `0x${string}`,
+      abi: USDC_ABI,
+      functionName: 'transfer',
+      args: [orderData.receiveAddress as `0x${string}`, amountWei]
     }];
   })() : [];
 
@@ -118,17 +137,29 @@ export function SimplePayment({
     console.log('Transaction status:', status);
     
     switch (status.statusName) {
+      case 'init':
+        console.log('Transaction initialized');
+        break;
+      case 'transactionIdle':
+        console.log('Transaction idle, ready to build');
+        break;
       case 'buildingTransaction':
         setStatusMessage('Preparing transaction...');
+        console.log('Building transaction with calls:', calls);
         break;
       case 'transactionPending':
         setCurrentStep('processing');
-        setStatusMessage('Transaction pending...');
+        setStatusMessage('Transaction pending on Base network...');
+        console.log('Transaction submitted to Base network');
+        break;
+      case 'transactionLegacyExecuted':
+        console.log('Legacy transaction executed:', status.statusData);
         break;
       case 'success':
         setCurrentStep('success');
         const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
         setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
+        console.log('Transaction successful:', status.statusData);
         
         // Start background polling for provider failures
         if (orderData?.id) {
@@ -143,10 +174,12 @@ export function SimplePayment({
         break;
       case 'error':
         setCurrentStep('error');
-        onError('Transaction failed');
+        console.error('Transaction error:', status.statusData);
+        const errorMessage = status.statusData?.message || 'Transaction failed';
+        onError(errorMessage);
         break;
     }
-  }, [orderData?.id, onError, currency, onSuccess]);
+  }, [orderData?.id, onError, currency, onSuccess, calls]);
 
   // Pure polling implementation for reliable status tracking
   const startPolling = useCallback((orderId: string) => {
