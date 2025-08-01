@@ -92,11 +92,11 @@ export async function POST(request: NextRequest) {
     if (currency === 'KES') {
       // Kenya phone number
       formattedPhone = cleanPhone.startsWith('254') ? cleanPhone : cleanPhone.replace(/^0/, '254');
-      institution = 'MPESA';
+      institution = 'SAFAKEPC'; // M-PESA provider ID from PayCrest API
     } else if (currency === 'NGN') {
       // Nigeria phone number
       formattedPhone = cleanPhone.startsWith('234') ? cleanPhone : cleanPhone.replace(/^0/, '234');
-      institution = 'GTB'; // Default bank
+      institution = 'GTBINGLA'; // Guaranty Trust Bank provider ID from PayCrest API
     } else {
       throw new Error('Unsupported currency');
     }
@@ -111,6 +111,8 @@ export async function POST(request: NextRequest) {
         institution,
         accountIdentifier: formattedPhone,
         accountName,
+        memo: `Payment from Minisend to ${accountName}`, // Required field!
+        metadata: {}, // Required empty object
         currency,
       },
       reference: `minisend_${Date.now()}`,
@@ -131,18 +133,19 @@ export async function POST(request: NextRequest) {
     });
 
     console.log('📡 PayCrest order response status:', orderResponse.status);
+    console.log('📡 PayCrest order response headers:', Object.fromEntries(orderResponse.headers.entries()));
     
     if (!orderResponse.ok) {
       let errorData;
       try {
         errorData = await orderResponse.json();
+        console.error('PayCrest order error (JSON):', JSON.stringify(errorData, null, 2));
       } catch {
         const errorText = await orderResponse.text();
         console.error('PayCrest order error (text):', errorText);
         throw new Error(`PayCrest API error ${orderResponse.status}: ${errorText}`);
       }
       
-      console.error('PayCrest order error (JSON):', errorData);
       throw new Error(`Failed to create PayCrest order: ${errorData.message || JSON.stringify(errorData)}`);
     }
 
