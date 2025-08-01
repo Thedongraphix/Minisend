@@ -282,12 +282,6 @@ export function Home({ setActiveTab }: HomeProps) {
             
           <div className="space-y-3">
             <div className="text-gray-400 text-sm">Connect your wallet to get started</div>
-            {/* Mobile-optimized wallet connection hint */}
-            {typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (
-              <div className="text-xs text-amber-400 bg-amber-900/20 px-3 py-2 rounded-lg">
-                📱 Mobile users: Connection may take 30-45 seconds
-              </div>
-            )}
             <div className="flex justify-center">
               <Wallet>
                 <ConnectWallet 
