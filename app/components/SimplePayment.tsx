@@ -111,9 +111,22 @@ export function SimplePayment({
 
   // Step 2: Create transaction calls for Base Pay using proper ContractFunctionParameters
   const calls: ContractFunctionParameters[] = orderData ? (() => {
+    console.log('🗒️ Order data received:', orderData);
+    
+    // Validate order data
+    if (!orderData.receiveAddress || !orderData.amount) {
+      console.error('❌ Invalid order data - missing receiveAddress or amount');
+      return [];
+    }
+    
     const totalAmount = parseFloat(orderData.amount) + 
                        parseFloat(orderData.senderFee || '0') + 
                        parseFloat(orderData.transactionFee || '0');
+    
+    if (totalAmount <= 0) {
+      console.error('❌ Invalid total amount:', totalAmount);
+      return [];
+    }
     
     const amountWei = parseUnits(totalAmount.toString(), 6);
     
@@ -121,16 +134,28 @@ export function SimplePayment({
       contract: USDC_CONTRACT,
       to: orderData.receiveAddress,
       amount: totalAmount,
-      amountWei: amountWei.toString()
+      amountWei: amountWei.toString(),
+      isValidAddress: /^0x[a-fA-F0-9]{40}$/.test(orderData.receiveAddress)
     });
     
-    return [{
+    // Validate Ethereum address format
+    if (!/^0x[a-fA-F0-9]{40}$/.test(orderData.receiveAddress)) {
+      console.error('❌ Invalid Ethereum address format:', orderData.receiveAddress);
+      return [];
+    }
+    
+    const callData = {
       address: USDC_CONTRACT as `0x${string}`,
       abi: USDC_ABI,
-      functionName: 'transfer',
+      functionName: 'transfer' as const,
       args: [orderData.receiveAddress as `0x${string}`, amountWei]
-    }];
+    };
+    
+    console.log('✅ Transaction call data created:', callData);
+    return [callData];
   })() : [];
+  
+  console.log('📊 Final calls array:', calls);
 
   // Step 3: Handle transaction status
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
@@ -314,22 +339,35 @@ export function SimplePayment({
             <p className="text-gray-300">
               Send ${((parseFloat(orderData.amount) || 0) + (parseFloat(orderData.senderFee) || 0) + (parseFloat(orderData.transactionFee) || 0)).toFixed(2)} → {currency} to {phoneNumber}
             </p>
+            {/* Debug info */}
+            <div className="text-xs text-gray-500 mt-2">
+              <p>Order ID: {orderData.id}</p>
+              <p>Receive Address: {orderData.receiveAddress}</p>
+              <p>Calls Length: {calls.length}</p>
+            </div>
           </div>
           
-          <Transaction
-            chainId={base.id}
-            calls={calls}
-            onStatus={handleTransactionStatus}
-          >
-            <TransactionButton
-              text={`Send Payment $${((parseFloat(orderData.amount) || 0) + (parseFloat(orderData.senderFee) || 0) + (parseFloat(orderData.transactionFee) || 0)).toFixed(2)}`}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300"
-            />
-            
-            <TransactionStatus>
-              <TransactionStatusLabel />
-            </TransactionStatus>
-          </Transaction>
+          {calls.length > 0 ? (
+            <Transaction
+              chainId={base.id}
+              calls={calls}
+              onStatus={handleTransactionStatus}
+            >
+              <TransactionButton
+                text={`Send Payment $${((parseFloat(orderData.amount) || 0) + (parseFloat(orderData.senderFee) || 0) + (parseFloat(orderData.transactionFee) || 0)).toFixed(2)}`}
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300"
+              />
+              
+              <TransactionStatus>
+                <TransactionStatusLabel />
+              </TransactionStatus>
+            </Transaction>
+          ) : (
+            <div className="text-center p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-300">❌ No transaction calls generated</p>
+              <p className="text-red-400 text-sm mt-2">Order data: {JSON.stringify(orderData)}</p>
+            </div>
+          )}
         </div>
       )}
 

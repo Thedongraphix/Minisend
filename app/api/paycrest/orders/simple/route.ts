@@ -5,36 +5,84 @@ const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate API key first
+    if (!PAYCREST_API_KEY) {
+      console.error('❌ PAYCREST_API_KEY not configured');
+      return NextResponse.json(
+        { error: 'PayCrest API key not configured' },
+        { status: 500 }
+      );
+    }
+    
     const body = await request.json();
+    console.log('📝 Order creation request body:', body);
+    
     const { 
       amount, 
       phoneNumber, 
       accountName, 
       currency,
-      returnAddress
+      returnAddress,
+      rate // Accept rate from client if provided
     } = body;
 
     // Validate required fields
     if (!amount || !phoneNumber || !accountName || !currency || !returnAddress) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: amount, phoneNumber, accountName, currency, returnAddress' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate amount is positive number
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid amount: must be a positive number' },
         { status: 400 }
       );
     }
 
-    // Get rate first
-    const rateResponse = await fetch(`${PAYCREST_API_URL}/rates/USDC/${amount}/${currency}`, {
-      headers: {
-        'API-Key': PAYCREST_API_KEY!,
-      },
-    });
+    // Get rate - use provided rate or fetch from PayCrest
+    let exchangeRate: number;
+    
+    if (rate && !isNaN(parseFloat(rate))) {
+      exchangeRate = parseFloat(rate);
+      console.log('💹 Using provided rate:', exchangeRate);
+    } else {
+      console.log('📊 Fetching rate from PayCrest:', `${PAYCREST_API_URL}/rates/USDC/${amountNum}/${currency}`);
+      
+      const rateResponse = await fetch(`${PAYCREST_API_URL}/rates/USDC/${amountNum}/${currency}`, {
+        headers: {
+          'API-Key': PAYCREST_API_KEY!,
+        },
+      });
 
-    if (!rateResponse.ok) {
-      throw new Error('Failed to fetch rate');
+      if (!rateResponse.ok) {
+        const errorText = await rateResponse.text();
+        console.error('Rate fetch failed:', rateResponse.status, errorText);
+        throw new Error(`Failed to fetch rate: ${rateResponse.status} ${errorText}`);
+      }
+
+      const rateData = await rateResponse.json();
+      console.log('💹 Rate data received:', rateData);
+      
+      // Handle different response formats
+      if (rateData.status === 'success' && rateData.data) {
+        exchangeRate = parseFloat(rateData.data);
+      } else if (typeof rateData === 'number') {
+        exchangeRate = rateData;
+      } else {
+        console.error('Invalid rate data format:', rateData);
+        throw new Error('Invalid rate data format from PayCrest API');
+      }
     }
-
-    const rateData = await rateResponse.json();
-    const rate = parseFloat(rateData.data);
+    
+    if (isNaN(exchangeRate) || exchangeRate <= 0) {
+      throw new Error(`Invalid rate value: ${exchangeRate}`);
+    }
+    
+    console.log('✅ Rate confirmed:', exchangeRate);
 
     // Format phone number
     const cleanPhone = phoneNumber.replace(/\D/g, '');
@@ -53,22 +101,26 @@ export async function POST(request: NextRequest) {
       throw new Error('Unsupported currency');
     }
 
-    // Create PayCrest order
+    // Create PayCrest order payload according to API docs
     const orderData = {
-      amount: amount.toString(),
+      amount: amountNum, // Should be number, not string
       token: 'USDC',
+      rate: exchangeRate, // Should be number, not string
       network: 'base',
-      rate: rate.toString(),
       recipient: {
         institution,
         accountIdentifier: formattedPhone,
         accountName,
         currency,
       },
-      reference: `order_${Date.now()}`,
+      reference: `minisend_${Date.now()}`,
       returnAddress,
     };
+    
+    console.log('📦 PayCrest order payload:', JSON.stringify(orderData, null, 2));
 
+    console.log('🚀 Creating PayCrest order at:', `${PAYCREST_API_URL}/sender/orders`);
+    
     const orderResponse = await fetch(`${PAYCREST_API_URL}/sender/orders`, {
       method: 'POST',
       headers: {
@@ -78,12 +130,24 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(orderData),
     });
 
+    console.log('📡 PayCrest order response status:', orderResponse.status);
+    
     if (!orderResponse.ok) {
-      const errorData = await orderResponse.json();
-      throw new Error(errorData.message || 'Failed to create order');
+      let errorData;
+      try {
+        errorData = await orderResponse.json();
+      } catch {
+        const errorText = await orderResponse.text();
+        console.error('PayCrest order error (text):', errorText);
+        throw new Error(`PayCrest API error ${orderResponse.status}: ${errorText}`);
+      }
+      
+      console.error('PayCrest order error (JSON):', errorData);
+      throw new Error(`Failed to create PayCrest order: ${errorData.message || JSON.stringify(errorData)}`);
     }
 
     const order = await orderResponse.json();
+    console.log('✅ PayCrest order created:', order);
 
     return NextResponse.json({
       success: true,
