@@ -2,18 +2,7 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { useMobileWalletConnection } from "../../hooks/useMobileWalletConnection";
-import {
-  Wallet,
-  WalletDropdown,
-  WalletDropdownDisconnect,
-} from '@coinbase/onchainkit/wallet';
-import {
-  Address,
-  Avatar,
-  Name,
-  Identity,
-  EthBalance,
-} from '@coinbase/onchainkit/identity';
+import { MobileWalletHandler } from "./MobileWalletHandler";
 
 type ButtonProps = {
   children: ReactNode;
@@ -235,13 +224,7 @@ type HomeProps = {
 };
 
 export function Home({ setActiveTab }: HomeProps) {
-  const { 
-    isConnected, 
-    isConnecting, 
-    connectWallet, 
-    isMobile, 
-    isCoinbaseWallet 
-  } = useMobileWalletConnection();
+  const { isConnected } = useMobileWalletConnection();
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -286,41 +269,15 @@ export function Home({ setActiveTab }: HomeProps) {
           </p>
             
           <div className="space-y-3">
-            <div className="text-gray-400 text-sm">
-              {isCoinbaseWallet && isMobile ? 'Connect your Coinbase Wallet to get started' : 'Connect your wallet to get started'}
-            </div>
-            <div className="flex justify-center">
-              {!isConnected ? (
-                <button
-                  onClick={connectWallet}
-                  disabled={isConnecting}
-                  className="!bg-blue-600 hover:!bg-blue-700 disabled:!bg-gray-600 !text-white px-6 py-3 rounded-lg font-medium transition-colors border-none flex items-center space-x-2"
-                >
-                  {isConnecting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Connecting...</span>
-                    </>
-                  ) : (
-                    <span>Connect Wallet</span>
-                  )}
-                </button>
-              ) : (
-                <Wallet>
-                  <WalletDropdown>
-                    <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                      <Avatar />
-                      <Name />
-                      <Address />
-                      <EthBalance />
-                    </Identity>
-                    <WalletDropdownDisconnect />
-                  </WalletDropdown>
-                </Wallet>
-              )}
-            </div>
+            <div className="text-gray-400 text-sm">Connect your wallet to get started</div>
             
-            {/* Mobile connection tips */}
+            {/* Enhanced Mobile Wallet Handler */}
+            <MobileWalletHandler 
+              showBalance={true}
+              className="w-full"
+            />
+            
+            {/* Continue Button - Show when connected */}
             {isConnected && (
               <Button
                 onClick={() => setActiveTab("offramp")}
