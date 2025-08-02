@@ -1,35 +1,30 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { SimpleUSDCPayment } from './SimpleUSDCPayment';
 import { DirectUSDCBalance } from './DirectUSDCBalance';
-import { Wallet, ConnectWallet } from '@coinbase/onchainkit/wallet';
+import { useMobileWalletConnection } from '../../hooks/useMobileWalletConnection';
 import Image from 'next/image';
 
 export function SimpleOffRampFlow() {
-  const { address, isConnected } = useAccount();
   const { context } = useMiniKit();
+  const { 
+    address, 
+    isConnected, 
+    isConnecting, 
+    connectWallet, 
+    error: connectionError,
+    isMobile,
+    isCoinbaseWallet,
+    canRetry
+  } = useMobileWalletConnection();
+  
   const [mounted, setMounted] = useState(false);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
   
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Detect Coinbase Wallet environment (clientFid: 309857)
-  const isCoinbaseWallet = context?.user?.fid === 309857;
-  const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-  // Monitor connection status and errors
-  useEffect(() => {
-    if (isConnected && connectionError) {
-      setConnectionError(null);
-      setIsConnecting(false);
-    }
-  }, [isConnected, connectionError]);
 
   // Log environment information for debugging
   useEffect(() => {
@@ -119,33 +114,39 @@ export function SimpleOffRampFlow() {
         </div>
 
         <div className="relative">
-          <Wallet>
-            <ConnectWallet
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
-            >
-              Connect Wallet
-            </ConnectWallet>
-          </Wallet>
+          <button
+            onClick={connectWallet}
+            disabled={isConnecting}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center space-x-2"
+          >
+            {isConnecting ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Connecting...</span>
+              </>
+            ) : (
+              <span>Connect Wallet</span>
+            )}
+          </button>
           
           {connectionError && (
             <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
               <p className="text-red-400 text-sm">{connectionError}</p>
-              <button 
-                onClick={() => {
-                  setConnectionError(null);
-                  setIsConnecting(false);
-                }}
-                className="text-red-300 text-xs mt-1 underline hover:text-red-200"
-              >
-                Try again
-              </button>
+              {canRetry && (
+                <button 
+                  onClick={connectWallet}
+                  className="text-red-300 text-xs mt-1 underline hover:text-red-200"
+                >
+                  Try again
+                </button>
+              )}
             </div>
           )}
           
-          {isMobile && (
+          {isMobile && !connectionError && (
             <div className="mt-4 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
               <p className="text-blue-300 text-xs text-center">
-                {isCoinbaseWallet ? '⏳ May take 90s on mobile' : '⏳ Optimized for mobile'}
+                {isCoinbaseWallet ? '⏳ May take up to 2.5 minutes on mobile' : '⏳ Optimized for mobile'}
               </p>
             </div>
           )}

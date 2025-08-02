@@ -1,10 +1,9 @@
 "use client";
 
 import { type ReactNode, useEffect, useState } from "react";
-import { useAccount } from "wagmi";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
+import { useMobileWalletConnection } from "../../hooks/useMobileWalletConnection";
 import {
-  ConnectWallet,
   Wallet,
   WalletDropdown,
   WalletDropdownDisconnect,
@@ -237,17 +236,19 @@ type HomeProps = {
 };
 
 export function Home({ setActiveTab }: HomeProps) {
-  const { isConnected } = useAccount();
   const { context } = useMiniKit();
+  const { 
+    isConnected, 
+    isConnecting, 
+    connectWallet, 
+    isMobile, 
+    isCoinbaseWallet 
+  } = useMobileWalletConnection();
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Detect mobile and Coinbase Wallet for optimized UX
-  const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isCoinbaseWallet = context?.user?.fid === 309857;
   
   // Prevent hydration mismatch by not rendering wallet-dependent content on server
   if (!mounted) {
@@ -291,23 +292,34 @@ export function Home({ setActiveTab }: HomeProps) {
               {isCoinbaseWallet && isMobile ? 'Connect your Coinbase Wallet to get started' : 'Connect your wallet to get started'}
             </div>
             <div className="flex justify-center">
-              <Wallet>
-                <ConnectWallet 
-                  className="!bg-blue-600 hover:!bg-blue-700 !text-white px-6 py-3 rounded-lg font-medium transition-colors !border-none"
+              {!isConnected ? (
+                <button
+                  onClick={connectWallet}
+                  disabled={isConnecting}
+                  className="!bg-blue-600 hover:!bg-blue-700 disabled:!bg-gray-600 !text-white px-6 py-3 rounded-lg font-medium transition-colors border-none flex items-center space-x-2"
                 >
-                  <Avatar className="h-5 w-5" />
-                  <Name />
-                </ConnectWallet>
-                <WalletDropdown>
-                  <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                    <Avatar />
-                    <Name />
-                    <Address />
-                    <EthBalance />
-                  </Identity>
-                  <WalletDropdownDisconnect />
-                </WalletDropdown>
-              </Wallet>
+                  {isConnecting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Connecting...</span>
+                    </>
+                  ) : (
+                    <span>Connect Wallet</span>
+                  )}
+                </button>
+              ) : (
+                <Wallet>
+                  <WalletDropdown>
+                    <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+                      <Avatar />
+                      <Name />
+                      <Address />
+                      <EthBalance />
+                    </Identity>
+                    <WalletDropdownDisconnect />
+                  </WalletDropdown>
+                </Wallet>
+              )}
             </div>
             
             {/* Mobile connection tips */}
