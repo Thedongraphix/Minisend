@@ -240,7 +240,6 @@ export function Home({ setActiveTab }: HomeProps) {
   const { isConnected } = useAccount();
   const { context } = useMiniKit();
   const [mounted, setMounted] = useState(false);
-  const [connectionAttempted, setConnectionAttempted] = useState(false);
   
   useEffect(() => {
     setMounted(true);
@@ -295,7 +294,6 @@ export function Home({ setActiveTab }: HomeProps) {
               <Wallet>
                 <ConnectWallet 
                   className="!bg-blue-600 hover:!bg-blue-700 !text-white px-6 py-3 rounded-lg font-medium transition-colors !border-none"
-                  text={isCoinbaseWallet ? "Connect Coinbase Wallet" : "Connect Wallet"}
                 >
                   <Avatar className="h-5 w-5" />
                   <Name />
@@ -313,12 +311,12 @@ export function Home({ setActiveTab }: HomeProps) {
             </div>
             
             {/* Mobile connection tips */}
-            {connectionAttempted && !isConnected && isMobile && (
-              <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                <p className="text-yellow-300 text-xs text-center">
+            {!isConnected && isMobile && (
+              <div className="mt-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-blue-300 text-xs text-center">
                   {isCoinbaseWallet 
-                    ? "⏳ Coinbase Wallet connections may take up to 90 seconds on mobile" 
-                    : "⏳ Wallet connection in progress... Please wait"
+                    ? "💡 Coinbase Wallet connections may take up to 90 seconds on mobile" 
+                    : "💡 Wallet connection optimized for mobile"
                   }
                 </p>
               </div>
