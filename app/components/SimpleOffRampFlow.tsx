@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { SimpleUSDCPayment } from './SimpleUSDCPayment';
 import { DirectUSDCBalance } from './DirectUSDCBalance';
 import { Wallet, ConnectWallet } from '@coinbase/onchainkit/wallet';
@@ -9,6 +10,7 @@ import Image from 'next/image';
 
 export function SimpleOffRampFlow() {
   const { address, isConnected } = useAccount();
+  const { context } = useMiniKit();
   const [mounted, setMounted] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -17,6 +19,10 @@ export function SimpleOffRampFlow() {
     setMounted(true);
   }, []);
 
+  // Detect Coinbase Wallet environment (clientFid: 309857)
+  const isCoinbaseWallet = context?.user?.fid === 309857;
+  const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   // Monitor connection status and errors
   useEffect(() => {
     if (isConnected && connectionError) {
@@ -24,6 +30,18 @@ export function SimpleOffRampFlow() {
       setIsConnecting(false);
     }
   }, [isConnected, connectionError]);
+
+  // Log environment information for debugging
+  useEffect(() => {
+    if (mounted && context) {
+      console.log('Wallet Environment:', {
+        isCoinbaseWallet,
+        isMobile,
+        clientFid: context.user?.fid,
+        location: context.location
+      });
+    }
+  }, [mounted, context, isCoinbaseWallet, isMobile]);
 
   // Form state
   const [step, setStep] = useState<'form' | 'payment' | 'success'>('form');
@@ -115,13 +133,19 @@ export function SimpleOffRampFlow() {
               onPress={() => {
                 setIsConnecting(true);
                 setConnectionError(null);
-                // Auto-clear connecting state after timeout
+                
+                // Environment-specific timeout handling
+                const timeoutDuration = isCoinbaseWallet && isMobile ? 90000 : 60000; // Longer for CBW mobile
+                
                 setTimeout(() => {
                   if (!isConnected) {
                     setIsConnecting(false);
-                    setConnectionError('Connection timed out. Please try again.');
+                    const errorMessage = isCoinbaseWallet 
+                      ? 'Coinbase Wallet connection timed out. Please try refreshing the app.'
+                      : 'Connection timed out. Please try again.';
+                    setConnectionError(errorMessage);
                   }
-                }, 60000); // 60 second timeout for mobile
+                }, timeoutDuration);
               }}
             >
               {isConnecting ? 'Connecting...' : 'Connect Coinbase Wallet'}
@@ -145,8 +169,17 @@ export function SimpleOffRampFlow() {
           
           <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <p className="text-blue-300 text-xs">
-              💡 <strong>Mobile Tips:</strong> If connection fails, try refreshing the app or using the wallet browser directly.
+              💡 <strong>{isCoinbaseWallet ? 'Coinbase Wallet' : 'Mobile'} Tips:</strong> {' '}
+              {isCoinbaseWallet 
+                ? 'Connection may take up to 90 seconds. If it fails, try refreshing the frame or opening in Coinbase Wallet browser.'
+                : 'If connection fails, try refreshing the app or using the wallet browser directly.'
+              }
             </p>
+            {isCoinbaseWallet && (
+              <p className="text-blue-400 text-xs mt-1">
+                🔍 <strong>Debug:</strong> ClientFid {context?.user?.fid} detected
+              </p>
+            )}
           </div>
         </div>
       </div>
