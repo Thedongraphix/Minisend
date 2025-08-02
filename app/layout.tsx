@@ -7,6 +7,9 @@ import { Providers } from "./providers";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // Prevent zoom during wallet connections
+  viewportFit: "cover", // Better mobile frame handling
 };
 
 export async function generateMetadata(): Promise<Metadata> {
