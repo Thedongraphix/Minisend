@@ -277,16 +277,26 @@ export function Home({ setActiveTab }: HomeProps) {
               className="w-full"
             />
             
-            {/* Continue Button - Show when connected */}
+            {/* Action Buttons - Show when connected */}
             {isConnected && (
-              <Button
-                onClick={() => setActiveTab("offramp")}
-                variant="primary"
-                size="large"
-                fullWidth
-              >
-                Send USDC → Mobile Money
-              </Button>
+              <div className="space-y-3">
+                <Button
+                  onClick={() => setActiveTab("swap")}
+                  variant="primary"
+                  size="large"
+                  fullWidth
+                >
+                  Swap
+                </Button>
+                <Button
+                  onClick={() => setActiveTab("offramp")}
+                  variant="primary"
+                  size="large"
+                  fullWidth
+                >
+                  Send USDC → Mobile Money
+                </Button>
+              </div>
             )}
           </div>
         </div>
