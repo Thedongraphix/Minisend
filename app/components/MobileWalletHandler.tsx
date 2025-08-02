@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useAccount, useConnect } from 'wagmi';
-import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { useAccount } from 'wagmi';
 import { getName } from '@coinbase/onchainkit/identity';
 import { base } from 'viem/chains';
 import {
   Wallet,
+  ConnectWallet,
   WalletDropdown,
   WalletDropdownDisconnect,
 } from '@coinbase/onchainkit/wallet';
@@ -30,15 +30,9 @@ export function MobileWalletHandler({
   className = '' 
 }: MobileWalletHandlerProps) {
   const { address, isConnected } = useAccount();
-  const { connect, connectors, error, isPending } = useConnect();
-  const { context } = useMiniKit();
   
   const [mounted, setMounted] = useState(false);
   const [basename, setBasename] = useState<string | null>(null);
-  
-  // Detect if we're in a Farcaster frame
-  const isInFrame = typeof window !== 'undefined' && window.parent !== window;
-  const isFarcasterFrame = isInFrame && context;
 
   // Fetch basename when address changes
   useEffect(() => {
@@ -78,103 +72,38 @@ export function MobileWalletHandler({
     );
   }
 
-  // Show error message if connection failed
-  if (error) {
-    return (
-      <div className={`space-y-3 ${className}`}>
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-          <p className="text-red-400 text-sm text-center">Connection error: {error.message}</p>
-          <button 
-            onClick={() => connect({ connector: connectors[0] })}
-            className="text-red-300 text-xs mt-2 underline hover:text-red-200 block mx-auto"
-          >
-            Try again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading state
-  if (isPending) {
-    return (
-      <div className={`flex justify-center ${className}`}>
-        <button
-          disabled
-          className="bg-gray-600 text-white px-6 py-3 rounded-lg font-medium flex items-center space-x-2 min-w-[160px] justify-center"
-        >
-          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span>Connecting...</span>
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {!isConnected ? (
-        <div className="flex justify-center">
-          {isFarcasterFrame ? (
-            // In Farcaster frames, use OnchainKit Wallet component which handles MiniKit automatically
-            <Wallet>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors border-none min-w-[160px]">
-                Connect Wallet
-              </button>
-            </Wallet>
-          ) : (
-            // On web, show available connectors or use OnchainKit Wallet
-            connectors.length > 0 ? (
-              <div className="space-y-2">
-                {connectors.slice(0, 3).map((connector) => (
-                  <button
-                    key={connector.id}
-                    onClick={() => connect({ connector })}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors border-none min-w-[160px] block"
-                  >
-                    Connect {connector.name}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <Wallet>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors border-none min-w-[160px]">
-                  Connect Wallet
-                </button>
-              </Wallet>
-            )
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {/* Connected Wallet Display using OnchainKit components */}
-          <div className="flex justify-center">
-            <Wallet>
-              <WalletDropdown>
-                <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                  <Avatar />
-                  {basename ? (
-                    <div className="text-sm font-medium">{basename}</div>
-                  ) : (
-                    <Name />
-                  )}
-                  <Address />
-                  {showBalance && <EthBalance />}
-                </Identity>
-                <WalletDropdownDisconnect />
-              </WalletDropdown>
-            </Wallet>
-          </div>
+      <div className="flex justify-center">
+        <Wallet>
+          <ConnectWallet>
+            <Avatar className="h-6 w-6" />
+            <Name />
+          </ConnectWallet>
+          <WalletDropdown>
+            <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
+              <Avatar />
+              {basename ? (
+                <div className="text-sm font-medium">{basename}</div>
+              ) : (
+                <Name />
+              )}
+              <Address />
+              {showBalance && <EthBalance />}
+            </Identity>
+            <WalletDropdownDisconnect />
+          </WalletDropdown>
+        </Wallet>
+      </div>
 
-          {/* Debug info in development */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="bg-gray-500/10 border border-gray-500/20 rounded-lg p-2">
-              <div className="text-gray-400 text-xs text-center space-y-1">
-                <p>Connected: {address}</p>
-                <p>Environment: {isFarcasterFrame ? 'Farcaster Frame' : 'Web'}</p>
-                <p>Connector: {connectors[0]?.name || 'Unknown'}</p>
-              </div>
-            </div>
-          )}
+      {/* Debug info in development */}
+      {process.env.NODE_ENV === 'development' && address && (
+        <div className="bg-gray-500/10 border border-gray-500/20 rounded-lg p-2">
+          <div className="text-gray-400 text-xs text-center space-y-1">
+            <p>Connected: {address}</p>
+            {basename && <p>Basename: {basename}</p>}
+          </div>
         </div>
       )}
     </div>
