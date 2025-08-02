@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useAccount, useConnect } from 'wagmi';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { getName } from '@coinbase/onchainkit/identity';
+import { base } from 'viem/chains';
 import {
   Wallet,
   WalletDropdown,
@@ -32,10 +34,29 @@ export function MobileWalletHandler({
   const { context } = useMiniKit();
   
   const [mounted, setMounted] = useState(false);
+  const [basename, setBasename] = useState<string | null>(null);
   
   // Detect if we're in a Farcaster frame
   const isInFrame = typeof window !== 'undefined' && window.parent !== window;
   const isFarcasterFrame = isInFrame && context;
+
+  // Fetch basename when address changes
+  useEffect(() => {
+    if (address && isConnected) {
+      getName({ address, chain: base })
+        .then((name) => {
+          if (name && name.endsWith('.base.eth')) {
+            setBasename(name);
+          }
+        })
+        .catch(() => {
+          // Ignore errors - basename is optional
+          setBasename(null);
+        });
+    } else {
+      setBasename(null);
+    }
+  }, [address, isConnected]);
   
   useEffect(() => {
     setMounted(true);
@@ -101,13 +122,26 @@ export function MobileWalletHandler({
               </button>
             </Wallet>
           ) : (
-            // On web, use manual connection with first available connector
-            <button
-              onClick={() => connect({ connector: connectors[0] })}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors border-none min-w-[160px]"
-            >
-              Connect Wallet
-            </button>
+            // On web, show available connectors or use OnchainKit Wallet
+            connectors.length > 0 ? (
+              <div className="space-y-2">
+                {connectors.slice(0, 3).map((connector) => (
+                  <button
+                    key={connector.id}
+                    onClick={() => connect({ connector })}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors border-none min-w-[160px] block"
+                  >
+                    Connect {connector.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <Wallet>
+                <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors border-none min-w-[160px]">
+                  Connect Wallet
+                </button>
+              </Wallet>
+            )
           )}
         </div>
       ) : (
@@ -118,7 +152,11 @@ export function MobileWalletHandler({
               <WalletDropdown>
                 <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
                   <Avatar />
-                  <Name />
+                  {basename ? (
+                    <div className="text-sm font-medium">{basename}</div>
+                  ) : (
+                    <Name />
+                  )}
                   <Address />
                   {showBalance && <EthBalance />}
                 </Identity>
