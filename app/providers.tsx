@@ -6,9 +6,21 @@ import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
 import { base } from "viem/chains";
 
 export function Providers(props: { children: ReactNode }) {
+  // Use ONCHAINKIT_API_KEY or fallback to CDP_API_KEY for compatibility
+  const apiKey = process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY || process.env.NEXT_PUBLIC_CDP_API_KEY;
+  
+  // Log API key status for debugging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔑 OnchainKit API Key status:', {
+      hasOnchainKitKey: !!process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY,
+      hasCdpKey: !!process.env.NEXT_PUBLIC_CDP_API_KEY,
+      usingKey: apiKey ? `${apiKey.substring(0, 8)}...` : 'NONE',
+    });
+  }
+  
   return (
     <OnchainKitProvider
-      apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
+      apiKey={apiKey}
       chain={base}
       config={{
         appearance: {
@@ -25,7 +37,7 @@ export function Providers(props: { children: ReactNode }) {
       }}
     >
       <MiniKitProvider
-        apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
+        apiKey={apiKey}
         chain={base}
         config={{
           appearance: {

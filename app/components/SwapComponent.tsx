@@ -55,10 +55,20 @@ export function SwapComponent({ className = '' }: SwapComponentProps) {
           </p>
         </div>
         
-        <SwapDefault 
-          from={[eth, usdc, usdt, dai]} 
-          to={[usdc, eth, usdt, dai]} 
-        />
+        <div className="bg-gray-800/50 rounded-xl p-4">
+          <SwapDefault 
+            from={[eth, usdc, usdt, dai]} 
+            to={[usdc, eth, usdt, dai]} 
+          />
+        </div>
+        
+        {/* Network indicator */}
+        <div className="mt-4 text-center">
+          <div className="text-xs text-gray-500 flex items-center justify-center space-x-1">
+            <span>⚡</span>
+            <span>Base Network</span>
+          </div>
+        </div>
       </div>
     </div>
   );
