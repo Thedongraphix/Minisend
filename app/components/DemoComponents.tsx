@@ -283,7 +283,7 @@ export function Home({ setActiveTab }: HomeProps) {
       <Card>
         <div className="space-y-4 text-center">
           <p className="text-gray-300 text-base leading-relaxed">
-            Convert USDC to mobile money instantly. Send directly to M-Pesa and bank accounts in Kenya & Nigeria.
+            Convert USDC to mobile money. Send to M-Pesa and banks in Kenya & Nigeria.
           </p>
             
           <div className="space-y-3">
@@ -311,16 +311,6 @@ export function Home({ setActiveTab }: HomeProps) {
             </div>
             
             {/* Mobile connection tips */}
-            {!isConnected && isMobile && (
-              <div className="mt-3 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                <p className="text-blue-300 text-xs text-center">
-                  {isCoinbaseWallet 
-                    ? "💡 Coinbase Wallet connections may take up to 90 seconds on mobile" 
-                    : "💡 Wallet connection optimized for mobile"
-                  }
-                </p>
-              </div>
-            )}
             {isConnected && (
               <Button
                 onClick={() => setActiveTab("offramp")}

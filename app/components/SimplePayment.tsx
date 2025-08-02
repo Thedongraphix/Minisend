@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLabel } from '@coinbase/onchainkit/transaction';
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
@@ -38,6 +38,46 @@ export function SimplePayment({
 
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+
+  // Polling function for payment status
+  const startPolling = useCallback((orderId: string) => {
+    let attempts = 0;
+    const maxAttempts = 180;
+    
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/paycrest/status/${orderId}`);
+        if (response.ok) {
+          const result = await response.json();
+          const order = result.order;
+          
+          if (order?.status === 'settled') {
+            const method = currency === 'KES' ? 'M-Pesa' : 'bank account';
+            setStatusMessage(`🎉 ${currency} delivered to your ${method}!`);
+            return;
+          }
+          
+          if (['refunded', 'expired', 'cancelled'].includes(order?.status)) {
+            setCurrentStep('error');
+            onError(`Payment ${order.status}. Please try again.`);
+            return;
+          }
+        }
+        
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000);
+        }
+      } catch {
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000);
+        }
+      }
+    };
+    
+    setTimeout(poll, 10000);
+  }, [currency, onError]);
 
   // Step 1: Get live rate and create order
   const createOrder = useCallback(async () => {
@@ -110,7 +150,7 @@ export function SimplePayment({
   ] as const;
 
   // Step 2: Create transaction calls for Base Pay using proper ContractFunctionParameters
-  const calls: ContractFunctionParameters[] = orderData ? (() => {
+  const calls: ContractFunctionParameters[] = useMemo(() => orderData ? (() => {
     console.log('🗒️ Order data received:', orderData);
     
     // Validate order data
@@ -153,7 +193,7 @@ export function SimplePayment({
     
     console.log('✅ Transaction call data created:', callData);
     return [callData];
-  })() : [];
+  })() : [], [orderData]);
   
   console.log('📊 Final calls array:', calls);
 
@@ -188,10 +228,8 @@ export function SimplePayment({
         
         // Start background polling for provider failures
         if (orderData?.id) {
-          // Using setTimeout to avoid dependency issues with useCallback
-          setTimeout(() => {
-            if (orderData?.id) startPolling(orderData.id);
-          }, 0);
+          const orderId = orderData.id;
+          setTimeout(() => startPolling(orderId), 0);
         }
         
         // Call onSuccess immediately - user has successfully sent funds to PayCrest
@@ -204,112 +242,8 @@ export function SimplePayment({
         onError(errorMessage);
         break;
     }
-  }, [orderData?.id, onError, currency, onSuccess, calls]);
+  }, [orderData?.id, onError, currency, onSuccess, calls, startPolling]);
 
-  // Pure polling implementation for reliable status tracking
-  const startPolling = useCallback((orderId: string) => {
-    console.log('🔍 Starting PayCrest status polling for order:', orderId);
-    let attempts = 0;
-    const maxAttempts = 180; // 15 minutes max (5s interval)
-    
-    const poll = async () => {
-      try {
-        console.log(`📡 Polling attempt ${attempts + 1}/${maxAttempts} for order:`, orderId);
-        const response = await fetch(`/api/paycrest/status/${orderId}`);
-        
-        if (!response.ok) {
-          console.log('❌ API response not OK:', response.status);
-          attempts++;
-          if (attempts < maxAttempts) {
-            setTimeout(poll, 5000);
-          }
-          return;
-        }
-        
-        const result = await response.json();
-        const order = result.order;
-        
-        console.log('📊 Payment status:', { 
-          orderId, 
-          status: order?.status, 
-          attempt: attempts + 1
-        });
-        
-        // Handle specific status updates per PayCrest docs
-        switch (order?.status) {
-          case 'pending':
-            console.log('Order is pending provider assignment');
-            break;
-            
-          case 'processing':
-            console.log('Provider assigned, fulfillment in progress');
-            break;
-            
-          case 'validated':
-            console.log('Funds have been sent to recipient\'s bank/mobile network (value transfer confirmed)');
-            // Show delivery confirmation - this is when M-Pesa actually gets the money
-            setCurrentStep('success');
-            const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-            setStatusMessage(`🎉 ${currency} delivered to your ${deliveryMethod}! Check your mobile for confirmation.`);
-            return;
-            
-          case 'settled':
-            console.log('Order has been settled on blockchain');
-            // Already delivered, just log
-            return;
-            
-          case 'fulfilled':
-            console.log('Payment completed by provider');
-            // Show delivery confirmation
-            setCurrentStep('success');
-            const method = currency === 'NGN' ? 'bank account' : 'mobile number';
-            setStatusMessage(`🎉 ${currency} delivered to your ${method}! Check your mobile for confirmation.`);
-            return;
-        }
-        
-        // Handle failure states per PayCrest docs
-        if (order?.status === 'refunded') {
-          console.log('Order was refunded to the sender');
-          setCurrentStep('error');
-          onError('Payment was refunded. Please try again.');
-          return;
-        }
-        
-        if (order?.status === 'expired') {
-          console.log('Order expired without completion');
-          setCurrentStep('error');
-          onError('Payment expired. Please try again.');
-          return;
-        }
-        
-        if (order?.status === 'cancelled') {
-          console.log('Order was cancelled');
-          setCurrentStep('error');
-          onError('Payment was cancelled. Please try again.');
-          return;
-        }
-        
-        // Continue polling for in-progress states
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 5000); // Poll every 5 seconds
-        } else {
-          console.log('⏰ Polling timeout - payment may still be processing');
-          // Don't change UI - let user's success state remain
-        }
-        
-      } catch (error) {
-        console.error('📡 Polling error:', error);
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 5000);
-        }
-      }
-    };
-    
-    // Start polling after 10 seconds to allow PayCrest processing time
-    setTimeout(poll, 10000);
-  }, [onError, currency]);
 
 
   return (

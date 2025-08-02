@@ -115,40 +115,15 @@ export function SimpleOffRampFlow() {
             )}
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">MiniSend</h1>
-          <p className="text-gray-300">Send money to mobile wallets instantly</p>
-          <p className="text-blue-300 text-sm mt-2">
-            💼 Secure payments via Coinbase Wallet
-          </p>
-          {isConnecting && (
-            <p className="text-yellow-300 text-sm mt-2">
-              Connecting to wallet... This may take up to 60 seconds on mobile
-            </p>
-          )}
+          <p className="text-gray-300">Send money to mobile wallets</p>
         </div>
 
         <div className="relative">
           <Wallet>
             <ConnectWallet
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
-              onPress={() => {
-                setIsConnecting(true);
-                setConnectionError(null);
-                
-                // Environment-specific timeout handling
-                const timeoutDuration = isCoinbaseWallet && isMobile ? 90000 : 60000; // Longer for CBW mobile
-                
-                setTimeout(() => {
-                  if (!isConnected) {
-                    setIsConnecting(false);
-                    const errorMessage = isCoinbaseWallet 
-                      ? 'Coinbase Wallet connection timed out. Please try refreshing the app.'
-                      : 'Connection timed out. Please try again.';
-                    setConnectionError(errorMessage);
-                  }
-                }, timeoutDuration);
-              }}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
             >
-              {isConnecting ? 'Connecting...' : 'Connect Coinbase Wallet'}
+              Connect Wallet
             </ConnectWallet>
           </Wallet>
           
@@ -167,20 +142,13 @@ export function SimpleOffRampFlow() {
             </div>
           )}
           
-          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <p className="text-blue-300 text-xs">
-              💡 <strong>{isCoinbaseWallet ? 'Coinbase Wallet' : 'Mobile'} Tips:</strong> {' '}
-              {isCoinbaseWallet 
-                ? 'Connection may take up to 90 seconds. If it fails, try refreshing the frame or opening in Coinbase Wallet browser.'
-                : 'If connection fails, try refreshing the app or using the wallet browser directly.'
-              }
-            </p>
-            {isCoinbaseWallet && (
-              <p className="text-blue-400 text-xs mt-1">
-                🔍 <strong>Debug:</strong> ClientFid {context?.user?.fid} detected
+          {isMobile && (
+            <div className="mt-4 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-blue-300 text-xs text-center">
+                {isCoinbaseWallet ? '⏳ May take 90s on mobile' : '⏳ Optimized for mobile'}
               </p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     );
