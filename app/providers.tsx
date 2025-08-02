@@ -22,9 +22,6 @@ export function Providers(props: { children: ReactNode }) {
           privacyUrl: 'https://minisend.xyz/privacy',
           signUpEnabled: true,
         },
-        customConnectors: {
-          walletConnectProjectId: '811f00d6a45a76e280f042d7638678f6',
-        },
       }}
     >
       {props.children}
