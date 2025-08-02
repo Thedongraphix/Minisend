@@ -2,23 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { useAccount } from 'wagmi';
 import { SimpleUSDCPayment } from './SimpleUSDCPayment';
 import { DirectUSDCBalance } from './DirectUSDCBalance';
-import { useMobileWalletConnection } from '../../hooks/useMobileWalletConnection';
+import { MobileWalletHandler } from './MobileWalletHandler';
 import Image from 'next/image';
 
 export function SimpleOffRampFlow() {
   const { context } = useMiniKit();
-  const { 
-    address, 
-    isConnected, 
-    isConnecting, 
-    connectWallet, 
-    error: connectionError,
-    isMobile,
-    isCoinbaseWallet,
-    canRetry
-  } = useMobileWalletConnection();
+  const { address, isConnected } = useAccount();
   
   const [mounted, setMounted] = useState(false);
   
@@ -29,14 +21,14 @@ export function SimpleOffRampFlow() {
   // Log environment information for debugging
   useEffect(() => {
     if (mounted && context) {
-      console.log('Wallet Environment:', {
-        isCoinbaseWallet,
-        isMobile,
+      console.log('MiniKit Environment:', {
         clientFid: context.user?.fid,
-        location: context.location
+        location: context.location,
+        address,
+        isConnected
       });
     }
-  }, [mounted, context, isCoinbaseWallet, isMobile]);
+  }, [mounted, context, address, isConnected]);
 
   // Form state
   const [step, setStep] = useState<'form' | 'payment' | 'success'>('form');
@@ -50,7 +42,7 @@ export function SimpleOffRampFlow() {
   const [rateLoading, setRateLoading] = useState(false);
   const [rateError, setRateError] = useState<string | null>(null);
 
-  console.log('Coinbase Wallet connection state:', { 
+  console.log('Wallet connection state:', { 
     address,
     isConnected
   });
@@ -101,56 +93,15 @@ export function SimpleOffRampFlow() {
       <div className="max-w-md mx-auto p-6">
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-4">
-            {isConnecting ? (
-              <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            )}
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">MiniSend</h1>
           <p className="text-gray-300">Send money to mobile wallets</p>
         </div>
 
-        <div className="relative">
-          <button
-            onClick={connectWallet}
-            disabled={isConnecting}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors flex items-center justify-center space-x-2"
-          >
-            {isConnecting ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Connecting...</span>
-              </>
-            ) : (
-              <span>Connect Wallet</span>
-            )}
-          </button>
-          
-          {connectionError && (
-            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-red-400 text-sm">{connectionError}</p>
-              {canRetry && (
-                <button 
-                  onClick={connectWallet}
-                  className="text-red-300 text-xs mt-1 underline hover:text-red-200"
-                >
-                  Try again
-                </button>
-              )}
-            </div>
-          )}
-          
-          {isMobile && !connectionError && (
-            <div className="mt-4 p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <p className="text-blue-300 text-xs text-center">
-                {isCoinbaseWallet ? '⏳ May take up to 2.5 minutes on mobile' : '⏳ Optimized for mobile'}
-              </p>
-            </div>
-          )}
-        </div>
+        <MobileWalletHandler showBalance={false} />
       </div>
     );
   }
