@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useState } from "react";
-import { useMobileWalletConnection } from "../../hooks/useMobileWalletConnection";
+import { useAccount } from 'wagmi';
 import { MobileWalletHandler } from "./MobileWalletHandler";
 
 type ButtonProps = {
@@ -224,7 +224,7 @@ type HomeProps = {
 };
 
 export function Home({ setActiveTab }: HomeProps) {
-  const { isConnected } = useMobileWalletConnection();
+  const { isConnected } = useAccount();
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
