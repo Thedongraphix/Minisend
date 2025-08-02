@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useConnect } from 'wagmi';
 import {
   Wallet,
   WalletDropdown,
@@ -28,7 +28,6 @@ export function MobileWalletHandler({
 }: MobileWalletHandlerProps) {
   const { address, isConnected } = useAccount();
   const { connect, connectors, error, isPending } = useConnect();
-  const { disconnect } = useDisconnect();
   
   const [mounted, setMounted] = useState(false);
   
