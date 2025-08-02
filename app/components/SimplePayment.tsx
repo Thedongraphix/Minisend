@@ -193,7 +193,7 @@ export function SimplePayment({
     
     console.log('✅ Transaction call data created:', callData);
     return [callData];
-  })() : [], [orderData]);
+  })() : [], [orderData, USDC_ABI]);
   
   console.log('📊 Final calls array:', calls);
 

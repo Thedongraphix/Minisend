@@ -1,7 +1,6 @@
 "use client";
 
 import { type ReactNode, useEffect, useState } from "react";
-import { useMiniKit } from "@coinbase/onchainkit/minikit";
 import { useMobileWalletConnection } from "../../hooks/useMobileWalletConnection";
 import {
   Wallet,
@@ -236,7 +235,6 @@ type HomeProps = {
 };
 
 export function Home({ setActiveTab }: HomeProps) {
-  const { context } = useMiniKit();
   const { 
     isConnected, 
     isConnecting, 
