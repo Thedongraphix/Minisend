@@ -295,18 +295,7 @@ export function Home({ setActiveTab }: HomeProps) {
               <Wallet>
                 <ConnectWallet 
                   className="!bg-blue-600 hover:!bg-blue-700 !text-white px-6 py-3 rounded-lg font-medium transition-colors !border-none"
-                  disconnectedLabel={isCoinbaseWallet ? "Connect Coinbase Wallet" : "Connect Wallet"}
-                  onPress={() => {
-                    setConnectionAttempted(true);
-                    // Mobile-specific connection handling
-                    if (isMobile) {
-                      // Prevent viewport scaling during connection
-                      const viewport = document.querySelector('meta[name="viewport"]');
-                      if (viewport) {
-                        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
-                      }
-                    }
-                  }}
+                  text={isCoinbaseWallet ? "Connect Coinbase Wallet" : "Connect Wallet"}
                 >
                   <Avatar className="h-5 w-5" />
                   <Name />
