@@ -28,7 +28,8 @@
   },
   "dependencies": {
     "@coinbase/onchainkit": "latest",
-    "@farcaster/frame-sdk": "^0.0.60",
+    "@farcaster/frame-sdk": "^0.0.64",
+    "@farcaster/frame-wagmi-connector": "^0.0.53",
     "@farcaster/miniapp-wagmi-connector": "^1.0.0",
     "@supabase/supabase-js": "^2.52.0",
     "@tanstack/react-query": "^5",
