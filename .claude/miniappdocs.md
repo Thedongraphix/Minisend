@@ -1153,5 +1153,79 @@ If you're still experiencing issues after following this guide:
 
 
 
+Based on the search results, I can see information about wallet connection issues in Farcaster frames. Here's how to solve wallet connection timeout issues on mobile in Farcaster frames:
 
+## Common Solutions for Mobile Wallet Connection Timeouts
+
+**1. Use the Farcaster Frame Connector**
+Set up your Wagmi provider to use the Farcaster mini app connector:
+
+```typescript
+import { createConfig, http, WagmiProvider } from "wagmi";
+import { base } from "wagmi/chains";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
+
+export const config = createConfig({
+  chains: [base],
+  transports: {
+    [base.id]: http()
+  },
+  connectors: [farcasterFrame()],
+});
+```
+
+**2. Handle Connection Errors Gracefully**
+Implement proper error handling for wallet connection timeouts:
+
+```typescript
+import { useAccount, useConnect, useDisconnect } from "wagmi";
+
+export function WalletConnectMinimal() {
+  const { address, isConnected } = useAccount();
+  const { connect, error, isLoading } = useConnect();
+  const { disconnect } = useDisconnect();
+
+  if (error) {
+    return <div>Connection error: {error.message}</div>;
+  }
+
+  if (isLoading) {
+    return <div>Connecting...</div>;
+  }
+
+  return (
+    <button onClick={() => 
+      isConnected 
+        ? disconnect() 
+        : connect({ connector: config.connectors[0] })}>
+      {isConnected ? "Disconnect" : "Connect"}
+    </button>
+  );
+}
+```
+
+**3. Check Your Frame Configuration**
+Ensure your frame manifest is properly configured at `/.well-known/farcaster.json` and includes all required fields.
+
+**4. Use MiniKit for Better Integration**
+If building a Mini App, use MiniKit which handles wallet connections automatically:
+
+```bash
+npx create-onchain --mini
+```
+
+**5. Debug Mobile Issues**
+Use Eruda for mobile debugging by adding this to your HTML head:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>
+  if (window.location.hostname === 'localhost' || window.location.hostname.includes('ngrok')) {
+    eruda.init();
+  }
+</script>
+```
+
+The timeout issue is often related to improper connector setup or network connectivity problems on mobile. Using the Farcaster frame connector and proper error handling should resolve most connection timeout issues.
 
