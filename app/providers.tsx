@@ -21,7 +21,6 @@ const wagmiConfig = createConfig({
     coinbaseWallet({
       appName: 'Minisend',
       appLogoUrl: 'https://minisend.xyz/minisend-logo.png',
-      preference: 'smartWalletOnly',
       enableMobileWalletLink: true,
       // Add mobile-specific configuration
       headlessMode: true, // Prevent external browser redirects

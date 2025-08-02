@@ -135,22 +135,23 @@ export function SimplePayment({
     }
   }, [amount, phoneNumber, accountName, currency, returnAddress, onError]);
 
-  // USDC ERC20 ABI for transfer function
-  const USDC_ABI = [
-    {
-      name: 'transfer',
-      type: 'function',
-      stateMutability: 'nonpayable',
-      inputs: [
-        { name: 'to', type: 'address' },
-        { name: 'amount', type: 'uint256' }
-      ],
-      outputs: [{ name: 'success', type: 'bool' }]
-    }
-  ] as const;
-
   // Step 2: Create transaction calls for Base Pay using proper ContractFunctionParameters
-  const calls: ContractFunctionParameters[] = useMemo(() => orderData ? (() => {
+  const calls: ContractFunctionParameters[] = useMemo(() => {
+    // USDC ERC20 ABI for transfer function - moved inside useMemo
+    const USDC_ABI = [
+      {
+        name: 'transfer',
+        type: 'function',
+        stateMutability: 'nonpayable',
+        inputs: [
+          { name: 'to', type: 'address' },
+          { name: 'amount', type: 'uint256' }
+        ],
+        outputs: [{ name: 'success', type: 'bool' }]
+      }
+    ] as const;
+
+    return orderData ? (() => {
     console.log('🗒️ Order data received:', orderData);
     
     // Validate order data
@@ -193,7 +194,8 @@ export function SimplePayment({
     
     console.log('✅ Transaction call data created:', callData);
     return [callData];
-  })() : [], [orderData, USDC_ABI]);
+  })() : [];
+  }, [orderData]);
   
   console.log('📊 Final calls array:', calls);
 
