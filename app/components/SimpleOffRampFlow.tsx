@@ -10,10 +10,20 @@ import Image from 'next/image';
 export function SimpleOffRampFlow() {
   const { address, isConnected } = useAccount();
   const [mounted, setMounted] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
   
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Monitor connection status and errors
+  useEffect(() => {
+    if (isConnected && connectionError) {
+      setConnectionError(null);
+      setIsConnecting(false);
+    }
+  }, [isConnected, connectionError]);
 
   // Form state
   const [step, setStep] = useState<'form' | 'payment' | 'success'>('form');
@@ -78,24 +88,67 @@ export function SimpleOffRampFlow() {
       <div className="max-w-md mx-auto p-6">
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
+            {isConnecting ? (
+              <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            )}
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">MiniSend</h1>
           <p className="text-gray-300">Send money to mobile wallets instantly</p>
           <p className="text-blue-300 text-sm mt-2">
             💼 Secure payments via Coinbase Wallet
           </p>
+          {isConnecting && (
+            <p className="text-yellow-300 text-sm mt-2">
+              Connecting to wallet... This may take up to 60 seconds on mobile
+            </p>
+          )}
         </div>
 
-        <Wallet>
-          <ConnectWallet
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
-          >
-            Connect Coinbase Wallet
-          </ConnectWallet>
-        </Wallet>
+        <div className="relative">
+          <Wallet>
+            <ConnectWallet
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
+              onPress={() => {
+                setIsConnecting(true);
+                setConnectionError(null);
+                // Auto-clear connecting state after timeout
+                setTimeout(() => {
+                  if (!isConnected) {
+                    setIsConnecting(false);
+                    setConnectionError('Connection timed out. Please try again.');
+                  }
+                }, 60000); // 60 second timeout for mobile
+              }}
+            >
+              {isConnecting ? 'Connecting...' : 'Connect Coinbase Wallet'}
+            </ConnectWallet>
+          </Wallet>
+          
+          {connectionError && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-400 text-sm">{connectionError}</p>
+              <button 
+                onClick={() => {
+                  setConnectionError(null);
+                  setIsConnecting(false);
+                }}
+                className="text-red-300 text-xs mt-1 underline hover:text-red-200"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+          
+          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <p className="text-blue-300 text-xs">
+              💡 <strong>Mobile Tips:</strong> If connection fails, try refreshing the app or using the wallet browser directly.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
