@@ -3,44 +3,45 @@
 import { type ReactNode } from "react";
 import { base } from "wagmi/chains";
 import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
-import { WagmiProvider, createConfig, http } from "wagmi";
+import { WagmiProvider, createConfig, http, createStorage, cookieStorage } from "wagmi";
 import { coinbaseWallet } from "wagmi/connectors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Mobile-optimized wagmi config to handle keys.coinbase.com redirects
+// Mobile-optimized wagmi config with timeout fixes
 const wagmiConfig = createConfig({
   chains: [base],
   transports: {
     [base.id]: http(undefined, {
-      timeout: 120000, // 2 minutes for mobile
-      retryCount: 2,
-      retryDelay: 3000,
+      timeout: 120000, // Extended timeout for mobile
+      retryCount: 3,
+      retryDelay: 5000,
     }),
   },
   connectors: [
     coinbaseWallet({
       appName: 'Minisend',
       appLogoUrl: 'https://minisend.xyz/minisend-logo.png',
-      enableMobileWalletLink: true,
-      // Add mobile-specific configuration
-      headlessMode: true, // Prevent external browser redirects
-      reloadOnDisconnect: false, // Prevent page reloads on mobile
+      preference: 'smartWalletOnly', // CRITICAL: Bypasses redirect timeouts
+      headlessMode: false, // Allow proper mobile wallet flows
     })
   ],
-  // Override SSR for mobile
-  ssr: false,
+  // Add persistent storage for mobile sessions
+  storage: createStorage({
+    storage: cookieStorage,
+  }),
+  ssr: false, // Important for mobile compatibility
 });
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
-      retryDelay: 2000,
-      staleTime: 30000,
+      retry: 2,
+      retryDelay: 3000,
+      staleTime: 60000, // Extended for mobile
     },
     mutations: {
-      retry: 1,
-      retryDelay: 2000,
+      retry: 2,
+      retryDelay: 3000,
     },
   },
 });
@@ -65,10 +66,6 @@ export function Providers(props: { children: ReactNode }) {
               privacyUrl: 'https://minisend.xyz/privacy',
               signUpEnabled: true,
             },
-            // Enable paymaster for sponsored transactions if configured
-            ...(process.env.NEXT_PUBLIC_PAYMASTER_ENDPOINT && {
-              paymaster: process.env.NEXT_PUBLIC_PAYMASTER_ENDPOINT
-            })
           }}
         >
           {props.children}
