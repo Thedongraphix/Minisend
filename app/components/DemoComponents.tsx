@@ -2,6 +2,7 @@
 
 import { type ReactNode, useEffect, useState } from "react";
 import { useAccount } from "wagmi";
+import { useMiniKit } from "@coinbase/onchainkit/minikit";
 import {
   ConnectWallet,
   Wallet,
@@ -237,11 +238,17 @@ type HomeProps = {
 
 export function Home({ setActiveTab }: HomeProps) {
   const { isConnected } = useAccount();
+  const { context } = useMiniKit();
   const [mounted, setMounted] = useState(false);
+  const [connectionAttempted, setConnectionAttempted] = useState(false);
   
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Detect mobile and Coinbase Wallet for optimized UX
+  const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isCoinbaseWallet = context?.user?.fid === 309857;
   
   // Prevent hydration mismatch by not rendering wallet-dependent content on server
   if (!mounted) {
@@ -281,12 +288,25 @@ export function Home({ setActiveTab }: HomeProps) {
           </p>
             
           <div className="space-y-3">
-            <div className="text-gray-400 text-sm">Connect your wallet to get started</div>
+            <div className="text-gray-400 text-sm">
+              {isCoinbaseWallet && isMobile ? 'Connect your Coinbase Wallet to get started' : 'Connect your wallet to get started'}
+            </div>
             <div className="flex justify-center">
               <Wallet>
                 <ConnectWallet 
                   className="!bg-blue-600 hover:!bg-blue-700 !text-white px-6 py-3 rounded-lg font-medium transition-colors !border-none"
-                  disconnectedLabel="Connect Wallet"
+                  disconnectedLabel={isCoinbaseWallet ? "Connect Coinbase Wallet" : "Connect Wallet"}
+                  onPress={() => {
+                    setConnectionAttempted(true);
+                    // Mobile-specific connection handling
+                    if (isMobile) {
+                      // Prevent viewport scaling during connection
+                      const viewport = document.querySelector('meta[name="viewport"]');
+                      if (viewport) {
+                        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+                      }
+                    }
+                  }}
                 >
                   <Avatar className="h-5 w-5" />
                   <Name />
@@ -302,6 +322,18 @@ export function Home({ setActiveTab }: HomeProps) {
                 </WalletDropdown>
               </Wallet>
             </div>
+            
+            {/* Mobile connection tips */}
+            {connectionAttempted && !isConnected && isMobile && (
+              <div className="mt-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <p className="text-yellow-300 text-xs text-center">
+                  {isCoinbaseWallet 
+                    ? "⏳ Coinbase Wallet connections may take up to 90 seconds on mobile" 
+                    : "⏳ Wallet connection in progress... Please wait"
+                  }
+                </p>
+              </div>
+            )}
             {isConnected && (
               <Button
                 onClick={() => setActiveTab("offramp")}
