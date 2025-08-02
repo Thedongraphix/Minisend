@@ -33,53 +33,48 @@ export default function App() {
     if (!mounted) return;
     
     const initializeFrame = async () => {
-      let retryCount = 0;
-      const maxRetries = 3;
-      const retryDelay = 2000; // 2 seconds
-      
-      // Detect mobile for better timeout handling
+      // Detect mobile for optimized handling
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const frameTimeout = isMobile ? 30000 : 15000; // Longer timeout for mobile
-
-      const attemptInitialization = async () => {
+      
+      console.log('MiniKit - Frame ready status:', isFrameReady);
+      console.log('MiniKit - Context:', context);
+      console.log('MiniKit - Mobile detected:', isMobile);
+      
+      if (!isFrameReady) {
         try {
-          console.log('MiniKit - Frame ready status:', isFrameReady);
-          console.log('MiniKit - Context:', context);
-          console.log('MiniKit - Mobile detected:', isMobile);
-          
-          if (!isFrameReady) {
-            // Add timeout to setFrameReady with mobile-optimized timing
-            const timeout = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Frame initialization timeout')), frameTimeout)
-            );
+          // For mobile, add preventive measures against gesture conflicts
+          if (isMobile) {
+            // Prevent default touch behaviors that might interfere with wallet connection
+            document.body.style.touchAction = 'pan-x pan-y';
+            document.body.style.userSelect = 'none';
             
-            await Promise.race([setFrameReady(), timeout]);
-            console.log('MiniKit - Frame marked as ready');
-          }
-        } catch (error) {
-          console.error(`MiniKit - Frame initialization error (attempt ${retryCount + 1}):`, error);
-          
-          if (retryCount < maxRetries) {
-            retryCount++;
-            const nextDelay = isMobile ? retryDelay * 1.5 : retryDelay; // Longer delays on mobile
-            console.log(`MiniKit - Retrying initialization in ${nextDelay}ms...`);
-            setTimeout(attemptInitialization, nextDelay);
-          } else {
-            console.error('MiniKit - Max retry attempts reached, initialization failed');
-            // On mobile, try one final initialization without timeout
-            if (isMobile && !isFrameReady) {
-              try {
-                await setFrameReady();
-                console.log('MiniKit - Final mobile initialization succeeded');
-              } catch (finalError) {
-                console.error('MiniKit - Final mobile initialization failed:', finalError);
-              }
+            // Add mobile-specific meta tags to prevent zooming during wallet connection
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+              viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
             }
           }
+          
+          // Initialize frame with mobile optimizations
+          await setFrameReady();
+          console.log('MiniKit - Frame marked as ready with mobile optimizations');
+          
+        } catch (error) {
+          console.error('MiniKit - Frame initialization error:', error);
+          
+          // Fallback initialization for mobile
+          if (isMobile) {
+            setTimeout(async () => {
+              try {
+                await setFrameReady();
+                console.log('MiniKit - Mobile fallback initialization succeeded');
+              } catch (fallbackError) {
+                console.error('MiniKit - Mobile fallback initialization failed:', fallbackError);
+              }
+            }, 1000);
+          }
         }
-      };
-
-      attemptInitialization();
+      }
     };
 
     initializeFrame();
