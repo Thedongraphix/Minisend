@@ -41,10 +41,13 @@ export function MobileWalletHandler({
         .then((name) => {
           if (name && name.endsWith('.base.eth')) {
             setBasename(name);
+            console.log('✅ Basename found:', name);
+          } else {
+            setBasename(null);
           }
         })
-        .catch(() => {
-          // Ignore errors - basename is optional
+        .catch((error) => {
+          console.log('ℹ️ No basename found for address:', address);
           setBasename(null);
         });
     } else {
