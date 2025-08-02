@@ -76,6 +76,32 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Mobile debugging support - only in development */}
+        <script 
+          src="https://cdn.jsdelivr.net/npm/eruda" 
+          defer
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Only enable Eruda for development and testing
+              if (typeof window !== 'undefined') {
+                const hostname = window.location.hostname;
+                if (hostname === 'localhost' || 
+                    hostname.includes('ngrok') || 
+                    hostname.includes('vercel') ||
+                    window.location.search.includes('debug=true')) {
+                  if (window.eruda) {
+                    window.eruda.init();
+                    console.log('Eruda mobile debugging enabled');
+                  }
+                }
+              }
+            `
+          }}
+        />
+      </head>
       <body className="bg-background">
         <Providers>{children}</Providers>
       </body>
