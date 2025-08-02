@@ -33,51 +33,114 @@ export default function App() {
     if (!mounted) return;
     
     const initializeFrame = async () => {
-      // Detect mobile for optimized handling
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      // Enhanced mobile detection
+      const isMobile = typeof window !== 'undefined' && (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        window.innerWidth <= 768
+      );
       
-      console.log('MiniKit - Frame ready status:', isFrameReady);
-      console.log('MiniKit - Context:', context);
-      console.log('MiniKit - Mobile detected:', isMobile);
+      const isInFrame = typeof window !== 'undefined' && window.parent !== window;
+      const isCoinbaseWallet = typeof window !== 'undefined' && (
+        context?.user?.fid !== undefined || 
+        window.location.href.includes('coinbase') ||
+        navigator.userAgent.includes('CoinbaseWallet')
+      );
+      
+      console.log('🖼️ Frame initialization:', {
+        isFrameReady,
+        isMobile,
+        isInFrame,
+        isCoinbaseWallet,
+        context: context ? 'available' : 'unavailable',
+        userAgent: navigator.userAgent.substring(0, 100)
+      });
       
       if (!isFrameReady) {
         try {
-          // For mobile, add preventive measures against gesture conflicts
+          // Pre-initialization mobile optimizations
           if (isMobile) {
-            // Prevent default touch behaviors that might interfere with wallet connection
-            document.body.style.touchAction = 'pan-x pan-y';
-            document.body.style.userSelect = 'none';
-            
-            // Add mobile-specific meta tags to prevent zooming during wallet connection
+            // Optimize viewport for mobile frame context
             const viewport = document.querySelector('meta[name="viewport"]');
             if (viewport) {
-              viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+              viewport.setAttribute('content', 
+                'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
+              );
             }
+            
+            // Prevent gesture conflicts during frame initialization
+            document.body.style.touchAction = 'manipulation';
+            document.body.style.userSelect = 'none';
+            document.body.style.setProperty('-webkit-user-select', 'none');
+            document.body.style.setProperty('-webkit-touch-callout', 'none');
+            
+            // Add mobile-specific frame ready delay
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
           
-          // Initialize frame with mobile optimizations
-          await setFrameReady();
-          console.log('MiniKit - Frame marked as ready with mobile optimizations');
+          // Enhanced frame initialization with timeout
+          const frameInitPromise = setFrameReady();
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Frame initialization timeout')), 10000)
+          );
+          
+          await Promise.race([frameInitPromise, timeoutPromise]);
+          console.log('✅ Frame marked as ready successfully');
           
         } catch (error) {
-          console.error('MiniKit - Frame initialization error:', error);
+          console.error('❌ Frame initialization error:', error);
           
-          // Fallback initialization for mobile
-          if (isMobile) {
-            setTimeout(async () => {
+          // Enhanced fallback with multiple retry strategies
+          if (isMobile || isInFrame) {
+            const retryStrategies = [
+              { delay: 1000, timeout: 8000 },
+              { delay: 2000, timeout: 5000 },
+              { delay: 3000, timeout: 3000 }
+            ];
+            
+            for (const [index, strategy] of retryStrategies.entries()) {
               try {
-                await setFrameReady();
-                console.log('MiniKit - Mobile fallback initialization succeeded');
-              } catch (fallbackError) {
-                console.error('MiniKit - Mobile fallback initialization failed:', fallbackError);
+                console.log(`🔄 Attempting frame initialization retry ${index + 1}...`);
+                
+                await new Promise(resolve => setTimeout(resolve, strategy.delay));
+                
+                const retryPromise = setFrameReady();
+                const retryTimeout = new Promise((_, reject) =>
+                  setTimeout(() => reject(new Error('Retry timeout')), strategy.timeout)
+                );
+                
+                await Promise.race([retryPromise, retryTimeout]);
+                console.log(`✅ Frame initialization retry ${index + 1} succeeded`);
+                break;
+                
+              } catch (retryError) {
+                console.error(`❌ Frame initialization retry ${index + 1} failed:`, retryError);
+                
+                if (index === retryStrategies.length - 1) {
+                  console.error('💥 All frame initialization retries exhausted');
+                  // Continue anyway - some features may still work
+                }
               }
-            }, 1000);
+            }
+          }
+        } finally {
+          // Cleanup mobile optimizations after a delay
+          if (isMobile) {
+            setTimeout(() => {
+              document.body.style.touchAction = '';
+              document.body.style.userSelect = '';
+              document.body.style.removeProperty('-webkit-user-select');
+              document.body.style.removeProperty('-webkit-touch-callout');
+            }, 2000);
           }
         }
+      } else {
+        console.log('✅ Frame already ready');
       }
     };
 
-    initializeFrame();
+    // Debounce initialization to prevent multiple calls
+    const timeoutId = setTimeout(initializeFrame, 100);
+    return () => clearTimeout(timeoutId);
   }, [mounted, setFrameReady, isFrameReady, context]);
 
   // Initialize analytics session when context is available
