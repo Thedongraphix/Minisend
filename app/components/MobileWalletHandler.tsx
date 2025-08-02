@@ -46,7 +46,7 @@ export function MobileWalletHandler({
             setBasename(null);
           }
         })
-        .catch((error) => {
+        .catch(() => {
           console.log('ℹ️ No basename found for address:', address);
           setBasename(null);
         });
