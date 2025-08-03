@@ -77,6 +77,12 @@ function getClientName(clientFid: number): string {
  * Track analytics event
  */
 export function trackEvent(event: string, properties?: Record<string, unknown>): void {
+  // Don't track events without proper user context
+  if (!properties?.userId) {
+    console.log(`⚠️ Skipping analytics event '${event}' - no userId provided`);
+    return;
+  }
+
   const analyticsEvent: AnalyticsEvent = {
     event,
     timestamp: Date.now(),
@@ -86,8 +92,17 @@ export function trackEvent(event: string, properties?: Record<string, unknown>):
   // Add user context if available
   if (properties?.userId && typeof properties.userId === 'string') {
     analyticsEvent.userId = properties.userId;
-    analyticsEvent.clientId = typeof properties.clientId === 'number' ? properties.clientId : undefined;
-    analyticsEvent.clientFid = typeof properties.userFid === 'number' ? properties.userFid : undefined;
+    
+    // Ensure we have valid numeric values or undefined
+    analyticsEvent.clientId = typeof properties.clientId === 'number' && properties.clientId > 0 
+      ? properties.clientId 
+      : undefined;
+    
+    analyticsEvent.clientFid = typeof properties.clientFid === 'number' && properties.clientFid > 0
+      ? properties.clientFid 
+      : typeof properties.userFid === 'number' && properties.userFid > 0
+        ? properties.userFid 
+        : undefined;
   }
 
   analyticsEvents.push(analyticsEvent);
