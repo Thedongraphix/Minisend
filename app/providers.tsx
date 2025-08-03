@@ -16,6 +16,10 @@ export function Providers(props: { children: ReactNode }) {
       hasCdpKey: !!process.env.NEXT_PUBLIC_CDP_API_KEY,
       usingKey: apiKey ? `${apiKey.substring(0, 8)}...` : 'NONE',
     });
+    
+    if (!apiKey || apiKey === 'your_valid_api_key_here') {
+      console.error('❌ Invalid or missing API key. Get one from https://portal.cdp.coinbase.com/access/api');
+    }
   }
   
   return (
