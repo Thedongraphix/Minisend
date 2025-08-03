@@ -146,13 +146,18 @@ export default function App() {
 
   // Initialize analytics session when context is available
   useEffect(() => {
-    if (!mounted || !context || !isFrameReady) return;
-    if (context && isFrameReady) {
-      const session = initializeUserSession(context);
-      const clientInfo = getClientInfo(context);
-      
+    if (!mounted || !context || !isFrameReady || !context.user?.fid) return;
+    
+    const session = initializeUserSession(context);
+    const clientInfo = getClientInfo(context);
+    
+    // Only track if we have valid session data
+    if (session) {
       trackEvent("app_loaded", {
-        userId: session?.userId,
+        userId: session.userId,
+        clientId: session.clientId,
+        clientFid: session.clientFid,
+        userFid: context.user.fid,
         clientName: clientInfo.clientName,
         isCoinbaseWallet: clientInfo.isCoinbaseWallet,
         isFrameAdded: clientInfo.isFrameAdded,
@@ -162,15 +167,20 @@ export default function App() {
 
   // Track tab changes for analytics
   useEffect(() => {
-    if (!mounted || !context) return;
-    if (context) {
-      const clientInfo = getClientInfo(context);
-      trackEvent("tab_changed", {
-        userId: context.user?.fid ? `fid:${context.user.fid}` : undefined,
-        tab: activeTab,
-        clientName: clientInfo.clientName,
-      });
-    }
+    if (!mounted || !context || !context.user?.fid) return;
+    
+    const clientInfo = getClientInfo(context);
+    const userId = `fid:${context.user.fid}`;
+    const clientId = context.client?.clientFid;
+    
+    trackEvent("tab_changed", {
+      userId,
+      clientId,
+      clientFid: context.user.fid,
+      userFid: context.user.fid,
+      tab: activeTab,
+      clientName: clientInfo.clientName,
+    });
   }, [mounted, activeTab, context]);
 
   const handleAddFrame = useCallback(async () => {
