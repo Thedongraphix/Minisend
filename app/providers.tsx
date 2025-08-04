@@ -18,14 +18,19 @@ export function Providers(props: { children: ReactNode }) {
     });
     
     if (!apiKey || apiKey === 'your_valid_api_key_here') {
-      console.error('❌ Invalid or missing API key. Get one from https://portal.cdp.coinbase.com/access/api');
+      console.error('❌ Invalid or missing API key. Get one from https://portal.cdp.coinbase.com/products/base-node');
+      console.log('🔄 Falling back to public Base RPC endpoint');
     }
   }
   
+  // Use fallback RPC if API key is invalid to prevent 404 errors
+  const isValidApiKey = apiKey && apiKey !== 'your_valid_api_key_here';
+  
   return (
     <OnchainKitProvider
-      apiKey={apiKey}
+      apiKey={isValidApiKey ? apiKey : undefined}
       chain={base}
+      rpcUrl={!isValidApiKey ? 'https://mainnet.base.org' : undefined}
       config={{
         appearance: {
           mode: 'auto',
@@ -41,7 +46,7 @@ export function Providers(props: { children: ReactNode }) {
       }}
     >
       <MiniKitProvider
-        apiKey={apiKey}
+        apiKey={isValidApiKey ? apiKey : undefined}
         chain={base}
         config={{
           appearance: {
