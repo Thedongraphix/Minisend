@@ -281,14 +281,6 @@ export function Home({ setActiveTab }: HomeProps) {
             {isConnected && (
               <div className="space-y-3">
                 <Button
-                  onClick={() => setActiveTab("swap")}
-                  variant="primary"
-                  size="large"
-                  fullWidth
-                >
-                  Swap
-                </Button>
-                <Button
                   onClick={() => setActiveTab("offramp")}
                   variant="primary"
                   size="large"
