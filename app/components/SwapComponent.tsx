@@ -131,16 +131,6 @@ export function SwapComponent({ className = '' }: SwapComponentProps) {
 export function ETHToUSDCSwap({ className = '' }: SwapComponentProps) {
   const { address } = useAccount();
 
-  const handleSwapSuccess = (transactionReceipt: any) => {
-    console.log('✅ ETH to USDC swap successful:', transactionReceipt);
-    // Add analytics tracking if needed
-  };
-
-  const handleSwapError = (error: Error) => {
-    console.error('❌ ETH to USDC swap failed:', error);
-    // Add error reporting if needed
-  };
-
   if (!address) {
     return (
       <div className={`w-full max-w-md mx-auto ${className}`}>
@@ -197,16 +187,6 @@ export function ETHToUSDCSwap({ className = '' }: SwapComponentProps) {
 
 export function USDCToETHSwap({ className = '' }: SwapComponentProps) {
   const { address } = useAccount();
-
-  const handleSwapSuccess = (transactionReceipt: any) => {
-    console.log('✅ USDC to ETH swap successful:', transactionReceipt);
-    // Add analytics tracking if needed
-  };
-
-  const handleSwapError = (error: Error) => {
-    console.error('❌ USDC to ETH swap failed:', error);
-    // Add error reporting if needed
-  };
 
   if (!address) {
     return (
