@@ -6,31 +6,10 @@ import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
 import { base } from "viem/chains";
 
 export function Providers(props: { children: ReactNode }) {
-  // Use ONCHAINKIT_API_KEY or fallback to CDP_API_KEY for compatibility
-  const apiKey = process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY || process.env.NEXT_PUBLIC_CDP_API_KEY;
-  
-  // Log API key status for debugging (only in development)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔑 OnchainKit API Key status:', {
-      hasOnchainKitKey: !!process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY,
-      hasCdpKey: !!process.env.NEXT_PUBLIC_CDP_API_KEY,
-      usingKey: apiKey ? `${apiKey.substring(0, 8)}...` : 'NONE',
-    });
-    
-    if (!apiKey || apiKey === 'your_valid_api_key_here') {
-      console.error('❌ Invalid or missing API key. Get one from https://portal.cdp.coinbase.com/products/base-node');
-      console.log('🔄 Falling back to public Base RPC endpoint');
-    }
-  }
-  
-  // Use fallback RPC if API key is invalid to prevent 404 errors
-  const isValidApiKey = apiKey && apiKey !== 'your_valid_api_key_here';
-  
   return (
     <OnchainKitProvider
-      apiKey={isValidApiKey ? apiKey : undefined}
       chain={base}
-      rpcUrl={!isValidApiKey ? 'https://mainnet.base.org' : undefined}
+      rpcUrl='https://mainnet.base.org'
       config={{
         appearance: {
           mode: 'auto',
@@ -46,8 +25,8 @@ export function Providers(props: { children: ReactNode }) {
       }}
     >
       <MiniKitProvider
-        apiKey={isValidApiKey ? apiKey : undefined}
         chain={base}
+        rpcUrl='https://mainnet.base.org'
         config={{
           appearance: {
             mode: 'auto',
