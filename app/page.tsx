@@ -12,7 +12,6 @@ import { Icon } from "./components/DemoComponents";
 import { Home } from "./components/DemoComponents";
 import { Features } from "./components/DemoComponents";
 import { SimpleOffRampFlow } from "./components/SimpleOffRampFlow";
-import { SwapComponent } from "./components/SwapComponent";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
 import { getClientInfo } from "@/lib/sdk-actions";
 import Image from 'next/image';
@@ -255,7 +254,7 @@ export default function App() {
         )}
 
         {/* Tab Navigation */}
-        {(activeTab === "features" || activeTab === "offramp" || activeTab === "swap") && (
+        {(activeTab === "features" || activeTab === "offramp") && (
           <nav className="mb-8">
             <div className="flex bg-gray-900 rounded-lg p-1 space-x-1">
               <button
@@ -267,16 +266,6 @@ export default function App() {
                 }`}
               >
                 Features
-              </button>
-              <button
-                onClick={() => setActiveTab("swap")}
-                className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
-                  activeTab === "swap"
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800"
-                }`}
-              >
-                Swap
               </button>
               <button
                 onClick={() => setActiveTab("offramp")}
@@ -295,7 +284,6 @@ export default function App() {
         <main className="flex-1">
           {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
           {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
-          {activeTab === "swap" && <SwapComponent />}
           {activeTab === "offramp" && <SimpleOffRampFlow />}
         </main>
 
