@@ -12,6 +12,7 @@ import { Icon } from "./components/DemoComponents";
 import { Home } from "./components/DemoComponents";
 import { Features } from "./components/DemoComponents";
 import { SimpleOffRampFlow } from "./components/SimpleOffRampFlow";
+import { WalletDebug } from "./components/WalletDebug";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
 import { getClientInfo } from "@/lib/sdk-actions";
 import Image from 'next/image';
@@ -301,6 +302,8 @@ export default function App() {
           <span className="text-sm text-gray-400">Built on Base with MiniKit</span>
         </div>
       </div>
+      
+      <WalletDebug />
     </div>
   );
 }
