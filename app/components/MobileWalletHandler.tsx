@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { getName } from '@coinbase/onchainkit/identity';
 import { base } from 'viem/chains';
-import { FarcasterCompatibleWallet } from './FarcasterCompatibleWallet';
+import { AdaptiveWallet } from './AdaptiveWallet';
 
 interface MobileWalletHandlerProps {
   onConnectionSuccess?: () => void;
@@ -42,7 +42,7 @@ export function MobileWalletHandler({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <FarcasterCompatibleWallet 
+      <AdaptiveWallet 
         onConnectionSuccess={onConnectionSuccess} 
       />
       
