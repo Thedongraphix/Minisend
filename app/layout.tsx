@@ -14,33 +14,43 @@ export const viewport: Viewport = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const URL = process.env.NEXT_PUBLIC_URL;
+  const ogImage = process.env.NEXT_PUBLIC_APP_OG_IMAGE || `${URL}/minisend-logo.png`;
+  const appTitle = process.env.NEXT_PUBLIC_APP_OG_TITLE || "Minisend - USDC to KES/NGN";
+  const appDescription = process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION || "Convert USDC to local currency instantly";
+  
   return {
-    title: "Minisend - USDC to Mobile Money",
+    title: appTitle,
     description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || "USDC to mobile money instantly. Send to M-Pesa and bank accounts in Kenya & Nigeria.",
     keywords: process.env.NEXT_PUBLIC_APP_KEYWORDS || "minisend, usdc, ksh, mpesa, farcaster, crypto, offramp, kenya",
     
-    // Open Graph
+    // Open Graph for Facebook/LinkedIn
     openGraph: {
-      title: process.env.NEXT_PUBLIC_APP_OG_TITLE || "Minisend - USDC to Mobile Money",
-      description: process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION || "USDC to mobile money instantly. Kenya & Nigeria.",
+      title: appTitle,
+      description: appDescription,
       url: URL,
       siteName: "Minisend",
       images: [{
-        url: process.env.NEXT_PUBLIC_APP_OG_IMAGE || '/minisend-logo.png',
-        width: 120,
-        height: 40,
-        alt: 'Minisend',
+        url: ogImage,
+        width: 1200,
+        height: 630,
+        alt: 'Minisend - Convert USDC to KES/NGN instantly',
+        type: 'image/png',
       }],
       locale: 'en_US',
       type: 'website',
     },
 
-    // Twitter
+    // Twitter/X Card
     twitter: {
       card: 'summary_large_image',
-      title: "Minisend - USDC to Mobile Money",
-      description: "USDC to mobile money instantly. Kenya & Nigeria.",
-      images: [process.env.NEXT_PUBLIC_APP_OG_IMAGE || '/minisend-logo.png'],
+      site: '@minisend', // Add your Twitter handle if you have one
+      creator: '@minisend', // Add your Twitter handle if you have one  
+      title: appTitle,
+      description: appDescription,
+      images: {
+        url: ogImage,
+        alt: 'Minisend - Convert USDC to KES/NGN instantly',
+      },
     },
 
     // Icons
@@ -80,6 +90,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Additional meta tags for better social sharing */}
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:domain" content="minisend.xyz" />
+        <meta name="theme-color" content="#1D4ED8" />
+        <link rel="canonical" href={process.env.NEXT_PUBLIC_URL} />
+        
         {/* Mobile debugging support - only in development */}
         <script 
           src="https://cdn.jsdelivr.net/npm/eruda" 
