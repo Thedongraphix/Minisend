@@ -9,6 +9,10 @@ A production-ready USDC to mobile money platform built on Base Network, featurin
 - **Multi-Wallet Support**: MetaMask, Coinbase Wallet, Phantom, Rabby, Trust, Frame
 - **Research-Based PayCrest Integration**: Intelligent polling with settlement detection
 - **Enterprise-Grade Security**: OnchainKit integration with proper error handling
+- **🗄️ Complete Database Integration**: Automatic payment tracking with Supabase
+- **📊 Analytics & Reporting**: Real-time insights and payment analytics
+- **🕐 EAT Timezone Support**: All timestamps in East Africa Time
+- **📱 Carrier Detection**: Automatic Kenyan phone carrier identification
 
 ## 🔬 Research-Based Implementation
 
@@ -90,6 +94,37 @@ const pollPayCrestOrder = async (orderId, maxAttempts = 20) => {
 - `POST /api/paycrest/webhook` - PayCrest webhook handler (compatibility only)
 
 **Note**: PayCrest does not send webhook events. This endpoint exists for compatibility but relies on polling for status updates.
+
+## 🗄️ Database Integration
+
+### Automatic Payment Tracking
+All payment data is automatically recorded in Supabase with EAT timezone:
+
+- **Order Details**: Amount, currency, phone numbers, wallet addresses
+- **Status History**: Complete audit trail of all status changes
+- **Analytics Events**: User interactions and conversion tracking  
+- **Carrier Detection**: Automatic phone number carrier identification
+- **Raw API Data**: Full Paycrest request/response logs for debugging
+
+### Database Setup
+```bash
+# Setup database tables and views
+npm run setup-supabase
+
+# Test database connection  
+npm run test-db-quick
+
+# Full integration test
+npm run test-db-full
+```
+
+### Analytics Views
+- `order_analytics` - Daily summaries with success rates
+- `settlement_analytics` - Settlement timing and performance
+- `fee_analytics` - Fee breakdown by type and currency
+- `status_analytics` - Status transition tracking
+
+See [DATABASE.md](./DATABASE.md) for complete documentation.
 
 ## 🚀 Getting Started
 
