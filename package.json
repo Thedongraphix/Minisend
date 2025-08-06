@@ -24,7 +24,9 @@
     "lint": "next lint",
     "setup-supabase": "node scripts/setup-supabase.js",
     "test-supabase": "node -e \"require('./lib/supabase/config').testConnection().then(console.log)\"",
-    "health-check": "node -e \"require('./lib/supabase/config').checkHealth().then(console.log)\""
+    "health-check": "node -e \"require('./lib/supabase/config').checkHealth().then(console.log)\"",
+    "test-db-quick": "node scripts/quick-db-test.js",
+    "test-db-full": "node test-database-integration.js"
   },
   "dependencies": {
     "@coinbase/onchainkit": "latest",
