@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseService } from '@/lib/supabase/config';
+import { detectKenyanCarrier } from '@/lib/utils/phoneCarrier';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
@@ -151,6 +153,57 @@ export async function POST(request: NextRequest) {
 
     const order = await orderResponse.json();
     console.log('✅ PayCrest order created:', order);
+
+    // 🗄️ Store order in database
+    try {
+      // Detect carrier for Kenya numbers
+      let detectedCarrier = 'UNKNOWN'
+      const institutionCode = institution
+      
+      if (currency === 'KES') {
+        detectedCarrier = detectKenyanCarrier(formattedPhone)
+        // Log carrier detection
+        await DatabaseService.logCarrierDetection(
+          formattedPhone, 
+          detectedCarrier, 
+          institutionCode, 
+          'MPESA',
+          0.95,
+          'prefix_detection'
+        )
+      }
+
+      // Create order record from Paycrest response
+      const dbOrder = await DatabaseService.createOrderFromPaycrest(order, {
+        amount: amountNum.toString(),
+        phoneNumber: formattedPhone,
+        accountName,
+        currency,
+        returnAddress,
+        rate: exchangeRate,
+        provider: detectedCarrier === 'SAFARICOM' ? 'MPESA' : 'AIRTEL'
+      })
+
+      console.log('📊 Order saved to database:', dbOrder.id)
+
+      // Log analytics event
+      await DatabaseService.logAnalyticsEvent(
+        'order_created',
+        returnAddress,
+        {
+          paycrest_order_id: order.data.id,
+          amount_usdc: amountNum,
+          amount_local: order.data.recipient?.amount || amountNum * exchangeRate,
+          currency,
+          carrier: detectedCarrier,
+          institution: institutionCode
+        }
+      )
+
+    } catch (dbError) {
+      console.error('❌ Database error (continuing with API response):', dbError)
+      // Don't fail the API call if database fails
+    }
 
     return NextResponse.json({
       success: true,
