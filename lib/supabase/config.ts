@@ -196,6 +196,8 @@ interface RequestData {
   returnAddress: string
   rate?: number
   provider?: string
+  localAmount?: string
+  institutionCode?: string
 }
 
 // Database operations
@@ -242,7 +244,7 @@ export class DatabaseService {
       paycrest_order_id: order.id,
       wallet_address: requestData.returnAddress,
       amount_in_usdc: parseFloat(requestData.amount),
-      amount_in_local: parseFloat(order.recipient?.amount || requestData.amount as string),
+      amount_in_local: parseFloat(requestData.localAmount || (parseFloat(requestData.amount) * (requestData.rate || 0)).toString()),
       local_currency: requestData.currency as 'KES' | 'NGN',
       phone_number: requestData.phoneNumber,
       account_name: requestData.accountName,
@@ -258,7 +260,7 @@ export class DatabaseService {
       sender_fee: parseFloat(String(order.senderFee || 0)),
       transaction_fee: parseFloat(String(order.transactionFee || 0)),
       total_amount: parseFloat(String(order.totalAmount || order.amount)),
-      institution_code: order.recipient?.institution,
+      institution_code: requestData.institutionCode || order.recipient?.institution || (requestData.currency === 'KES' ? 'SAFAKEPC' : 'GTBINGLA'),
       recipient_data: order.recipient,
       memo: order.recipient?.memo
     }

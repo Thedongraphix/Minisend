@@ -173,6 +173,9 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Calculate correct local amount
+      const localAmount = amountNum * exchangeRate
+      
       // Create order record from Paycrest response
       const dbOrder = await DatabaseService.createOrderFromPaycrest(order, {
         amount: amountNum.toString(),
@@ -181,7 +184,9 @@ export async function POST(request: NextRequest) {
         currency,
         returnAddress,
         rate: exchangeRate,
-        provider: detectedCarrier === 'SAFARICOM' ? 'MPESA' : 'AIRTEL'
+        provider: detectedCarrier === 'SAFARICOM' ? 'MPESA' : 'AIRTEL',
+        localAmount: localAmount.toString(),
+        institutionCode: institutionCode
       })
 
       console.log('📊 Order saved to database:', dbOrder.id)
@@ -193,7 +198,7 @@ export async function POST(request: NextRequest) {
         {
           paycrest_order_id: order.data.id,
           amount_usdc: amountNum,
-          amount_local: order.data.recipient?.amount || amountNum * exchangeRate,
+          amount_local: localAmount,
           currency,
           carrier: detectedCarrier,
           institution: institutionCode
