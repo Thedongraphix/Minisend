@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseService } from '@/lib/supabase/config';
 
 // Force dynamic rendering and Node.js runtime
 export const runtime = 'nodejs';
@@ -90,6 +91,66 @@ export async function GET(
       isSettled: statusResponse.order.isSettled,
       isFailed: statusResponse.order.isFailed
     });
+
+    // 🗄️ Update database with latest status
+    try {
+      // Get existing order from database
+      const dbOrder = await DatabaseService.getOrderByPaycrestId(orderId)
+      
+      if (dbOrder) {
+        // Check if status changed
+        if (dbOrder.paycrest_status !== order.status) {
+          console.log(`🔄 Status changed from ${dbOrder.paycrest_status} to ${order.status}`)
+          
+          // Map Paycrest status to our status
+          let ourStatus = dbOrder.status
+          if (['fulfilled', 'validated', 'settled'].includes(order.status)) {
+            ourStatus = 'completed'
+          } else if (['refunded', 'expired', 'cancelled'].includes(order.status)) {
+            ourStatus = 'failed'
+          } else if (['pending', 'processing'].includes(order.status)) {
+            ourStatus = 'processing'
+          }
+
+          // Update order status
+          await DatabaseService.updateOrderStatus(
+            orderId,
+            ourStatus,
+            order.status,
+            {
+              transaction_hash: order.txHash,
+              completed_at: ['fulfilled', 'validated', 'settled'].includes(order.status) 
+                ? new Date().toISOString() 
+                : undefined
+            }
+          )
+
+          // Log the polling attempt
+          await DatabaseService.logPollingAttempt(
+            dbOrder.id,
+            orderId,
+            1, // attempt number - could be enhanced to track actual attempts
+            order.status,
+            paycrestOrder
+          )
+        } else {
+          // Still log the polling attempt even if status didn't change
+          await DatabaseService.logPollingAttempt(
+            dbOrder.id,
+            orderId,
+            1,
+            order.status,
+            { message: 'Status unchanged', timestamp: new Date().toISOString() }
+          )
+        }
+      } else {
+        console.log(`⚠️ Order ${orderId} not found in database`)
+      }
+
+    } catch (dbError) {
+      console.error('❌ Database error during status update:', dbError)
+      // Don't fail the API call if database fails
+    }
 
     return NextResponse.json(statusResponse);
 
