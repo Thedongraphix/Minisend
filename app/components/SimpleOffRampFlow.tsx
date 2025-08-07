@@ -108,12 +108,26 @@ export function SimpleOffRampFlow() {
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-6">
-      {/* Header */}
+      {/* Header with Step Indicator */}
       <div className="text-center">
         
         <div className="inline-flex items-center space-x-2 text-xs text-blue-300 bg-blue-500/10 px-3 py-1 rounded-xl mt-2 border border-blue-400/20">
           <Image src="/Base_Network_Logo.svg" alt="Base Network" width={12} height={12} />
           <span className="font-medium">Powered by Base</span>
+        </div>
+        
+        {/* Step Progress Indicator */}
+        <div className="flex items-center justify-center space-x-2 mt-4">
+          <div className={`w-2 h-2 rounded-full ${step === 'form' ? 'bg-blue-500' : 'bg-blue-500'}`}></div>
+          <div className={`w-8 h-0.5 ${step === 'payment' || step === 'success' ? 'bg-blue-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-2 h-2 rounded-full ${step === 'payment' ? 'bg-blue-500' : step === 'success' ? 'bg-blue-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-8 h-0.5 ${step === 'success' ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-2 h-2 rounded-full ${step === 'success' ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+        </div>
+        <div className="flex justify-between text-xs text-gray-400 mt-2 px-2">
+          <span>Details</span>
+          <span>Payment</span>
+          <span>Complete</span>
         </div>
       </div>
 
@@ -266,25 +280,30 @@ export function SimpleOffRampFlow() {
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
           
-          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-6 space-y-3">
-            <div className="flex items-center justify-center space-x-2 text-green-400">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span className="font-semibold">Payment Sent Successfully</span>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-white font-medium">Payment sent successfully</p>
+                <p className="text-gray-400 text-sm">Your {formData.currency} has been sent to {formData.phoneNumber}</p>
+              </div>
             </div>
             
-            <p className="text-gray-300 text-sm">
-              Your {formData.currency} has been sent to <span className="font-medium text-white">{formData.phoneNumber}</span>
-            </p>
-            
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mt-4">
-              <p className="text-blue-300 text-xs">
-                {formData.phoneNumber} will receive their {formData.currency} within 1-2 minutes
-              </p>
-              <p className="text-blue-200 text-xs mt-1">
-                Funds delivered directly to mobile wallet
-              </p>
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="flex items-start space-x-3">
+                <div className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5">
+                  <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="text-sm">
+                  <p className="text-gray-300">Funds will arrive within 1-2 minutes</p>
+                </div>
+              </div>
             </div>
           </div>
           
