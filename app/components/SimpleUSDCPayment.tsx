@@ -86,7 +86,7 @@ export function SimpleUSDCPayment({
             // Show delivery confirmation - this is when M-Pesa actually gets the money
             setStatus('success');
             const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-            setStatusMessage(`🎉 ${currency} delivered to your ${deliveryMethod}! Check your mobile for confirmation.`);
+            setStatusMessage(`${currency} delivered to your ${deliveryMethod}`);
             return;
             
           case 'settled':
@@ -99,7 +99,7 @@ export function SimpleUSDCPayment({
             // Show delivery confirmation
             setStatus('success');
             const method = currency === 'NGN' ? 'bank account' : 'mobile number';
-            setStatusMessage(`🎉 ${currency} delivered to your ${method}! Check your mobile for confirmation.`);
+            setStatusMessage(`${currency} delivered to your ${method}`);
             return;
         }
         
@@ -281,7 +281,7 @@ export function SimpleUSDCPayment({
             console.log('🔄 Fallback: Assuming transaction completed after 30s delay');
             setStatus('success');
             const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-            setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
+            setStatusMessage(`Payment sent to ${deliveryMethod}`);
             
             // Start background polling
             startPolling(paycrestOrder.id);
@@ -298,7 +298,7 @@ export function SimpleUSDCPayment({
         console.log('✅ Transaction status: SUCCESS - payment sent to PayCrest');
         setStatus('success');
         const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-        setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
+        setStatusMessage(`Payment sent to ${deliveryMethod}`);
         
         // Start background polling to track delivery and handle failures
         if (paycrestOrder?.id) {
@@ -390,7 +390,7 @@ export function SimpleUSDCPayment({
               console.log('🎯 Transaction successful:', response);
               setStatus('success');
               const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-              setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
+              setStatusMessage(`Payment sent to ${deliveryMethod}`);
               
               // Start background polling to track delivery and handle failures
               if (paycrestOrder?.id) {
@@ -447,13 +447,15 @@ export function SimpleUSDCPayment({
       {/* Success */}
       {status === 'success' && (
         <div className="text-center space-y-4">
-          <div className="text-6xl mb-4">✅</div>
-          <h3 className="text-white font-bold text-xl">Payment Successful</h3>
-          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-            <p className="text-green-400 font-medium text-sm">
-              {statusMessage}
-            </p>
+          <div className="w-16 h-16 mx-auto bg-green-500 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
           </div>
+          <h3 className="text-white font-bold text-xl">Payment Sent</h3>
+          <p className="text-gray-300 text-sm">
+            Your {currency} has been sent to {phoneNumber}
+          </p>
         </div>
       )}
     </div>
