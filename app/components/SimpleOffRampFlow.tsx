@@ -281,17 +281,9 @@ export function SimpleOffRampFlow() {
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
           
           <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-white font-medium">Payment sent successfully</p>
-                <p className="text-gray-400 text-sm">Your {formData.currency} has been sent to {formData.phoneNumber}</p>
-              </div>
-            </div>
+            <p className="text-gray-300 text-sm">
+              Your {formData.currency} has been sent to {formData.phoneNumber}
+            </p>
             
             <div className="bg-white/5 rounded-lg p-4 border border-white/10">
               <div className="flex items-start space-x-3">
