@@ -53,7 +53,7 @@ export function SimplePayment({
           
           if (order?.status === 'settled') {
             const method = currency === 'KES' ? 'M-Pesa' : 'bank account';
-            setStatusMessage(`🎉 ${currency} delivered to your ${method}!`);
+            setStatusMessage(`${currency} delivered to your ${method}`);
             return;
           }
           
@@ -225,7 +225,7 @@ export function SimplePayment({
       case 'success':
         setCurrentStep('success');
         const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-        setStatusMessage(`✅ Payment sent successfully! ${currency} will be sent to your ${deliveryMethod} shortly.`);
+        setStatusMessage(`Payment sent to ${deliveryMethod}`);
         console.log('Transaction successful:', status.statusData);
         
         // Start background polling for provider failures
