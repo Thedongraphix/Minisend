@@ -418,6 +418,18 @@ export class DatabaseService {
     return data
   }
 
+  // Settlements
+  static async createSettlement(settlementData: Omit<Settlement, 'id' | 'created_at'>): Promise<Settlement> {
+    const { data, error } = await supabaseAdmin
+      .from('settlements')
+      .insert(settlementData)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
   // Polling
   static async logPollingAttempt(orderId: string, paycrestOrderId: string, attemptNumber: number, statusReturned?: string, responseData?: Record<string, unknown>): Promise<PollingAttempt> {
     const { data, error } = await supabaseAdmin

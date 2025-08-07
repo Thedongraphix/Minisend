@@ -82,9 +82,24 @@ async function checkProductionDatabase() {
       console.log('   This suggests database integration is not working in production.')
     }
 
-    // 5. Check analytics events
-    console.log('\n5️⃣ Sample Analytics Data...')
-    // We can't easily query analytics events without adding a method, so let's check table counts
+    // 5. Check empty tables analysis
+    console.log('\n5️⃣ Empty Tables Analysis...')
+    
+    // Check users table
+    const { supabaseAdmin } = require('./lib/supabase/config')
+    const { data: users, error: usersError } = await supabaseAdmin.from('users').select('*')
+    console.log(`📊 Users table: ${users?.length || 0} records`)
+    if (usersError) console.log(`   Error: ${usersError.message}`)
+    
+    // Check settlements table
+    const { data: settlements, error: settlementsError } = await supabaseAdmin.from('settlements').select('*')
+    console.log(`📊 Settlements table: ${settlements?.length || 0} records`)
+    if (settlementsError) console.log(`   Error: ${settlementsError.message}`)
+
+    // Check analytics events
+    const { data: analytics, error: analyticsError } = await supabaseAdmin.from('analytics_events').select('*')
+    console.log(`📊 Analytics Events table: ${analytics?.length || 0} records`)
+    if (analyticsError) console.log(`   Error: ${analyticsError.message}`)
     
     console.log('\n🔍 DIAGNOSIS:')
     if (recentOrders.length === 0) {

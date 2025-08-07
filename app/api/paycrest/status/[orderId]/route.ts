@@ -125,6 +125,25 @@ export async function GET(
             }
           )
 
+          // Create settlement record if order is completed
+          if (['fulfilled', 'validated', 'settled'].includes(order.status)) {
+            console.log(`💰 Creating settlement record for completed order ${orderId}`)
+            
+            try {
+              await DatabaseService.createSettlement({
+                order_id: dbOrder.id,
+                paycrest_settlement_id: order.id, // Use Paycrest order ID as settlement ID
+                settlement_amount: dbOrder.amount_in_local,
+                settlement_currency: dbOrder.local_currency,
+                settlement_method: dbOrder.carrier === 'MPESA' ? 'M-PESA' : 'Mobile Money',
+                settled_at: new Date().toISOString()
+              })
+              console.log(`✅ Settlement record created for ${orderId}`)
+            } catch (settlementError) {
+              console.error(`❌ Failed to create settlement for ${orderId}:`, settlementError)
+            }
+          }
+
           // Log the polling attempt
           await DatabaseService.logPollingAttempt(
             dbOrder.id,

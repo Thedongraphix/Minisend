@@ -176,6 +176,16 @@ export async function POST(request: NextRequest) {
       // Calculate correct local amount
       const localAmount = amountNum * exchangeRate
       
+      // Ensure user exists in database
+      let user = await DatabaseService.getUserByWallet(returnAddress)
+      if (!user) {
+        console.log('👤 Creating new user for wallet:', returnAddress)
+        user = await DatabaseService.createUser(returnAddress, formattedPhone)
+        console.log('✅ User created:', user.id)
+      } else {
+        console.log('👤 Found existing user:', user.id)
+      }
+      
       // Create order record from Paycrest response
       const dbOrder = await DatabaseService.createOrderFromPaycrest(order, {
         amount: amountNum.toString(),
