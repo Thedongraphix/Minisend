@@ -1,152 +1,207 @@
--- Enable necessary extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Minisend PayCrest Database Schema for Supabase
+-- Research-Based Implementation with Polling Support
 
--- Set timezone to EAT (East Africa Time)
-SET timezone = 'Africa/Nairobi';
-
--- Users table
+-- Users table for wallet tracking
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    wallet_address TEXT UNIQUE NOT NULL,
-    phone_number TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi'),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi')
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    wallet_address VARCHAR(42) UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_active_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    total_orders INTEGER DEFAULT 0,
+    total_volume DECIMAL(20, 6) DEFAULT 0,
+    preferred_currency VARCHAR(3) DEFAULT 'KES'
 );
 
--- Orders table to track Paycrest orders
+-- Orders table for PayCrest order tracking
 CREATE TABLE IF NOT EXISTS orders (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    paycrest_order_id TEXT UNIQUE NOT NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    paycrest_order_id VARCHAR(255) UNIQUE NOT NULL,
+    paycrest_reference VARCHAR(255) UNIQUE NOT NULL,
     user_id UUID REFERENCES users(id),
-    wallet_address TEXT NOT NULL,
-    amount_in_usdc DECIMAL(18,6) NOT NULL,
-    amount_in_local DECIMAL(18,2) NOT NULL,
-    local_currency TEXT NOT NULL CHECK (local_currency IN ('KES', 'NGN')),
-    phone_number TEXT NOT NULL,
-    carrier TEXT,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
-    paycrest_status TEXT,
-    transaction_hash TEXT,
-    reference_id TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi'),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi'),
-    completed_at TIMESTAMP WITH TIME ZONE
+    wallet_address VARCHAR(42) NOT NULL,
+    
+    -- Order details
+    amount DECIMAL(20, 6) NOT NULL,
+    token VARCHAR(10) DEFAULT 'USDC',
+    network VARCHAR(20) DEFAULT 'base',
+    currency VARCHAR(3) NOT NULL,
+    exchange_rate DECIMAL(20, 6) NOT NULL,
+    local_amount DECIMAL(20, 6) NOT NULL,
+    
+    -- Fees
+    sender_fee DECIMAL(20, 6) DEFAULT 0,
+    transaction_fee DECIMAL(20, 6) DEFAULT 0,
+    total_amount DECIMAL(20, 6) NOT NULL,
+    
+    -- Recipient details
+    recipient_name VARCHAR(255) NOT NULL,
+    recipient_phone VARCHAR(20) NOT NULL,
+    recipient_institution VARCHAR(50) NOT NULL,
+    recipient_currency VARCHAR(3) NOT NULL,
+    
+    -- PayCrest details
+    receive_address VARCHAR(42) NOT NULL,
+    valid_until TIMESTAMP WITH TIME ZONE NOT NULL,
+    status VARCHAR(20) DEFAULT 'initiated',
+    
+    -- Settlement tracking (RESEARCH-BASED)
+    settled_at TIMESTAMP WITH TIME ZONE,
+    settlement_time_seconds INTEGER,
+    tx_hash VARCHAR(66),
+    amount_paid DECIMAL(20, 6),
+    
+    -- Metadata for research findings
+    metadata JSONB DEFAULT '{}',
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Settlements table to track successful completions
-CREATE TABLE IF NOT EXISTS settlements (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    order_id UUID REFERENCES orders(id) NOT NULL,
-    paycrest_settlement_id TEXT,
-    settlement_amount DECIMAL(18,2) NOT NULL,
-    settlement_currency TEXT NOT NULL,
-    settlement_method TEXT,
-    settled_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi'),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi')
-);
-
--- Webhook events table to track all webhook calls
+-- Webhook events table (for compatibility, even though PayCrest doesn't send webhooks)
 CREATE TABLE IF NOT EXISTS webhook_events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_type TEXT NOT NULL,
-    paycrest_order_id TEXT,
-    order_id UUID REFERENCES orders(id),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_type VARCHAR(50) NOT NULL,
+    paycrest_order_id VARCHAR(255) NOT NULL,
     payload JSONB NOT NULL,
+    signature VARCHAR(255),
+    headers JSONB DEFAULT '{}',
+    user_agent TEXT,
+    processed BOOLEAN DEFAULT FALSE,
     processed_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi')
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Analytics events table for tracking user actions
+-- Analytics events table
 CREATE TABLE IF NOT EXISTS analytics_events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id),
-    wallet_address TEXT,
-    event_name TEXT NOT NULL,
-    event_data JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi')
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_name VARCHAR(100) NOT NULL,
+    wallet_address VARCHAR(42) NOT NULL,
+    order_id UUID REFERENCES orders(id),
+    properties JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Polling attempts table to track status checks
+-- Polling attempts table (RESEARCH-BASED)
 CREATE TABLE IF NOT EXISTS polling_attempts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID REFERENCES orders(id) NOT NULL,
-    paycrest_order_id TEXT NOT NULL,
-    status_returned TEXT,
     attempt_number INTEGER NOT NULL,
-    response_data JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi')
+    status VARCHAR(20) NOT NULL,
+    response_time_ms INTEGER,
+    error_message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Carrier detections table for phone number analysis
+-- Carrier detection table (for Kenyan numbers)
 CREATE TABLE IF NOT EXISTS carrier_detections (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    phone_number TEXT NOT NULL,
-    detected_carrier TEXT,
-    confidence_score DECIMAL(3,2),
-    method_used TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi')
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    phone_number VARCHAR(20) NOT NULL,
+    detected_carrier VARCHAR(50) NOT NULL,
+    paycrest_provider VARCHAR(20) NOT NULL,
+    order_id UUID REFERENCES orders(id),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_orders_paycrest_id ON orders(paycrest_order_id);
+-- Settlement tracking table (RESEARCH-BASED)
+CREATE TABLE IF NOT EXISTS settlements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID REFERENCES orders(id) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    settlement_time_seconds INTEGER,
+    tx_hash VARCHAR(66),
+    amount_paid DECIMAL(20, 6),
+    recipient_phone VARCHAR(20),
+    recipient_name VARCHAR(255),
+    currency VARCHAR(3),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_orders_wallet_address ON orders(wallet_address);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
-CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_webhook_events_order_id ON webhook_events(order_id);
-CREATE INDEX IF NOT EXISTS idx_analytics_events_user_id ON analytics_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+CREATE INDEX IF NOT EXISTS idx_orders_paycrest_id ON orders(paycrest_order_id);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_events_order_id ON webhook_events(paycrest_order_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_created_at ON webhook_events(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_events_wallet ON analytics_events(wallet_address);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_name ON analytics_events(event_name);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_created_at ON analytics_events(created_at);
+
 CREATE INDEX IF NOT EXISTS idx_polling_attempts_order_id ON polling_attempts(order_id);
+CREATE INDEX IF NOT EXISTS idx_polling_attempts_created_at ON polling_attempts(created_at);
 
--- Create analytics views (with SECURITY INVOKER to avoid the Security Advisor issues)
-CREATE OR REPLACE VIEW order_analytics WITH (security_invoker=true) AS
-SELECT 
-    DATE(created_at AT TIME ZONE 'Africa/Nairobi') as order_date,
-    local_currency,
-    status,
-    COUNT(*) as order_count,
-    SUM(amount_in_usdc) as total_usdc,
-    SUM(amount_in_local) as total_local,
-    AVG(amount_in_usdc) as avg_usdc,
-    AVG(amount_in_local) as avg_local
-FROM orders 
-GROUP BY DATE(created_at AT TIME ZONE 'Africa/Nairobi'), local_currency, status
-ORDER BY order_date DESC, local_currency, status;
+CREATE INDEX IF NOT EXISTS idx_carrier_detections_phone ON carrier_detections(phone_number);
+CREATE INDEX IF NOT EXISTS idx_carrier_detections_order_id ON carrier_detections(order_id);
 
-CREATE OR REPLACE VIEW settlement_analytics WITH (security_invoker=true) AS
+CREATE INDEX IF NOT EXISTS idx_settlements_order_id ON settlements(order_id);
+CREATE INDEX IF NOT EXISTS idx_settlements_status ON settlements(status);
+
+-- Views for analytics
+CREATE OR REPLACE VIEW order_analytics AS
 SELECT 
-    DATE(settled_at AT TIME ZONE 'Africa/Nairobi') as settlement_date,
-    s.settlement_currency,
-    COUNT(*) as settlement_count,
-    SUM(s.settlement_amount) as total_settled,
-    AVG(s.settlement_amount) as avg_settlement,
-    AVG(EXTRACT(EPOCH FROM (s.settled_at - o.created_at))/60) as avg_settlement_time_minutes
+    o.id,
+    o.paycrest_order_id,
+    o.wallet_address,
+    o.amount,
+    o.currency,
+    o.status,
+    o.created_at,
+    o.settled_at,
+    o.settlement_time_seconds,
+    u.total_orders as user_total_orders,
+    u.total_volume as user_total_volume
+FROM orders o
+LEFT JOIN users u ON o.wallet_address = u.wallet_address;
+
+CREATE OR REPLACE VIEW settlement_analytics AS
+SELECT 
+    s.id,
+    s.order_id,
+    s.status,
+    s.settlement_time_seconds,
+    s.tx_hash,
+    s.amount_paid,
+    o.amount as order_amount,
+    o.currency,
+    o.wallet_address,
+    s.created_at
 FROM settlements s
-JOIN orders o ON s.order_id = o.id
-GROUP BY DATE(settled_at AT TIME ZONE 'Africa/Nairobi'), s.settlement_currency
-ORDER BY settlement_date DESC, s.settlement_currency;
+JOIN orders o ON s.order_id = o.id;
 
-CREATE OR REPLACE VIEW polling_analytics WITH (security_invoker=true) AS
+CREATE OR REPLACE VIEW polling_analytics AS
 SELECT 
-    DATE(created_at AT TIME ZONE 'Africa/Nairobi') as polling_date,
-    paycrest_order_id,
-    MAX(attempt_number) as max_attempts,
-    COUNT(*) as total_polls,
-    MIN(created_at) as first_poll,
-    MAX(created_at) as last_poll
-FROM polling_attempts
-GROUP BY DATE(created_at AT TIME ZONE 'Africa/Nairobi'), paycrest_order_id
-ORDER BY polling_date DESC, paycrest_order_id;
+    pa.id,
+    pa.order_id,
+    pa.attempt_number,
+    pa.status,
+    pa.response_time_ms,
+    pa.error_message,
+    o.paycrest_order_id,
+    o.wallet_address,
+    pa.created_at
+FROM polling_attempts pa
+JOIN orders o ON pa.order_id = o.id;
 
--- Update triggers to automatically update the updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = (NOW() AT TIME ZONE 'Africa/Nairobi');
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
+-- Insert default data for testing
+INSERT INTO users (wallet_address, preferred_currency) VALUES 
+('0x742d35Cc6634C0532925a3b8D400b6b2e5e1C6eD', 'KES'),
+('0x1234567890123456789012345678901234567890', 'NGN')
+ON CONFLICT (wallet_address) DO NOTHING;
 
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Comments for documentation
+COMMENT ON TABLE orders IS 'PayCrest orders with research-based settlement tracking';
+COMMENT ON TABLE webhook_events IS 'Webhook events for compatibility (PayCrest does not send webhooks)';
+COMMENT ON TABLE polling_attempts IS 'Research-based polling attempts with exponential backoff';
+COMMENT ON TABLE settlements IS 'Settlement tracking focused on settled status detection';
+COMMENT ON TABLE carrier_detections IS 'Kenyan carrier detection for M-Pesa integration';
+COMMENT ON TABLE analytics_events IS 'Analytics events for monitoring and reporting';
 
-CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+COMMENT ON COLUMN orders.status IS 'Order status: initiated, pending, settled, failed, cancelled';
+COMMENT ON COLUMN orders.settled_at IS 'Timestamp when order was settled (RESEARCH-BASED)';
+COMMENT ON COLUMN orders.settlement_time_seconds IS 'Time from creation to settlement in seconds';
+COMMENT ON COLUMN orders.metadata IS 'JSON metadata including carrier info, original phone input, API version'; 
