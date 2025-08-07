@@ -1228,4 +1228,3 @@ Use Eruda for mobile debugging by adding this to your HTML head:
 ```
 
 The timeout issue is often related to improper connector setup or network connectivity problems on mobile. Using the Farcaster frame connector and proper error handling should resolve most connection timeout issues.
-
