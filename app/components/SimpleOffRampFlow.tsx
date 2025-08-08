@@ -234,7 +234,7 @@ export function SimpleOffRampFlow() {
               value={formData.amount}
               onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
               placeholder="0.00"
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+              className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
               min="0.50"
               max="10000"
               step="0.01"
@@ -246,10 +246,16 @@ export function SimpleOffRampFlow() {
             <select
               value={formData.currency}
               onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value as 'KES' | 'NGN' }))}
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+              className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:bg-gray-800 backdrop-blur-sm"
+              style={{
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 12px center',
+                backgroundSize: '16px'
+              }}
             >
-              <option value="KES">🇰🇪 Kenyan Shilling (KES)</option>
-              <option value="NGN">🇳🇬 Nigerian Naira (NGN)</option>
+              <option value="KES" className="bg-gray-800 text-white">🇰🇪 Kenyan Shilling (KES)</option>
+              <option value="NGN" className="bg-gray-800 text-white">🇳🇬 Nigerian Naira (NGN)</option>
             </select>
           </div>
 
@@ -298,7 +304,7 @@ export function SimpleOffRampFlow() {
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
                   placeholder="+254712345678"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                  className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
                 />
               </div>
 
@@ -309,7 +315,7 @@ export function SimpleOffRampFlow() {
                   value={formData.accountName}
                   onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
                   placeholder="John Doe"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                  className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
                 />
               </div>
             </>
@@ -317,45 +323,82 @@ export function SimpleOffRampFlow() {
             <>
               <div>
                 <label className="block text-white text-sm font-medium mb-2">Bank</label>
-                <select
-                  value={formData.bankCode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, bankCode: e.target.value }))}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                  disabled={loadingInstitutions}
-                >
-                  <option value="">Select Bank</option>
-                  {institutions.map((institution) => (
-                    <option key={institution.code} value={institution.code}>
-                      {institution.name}
+                <div className="relative">
+                  <select
+                    value={formData.bankCode}
+                    onChange={(e) => setFormData(prev => ({ ...prev, bankCode: e.target.value }))}
+                    className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:bg-gray-800 backdrop-blur-sm"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '16px'
+                    }}
+                    disabled={loadingInstitutions}
+                  >
+                    <option value="" className="bg-gray-800 text-gray-300">
+                      {loadingInstitutions ? "Loading banks..." : "Select Bank"}
                     </option>
-                  ))}
-                </select>
+                    {institutions.map((institution) => (
+                      <option 
+                        key={institution.code} 
+                        value={institution.code}
+                        className="bg-gray-800 text-white hover:bg-gray-700 py-2 px-4"
+                      >
+                        {institution.name}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingInstitutions && (
+                    <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                      <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
                 {loadingInstitutions && (
                   <div className="flex items-center space-x-2 mt-2">
-                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-sm text-gray-300">Loading banks...</span>
+                    <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-xs text-gray-400">Loading Nigerian banks...</span>
                   </div>
                 )}
               </div>
 
               <div>
                 <label className="block text-white text-sm font-medium mb-2">Account Number</label>
-                <input
-                  type="text"
-                  value={formData.accountNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
-                  placeholder="1234567890"
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.accountNumber}
+                    onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
+                    placeholder="1234567890"
+                    className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
+                    disabled={verifyingAccount}
+                  />
+                  {verifyingAccount && (
+                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                      <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                </div>
                 {verifyingAccount && (
                   <div className="flex items-center space-x-2 mt-2">
-                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-sm text-gray-300">Verifying account...</span>
+                    <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-xs text-gray-400">Verifying account with bank...</span>
                   </div>
                 )}
-                {accountVerified && formData.accountName && (
-                  <div className="mt-2 p-2 bg-green-500/20 border border-green-500/30 rounded text-green-300 text-sm">
-                    ✅ Account verified: {formData.accountName}
+                {accountVerified && formData.accountName && !verifyingAccount && (
+                  <div className="mt-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg backdrop-blur-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="text-green-300 font-medium text-sm">Account Verified</div>
+                        <div className="text-green-200 text-xs">{formData.accountName}</div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
