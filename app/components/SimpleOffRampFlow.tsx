@@ -45,7 +45,7 @@ export function SimpleOffRampFlow() {
   const [rateError, setRateError] = useState<string | null>(null);
   const [verifyingAccount, setVerifyingAccount] = useState(false);
   const [accountVerified, setAccountVerified] = useState(false);
-  const [institutions, setInstitutions] = useState<any[]>([]);
+  const [institutions, setInstitutions] = useState<{code: string, name: string, type: string}[]>([]);
   const [loadingInstitutions, setLoadingInstitutions] = useState(false);
 
   console.log('Wallet connection state:', { 

@@ -217,7 +217,7 @@ export function SimpleUSDCPayment({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, accountName, currency, returnAddress, rate, onError]);
+  }, [amount, phoneNumber, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError]);
 
   // USDC transfer using OnchainKit standard format for proper gas estimation
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
