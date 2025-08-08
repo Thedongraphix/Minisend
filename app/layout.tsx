@@ -63,22 +63,17 @@ export async function generateMetadata(): Promise<Metadata> {
     },
 
     other: {
-      // Farcaster Frame meta tags
-      "fc:frame": "vNext",
-      "fc:frame:image": ogImage,
-      "fc:frame:button:1": process.env.NEXT_PUBLIC_BUTTON_TITLE || "Open Minisend",
-      "fc:frame:button:1:action": "link",
-      "fc:frame:button:1:target": URL,
-      "fc:frame:state": JSON.stringify({
+      // Farcaster Frame meta tag - correct format for Mini App embeds
+      "fc:frame": JSON.stringify({
         version: "next",
-        imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || ogImage,
+        imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || ogImage || `${URL || "https://minisend.xyz"}/screenshot.jpeg`,
         button: {
-          title: process.env.NEXT_PUBLIC_BUTTON_TITLE || `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME}`,
+          title: process.env.NEXT_PUBLIC_BUTTON_TITLE || `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "Minisend"}`,
           action: {
-            type: "launch_frame", 
+            type: "launch_frame",
             name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "Minisend",
-            url: URL,
-            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || ogImage,
+            url: URL || "https://minisend.xyz",
+            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || ogImage || `${URL || "https://minisend.xyz"}/minisend-logo.png`,
             splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#1D4ED8",
           },
         },
@@ -106,12 +101,21 @@ export default function RootLayout({
         <meta name="theme-color" content="#1D4ED8" />
         <link rel="canonical" href={process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"} />
         
-        {/* Farcaster specific meta tags */}
-        <meta property="fc:frame" content="vNext" />
-        <meta property="fc:frame:image" content={`${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/screenshot.png`} />
-        <meta property="fc:frame:button:1" content="Open Minisend" />
-        <meta property="fc:frame:button:1:action" content="link" />
-        <meta property="fc:frame:button:1:target" content={process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"} />
+        {/* Farcaster specific meta tag - correct format for Mini App embeds */}
+        <meta name="fc:frame" content={JSON.stringify({
+          version: "next",
+          imageUrl: `${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/screenshot.jpeg`,
+          button: {
+            title: "Launch Minisend",
+            action: {
+              type: "launch_frame",
+              name: "Minisend",
+              url: process.env.NEXT_PUBLIC_URL || "https://minisend.xyz",
+              splashImageUrl: `${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/minisend-logo.png`,
+              splashBackgroundColor: "#1D4ED8"
+            }
+          }
+        })} />
         
         {/* Mobile debugging support - only in development */}
         <script 
