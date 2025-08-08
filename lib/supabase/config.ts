@@ -32,7 +32,8 @@ export interface Order {
   amount_in_usdc: number
   amount_in_local: number
   local_currency: 'KES' | 'NGN'
-  phone_number: string
+  phone_number?: string
+  account_number?: string
   carrier?: string
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'fulfilled' | 'validated' | 'settled' | 'refunded' | 'expired'
   paycrest_status?: string
@@ -190,7 +191,8 @@ interface PaycrestResponse {
 
 interface RequestData {
   amount: string
-  phoneNumber: string
+  phoneNumber?: string
+  accountNumber?: string
   accountName: string
   currency: string
   returnAddress: string
@@ -247,6 +249,7 @@ export class DatabaseService {
       amount_in_local: parseFloat(requestData.localAmount || (parseFloat(requestData.amount) * (requestData.rate || 0)).toString()),
       local_currency: requestData.currency as 'KES' | 'NGN',
       phone_number: requestData.phoneNumber,
+      account_number: requestData.accountNumber,
       account_name: requestData.accountName,
       carrier: requestData.provider,
       status: 'pending' as const,
