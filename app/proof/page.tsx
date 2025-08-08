@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 
 interface Transaction {
   orderId: string;
-  txHash: string;
+  txHash?: string;
   amount: number;
   currency: string;
   status: string;
   createdAt: string;
-  basescanUrl: string;
+  basescanUrl?: string;
   network: string;
   userId: string;
 }
@@ -27,6 +27,7 @@ interface ProofData {
   onchainProof: {
     smartContract: string;
     network: string;
+    allOrders: Transaction[];
     transactionHashes: Transaction[];
   };
 }
@@ -96,9 +97,9 @@ export default function ProofPage() {
 
   if (!proofData) return null;
 
-  // Filter transactions based on search term
-  const filteredTransactions = proofData.onchainProof.transactionHashes.filter(tx => 
-    tx.txHash.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  // Filter ALL orders (not just those with txHash)
+  const filteredTransactions = proofData.onchainProof.allOrders.filter(tx => 
+    (tx.txHash && tx.txHash.toLowerCase().includes(searchTerm.toLowerCase())) ||
     tx.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tx.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tx.userId.toLowerCase().includes(searchTerm.toLowerCase())
@@ -251,7 +252,9 @@ export default function ProofPage() {
                             {startIndex + index + 1}
                           </div>
                           <div>
-                            <p className="font-mono text-sm text-white break-all">{tx.txHash.slice(0, 12)}...{tx.txHash.slice(-8)}</p>
+                            <p className="font-mono text-sm text-white break-all">
+                              {tx.txHash ? `${tx.txHash.slice(0, 12)}...${tx.txHash.slice(-8)}` : 'No TX Hash'}
+                            </p>
                             <p className="text-xs text-gray-500">ID: {tx.orderId}</p>
                           </div>
                         </div>
@@ -285,17 +288,21 @@ export default function ProofPage() {
                         </p>
                       </td>
                       <td className="py-4 px-6">
-                        <a 
-                          href={tx.basescanUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                        >
-                          <span>View</span>
-                          <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                          </svg>
-                        </a>
+                        {tx.basescanUrl ? (
+                          <a 
+                            href={tx.basescanUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            <span>View</span>
+                            <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-500">No TX</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -327,7 +334,9 @@ export default function ProofPage() {
                   {/* Transaction Hash */}
                   <div>
                     <p className="text-xs text-gray-400 mb-1">Transaction Hash</p>
-                    <p className="font-mono text-sm text-white break-all">{tx.txHash}</p>
+                    <p className="font-mono text-sm text-white break-all">
+                      {tx.txHash || 'No transaction hash yet'}
+                    </p>
                   </div>
 
                   {/* User and Amount Row */}
@@ -352,17 +361,23 @@ export default function ProofPage() {
                         {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : 'N/A'}
                       </p>
                     </div>
-                    <a 
-                      href={tx.basescanUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-sm border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
-                    >
-                      <span>View on BaseScan</span>
-                      <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                      </svg>
-                    </a>
+                    {tx.basescanUrl ? (
+                      <a 
+                        href={tx.basescanUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-sm border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+                      >
+                        <span>View on BaseScan</span>
+                        <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center px-3 py-1 bg-gray-500/10 text-gray-400 rounded-lg text-sm border border-gray-500/20">
+                        <span>Pending TX</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}

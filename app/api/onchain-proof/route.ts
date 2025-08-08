@@ -119,6 +119,17 @@ function processOrdersForProof(
     totalVolumeUSD: 0,
     uniqueUsers: new Set<string>(),
     uniqueReceiveAddresses: new Set<string>(),
+    allOrders: [] as Array<{
+      orderId: string;
+      txHash?: string;
+      amount: number;
+      currency: string;
+      status: string;
+      network: string;
+      createdAt: string;
+      basescanUrl?: string;
+      userId: string;
+    }>,
     transactionHashes: [] as Array<{
       orderId: string;
       txHash: string;
@@ -151,7 +162,20 @@ function processOrdersForProof(
       metrics.uniqueReceiveAddresses.add(order.receiveAddress);
     }
 
-    // Transaction hashes (onchain proof)
+    // Add ALL orders (not just those with txHash)
+    metrics.allOrders.push({
+      orderId: order.id,
+      txHash: order.txHash || undefined,
+      amount: amount,
+      currency: order.recipient?.currency || 'KES',
+      status: order.status,
+      network: order.network || 'base',
+      createdAt: order.createdAt || '',
+      basescanUrl: order.txHash ? `https://basescan.org/tx/${order.txHash}` : undefined,
+      userId: order.returnAddress || 'Unknown'
+    });
+
+    // Transaction hashes (onchain proof) - only those with txHash
     if (order.txHash) {
       metrics.transactionHashes.push({
         orderId: order.id,
@@ -217,7 +241,8 @@ function processOrdersForProof(
     onchainProof: {
       smartContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
       network: 'Base',
-      transactionHashes: metrics.transactionHashes.slice(0, 10), // Most recent 10
+      allOrders: metrics.allOrders, // ALL orders for admin dashboard
+      transactionHashes: metrics.transactionHashes.slice(0, 10), // Most recent 10 for proof
       receiveAddresses: Array.from(metrics.uniqueReceiveAddresses).slice(0, 10),
       userWallets: Array.from(metrics.uniqueUsers).slice(0, 10)
     },
