@@ -15,10 +15,9 @@ export async function GET() {
   const URL = process.env.NEXT_PUBLIC_URL;
 
   // Build screenshot URLs array
-  const screenshots: string[] = []; 
-  if (process.env.NEXT_PUBLIC_APP_SCREENSHOT_1) screenshots.push(process.env.NEXT_PUBLIC_APP_SCREENSHOT_1);
-  if (process.env.NEXT_PUBLIC_APP_SCREENSHOT_2) screenshots.push(process.env.NEXT_PUBLIC_APP_SCREENSHOT_2);
-  if (process.env.NEXT_PUBLIC_APP_SCREENSHOT_3) screenshots.push(process.env.NEXT_PUBLIC_APP_SCREENSHOT_3);
+  const screenshots: string[] = process.env.NEXT_PUBLIC_SCREENSHOT_URLS 
+    ? process.env.NEXT_PUBLIC_SCREENSHOT_URLS.split(',') 
+    : [`${URL || "https://minisend.xyz"}/screenshot.png`];
 
   // Build tags array - default tags for Kenya USDC off-ramp
   const tags = ["usdc", "mpesa", "kenya", "crypto", "finance"];
@@ -33,32 +32,39 @@ export async function GET() {
       version: "1",
       
       // Basic App Information
-      name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
-      subtitle: process.env.NEXT_PUBLIC_APP_SUBTITLE,
-      description: process.env.NEXT_PUBLIC_APP_DESCRIPTION,
+      name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "Minisend",
+      subtitle: process.env.NEXT_PUBLIC_APP_SUBTITLE || "USDC to KES and NGN",
+      description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Convert USDC to KES or NGN instantly",
+      
+      // Critical fields for Farcaster preview
+      imageUrl: process.env.NEXT_PUBLIC_IMAGE_URL || process.env.NEXT_PUBLIC_ICON_URL || "https://minisend.xyz/screenshot.png",
+      buttonTitle: process.env.NEXT_PUBLIC_BUTTON_TITLE || "Open Minisend",
       
       // Visual Assets
-      iconUrl: process.env.NEXT_PUBLIC_APP_ICON,
-      splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE,
-      splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR,
-      heroImageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE,
+      iconUrl: process.env.NEXT_PUBLIC_ICON_URL || "https://minisend.xyz/minisend-logo.png",
+      splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || "https://minisend.xyz/minisend-logo.png",
+      splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#1D4ED8",
+      heroImageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || "https://minisend.xyz/screenshot.png",
       
       // Screenshots (up to 3, portrait 1284x2778)
       screenshotUrls: screenshots,
       
       // App Store Listing
-      primaryCategory: process.env.NEXT_PUBLIC_APP_PRIMARY_CATEGORY,
-      tagline: process.env.NEXT_PUBLIC_APP_TAGLINE,
+      primaryCategory: process.env.NEXT_PUBLIC_APP_PRIMARY_CATEGORY || "finance",
+      tagline: process.env.NEXT_PUBLIC_APP_TAGLINE || "Cash out crypto instantly",
       tags: tags,
       
       // Social Sharing (Open Graph)
-      ogTitle: process.env.NEXT_PUBLIC_APP_OG_TITLE,
-      ogDescription: process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION,
-      ogImageUrl: process.env.NEXT_PUBLIC_APP_OG_IMAGE,
+      ogTitle: process.env.NEXT_PUBLIC_APP_OG_TITLE || "Minisend - USDC to KES and NGN",
+      ogDescription: process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION || "Convert USDC to local currency instantly",
+      ogImageUrl: process.env.NEXT_PUBLIC_APP_OG_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || "https://minisend.xyz/screenshot.png",
       
       // Technical URLs
-      homeUrl: URL,
-      webhookUrl: `${URL}/api/webhooks`,
+      homeUrl: URL || "https://minisend.xyz",
+      webhookUrl: `${URL || "https://minisend.xyz"}/api/webhooks`,
+      
+      // Cast sharing
+      castShareUrl: process.env.NEXT_PUBLIC_CAST_SHARE_URL || `${URL || "https://minisend.xyz"}/share`,
     }),
   });
 }
