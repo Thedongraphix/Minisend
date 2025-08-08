@@ -13,8 +13,8 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const URL = process.env.NEXT_PUBLIC_URL;
-  const ogImage = process.env.NEXT_PUBLIC_APP_OG_IMAGE || `${URL}/minisend-logo.png`;
+  const URL = process.env.NEXT_PUBLIC_URL || "https://minisend.xyz";
+  const ogImage = process.env.NEXT_PUBLIC_APP_OG_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || `${URL}/minisend-logo.png`;
   const appTitle = process.env.NEXT_PUBLIC_APP_OG_TITLE || "Minisend - USDC to KES/NGN";
   const appDescription = process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION || "Convert USDC to local currency instantly";
   
@@ -63,18 +63,23 @@ export async function generateMetadata(): Promise<Metadata> {
     },
 
     other: {
-      "fc:frame": JSON.stringify({
+      // Farcaster Frame meta tags
+      "fc:frame": "vNext",
+      "fc:frame:image": ogImage,
+      "fc:frame:button:1": process.env.NEXT_PUBLIC_BUTTON_TITLE || "Open Minisend",
+      "fc:frame:button:1:action": "link",
+      "fc:frame:button:1:target": URL,
+      "fc:frame:state": JSON.stringify({
         version: "next",
-        imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE,
+        imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || ogImage,
         button: {
-          title: `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME}`,
+          title: process.env.NEXT_PUBLIC_BUTTON_TITLE || `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME}`,
           action: {
-            type: "launch_frame",
-            name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME,
+            type: "launch_frame", 
+            name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "Minisend",
             url: URL,
-            splashImageUrl: process.env.NEXT_PUBLIC_SPLASH_IMAGE,
-            splashBackgroundColor:
-              process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR,
+            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || ogImage,
+            splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#1D4ED8",
           },
         },
       }),
@@ -91,12 +96,22 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Additional meta tags for better social sharing */}
+        <meta property="og:image" content={`${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/screenshot.png`} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
+        <meta property="og:image:type" content="image/png" />
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/screenshot.png`} />
         <meta name="twitter:domain" content="minisend.xyz" />
         <meta name="theme-color" content="#1D4ED8" />
-        <link rel="canonical" href={process.env.NEXT_PUBLIC_URL} />
+        <link rel="canonical" href={process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"} />
+        
+        {/* Farcaster specific meta tags */}
+        <meta property="fc:frame" content="vNext" />
+        <meta property="fc:frame:image" content={`${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/screenshot.png`} />
+        <meta property="fc:frame:button:1" content="Open Minisend" />
+        <meta property="fc:frame:button:1:action" content="link" />
+        <meta property="fc:frame:button:1:target" content={process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"} />
         
         {/* Mobile debugging support - only in development */}
         <script 
