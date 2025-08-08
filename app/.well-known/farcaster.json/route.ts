@@ -43,7 +43,7 @@ export async function GET() {
       // Visual Assets
       iconUrl: process.env.NEXT_PUBLIC_ICON_URL || "https://minisend.xyz/minisend-logo.png",
       splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || "https://minisend.xyz/minisend-logo.png",
-      splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#1D4ED8",
+      splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#FFFFFF",
       heroImageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || "https://minisend.xyz/screenshot.jpeg",
       
       // Screenshots (up to 3, portrait 1284x2778)

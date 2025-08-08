@@ -74,7 +74,7 @@ export async function generateMetadata(): Promise<Metadata> {
             name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "Minisend",
             url: URL || "https://minisend.xyz",
             splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || ogImage || `${URL || "https://minisend.xyz"}/minisend-logo.png`,
-            splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#1D4ED8",
+            splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#FFFFFF",
           },
         },
       }),
@@ -112,7 +112,7 @@ export default function RootLayout({
               name: "Minisend",
               url: process.env.NEXT_PUBLIC_URL || "https://minisend.xyz",
               splashImageUrl: `${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/minisend-logo.png`,
-              splashBackgroundColor: "#1D4ED8"
+              splashBackgroundColor: "#FFFFFF"
             }
           }
         })} />
