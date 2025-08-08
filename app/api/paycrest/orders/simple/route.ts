@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
     const { 
       amount, 
       phoneNumber, 
+      accountNumber,
+      bankCode,
       accountName, 
       currency,
       returnAddress,
@@ -29,9 +31,24 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!amount || !phoneNumber || !accountName || !currency || !returnAddress) {
+    if (!amount || !accountName || !currency || !returnAddress) {
       return NextResponse.json(
-        { error: 'Missing required fields: amount, phoneNumber, accountName, currency, returnAddress' },
+        { error: 'Missing required fields: amount, accountName, currency, returnAddress' },
+        { status: 400 }
+      );
+    }
+
+    // Currency-specific validation
+    if (currency === 'KES' && !phoneNumber) {
+      return NextResponse.json(
+        { error: 'Phone number is required for KES transactions' },
+        { status: 400 }
+      );
+    }
+
+    if (currency === 'NGN' && (!accountNumber || !bankCode)) {
+      return NextResponse.json(
+        { error: 'Account number and bank code are required for NGN transactions' },
         { status: 400 }
       );
     }
@@ -86,19 +103,19 @@ export async function POST(request: NextRequest) {
     
     console.log('✅ Rate confirmed:', exchangeRate);
 
-    // Format phone number
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    let formattedPhone: string;
+    // Format identifier and set institution based on currency
+    let formattedIdentifier: string;
     let institution: string;
 
     if (currency === 'KES') {
-      // Kenya phone number
-      formattedPhone = cleanPhone.startsWith('254') ? cleanPhone : cleanPhone.replace(/^0/, '254');
+      // Kenya phone number formatting
+      const cleanPhone = phoneNumber!.replace(/\D/g, '');
+      formattedIdentifier = cleanPhone.startsWith('254') ? cleanPhone : cleanPhone.replace(/^0/, '254');
       institution = 'SAFAKEPC'; // M-PESA provider ID from PayCrest API
     } else if (currency === 'NGN') {
-      // Nigeria phone number
-      formattedPhone = cleanPhone.startsWith('234') ? cleanPhone : cleanPhone.replace(/^0/, '234');
-      institution = 'GTBINGLA'; // Guaranty Trust Bank provider ID from PayCrest API
+      // Nigeria account number - use as provided
+      formattedIdentifier = accountNumber!;
+      institution = bankCode!; // Use the bank code provided by user
     } else {
       throw new Error('Unsupported currency');
     }
@@ -111,7 +128,7 @@ export async function POST(request: NextRequest) {
       network: 'base',
       recipient: {
         institution,
-        accountIdentifier: formattedPhone,
+        accountIdentifier: formattedIdentifier,
         accountName,
         memo: `Payment from Minisend to ${accountName}`, // Required field!
         metadata: {}, // Required empty object
@@ -161,10 +178,10 @@ export async function POST(request: NextRequest) {
       const institutionCode = institution
       
       if (currency === 'KES') {
-        detectedCarrier = detectKenyanCarrier(formattedPhone)
+        detectedCarrier = detectKenyanCarrier(formattedIdentifier)
         // Log carrier detection
         await DatabaseService.logCarrierDetection(
-          formattedPhone, 
+          formattedIdentifier, 
           detectedCarrier, 
           institutionCode, 
           'MPESA',
@@ -180,7 +197,7 @@ export async function POST(request: NextRequest) {
       let user = await DatabaseService.getUserByWallet(returnAddress)
       if (!user) {
         console.log('👤 Creating new user for wallet:', returnAddress)
-        user = await DatabaseService.createUser(returnAddress, formattedPhone)
+        user = await DatabaseService.createUser(returnAddress, formattedIdentifier)
         console.log('✅ User created:', user.id)
       } else {
         console.log('👤 Found existing user:', user.id)
@@ -189,12 +206,15 @@ export async function POST(request: NextRequest) {
       // Create order record from Paycrest response
       const dbOrder = await DatabaseService.createOrderFromPaycrest(order, {
         amount: amountNum.toString(),
-        phoneNumber: formattedPhone,
+        phoneNumber: currency === 'KES' ? formattedIdentifier : '', // Phone number for KES only
+        accountNumber: currency === 'NGN' ? formattedIdentifier : '', // Account number for NGN only
         accountName,
         currency,
         returnAddress,
         rate: exchangeRate,
-        provider: detectedCarrier === 'SAFARICOM' ? 'MPESA' : 'AIRTEL',
+        provider: currency === 'KES' 
+          ? (detectedCarrier === 'SAFARICOM' ? 'MPESA' : 'AIRTEL') 
+          : 'BANK_TRANSFER',
         localAmount: localAmount.toString(),
         institutionCode: institutionCode
       })
