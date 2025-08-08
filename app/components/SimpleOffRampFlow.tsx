@@ -35,12 +35,18 @@ export function SimpleOffRampFlow() {
   const [formData, setFormData] = useState({
     amount: '',
     phoneNumber: '',
+    accountNumber: '',
+    bankCode: '',
     accountName: '',
     currency: 'KES' as 'KES' | 'NGN'
   });
   const [currentRate, setCurrentRate] = useState<number | null>(null);
   const [rateLoading, setRateLoading] = useState(false);
   const [rateError, setRateError] = useState<string | null>(null);
+  const [verifyingAccount, setVerifyingAccount] = useState(false);
+  const [accountVerified, setAccountVerified] = useState(false);
+  const [institutions, setInstitutions] = useState<any[]>([]);
+  const [loadingInstitutions, setLoadingInstitutions] = useState(false);
 
   console.log('Wallet connection state:', { 
     address,
@@ -76,6 +82,71 @@ export function SimpleOffRampFlow() {
     }
   };
 
+  // Fetch institutions for NGN
+  const fetchInstitutions = async (currency: string) => {
+    setLoadingInstitutions(true);
+    try {
+      const response = await fetch(`/api/paycrest/institutions/${currency}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setInstitutions(data.data || []);
+      } else {
+        console.error('Failed to fetch institutions:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching institutions:', error);
+    } finally {
+      setLoadingInstitutions(false);
+    }
+  };
+
+  // Verify account for NGN
+  const verifyAccount = async (accountNumber: string, bankCode: string) => {
+    if (!accountNumber || !bankCode) return;
+    
+    setVerifyingAccount(true);
+    try {
+      const response = await fetch('/api/paycrest/verify-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accountNumber,
+          bankCode
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.accountName) {
+        setFormData(prev => ({ ...prev, accountName: data.accountName }));
+        setAccountVerified(true);
+      } else {
+        setAccountVerified(false);
+        throw new Error(data.error || 'Account verification failed');
+      }
+    } catch (error) {
+      console.error('Account verification error:', error);
+      setAccountVerified(false);
+      // Could show error message to user here
+    } finally {
+      setVerifyingAccount(false);
+    }
+  };
+
+  // Auto-verify account when account number and bank code are provided
+  useEffect(() => {
+    if (formData.currency === 'NGN' && formData.accountNumber && formData.bankCode) {
+      const debounceTimer = setTimeout(() => {
+        verifyAccount(formData.accountNumber, formData.bankCode);
+      }, 1000); // Debounce for 1 second
+      
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [formData.accountNumber, formData.bankCode, formData.currency]);
+
   // Auto-fetch rates when amount or currency changes
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -86,6 +157,25 @@ export function SimpleOffRampFlow() {
 
     return () => clearTimeout(debounceTimer);
   }, [formData.amount, formData.currency]);
+
+  // Fetch institutions when currency changes
+  useEffect(() => {
+    if (formData.currency === 'NGN') {
+      fetchInstitutions('NGN');
+    }
+  }, [formData.currency]);
+
+  // Reset form fields when currency changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      phoneNumber: '',
+      accountNumber: '',
+      bankCode: '',
+      accountName: ''
+    }));
+    setAccountVerified(false);
+  }, [formData.currency]);
 
   // Show wallet connection if not connected or not mounted
   if (!mounted || !isConnected) {
@@ -198,31 +288,88 @@ export function SimpleOffRampFlow() {
             </div>
           )}
 
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">Phone Number</label>
-            <input
-              type="tel"
-              value={formData.phoneNumber}
-              onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-              placeholder="+254712345678"
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-            />
-          </div>
+          {/* Conditional input fields based on currency */}
+          {formData.currency === 'KES' ? (
+            <>
+              <div>
+                <label className="block text-white text-sm font-medium mb-2">Phone Number</label>
+                <input
+                  type="tel"
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                  placeholder="+254712345678"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                />
+              </div>
 
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">Account Name</label>
-            <input
-              type="text"
-              value={formData.accountName}
-              onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
-              placeholder="John Doe"
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-            />
-          </div>
+              <div>
+                <label className="block text-white text-sm font-medium mb-2">Account Name</label>
+                <input
+                  type="text"
+                  value={formData.accountName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
+                  placeholder="John Doe"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="block text-white text-sm font-medium mb-2">Bank</label>
+                <select
+                  value={formData.bankCode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, bankCode: e.target.value }))}
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                  disabled={loadingInstitutions}
+                >
+                  <option value="">Select Bank</option>
+                  {institutions.map((institution) => (
+                    <option key={institution.code} value={institution.code}>
+                      {institution.name}
+                    </option>
+                  ))}
+                </select>
+                {loadingInstitutions && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm text-gray-300">Loading banks...</span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-white text-sm font-medium mb-2">Account Number</label>
+                <input
+                  type="text"
+                  value={formData.accountNumber}
+                  onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
+                  placeholder="1234567890"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                />
+                {verifyingAccount && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm text-gray-300">Verifying account...</span>
+                  </div>
+                )}
+                {accountVerified && formData.accountName && (
+                  <div className="mt-2 p-2 bg-green-500/20 border border-green-500/30 rounded text-green-300 text-sm">
+                    ✅ Account verified: {formData.accountName}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           <button
             onClick={() => setStep('payment')}
-            disabled={!formData.amount || !formData.phoneNumber || !formData.accountName}
+            disabled={
+              !formData.amount || 
+              !formData.accountName ||
+              (formData.currency === 'KES' && !formData.phoneNumber) ||
+              (formData.currency === 'NGN' && (!formData.accountNumber || !formData.bankCode || !accountVerified))
+            }
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-xl transition-colors"
           >
             Continue to Payment
@@ -254,6 +401,8 @@ export function SimpleOffRampFlow() {
           <SimpleUSDCPayment
             amount={formData.amount}
             phoneNumber={formData.phoneNumber}
+            accountNumber={formData.accountNumber}
+            bankCode={formData.bankCode}
             accountName={formData.accountName}
             currency={formData.currency}
             returnAddress={address || ''}
@@ -303,8 +452,9 @@ export function SimpleOffRampFlow() {
             <button
               onClick={() => {
                 setStep('form');
-                setFormData({ amount: '', phoneNumber: '', accountName: '', currency: 'KES' });
+                setFormData({ amount: '', phoneNumber: '', accountNumber: '', bankCode: '', accountName: '', currency: 'KES' });
                 setCurrentRate(null);
+                setAccountVerified(false);
               }}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
             >
