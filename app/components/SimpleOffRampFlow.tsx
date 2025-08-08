@@ -90,7 +90,7 @@ export function SimpleOffRampFlow() {
       const data = await response.json();
       
       if (data.success) {
-        setInstitutions(data.data || []);
+        setInstitutions(data.institutions || []);
       } else {
         console.error('Failed to fetch institutions:', data.error);
       }
