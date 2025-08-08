@@ -182,7 +182,7 @@ export default function ProofPage() {
         {/* Transactions Section */}
         <div className="space-y-6">
           {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-col gap-4">
             <div>
               <h2 className="text-xl font-medium text-white">Transaction History</h2>
               <p className="text-sm text-gray-400">
@@ -190,8 +190,8 @@ export default function ProofPage() {
               </p>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <div className="relative flex-1 max-w-sm">
                 <input
                   type="text"
                   placeholder="Search transactions..."
@@ -200,7 +200,7 @@ export default function ProofPage() {
                     setSearchTerm(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-64 px-4 py-2 bg-[#111] border border-gray-800/50 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gray-600"
+                  className="w-full px-4 py-2 bg-[#111] border border-gray-800/50 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gray-600"
                 />
                 <svg className="absolute right-3 top-2.5 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -208,7 +208,7 @@ export default function ProofPage() {
               </div>
               
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-400">Go to page:</span>
+                <span className="text-sm text-gray-400 whitespace-nowrap">Page:</span>
                 <input
                   type="number"
                   min="1"
@@ -229,7 +229,8 @@ export default function ProofPage() {
 
           {/* Transaction List */}
           <div className="border border-gray-800/50 rounded-2xl overflow-hidden bg-[#111]">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-800/50">
@@ -302,14 +303,104 @@ export default function ProofPage() {
               </table>
             </div>
 
+            {/* Mobile Card View */}
+            <div className="lg:hidden divide-y divide-gray-800/50">
+              {paginatedTransactions.map((tx, index) => (
+                <div key={tx.txHash} className="p-4 space-y-3">
+                  {/* Header with number and status */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 bg-gray-800/50 rounded-full flex items-center justify-center text-xs text-gray-400 font-medium">
+                        {startIndex + index + 1}
+                      </div>
+                      <span className="text-sm font-medium text-white">Transaction {startIndex + index + 1}</span>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      tx.status === 'settled' 
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                    }`}>
+                      {tx.status}
+                    </span>
+                  </div>
+
+                  {/* Transaction Hash */}
+                  <div>
+                    <p className="text-xs text-gray-400 mb-1">Transaction Hash</p>
+                    <p className="font-mono text-sm text-white break-all">{tx.txHash}</p>
+                  </div>
+
+                  {/* User and Amount Row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">User Wallet</p>
+                      <p className="font-mono text-sm text-gray-300">
+                        {tx.userId === 'Unknown' ? 'Unknown' : `${tx.userId.slice(0, 6)}...${tx.userId.slice(-4)}`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">Amount</p>
+                      <p className="text-sm font-medium text-white">${tx.amount} {tx.currency}</p>
+                    </div>
+                  </div>
+
+                  {/* Date and View Row */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">Date</p>
+                      <p className="text-sm text-gray-300">
+                        {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                    <a 
+                      href={tx.basescanUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg text-sm border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+                    >
+                      <span>View on BaseScan</span>
+                      <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="border-t border-gray-800/50 px-6 py-4">
-                <div className="flex items-center justify-between">
+              <div className="border-t border-gray-800/50 px-4 sm:px-6 py-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <p className="text-sm text-gray-400">
                     Page {currentPage} of {totalPages}
                   </p>
-                  <div className="flex items-center space-x-2">
+                  
+                  {/* Mobile Pagination - Simplified */}
+                  <div className="flex items-center space-x-2 sm:hidden">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-2 text-sm border border-gray-800/50 rounded-lg text-gray-400 hover:text-white hover:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    
+                    <span className="px-3 py-2 text-sm bg-white text-black rounded-lg">
+                      {currentPage}
+                    </span>
+                    
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-2 text-sm border border-gray-800/50 rounded-lg text-gray-400 hover:text-white hover:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+
+                  {/* Desktop Pagination - Full */}
+                  <div className="hidden sm:flex items-center space-x-2">
                     <button
                       onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
