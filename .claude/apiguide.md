@@ -321,3 +321,94 @@ number
 ​
 data.reference
 string
+
+Code Standards
+Understanding Paycrest’s currency and institution code formats
+
+Paycrest follows international standards for currency and institution codes to ensure consistency and compatibility across different systems and regions.
+​
+Currency Codes
+Paycrest uses ISO 4217 standard currency codes, which are the internationally recognized three-letter codes for currencies.
+​
+Examples:
+NGN - Nigerian Naira
+KES - Kenyan Shilling
+UGX - Ugandan Shilling
+TZS - Tanzanian Shilling
+MWK - Malawi Kwacha
+GHS - Ghanaian Cedi
+BRL - Brazilian Real
+XOF - West African CFA Franc
+INR - Indian Rupee
+All currency codes used in Paycrest API calls must follow the ISO 4217 standard. These codes are case-sensitive and should be provided in uppercase.
+​
+Institution Codes
+Paycrest uses a hybrid approach for institution codes to accommodate both international banks and local financial institutions.
+​
+SWIFT Codes (International Banks)
+For major international banks and domestic banks with SWIFT codes, Paycrest uses the first 7 characters of the SWIFT/BIC code.
+​
+Examples:
+GTBINGLA - Guaranty Trust Bank (Nigeria)
+FBNINGLA - First Bank of Nigeria
+CITINGLA - Citibank Nigeria
+SCBLNGLA - Standard Chartered Bank Nigeria
+KCBLKENX - Kenya Commercial Bank
+EQBLKENA - Equity Bank Kenya
+​
+Custom Codes (Local Institutions)
+For mobile payment providers, local banks without SWIFT codes, and other financial institutions, Paycrest uses custom codes that follow a SWIFT-like format ending with “PC” (PayCrest).
+​
+Examples:
+KUDANGPC - Kuda Bank (Nigeria)
+OPAYNGPC - OPay (Nigeria)
+MONINGPC - Moniepoint (Nigeria)
+SAFAKEPC - Safaricom M-Pesa (Kenya)
+AIRTKEPC - Airtel Money (Kenya)
+MOMOGHPC - MTN Mobile Money (Ghana)
+​
+Code Format Rules
+​
+Currency Codes
+Format: 3 uppercase letters
+Standard: ISO 4217
+Case: Always uppercase
+Examples: NGN, KES, UGX
+​
+Institution Codes
+Format: 8 characters
+International Banks: First 7 characters of SWIFT code
+Local Institutions: Custom code ending with “PC”
+Case: Always uppercase
+Examples: GTBINGLA, KUDANGPC
+​
+API Usage
+When making API calls, always use the correct code format:
+
+Copy
+// Correct currency code format
+const order = {
+  amount: "100",
+  token: "USDT",
+  network: "base",
+  recipient: {
+    institution: "GTBINGLA", // Correct institution code
+    accountIdentifier: "1234567890",
+    currency: "NGN" // Correct currency code
+  }
+};
+​
+Finding Institution Codes
+Use the GET /institutions/ endpoint to get the complete list of supported institutions for any currency:
+
+Copy
+curl -X GET "https://api.paycrest.io/v1/institutions/NGN" \
+  -H "API-Key: your-api-key"
+This endpoint returns all supported institutions with their codes, names, and types (bank or mobile_money).
+Institution codes are case-sensitive and must be provided exactly as returned by the API. Always use the official codes from the API rather than guessing or using external SWIFT code databases.
+Supported Currencies
+Gateway Contract Addresses
+x
+github
+linkedin
+Powered by Mintlify
