@@ -128,6 +128,7 @@ function processOrdersForProof(
       network: string;
       createdAt: string;
       basescanUrl: string;
+      userId: string;
     }>,
     currencies: { KES: 0, NGN: 0 },
     statusBreakdown: {} as Record<string, number>,
@@ -160,7 +161,8 @@ function processOrdersForProof(
         status: order.status,
         network: order.network || 'base',
         createdAt: order.createdAt || '',
-        basescanUrl: `https://basescan.org/tx/${order.txHash}`
+        basescanUrl: `https://basescan.org/tx/${order.txHash}`,
+        userId: order.returnAddress || 'Unknown'
       });
     }
 
