@@ -8,7 +8,9 @@ import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 
 interface SimpleUSDCPaymentProps {
   amount: string;
-  phoneNumber: string;
+  phoneNumber?: string;
+  accountNumber?: string;
+  bankCode?: string;
   accountName: string;
   currency: 'KES' | 'NGN';
   returnAddress: string;
@@ -20,6 +22,8 @@ interface SimpleUSDCPaymentProps {
 export function SimpleUSDCPayment({
   amount,
   phoneNumber,
+  accountNumber,
+  bankCode,
   accountName,
   currency,
   returnAddress,
@@ -158,6 +162,8 @@ export function SimpleUSDCPayment({
         body: JSON.stringify({
           amount,
           phoneNumber,
+          accountNumber,
+          bankCode,
           accountName,
           currency,
           provider: currency === 'KES' ? 'M-Pesa' : 'Bank Transfer',
@@ -377,7 +383,7 @@ export function SimpleUSDCPayment({
                 💡 Click to approve USDC transfer from your wallet
               </p>
               <p className="text-gray-400 text-xs mt-1">
-                {currency} will be sent to recipient automatically
+                {currency} will be sent to {currency === 'KES' ? 'mobile wallet' : 'bank account'} automatically
               </p>
             </div>
           </div>
@@ -437,7 +443,7 @@ export function SimpleUSDCPayment({
               ✅ Payment sent → Converting to {currency}
             </p>
             <p className="text-gray-400 text-xs mt-1">
-              {currency} will be delivered to {phoneNumber}
+              {currency} will be delivered to {currency === 'KES' ? phoneNumber : accountNumber}
             </p>
           </div>
         </div>
@@ -454,7 +460,7 @@ export function SimpleUSDCPayment({
           </div>
           <h3 className="text-white font-bold text-xl">Payment Sent</h3>
           <p className="text-gray-300 text-sm">
-            Your {currency} has been sent to {phoneNumber}
+            Your {currency} has been sent to {currency === 'KES' ? phoneNumber : accountNumber}
           </p>
         </div>
       )}
