@@ -66,7 +66,7 @@ export async function generateMetadata(): Promise<Metadata> {
       // Farcaster Frame meta tag - correct format for Mini App embeds
       "fc:frame": JSON.stringify({
         version: "next",
-        imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || ogImage || `${URL || "https://minisend.xyz"}/screenshot.png`,
+        imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || ogImage || `${URL || "https://minisend.xyz"}/minisend-logo.png`,
         button: {
           title: process.env.NEXT_PUBLIC_BUTTON_TITLE || `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "Minisend"}`,
           action: {
@@ -91,12 +91,12 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Additional meta tags for better social sharing */}
-        <meta property="og:image" content={`${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/screenshot.png`} />
+        <meta property="og:image" content={`${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/minisend-logo.png`} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:type" content="image/png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/screenshot.png`} />
+        <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/minisend-logo.png`} />
         <meta name="twitter:domain" content="minisend.xyz" />
         <meta name="theme-color" content="#1D4ED8" />
         <link rel="canonical" href={process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"} />
@@ -104,7 +104,7 @@ export default function RootLayout({
         {/* Farcaster specific meta tag - correct format for Mini App embeds */}
         <meta name="fc:frame" content={JSON.stringify({
           version: "next",
-          imageUrl: `${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/screenshot.png`,
+          imageUrl: `${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/minisend-logo.png`,
           button: {
             title: "Launch Minisend",
             action: {

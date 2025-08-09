@@ -17,7 +17,7 @@ export async function GET() {
   // Build screenshot URLs array
   const screenshots: string[] = process.env.NEXT_PUBLIC_SCREENSHOT_URLS 
     ? process.env.NEXT_PUBLIC_SCREENSHOT_URLS.split(',') 
-    : [`${URL || "https://minisend.xyz"}/screenshot.png`];
+    : [`${URL || "https://minisend.xyz"}/minisend-logo.png`];
 
   // Build tags array - default tags for Kenya USDC off-ramp
   const tags = ["usdc", "mpesa", "kenya", "crypto", "finance"];
@@ -37,14 +37,14 @@ export async function GET() {
       description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Convert USDC to KES or NGN instantly",
       
       // Critical fields for Farcaster preview
-      imageUrl: process.env.NEXT_PUBLIC_IMAGE_URL || "https://minisend.xyz/screenshot.png",
+      imageUrl: process.env.NEXT_PUBLIC_IMAGE_URL || "https://minisend.xyz/minisend-logo.png",
       buttonTitle: process.env.NEXT_PUBLIC_BUTTON_TITLE || "Open Minisend",
       
       // Visual Assets
       iconUrl: process.env.NEXT_PUBLIC_ICON_URL || "https://minisend.xyz/minisend-logo.png",
       splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || "https://minisend.xyz/minisend-logo.png",
       splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#FFFFFF",
-      heroImageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || "https://minisend.xyz/screenshot.png",
+      heroImageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || "https://minisend.xyz/minisend-logo.png",
       
       // Screenshots (up to 3, portrait 1284x2778)
       screenshotUrls: screenshots,
@@ -57,7 +57,7 @@ export async function GET() {
       // Social Sharing (Open Graph)
       ogTitle: process.env.NEXT_PUBLIC_APP_OG_TITLE || "Minisend - USDC to KES and NGN",
       ogDescription: process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION || "Convert USDC to local currency instantly",
-      ogImageUrl: process.env.NEXT_PUBLIC_APP_OG_IMAGE || "https://minisend.xyz/screenshot.png",
+      ogImageUrl: process.env.NEXT_PUBLIC_APP_OG_IMAGE || "https://minisend.xyz/minisend-logo.png",
       
       // Technical URLs
       homeUrl: URL || "https://minisend.xyz",
