@@ -43,13 +43,19 @@ export async function GET() {
       
       let response;
       try {
+        // Create AbortController for timeout handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
         response = await fetch(`${PAYCREST_API_URL}/sender/orders?page=${page}&pageSize=${pageSize}`, {
-        headers: {
-          'API-Key': PAYCREST_API_KEY!,
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000 // 30 second timeout
+          headers: {
+            'API-Key': PAYCREST_API_KEY!,
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
       } catch (fetchError) {
         if (fetchError instanceof Error && fetchError.name === 'AbortError') {
           throw new Error(`PayCrest API request timed out. The service may be experiencing high traffic. Please try again later.`);
