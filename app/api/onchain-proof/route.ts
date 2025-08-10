@@ -41,16 +41,42 @@ export async function GET() {
     do {
       console.log(`📄 Fetching page ${page}...`);
       
-      const response = await fetch(`${PAYCREST_API_URL}/sender/orders?page=${page}&pageSize=${pageSize}`, {
+      let response;
+      try {
+        response = await fetch(`${PAYCREST_API_URL}/sender/orders?page=${page}&pageSize=${pageSize}`, {
         headers: {
           'API-Key': PAYCREST_API_KEY!,
           'Content-Type': 'application/json',
+        },
+        timeout: 30000 // 30 second timeout
+        });
+      } catch (fetchError) {
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error(`PayCrest API request timed out. The service may be experiencing high traffic. Please try again later.`);
+        } else if (fetchError instanceof TypeError) {
+          throw new Error(`Unable to connect to PayCrest API. Please check your internet connection and try again.`);
+        } else {
+          throw new Error(`Network error connecting to PayCrest API: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
         }
-      });
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`PayCrest API error: ${response.status} - ${errorText}`);
+        
+        // Better error messages for common API issues
+        if (response.status === 504 || response.status === 502) {
+          throw new Error(`PayCrest API is temporarily unavailable (Gateway Error: ${response.status}). Please try again in a few minutes.`);
+        } else if (response.status === 503) {
+          throw new Error(`PayCrest API is under maintenance (Service Unavailable: ${response.status}). Please try again later.`);
+        } else if (response.status === 429) {
+          throw new Error(`Rate limit exceeded (${response.status}). Please try again in a moment.`);
+        } else if (response.status >= 500) {
+          throw new Error(`PayCrest API server error (${response.status}). Please try again later.`);
+        } else if (response.status === 401 || response.status === 403) {
+          throw new Error(`API authentication failed (${response.status}). Please check API configuration.`);
+        } else {
+          throw new Error(`PayCrest API error: ${response.status} - ${errorText}`);
+        }
       }
 
       const result = await response.json();
