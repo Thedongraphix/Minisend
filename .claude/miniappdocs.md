@@ -1192,6 +1192,7 @@ export function WalletConnectMinimal() {
 
   if (isLoading) {
     return <div>Connecting...</div>;
+    
   }
 
   return (

@@ -189,7 +189,7 @@ curl http://localhost:3000/api/paycrest/orders-docs
 
 ### Frontend Components
 
-- `SimpleUSDCPayment.tsx` - Main payment component with research-based polling
+- `SimpleUSDCPayment.tsx` - Main payment component with intelligent polling
 - `SimpleOffRampFlow.tsx` - Complete off-ramp flow
 - `DirectUSDCBalance.tsx` - USDC balance display
 - `DemoComponents.tsx` - UI components and styling

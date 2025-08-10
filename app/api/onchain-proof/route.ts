@@ -1,27 +1,9 @@
-import { NextResponse } from 'next/server';
-
-interface PaycrestOrder {
-  id: string;
-  amount: string;
-  token: string;
-  rate: string;
-  network: string;
-  recipient?: {
-    currency: string;
-    [key: string]: unknown;
-  };
-  returnAddress?: string;
-  receiveAddress?: string;
-  txHash?: string;
-  status: string;
-  createdAt?: string;
-  [key: string]: unknown;
-}
+import { NextRequest, NextResponse } from 'next/server';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     if (!PAYCREST_API_KEY) {
       return NextResponse.json(
@@ -32,90 +14,53 @@ export async function GET() {
 
     console.log('🚀 Generating onchain proof for Minisend...\n');
     
-    // Fetch ALL orders with pagination
-    let allOrders: PaycrestOrder[] = [];
-    let page = 1;
-    let total = 0;
-    const pageSize = 50; // Increase page size for efficiency
+    // Fetch all orders
+    const allOrdersResponse = await fetch(`${PAYCREST_API_URL}/sender/orders`, {
+      headers: {
+        'API-Key': PAYCREST_API_KEY!,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!allOrdersResponse.ok) {
+      const errorText = await allOrdersResponse.text();
+      throw new Error(`PayCrest API error: ${allOrdersResponse.status} - ${errorText}`);
+    }
+
+    const allOrdersResult = await allOrdersResponse.json();
+    console.log('📊 Raw API response:', allOrdersResult);
     
-    do {
-      console.log(`📄 Fetching page ${page}...`);
-      
-      let response;
-      try {
-        // Create AbortController for timeout handling
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-        
-        response = await fetch(`${PAYCREST_API_URL}/sender/orders?page=${page}&pageSize=${pageSize}`, {
-          headers: {
-            'API-Key': PAYCREST_API_KEY!,
-            'Content-Type': 'application/json',
-          },
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-      } catch (fetchError) {
-        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          throw new Error(`PayCrest API request timed out. The service may be experiencing high traffic. Please try again later.`);
-        } else if (fetchError instanceof TypeError) {
-          throw new Error(`Unable to connect to PayCrest API. Please check your internet connection and try again.`);
-        } else {
-          throw new Error(`Network error connecting to PayCrest API: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
-        }
-      }
+    if (allOrdersResult.status !== 'success')
+      {
+      throw new Error(`PayCrest API failed: ${allOrdersResult.message}`);
+    }
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        
-        // Better error messages for common API issues
-        if (response.status === 504 || response.status === 502) {
-          throw new Error(`PayCrest API is temporarily unavailable (Gateway Error: ${response.status}). Please try again in a few minutes.`);
-        } else if (response.status === 503) {
-          throw new Error(`PayCrest API is under maintenance (Service Unavailable: ${response.status}). Please try again later.`);
-        } else if (response.status === 429) {
-          throw new Error(`Rate limit exceeded (${response.status}). Please try again in a moment.`);
-        } else if (response.status >= 500) {
-          throw new Error(`PayCrest API server error (${response.status}). Please try again later.`);
-        } else if (response.status === 401 || response.status === 403) {
-          throw new Error(`API authentication failed (${response.status}). Please check API configuration.`);
-        } else {
-          throw new Error(`PayCrest API error: ${response.status} - ${errorText}`);
-        }
-      }
+    const orders = allOrdersResult.data || [];
+    console.log(`📊 Found ${orders.length} total orders`);
 
-      const result = await response.json();
-      
-      if (result.status !== 'success') {
-        throw new Error(`PayCrest API failed: ${result.message}`);
-      }
-      
-      const pageOrders = result.data?.orders || [];
-      total = result.data?.total || 0;
-      
-      allOrders = allOrders.concat(pageOrders);
-      console.log(`📊 Page ${page}: ${pageOrders.length} orders, Total collected: ${allOrders.length}/${total}`);
-      
-      page++;
-      
-      // Continue if we have more orders to fetch
-    } while (allOrders.length < total && allOrders.length > 0);
+    // Fetch additional data in parallel
+    const [baseOrdersResponse, usdcOrdersResponse, completedOrdersResponse] = await Promise.all([
+      fetch(`${PAYCREST_API_URL}/sender/orders?network=base`, {
+        headers: { 'API-Key': PAYCREST_API_KEY!, 'Content-Type': 'application/json' }
+      }),
+      fetch(`${PAYCREST_API_URL}/sender/orders?token=USDC`, {
+        headers: { 'API-Key': PAYCREST_API_KEY!, 'Content-Type': 'application/json' }
+      }),
+      fetch(`${PAYCREST_API_URL}/sender/orders?status=settled`, {
+        headers: { 'API-Key': PAYCREST_API_KEY!, 'Content-Type': 'application/json' }
+      })
+    ]);
 
-    const orders = allOrders;
-    console.log(`✅ Collected ALL ${orders.length} orders from ${page - 1} pages`);
-
-    // Filter orders from the complete dataset instead of making separate API calls
-    const baseOrders = orders.filter(order => order.network === 'base');
-    const usdcOrders = orders.filter(order => order.token === 'USDC');
-    const completedOrders = orders.filter(order => order.status === 'settled');
+    const baseOrders = baseOrdersResponse.ok ? (await baseOrdersResponse.json()).data || [] : [];
+    const usdcOrders = usdcOrdersResponse.ok ? (await usdcOrdersResponse.json()).data || [] : [];
+    const completedOrders = completedOrdersResponse.ok ? (await completedOrdersResponse.json()).data || [] : [];
 
     console.log(`🔵 Found ${baseOrders.length} Base network orders`);
     console.log(`💰 Found ${usdcOrders.length} USDC orders`);
     console.log(`✅ Found ${completedOrders.length} completed orders`);
 
     // Process the data
-    const proof = processOrdersForProof(orders, baseOrders, usdcOrders, completedOrders, total);
+    const proof = processOrdersForProof(orders, baseOrders, usdcOrders, completedOrders);
     
     return NextResponse.json({
       success: true,
@@ -133,53 +78,26 @@ export async function GET() {
   }
 }
 
-function processOrdersForProof(
-  allOrders: PaycrestOrder[], 
-  baseOrders: PaycrestOrder[], 
-  usdcOrders: PaycrestOrder[], 
-  completedOrders: PaycrestOrder[], 
-  totalCount: number
-) {
+function processOrdersForProof(allOrders: any[], baseOrders: any[], usdcOrders: any[], completedOrders: any[]) {
   console.log('📋 Processing orders for onchain proof...\n');
 
   // Extract key metrics
   const metrics = {
-    totalOrders: totalCount,
+    totalOrders: allOrders.length,
     baseOrders: baseOrders.length,
     usdcOrders: usdcOrders.length,
     completedOrders: completedOrders.length,
     totalVolumeUSD: 0,
     uniqueUsers: new Set<string>(),
     uniqueReceiveAddresses: new Set<string>(),
-    allOrders: [] as Array<{
-      orderId: string;
-      txHash?: string;
-      amount: number;
-      currency: string;
-      status: string;
-      network: string;
-      createdAt: string;
-      basescanUrl?: string;
-      userId: string;
-    }>,
-    transactionHashes: [] as Array<{
-      orderId: string;
-      txHash: string;
-      amount: number;
-      currency: string;
-      status: string;
-      network: string;
-      createdAt: string;
-      basescanUrl: string;
-      userId: string;
-    }>,
+    transactionHashes: [] as any[],
     currencies: { KES: 0, NGN: 0 },
     statusBreakdown: {} as Record<string, number>,
     monthlyData: {} as Record<string, { orders: number; volume: number }>
   };
 
   // Process all orders for comprehensive metrics
-  allOrders.forEach((order: PaycrestOrder) => {
+  allOrders.forEach(order => {
     // Volume calculation
     const amount = parseFloat(order.amount) || 0;
     metrics.totalVolumeUSD += amount;
@@ -194,20 +112,7 @@ function processOrdersForProof(
       metrics.uniqueReceiveAddresses.add(order.receiveAddress);
     }
 
-    // Add ALL orders (not just those with txHash)
-    metrics.allOrders.push({
-      orderId: order.id,
-      txHash: order.txHash || undefined,
-      amount: amount,
-      currency: order.recipient?.currency || 'KES',
-      status: order.status,
-      network: order.network || 'base',
-      createdAt: order.createdAt || '',
-      basescanUrl: order.txHash ? `https://basescan.org/tx/${order.txHash}` : undefined,
-      userId: order.returnAddress || 'Unknown'
-    });
-
-    // Transaction hashes (onchain proof) - only those with txHash
+    // Transaction hashes (onchain proof)
     if (order.txHash) {
       metrics.transactionHashes.push({
         orderId: order.id,
@@ -216,18 +121,15 @@ function processOrdersForProof(
         currency: order.recipient?.currency || 'KES',
         status: order.status,
         network: order.network || 'base',
-        createdAt: order.createdAt || '',
-        basescanUrl: `https://basescan.org/tx/${order.txHash}`,
-        userId: order.returnAddress || 'Unknown'
+        createdAt: order.createdAt,
+        basescanUrl: `https://basescan.org/tx/${order.txHash}`
       });
     }
 
     // Currency breakdown
     const currency = order.recipient?.currency;
-    if (currency === 'KES') {
-      metrics.currencies.KES += amount;
-    } else if (currency === 'NGN') {
-      metrics.currencies.NGN += amount;
+    if (currency === 'KES' || currency === 'NGN') {
+      metrics.currencies[currency as keyof typeof metrics.currencies] += amount;
     }
 
     // Status breakdown
@@ -238,6 +140,7 @@ function processOrdersForProof(
       const month = order.createdAt.substring(0, 7); // YYYY-MM
       if (!metrics.monthlyData[month]) {
         metrics.monthlyData[month] = { orders: 0, volume: 0 };
+
       }
       metrics.monthlyData[month].orders += 1;
       metrics.monthlyData[month].volume += amount;
@@ -252,51 +155,6 @@ function processOrdersForProof(
   const averageOrderSize = metrics.totalOrders > 0 
     ? (metrics.totalVolumeUSD / metrics.totalOrders)
     : 0;
-
-  // Calculate growth indicators (last 30 days vs previous 30 days)
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-
-  const recentOrders = allOrders.filter(order => {
-    if (!order.createdAt) return false;
-    const orderDate = new Date(order.createdAt);
-    return orderDate >= thirtyDaysAgo;
-  });
-
-  const previousOrders = allOrders.filter(order => {
-    if (!order.createdAt) return false;
-    const orderDate = new Date(order.createdAt);
-    return orderDate >= sixtyDaysAgo && orderDate < thirtyDaysAgo;
-  });
-
-  const recentVolume = recentOrders.reduce((sum, order) => sum + (parseFloat(order.amount) || 0), 0);
-  const previousVolume = previousOrders.reduce((sum, order) => sum + (parseFloat(order.amount) || 0), 0);
-
-  const recentTransactions = recentOrders.filter(order => order.txHash).length;
-  const previousTransactions = previousOrders.filter(order => order.txHash).length;
-
-  const recentUsers = new Set(recentOrders.map(order => order.returnAddress).filter(Boolean)).size;
-  const previousUsers = new Set(previousOrders.map(order => order.returnAddress).filter(Boolean)).size;
-
-  const recentCompleted = recentOrders.filter(order => order.status === 'settled').length;
-  const previousCompleted = previousOrders.filter(order => order.status === 'settled').length;
-
-  const recentSuccessRate = recentOrders.length > 0 ? (recentCompleted / recentOrders.length) * 100 : 0;
-  const previousSuccessRate = previousOrders.length > 0 ? (previousCompleted / previousOrders.length) * 100 : 0;
-
-  // Calculate percentage growth
-  const calculateGrowth = (current: number, previous: number): number => {
-    if (previous === 0) return current > 0 ? 100 : 0;
-    return ((current - previous) / previous) * 100;
-  };
-
-  const growthMetrics = {
-    volumeGrowth: calculateGrowth(recentVolume, previousVolume),
-    transactionsGrowth: calculateGrowth(recentTransactions, previousTransactions),
-    usersGrowth: calculateGrowth(recentUsers, previousUsers),
-    successRateGrowth: calculateGrowth(recentSuccessRate, previousSuccessRate)
-  };
 
   const proof = {
     app: {
@@ -313,19 +171,12 @@ function processOrdersForProof(
       uniqueUsers: metrics.uniqueUsers.size,
       successRate: Number(successRate.toFixed(1)),
       averageOrderSize: Number(averageOrderSize.toFixed(2)),
-      transactionHashesCount: metrics.transactionHashes.length,
-      growthMetrics: {
-        volumeGrowth: Number(growthMetrics.volumeGrowth.toFixed(1)),
-        transactionsGrowth: Number(growthMetrics.transactionsGrowth.toFixed(1)),
-        usersGrowth: Number(growthMetrics.usersGrowth.toFixed(1)),
-        successRateGrowth: Number(growthMetrics.successRateGrowth.toFixed(1))
-      }
+      transactionHashesCount: metrics.transactionHashes.length
     },
     onchainProof: {
       smartContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
       network: 'Base',
-      allOrders: metrics.allOrders, // ALL orders for admin dashboard
-      transactionHashes: metrics.transactionHashes.slice(0, 10), // Most recent 10 for proof
+      transactionHashes: metrics.transactionHashes.slice(0, 10), // Most recent 10
       receiveAddresses: Array.from(metrics.uniqueReceiveAddresses).slice(0, 10),
       userWallets: Array.from(metrics.uniqueUsers).slice(0, 10)
     },
@@ -348,7 +199,7 @@ function processOrdersForProof(
   return proof;
 }
 
-function generateDuneQueryCode(receiveAddresses: string[], transactionHashes: Array<{txHash: string; [key: string]: unknown}>) {
+function generateDuneQueryCode(receiveAddresses: string[], transactionHashes: any[]) {
   if (receiveAddresses.length === 0 && transactionHashes.length === 0) {
     return null;
   }
@@ -356,7 +207,7 @@ function generateDuneQueryCode(receiveAddresses: string[], transactionHashes: Ar
   let query = `-- Minisend USDC Activity on Base Network\n-- Generated for minisend.xyz\n\n`;
 
   if (transactionHashes.length > 0) {
-    const hashes = transactionHashes.slice(0, 10).map((tx) => `'${tx.txHash}'`).join(',\\n        ');
+    const hashes = transactionHashes.slice(0, 10).map(tx => `'${tx.txHash}'`).join(',\\n        ');
     
     query += `-- Query by specific transaction hashes
 WITH minisend_txns AS (

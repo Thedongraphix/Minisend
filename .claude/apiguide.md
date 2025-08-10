@@ -412,3 +412,52 @@ x
 github
 linkedin
 Powered by Mintlify
+
+
+General
+Verify Account
+POST
+/
+verify-account
+
+Try it
+Verify an account using institution and account identifier.
+Body
+application/json
+​
+institution
+stringrequired
+Institution code (SWIFT code or custom PayCrest code ending with 'PC'). See Code Standards for details.
+
+​
+accountIdentifier
+stringrequired
+Bank account number, mobile number, or other account identifier
+
+Response
+200
+
+200
+application/json
+Account verified
+
+​
+status
+string
+Example:
+"success"
+
+​
+message
+string
+Example:
+"Operation successful"
+
+​
+data
+string
+Get Aggregator Public Key
+Reindex Transaction
+x
+github
+linkedin
