@@ -221,6 +221,51 @@ function processOrdersForProof(
     ? (metrics.totalVolumeUSD / metrics.totalOrders)
     : 0;
 
+  // Calculate growth indicators (last 30 days vs previous 30 days)
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+  const recentOrders = allOrders.filter(order => {
+    if (!order.createdAt) return false;
+    const orderDate = new Date(order.createdAt);
+    return orderDate >= thirtyDaysAgo;
+  });
+
+  const previousOrders = allOrders.filter(order => {
+    if (!order.createdAt) return false;
+    const orderDate = new Date(order.createdAt);
+    return orderDate >= sixtyDaysAgo && orderDate < thirtyDaysAgo;
+  });
+
+  const recentVolume = recentOrders.reduce((sum, order) => sum + (parseFloat(order.amount) || 0), 0);
+  const previousVolume = previousOrders.reduce((sum, order) => sum + (parseFloat(order.amount) || 0), 0);
+
+  const recentTransactions = recentOrders.filter(order => order.txHash).length;
+  const previousTransactions = previousOrders.filter(order => order.txHash).length;
+
+  const recentUsers = new Set(recentOrders.map(order => order.returnAddress).filter(Boolean)).size;
+  const previousUsers = new Set(previousOrders.map(order => order.returnAddress).filter(Boolean)).size;
+
+  const recentCompleted = recentOrders.filter(order => order.status === 'settled').length;
+  const previousCompleted = previousOrders.filter(order => order.status === 'settled').length;
+
+  const recentSuccessRate = recentOrders.length > 0 ? (recentCompleted / recentOrders.length) * 100 : 0;
+  const previousSuccessRate = previousOrders.length > 0 ? (previousCompleted / previousOrders.length) * 100 : 0;
+
+  // Calculate percentage growth
+  const calculateGrowth = (current: number, previous: number): number => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
+
+  const growthMetrics = {
+    volumeGrowth: calculateGrowth(recentVolume, previousVolume),
+    transactionsGrowth: calculateGrowth(recentTransactions, previousTransactions),
+    usersGrowth: calculateGrowth(recentUsers, previousUsers),
+    successRateGrowth: calculateGrowth(recentSuccessRate, previousSuccessRate)
+  };
+
   const proof = {
     app: {
       name: 'Minisend',
@@ -236,7 +281,13 @@ function processOrdersForProof(
       uniqueUsers: metrics.uniqueUsers.size,
       successRate: Number(successRate.toFixed(1)),
       averageOrderSize: Number(averageOrderSize.toFixed(2)),
-      transactionHashesCount: metrics.transactionHashes.length
+      transactionHashesCount: metrics.transactionHashes.length,
+      growthMetrics: {
+        volumeGrowth: Number(growthMetrics.volumeGrowth.toFixed(1)),
+        transactionsGrowth: Number(growthMetrics.transactionsGrowth.toFixed(1)),
+        usersGrowth: Number(growthMetrics.usersGrowth.toFixed(1)),
+        successRateGrowth: Number(growthMetrics.successRateGrowth.toFixed(1))
+      }
     },
     onchainProof: {
       smartContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
