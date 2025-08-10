@@ -23,6 +23,12 @@ interface ProofData {
     successRate: number;
     averageOrderSize: number;
     completedOrders: number;
+    growthMetrics: {
+      volumeGrowth: number;
+      transactionsGrowth: number;
+      usersGrowth: number;
+      successRateGrowth: number;
+    };
   };
   onchainProof: {
     smartContract: string;
@@ -140,21 +146,25 @@ export default function ProofPage() {
             label="Total Volume"
             value={`$${proofData.summary.totalVolumeUSD.toLocaleString()}`}
             sublabel="USDC processed"
+            growth={proofData.summary.growthMetrics.volumeGrowth}
           />
           <MetricCard
             label="Transactions"
             value={proofData.summary.transactionHashesCount.toString()}
             sublabel="Onchain verified"
+            growth={proofData.summary.growthMetrics.transactionsGrowth}
           />
           <MetricCard
             label="Success Rate"
             value={`${proofData.summary.successRate}%`}
             sublabel="Settlement rate"
+            growth={proofData.summary.growthMetrics.successRateGrowth}
           />
           <MetricCard
             label="Unique Users"
             value={proofData.summary.uniqueUsers.toString()}
             sublabel="Wallet addresses"
+            growth={proofData.summary.growthMetrics.usersGrowth}
           />
         </div>
 
@@ -269,8 +279,8 @@ export default function ProofPage() {
                       </td>
                       <td className="py-4 px-6">
                         <div>
-                          <p className="text-white font-medium">${tx.amount}</p>
-                          <p className="text-xs text-gray-500">{tx.currency}</p>
+                          <p className="text-white font-medium">${tx.amount} USDC</p>
+                          <p className="text-xs text-gray-500">→ {tx.currency}</p>
                         </div>
                       </td>
                       <td className="py-4 px-6">
@@ -349,7 +359,8 @@ export default function ProofPage() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 mb-1">Amount</p>
-                      <p className="text-sm font-medium text-white">${tx.amount} {tx.currency}</p>
+                      <p className="text-sm font-medium text-white">${tx.amount} USDC</p>
+                      <p className="text-xs text-gray-500">→ {tx.currency}</p>
                     </div>
                   </div>
 
@@ -525,11 +536,57 @@ export default function ProofPage() {
   );
 }
 
-function MetricCard({ label, value, sublabel }: { label: string; value: string; sublabel: string }) {
+function MetricCard({ label, value, sublabel, growth }: { 
+  label: string; 
+  value: string; 
+  sublabel: string; 
+  growth?: number;
+}) {
+  const formatGrowth = (growth: number) => {
+    if (growth === 0) return '0.0%';
+    return growth > 0 ? `+${growth}%` : `${growth}%`;
+  };
+
+  const getGrowthColor = (growth: number) => {
+    if (growth > 0) return 'text-green-400';
+    if (growth < 0) return 'text-red-400';
+    return 'text-gray-500';
+  };
+
+  const getGrowthIcon = (growth: number) => {
+    if (growth > 0) {
+      return (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+        </svg>
+      );
+    }
+    if (growth < 0) {
+      return (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+        </svg>
+      );
+    }
+    return (
+      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4"></path>
+      </svg>
+    );
+  };
+
   return (
     <div className="border border-gray-800/50 rounded-2xl p-6 bg-[#111]">
       <div className="space-y-2">
-        <p className="text-sm text-gray-400">{label}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-400">{label}</p>
+          {growth !== undefined && (
+            <div className={`flex items-center gap-1 text-xs ${getGrowthColor(growth)}`}>
+              {getGrowthIcon(growth)}
+              <span>{formatGrowth(growth)}</span>
+            </div>
+          )}
+        </div>
         <p className="text-2xl font-medium text-white">{value}</p>
         <p className="text-xs text-gray-500">{sublabel}</p>
       </div>
