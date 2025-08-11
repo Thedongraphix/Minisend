@@ -226,7 +226,13 @@ function processOrdersForProof(allOrders: PayCrestOrder[], baseOrders: PayCrestO
       uniqueUsers: metrics.uniqueUsers.size,
       successRate: Number(successRate.toFixed(1)),
       averageOrderSize: Number(averageOrderSize.toFixed(2)),
-      transactionHashesCount: metrics.transactionHashes.length
+      transactionHashesCount: metrics.transactionHashes.length,
+      growthMetrics: {
+        volumeGrowth: 0,
+        transactionsGrowth: 0,
+        usersGrowth: 0,
+        successRateGrowth: 0
+      }
     },
     onchainProof: {
       smartContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
