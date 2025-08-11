@@ -9,6 +9,7 @@ interface Transaction {
   currency: string;
   status: string;
   createdAt: string;
+  settlementTime?: string;
   basescanUrl?: string;
   network: string;
   userId: string;
@@ -51,6 +52,23 @@ export default function ProofPage() {
   useEffect(() => {
     fetchProofData();
   }, []);
+
+  const formatTimestamp = (timestamp?: string) => {
+    if (!timestamp) return 'N/A';
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    } catch {
+      return 'Invalid Date';
+    }
+  };
 
   const fetchProofData = async () => {
     try {
@@ -249,7 +267,8 @@ export default function ProofPage() {
                     <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">User ID</th>
                     <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Amount</th>
                     <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Status</th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Date</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Created</th>
+                    <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">Settled</th>
                     <th className="text-left py-4 px-6 text-sm font-medium text-gray-400">View</th>
                   </tr>
                 </thead>
@@ -293,9 +312,22 @@ export default function ProofPage() {
                         </span>
                       </td>
                       <td className="py-4 px-6">
-                        <p className="text-sm text-gray-300">
-                          {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : 'N/A'}
-                        </p>
+                        <div>
+                          <p className="text-sm text-gray-300">
+                            {formatTimestamp(tx.createdAt)}
+                          </p>
+                          <p className="text-xs text-gray-500">Order created</p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div>
+                          <p className="text-sm text-gray-300">
+                            {formatTimestamp(tx.settlementTime)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {tx.settlementTime ? 'Settlement' : 'Not settled'}
+                          </p>
+                        </div>
                       </td>
                       <td className="py-4 px-6">
                         {tx.basescanUrl ? (
@@ -364,14 +396,25 @@ export default function ProofPage() {
                     </div>
                   </div>
 
-                  {/* Date and View Row */}
-                  <div className="flex items-center justify-between">
+                  {/* Timestamps Row */}
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">Date</p>
+                      <p className="text-xs text-gray-400 mb-1">Created</p>
                       <p className="text-sm text-gray-300">
-                        {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : 'N/A'}
+                        {formatTimestamp(tx.createdAt)}
                       </p>
                     </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-1">Settled</p>
+                      <p className="text-sm text-gray-300">
+                        {formatTimestamp(tx.settlementTime)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* View Button Row */}
+                  <div className="flex items-center justify-between">
+                    <div></div>
                     {tx.basescanUrl ? (
                       <a 
                         href={tx.basescanUrl} 

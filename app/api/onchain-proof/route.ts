@@ -1,9 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 
-export async function GET(request: NextRequest) {
+// PayCrest order interface
+interface PayCrestOrder {
+  id: string;
+  amount: string;
+  status: string;
+  txHash?: string;
+  network?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  settlementTime?: string;
+  returnAddress?: string;
+  receiveAddress?: string;
+  recipient?: {
+    currency?: string;
+  };
+}
+
+interface ProcessedOrder {
+  orderId: string;
+  txHash?: string;
+  amount: number;
+  currency: string;
+  status: string;
+  network: string;
+  createdAt?: string;
+  settlementTime?: string;
+  basescanUrl?: string;
+  userId: string;
+}
+
+export async function GET() {
   try {
     if (!PAYCREST_API_KEY) {
       return NextResponse.json(
@@ -35,7 +65,8 @@ export async function GET(request: NextRequest) {
       throw new Error(`PayCrest API failed: ${allOrdersResult.message}`);
     }
 
-    const orders = allOrdersResult.data || [];
+    const ordersData = allOrdersResult.data;
+    const orders = Array.isArray(ordersData) ? ordersData : ordersData?.orders || [];
     console.log(`📊 Found ${orders.length} total orders`);
 
     // Fetch additional data in parallel
@@ -51,9 +82,14 @@ export async function GET(request: NextRequest) {
       })
     ]);
 
-    const baseOrders = baseOrdersResponse.ok ? (await baseOrdersResponse.json()).data || [] : [];
-    const usdcOrders = usdcOrdersResponse.ok ? (await usdcOrdersResponse.json()).data || [] : [];
-    const completedOrders = completedOrdersResponse.ok ? (await completedOrdersResponse.json()).data || [] : [];
+    const baseOrdersData = baseOrdersResponse.ok ? (await baseOrdersResponse.json()).data : null;
+    const baseOrders = baseOrdersData ? (Array.isArray(baseOrdersData) ? baseOrdersData : baseOrdersData?.orders || []) : [];
+    
+    const usdcOrdersData = usdcOrdersResponse.ok ? (await usdcOrdersResponse.json()).data : null;
+    const usdcOrders = usdcOrdersData ? (Array.isArray(usdcOrdersData) ? usdcOrdersData : usdcOrdersData?.orders || []) : [];
+    
+    const completedOrdersData = completedOrdersResponse.ok ? (await completedOrdersResponse.json()).data : null;
+    const completedOrders = completedOrdersData ? (Array.isArray(completedOrdersData) ? completedOrdersData : completedOrdersData?.orders || []) : [];
 
     console.log(`🔵 Found ${baseOrders.length} Base network orders`);
     console.log(`💰 Found ${usdcOrders.length} USDC orders`);
@@ -78,7 +114,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function processOrdersForProof(allOrders: any[], baseOrders: any[], usdcOrders: any[], completedOrders: any[]) {
+function processOrdersForProof(allOrders: PayCrestOrder[], baseOrders: PayCrestOrder[], usdcOrders: PayCrestOrder[], completedOrders: PayCrestOrder[]) {
   console.log('📋 Processing orders for onchain proof...\n');
 
   // Extract key metrics
@@ -90,11 +126,14 @@ function processOrdersForProof(allOrders: any[], baseOrders: any[], usdcOrders: 
     totalVolumeUSD: 0,
     uniqueUsers: new Set<string>(),
     uniqueReceiveAddresses: new Set<string>(),
-    transactionHashes: [] as any[],
+    transactionHashes: [] as ProcessedOrder[],
     currencies: { KES: 0, NGN: 0 },
     statusBreakdown: {} as Record<string, number>,
     monthlyData: {} as Record<string, { orders: number; volume: number }>
   };
+
+  // Add allOrders array to metrics
+  const allOrdersArray: ProcessedOrder[] = [];
 
   // Process all orders for comprehensive metrics
   allOrders.forEach(order => {
@@ -112,6 +151,20 @@ function processOrdersForProof(allOrders: any[], baseOrders: any[], usdcOrders: 
       metrics.uniqueReceiveAddresses.add(order.receiveAddress);
     }
 
+    // Add ALL orders (not just those with txHash)
+    allOrdersArray.push({
+      orderId: order.id,
+      txHash: order.txHash,
+      amount: amount,
+      currency: order.recipient?.currency || 'KES',
+      status: order.status,
+      network: order.network || 'base',
+      createdAt: order.createdAt,
+      settlementTime: order.settlementTime || (order.status === 'settled' ? order.updatedAt : undefined),
+      basescanUrl: order.txHash ? `https://basescan.org/tx/${order.txHash}` : undefined,
+      userId: order.returnAddress || 'Unknown'
+    });
+
     // Transaction hashes (onchain proof)
     if (order.txHash) {
       metrics.transactionHashes.push({
@@ -122,7 +175,9 @@ function processOrdersForProof(allOrders: any[], baseOrders: any[], usdcOrders: 
         status: order.status,
         network: order.network || 'base',
         createdAt: order.createdAt,
-        basescanUrl: `https://basescan.org/tx/${order.txHash}`
+        settlementTime: order.settlementTime || (order.status === 'settled' ? order.updatedAt : undefined),
+        basescanUrl: `https://basescan.org/tx/${order.txHash}`,
+        userId: order.returnAddress || 'Unknown'
       });
     }
 
@@ -177,6 +232,7 @@ function processOrdersForProof(allOrders: any[], baseOrders: any[], usdcOrders: 
       smartContract: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
       network: 'Base',
       transactionHashes: metrics.transactionHashes.slice(0, 10), // Most recent 10
+      allOrders: allOrdersArray, // ALL orders for dashboard pagination
       receiveAddresses: Array.from(metrics.uniqueReceiveAddresses).slice(0, 10),
       userWallets: Array.from(metrics.uniqueUsers).slice(0, 10)
     },
@@ -199,7 +255,7 @@ function processOrdersForProof(allOrders: any[], baseOrders: any[], usdcOrders: 
   return proof;
 }
 
-function generateDuneQueryCode(receiveAddresses: string[], transactionHashes: any[]) {
+function generateDuneQueryCode(receiveAddresses: string[], transactionHashes: ProcessedOrder[]) {
   if (receiveAddresses.length === 0 && transactionHashes.length === 0) {
     return null;
   }
