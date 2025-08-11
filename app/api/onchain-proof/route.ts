@@ -7,6 +7,7 @@ const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 interface PayCrestOrder {
   id: string;
   amount: string;
+  token?: string;
   status: string;
   txHash?: string;
   network?: string;
@@ -44,52 +45,50 @@ export async function GET() {
 
     console.log('🚀 Generating onchain proof for Minisend...\n');
     
-    // Fetch all orders
-    const allOrdersResponse = await fetch(`${PAYCREST_API_URL}/sender/orders`, {
-      headers: {
-        'API-Key': PAYCREST_API_KEY!,
-        'Content-Type': 'application/json',
+    // Fetch ALL orders with pagination (PayCrest uses pageSize=100 max)
+    let allOrders: PayCrestOrder[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    
+    do {
+      const response = await fetch(`${PAYCREST_API_URL}/sender/orders?page=${currentPage}&pageSize=100`, {
+        headers: {
+          'API-Key': PAYCREST_API_KEY!,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`PayCrest API error: ${response.status} - ${errorText}`);
       }
-    });
 
-    if (!allOrdersResponse.ok) {
-      const errorText = await allOrdersResponse.text();
-      throw new Error(`PayCrest API error: ${allOrdersResponse.status} - ${errorText}`);
-    }
+      const result = await response.json();
+      if (result.status !== 'success') {
+        throw new Error(`PayCrest API failed: ${result.message}`);
+      }
 
-    const allOrdersResult = await allOrdersResponse.json();
-    console.log('📊 Raw API response:', allOrdersResult);
-    
-    if (allOrdersResult.status !== 'success')
-      {
-      throw new Error(`PayCrest API failed: ${allOrdersResult.message}`);
-    }
+      const pageOrders = result.data?.orders || [];
+      allOrders = allOrders.concat(pageOrders);
+      
+      // Calculate total pages from first response
+      if (currentPage === 1) {
+        const totalOrders = result.data?.total || 0;
+        totalPages = Math.ceil(totalOrders / 100);
+        console.log(`📊 Found ${totalOrders} total orders across ${totalPages} pages`);
+      }
+      
+      console.log(`📄 Fetched page ${currentPage}/${totalPages} (${pageOrders.length} orders)`);
+      currentPage++;
+    } while (currentPage <= totalPages);
 
-    const ordersData = allOrdersResult.data;
-    const orders = Array.isArray(ordersData) ? ordersData : ordersData?.orders || [];
-    console.log(`📊 Found ${orders.length} total orders`);
+    const orders = allOrders;
+    console.log(`✅ Successfully fetched ${orders.length} total orders`);
 
-    // Fetch additional data in parallel
-    const [baseOrdersResponse, usdcOrdersResponse, completedOrdersResponse] = await Promise.all([
-      fetch(`${PAYCREST_API_URL}/sender/orders?network=base`, {
-        headers: { 'API-Key': PAYCREST_API_KEY!, 'Content-Type': 'application/json' }
-      }),
-      fetch(`${PAYCREST_API_URL}/sender/orders?token=USDC`, {
-        headers: { 'API-Key': PAYCREST_API_KEY!, 'Content-Type': 'application/json' }
-      }),
-      fetch(`${PAYCREST_API_URL}/sender/orders?status=settled`, {
-        headers: { 'API-Key': PAYCREST_API_KEY!, 'Content-Type': 'application/json' }
-      })
-    ]);
-
-    const baseOrdersData = baseOrdersResponse.ok ? (await baseOrdersResponse.json()).data : null;
-    const baseOrders = baseOrdersData ? (Array.isArray(baseOrdersData) ? baseOrdersData : baseOrdersData?.orders || []) : [];
-    
-    const usdcOrdersData = usdcOrdersResponse.ok ? (await usdcOrdersResponse.json()).data : null;
-    const usdcOrders = usdcOrdersData ? (Array.isArray(usdcOrdersData) ? usdcOrdersData : usdcOrdersData?.orders || []) : [];
-    
-    const completedOrdersData = completedOrdersResponse.ok ? (await completedOrdersResponse.json()).data : null;
-    const completedOrders = completedOrdersData ? (Array.isArray(completedOrdersData) ? completedOrdersData : completedOrdersData?.orders || []) : [];
+    // Filter orders instead of making additional API calls (more efficient and accurate)
+    const baseOrders = orders.filter(order => order.network === 'base');
+    const usdcOrders = orders.filter(order => order.token === 'USDC');
+    const completedOrders = orders.filter(order => order.status === 'settled');
 
     console.log(`🔵 Found ${baseOrders.length} Base network orders`);
     console.log(`💰 Found ${usdcOrders.length} USDC orders`);
