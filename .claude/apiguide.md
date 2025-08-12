@@ -385,6 +385,7 @@ Examples: GTBINGLA, KUDANGPC
 API Usage
 When making API calls, always use the correct code format:
 
+
 Copy
 // Correct currency code format
 const order = {

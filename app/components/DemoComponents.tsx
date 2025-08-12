@@ -286,7 +286,7 @@ export function Home({ setActiveTab }: HomeProps) {
                   size="large"
                   fullWidth
                 >
-                  Send USDC → Mobile Money
+                  Start Offramp
                 </Button>
               </div>
             )}

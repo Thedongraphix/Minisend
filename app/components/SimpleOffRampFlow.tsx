@@ -542,7 +542,7 @@ export function SimpleOffRampFlow() {
             </button>
             
             <p className="text-gray-400 text-xs">
-              Thank you for using Mini Send! 🚀
+              Thank you for using MiniSend!
             </p>
           </div>
         </div>

@@ -31,6 +31,7 @@ Payment completion is detected when `order.status === 'settled'`. This status de
 
 **Key Status Values:**
 - `"settled"` - Payment fully completed - fiat delivered to recipient
+
 - `"failed"` - Payment processing failed
 - `"cancelled"` - Order was cancelled
 - `"initiated"` - Order created, waiting for crypto deposit
