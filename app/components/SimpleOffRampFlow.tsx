@@ -541,9 +541,9 @@ export function SimpleOffRampFlow() {
               Send Another Payment
             </button>
             
-            <p className="text-gray-400 text-xs">
+            {/* <p className="text-gray-400 text-xs">
               Thank you for using MiniSend!
-            </p>
+            </p> */}
           </div>
         </div>
       )}
