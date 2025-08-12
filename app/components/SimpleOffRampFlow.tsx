@@ -136,16 +136,23 @@ export function SimpleOffRampFlow() {
     }
   };
 
-  // Auto-verify account when account number and bank code are provided
+  // Check if account number format is valid (10+ digits for Nigerian banks)
+  const isAccountNumberValid = formData.accountNumber.length >= 10 && /^\d+$/.test(formData.accountNumber);
+
+  // Auto-verify account when account number and bank code are provided and format is valid
   useEffect(() => {
-    if (formData.currency === 'NGN' && formData.accountNumber && formData.bankCode) {
+    if (formData.currency === 'NGN' && formData.bankCode && isAccountNumberValid) {
       const debounceTimer = setTimeout(() => {
         verifyAccount(formData.accountNumber, formData.bankCode);
       }, 1000); // Debounce for 1 second
       
       return () => clearTimeout(debounceTimer);
+    } else if (formData.currency === 'NGN' && formData.accountNumber && !isAccountNumberValid) {
+      // Reset verification state if account number becomes invalid
+      setAccountVerified(false);
+      setFormData(prev => ({ ...prev, accountName: '' }));
     }
-  }, [formData.accountNumber, formData.bankCode, formData.currency]);
+  }, [formData.accountNumber, formData.bankCode, formData.currency, isAccountNumberValid]);
 
   // Auto-fetch rates when amount or currency changes
   useEffect(() => {
@@ -370,22 +377,52 @@ export function SimpleOffRampFlow() {
                     type="text"
                     value={formData.accountNumber}
                     onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
-                    placeholder="1234567890"
-                    className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
+                    placeholder="1234567890 (minimum 10 digits)"
+                    className={`w-full px-4 py-3 pr-12 bg-gray-800/80 border rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm ${
+                      formData.accountNumber && isAccountNumberValid 
+                        ? 'border-green-500 focus:ring-green-500' 
+                        : formData.accountNumber && !isAccountNumberValid
+                        ? 'border-red-500 focus:ring-red-500'
+                        : 'border-gray-600 focus:ring-blue-500'
+                    }`}
                     disabled={verifyingAccount}
                   />
-                  {verifyingAccount && (
-                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                  {/* Status indicators */}
+                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                    {verifyingAccount ? (
                       <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  )}
+                    ) : isAccountNumberValid && formData.accountNumber ? (
+                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    ) : formData.accountNumber && formData.accountNumber.length > 0 && !isAccountNumberValid ? (
+                      <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
+                {/* Validation helper text */}
+                {formData.accountNumber && formData.accountNumber.length > 0 && formData.accountNumber.length < 10 && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    <div className="w-3 h-3 bg-amber-500 rounded-full flex items-center justify-center">
+                      <span className="text-xs text-white font-bold">!</span>
+                    </div>
+                    <span className="text-xs text-amber-400">Account number must be at least 10 digits</span>
+                  </div>
+                )}
+                
                 {verifyingAccount && (
                   <div className="flex items-center space-x-2 mt-2">
                     <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
                     <span className="text-xs text-gray-400">Verifying account with bank...</span>
                   </div>
                 )}
+                
                 {accountVerified && formData.accountName && !verifyingAccount && (
                   <div className="mt-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg backdrop-blur-sm">
                     <div className="flex items-center space-x-2">
