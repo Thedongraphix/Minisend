@@ -66,5 +66,8 @@ export async function GET() {
       // Cast sharing
       castShareUrl: process.env.NEXT_PUBLIC_CAST_SHARE_URL || `${URL || "https://minisend.xyz"}/share`,
     }),
+    baseBuilder: {
+      allowedAddresses: ["0x7D6109a51781FB8dFCae01F5Cd5C70dF412a9CEc"]
+    }
   });
 }
