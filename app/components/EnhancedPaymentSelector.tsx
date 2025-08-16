@@ -79,7 +79,7 @@ export function EnhancedPaymentSelector({
       return destination.isValid && isPaymentDestinationSupported(destination, currency) ? 'valid' : 'invalid';
     }
   };
-
+ 
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Payment Type Selector */}
@@ -254,7 +254,6 @@ export function EnhancedPaymentSelector({
         <div className="text-xs text-blue-300 space-y-2">
           <div className="font-medium">Supported payment methods:</div>
           <div className="space-y-1">
-            <div>• <strong>Phone:</strong> M-Pesa mobile number (254712345678)</div>
             <div>• <strong>Till:</strong> Business till number (12345)</div>
             <div>• <strong>Paybill:</strong> Business paybill + account (40200 + account)</div>
           </div>
