@@ -37,6 +37,23 @@ export function SimpleUSDCPayment({
   onSuccess,
   onError
 }: SimpleUSDCPaymentProps) {
+  
+  // Helper function to get payment destination display
+  const getPaymentDestination = () => {
+    if (tillNumber) {
+      return `Till ${tillNumber}`;
+    }
+    if (paybillNumber && paybillAccount) {
+      return `Paybill ${paybillNumber} (Account: ${paybillAccount})`;
+    }
+    if (phoneNumber) {
+      return phoneNumber;
+    }
+    if (accountNumber) {
+      return accountNumber;
+    }
+    return 'recipient';
+  };
   const [paycrestOrder, setPaycrestOrder] = useState<{
     id: string;
     receiveAddress: string;
@@ -339,7 +356,7 @@ export function SimpleUSDCPayment({
           onClick={createPaycrestOrder}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
         >
-          Send ${amount} → {phoneNumber}
+          Send ${amount} → {getPaymentDestination()}
         </button>
       )}
 
@@ -357,7 +374,7 @@ export function SimpleUSDCPayment({
           <div className="text-center space-y-2">
             <h3 className="text-white font-bold text-lg">Ready to Send Payment</h3>
             <p className="text-gray-300">
-              Send ${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC → {currency} to {phoneNumber}
+              Send ${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC → {currency} to {getPaymentDestination()}
             </p>
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
               <p className="text-yellow-300 text-sm font-medium">
@@ -452,7 +469,7 @@ export function SimpleUSDCPayment({
               ✅ Payment sent → Converting to {currency}
             </p>
             <p className="text-gray-400 text-xs mt-1">
-              {currency} will be delivered to {currency === 'KES' ? phoneNumber : accountNumber}
+              {currency} will be delivered to {getPaymentDestination()}
             </p>
           </div>
         </div>
@@ -469,7 +486,7 @@ export function SimpleUSDCPayment({
           </div>
           <h3 className="text-white font-bold text-xl">Payment Sent</h3>
           <p className="text-gray-300 text-sm">
-            Your {currency} has been sent to {currency === 'KES' ? phoneNumber : accountNumber}
+            Your {currency} has been sent to {getPaymentDestination()}
           </p>
         </div>
       )}
