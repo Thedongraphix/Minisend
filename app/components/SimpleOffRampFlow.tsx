@@ -528,7 +528,37 @@ export function SimpleOffRampFlow() {
             </div>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
+            {/* Social Follow Buttons */}
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <p className="text-gray-300 text-sm mb-3 text-center">Follow us for updates!</p>
+              <div className="flex space-x-3 justify-center">
+                <a
+                  href="https://x.com/_Minisend"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-2 bg-black hover:bg-gray-900 text-white px-4 py-2 rounded-lg transition-colors border border-gray-700 hover:border-gray-600"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                  <span className="text-sm font-medium">Follow on X</span>
+                </a>
+                
+                <a
+                  href="https://farcaster.xyz/miniapps/ZflAoR5O08hC/minisend"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                  </svg>
+                  <span className="text-sm font-medium">Follow on Farcaster</span>
+                </a>
+              </div>
+            </div>
+            
             <button
               onClick={() => {
                 setStep('form');
@@ -540,10 +570,6 @@ export function SimpleOffRampFlow() {
             >
               Send Another Payment
             </button>
-            
-            {/* <p className="text-gray-400 text-xs">
-              Thank you for using MiniSend!
-            </p> */}
           </div>
         </div>
       )}
