@@ -97,7 +97,7 @@ export function EnhancedPaymentSelector({
                 : 'text-gray-400 hover:text-white hover:bg-gray-700'
             }`}
           >
-            Phone / Till
+            Till
           </button>
           <button
             type="button"
