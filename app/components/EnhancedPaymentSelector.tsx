@@ -117,7 +117,7 @@ export function EnhancedPaymentSelector({
       {selectedType === 'auto' && (
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Phone Number or Till Number
+            Till Number
           </label>
           <div className="relative">
             <input
