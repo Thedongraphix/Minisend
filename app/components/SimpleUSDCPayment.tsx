@@ -9,6 +9,9 @@ import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 interface SimpleUSDCPaymentProps {
   amount: string;
   phoneNumber?: string;
+  tillNumber?: string; // NEW: Support for till numbers
+  paybillNumber?: string; // NEW: Support for paybill numbers
+  paybillAccount?: string; // NEW: Support for paybill account numbers
   accountNumber?: string;
   bankCode?: string;
   accountName: string;
@@ -22,6 +25,9 @@ interface SimpleUSDCPaymentProps {
 export function SimpleUSDCPayment({
   amount,
   phoneNumber,
+  tillNumber, // NEW: Add till number parameter
+  paybillNumber, // NEW: Add paybill number parameter
+  paybillAccount, // NEW: Add paybill account parameter
   accountNumber,
   bankCode,
   accountName,
@@ -149,7 +155,7 @@ export function SimpleUSDCPayment({
     
     // Start polling after 10 seconds to allow PayCrest processing time
     setTimeout(poll, 10000);
-  }, [onError, currency]);
+  }, [onError, currency, tillNumber, paybillNumber, paybillAccount]);
 
   // Create PayCrest order
   const createPaycrestOrder = useCallback(async () => {
@@ -162,6 +168,9 @@ export function SimpleUSDCPayment({
         body: JSON.stringify({
           amount,
           phoneNumber,
+          tillNumber, // NEW: Include till number in API call
+          paybillNumber, // NEW: Include paybill number in API call
+          paybillAccount, // NEW: Include paybill account in API call
           accountNumber,
           bankCode,
           accountName,
@@ -217,7 +226,7 @@ export function SimpleUSDCPayment({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError]);
+  }, [amount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError]);
 
   // USDC transfer using OnchainKit standard format for proper gas estimation
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
