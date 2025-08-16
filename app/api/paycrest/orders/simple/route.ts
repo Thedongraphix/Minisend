@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/supabase/config';
 import { detectKenyanCarrier } from '@/lib/utils/phoneCarrier';
+import { formatTillNumber, formatPhoneNumber } from '@/lib/utils/tillValidator';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
@@ -22,6 +23,9 @@ export async function POST(request: NextRequest) {
     const { 
       amount, 
       phoneNumber, 
+      tillNumber, // NEW: Add till number support
+      paybillNumber, // NEW: Add paybill number support
+      paybillAccount, // NEW: Add paybill account number support
       accountNumber,
       bankCode,
       accountName, 
@@ -39,9 +43,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Currency-specific validation
-    if (currency === 'KES' && !phoneNumber) {
+    if (currency === 'KES' && !phoneNumber && !tillNumber && !paybillNumber) {
       return NextResponse.json(
-        { error: 'Phone number is required for KES transactions' },
+        { error: 'Phone number, till number, or paybill number is required for KES transactions' },
+        { status: 400 }
+      );
+    }
+
+    // Paybill specific validation
+    if (paybillNumber && !paybillAccount) {
+      return NextResponse.json(
+        { error: 'Paybill account number is required when using paybill number' },
         { status: 400 }
       );
     }
@@ -106,16 +118,35 @@ export async function POST(request: NextRequest) {
     // Format identifier and set institution based on currency
     let formattedIdentifier: string;
     let institution: string;
+    let paymentType: 'phone' | 'till' | 'paybill' | 'bank' = 'phone';
 
     if (currency === 'KES') {
-      // Kenya phone number formatting
-      const cleanPhone = phoneNumber!.replace(/\D/g, '');
-      formattedIdentifier = cleanPhone.startsWith('254') ? cleanPhone : cleanPhone.replace(/^0/, '254');
-      institution = 'SAFAKEPC'; // M-PESA provider ID from PayCrest API
+      if (paybillNumber && paybillAccount) {
+        // Paybill number formatting - use paybill number as identifier and account in memo
+        formattedIdentifier = formatTillNumber(paybillNumber); // Same formatting as till
+        institution = 'SAFAKEPC'; // Using M-Pesa institution for paybill numbers (same network)
+        paymentType = 'paybill';
+        console.log('🏛️ Using paybill number:', { paybillNumber, paybillAccount, formattedIdentifier, institution });
+      } else if (tillNumber) {
+        // Till number formatting
+        formattedIdentifier = formatTillNumber(tillNumber);
+        institution = 'SAFAKEPC'; // Using M-Pesa institution for till numbers (same network)
+        paymentType = 'till';
+        console.log('🏪 Using till number:', { tillNumber, formattedIdentifier, institution });
+      } else if (phoneNumber) {
+        // Phone number formatting  
+        formattedIdentifier = formatPhoneNumber(phoneNumber);
+        institution = 'SAFAKEPC'; // M-PESA provider ID from PayCrest API
+        paymentType = 'phone';
+        console.log('📱 Using phone number:', { phoneNumber, formattedIdentifier, institution });
+      } else {
+        throw new Error('Either phone number, till number, or paybill number is required for KES');
+      }
     } else if (currency === 'NGN') {
       // Nigeria account number - use as provided
       formattedIdentifier = accountNumber!;
       institution = bankCode!; // Use the bank code provided by user
+      paymentType = 'bank';
     } else {
       throw new Error('Unsupported currency');
     }
@@ -130,7 +161,9 @@ export async function POST(request: NextRequest) {
         institution,
         accountIdentifier: formattedIdentifier,
         accountName,
-        memo: `Payment from Minisend to ${accountName}`, // Required field!
+        memo: paymentType === 'paybill' 
+          ? `Payment from Minisend to ${accountName} - Account: ${paybillAccount}` 
+          : `Payment from Minisend to ${accountName}`, // Include account number for paybills
         metadata: {}, // Required empty object
         currency,
       },
@@ -206,14 +239,17 @@ export async function POST(request: NextRequest) {
       // Create order record from Paycrest response
       const dbOrder = await DatabaseService.createOrderFromPaycrest(order, {
         amount: amountNum.toString(),
-        phoneNumber: currency === 'KES' ? formattedIdentifier : '', // Phone number for KES only
+        phoneNumber: currency === 'KES' && paymentType === 'phone' ? formattedIdentifier : '', // Phone number for KES phone payments only
         accountNumber: currency === 'NGN' ? formattedIdentifier : '', // Account number for NGN only
+        tillNumber: currency === 'KES' && paymentType === 'till' ? formattedIdentifier : '', // Till number for KES till payments
+        paybillNumber: currency === 'KES' && paymentType === 'paybill' ? formattedIdentifier : '', // Paybill number for KES paybill payments
+        paybillAccount: currency === 'KES' && paymentType === 'paybill' ? paybillAccount : '', // Paybill account for KES paybill payments
         accountName,
         currency,
         returnAddress,
         rate: exchangeRate,
         provider: currency === 'KES' 
-          ? (detectedCarrier === 'SAFARICOM' ? 'MPESA' : 'AIRTEL') 
+          ? (paymentType === 'paybill' ? 'MPESA_PAYBILL' : paymentType === 'till' ? 'MPESA_TILL' : (detectedCarrier === 'SAFARICOM' ? 'MPESA' : 'AIRTEL'))
           : 'BANK_TRANSFER',
         localAmount: localAmount.toString(),
         institutionCode: institutionCode

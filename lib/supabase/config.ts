@@ -192,6 +192,9 @@ interface PaycrestResponse {
 interface RequestData {
   amount: string
   phoneNumber?: string
+  tillNumber?: string
+  paybillNumber?: string
+  paybillAccount?: string
   accountNumber?: string
   accountName: string
   currency: string
