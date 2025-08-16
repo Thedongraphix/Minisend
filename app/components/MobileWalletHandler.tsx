@@ -45,9 +45,10 @@ export function MobileWalletHandler({
         </ConnectWallet>
         <WalletDropdown>
           <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-            <Avatar />
+            <Avatar/>
             <Name />
             <Address />
+            
             {showBalance && <EthBalance />}
           </Identity>
           <WalletDropdownDisconnect />

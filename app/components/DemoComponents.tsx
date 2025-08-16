@@ -288,6 +288,14 @@ export function Home({ setActiveTab }: HomeProps) {
                 >
                   Start Offramp
                 </Button>
+                <Button
+                  onClick={() => setActiveTab("spend")}
+                  variant="secondary"
+                  size="large"
+                  fullWidth
+                >
+                  Spend USDC
+                </Button>
               </div>
             )}
           </div>
