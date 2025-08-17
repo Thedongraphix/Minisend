@@ -285,6 +285,7 @@ export function Home({ setActiveTab }: HomeProps) {
                   variant="primary"
                   size="large"
                   fullWidth
+                  roundedFull
                 >
                   Start Offramp
                 </Button>
@@ -293,6 +294,7 @@ export function Home({ setActiveTab }: HomeProps) {
                   variant="secondary"
                   size="large"
                   fullWidth
+                  roundedFull
                 >
                   Spend USDC
                 </Button>
