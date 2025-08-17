@@ -298,15 +298,6 @@ export function Home({ setActiveTab }: HomeProps) {
                 >
                   Spend USDC
                 </Button>
-                <Button
-                  onClick={() => setActiveTab("profile")}
-                  variant="outlined"
-                  size="medium"
-                  fullWidth
-                  iconName="user"
-                >
-                  Profile
-                </Button>
               </div>
             )}
           </div>
