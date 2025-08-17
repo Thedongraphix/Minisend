@@ -9,6 +9,8 @@ interface PayCrestOrder {
   id: string;
   amount: string;
   receiveAddress: string;
+  returnAddress: string; // User's wallet address
+  fromAddress: string;   // User's wallet address (sender)
   status: string;
   createdAt: string;
   rate: string;
@@ -69,20 +71,30 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
       }
       
       console.log('PayCrest API response structure:', data);
+      console.log('Total orders found:', data.data?.orders?.length || 0);
+      console.log('User wallet address:', address);
       
       // PayCrest returns orders in data.orders array
       const ordersArray = data.data?.orders || [];
       
-      // Filter orders by current wallet address (from receiveAddress)
+      // Debug: log some sample addresses
+      console.log('Sample receiveAddresses:', ordersArray.slice(0, 2).map((o: any) => o.receiveAddress));
+      console.log('Sample fromAddresses:', ordersArray.slice(0, 2).map((o: any) => o.fromAddress));
+      console.log('Sample returnAddresses:', ordersArray.slice(0, 2).map((o: any) => o.returnAddress));
+      
+      // Filter orders by current wallet address (sender is returnAddress or fromAddress)
       const userOrders = ordersArray.filter((order: PayCrestOrder) => 
-        order.receiveAddress?.toLowerCase() === address?.toLowerCase()
+        order.returnAddress?.toLowerCase() === address?.toLowerCase() ||
+        order.fromAddress?.toLowerCase() === address?.toLowerCase()
       );
+      
+      console.log('Filtered user orders:', userOrders.length);
       
       // Convert PayCrest order format to our Order interface
       const convertedOrders = userOrders.map((order: PayCrestOrder) => ({
         id: order.id,
         paycrest_order_id: order.id,
-        wallet_address: order.receiveAddress,
+        wallet_address: order.fromAddress, // Use sender address
         amount_in_usdc: parseFloat(order.amount),
         amount_in_local: parseFloat(order.amount) * parseFloat(order.rate), // Calculate local amount
         local_currency: order.recipient.currency,
