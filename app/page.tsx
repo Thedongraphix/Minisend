@@ -287,8 +287,8 @@ export default function App() {
         <main className="flex-1">
           {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
           {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
-          {activeTab === "offramp" && <SimpleOffRampFlow />}
-          {activeTab === "spend" && <SpendUSDCFlow />}
+          {activeTab === "offramp" && <SimpleOffRampFlow setActiveTab={setActiveTab} />}
+          {activeTab === "spend" && <SpendUSDCFlow setActiveTab={setActiveTab} />}
           {activeTab === "profile" && <UserProfile setActiveTab={setActiveTab} />}
         </main>
 
