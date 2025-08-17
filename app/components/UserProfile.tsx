@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { Button, Icon } from './DemoComponents';
-import { DatabaseService, Order } from '../../lib/supabase/config';
+import { Order } from '../../lib/supabase/config';
 
 interface UserProfileProps {
   setActiveTab: (tab: string) => void;
@@ -38,11 +38,22 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
 
     try {
       setLoading(true);
-      const userOrders = await DatabaseService.getOrdersByWallet(address);
-      setOrders(userOrders);
+      const response = await fetch(`/api/user/orders?wallet=${encodeURIComponent(address)}&limit=50`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      setOrders(data.orders || []);
       
       // Calculate daily expenditure
-      const daily = calculateDailyExpenditure(userOrders);
+      const daily = calculateDailyExpenditure(data.orders || []);
       setDailyExpenditure(daily);
     } catch (err) {
       setError('Failed to load transaction history');
