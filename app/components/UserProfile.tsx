@@ -78,9 +78,9 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
       const ordersArray = data.data?.orders || [];
       
       // Debug: log some sample addresses
-      console.log('Sample receiveAddresses:', ordersArray.slice(0, 2).map((o: any) => o.receiveAddress));
-      console.log('Sample fromAddresses:', ordersArray.slice(0, 2).map((o: any) => o.fromAddress));
-      console.log('Sample returnAddresses:', ordersArray.slice(0, 2).map((o: any) => o.returnAddress));
+      console.log('Sample receiveAddresses:', ordersArray.slice(0, 2).map((o: PayCrestOrder) => o.receiveAddress));
+      console.log('Sample fromAddresses:', ordersArray.slice(0, 2).map((o: PayCrestOrder) => o.fromAddress));
+      console.log('Sample returnAddresses:', ordersArray.slice(0, 2).map((o: PayCrestOrder) => o.returnAddress));
       
       // Filter orders by current wallet address (sender is returnAddress or fromAddress)
       const userOrders = ordersArray.filter((order: PayCrestOrder) => 
