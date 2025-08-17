@@ -329,6 +329,18 @@ export class DatabaseService {
     return data || []
   }
 
+  static async getOrdersByWallet(walletAddress: string, limit = 50): Promise<Order[]> {
+    const { data, error } = await supabaseAdmin
+      .from('orders')
+      .select('*')
+      .eq('wallet_address', walletAddress)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) throw error
+    return data || []
+  }
+
   // Paycrest-specific operations
   static async logPaycrestOrder(orderId: string, paycrestOrderId: string, requestData: RequestData, responseData: PaycrestResponse): Promise<void> {
     const { error } = await supabaseAdmin

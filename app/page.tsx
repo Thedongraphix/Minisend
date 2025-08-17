@@ -13,6 +13,7 @@ import { Home } from "./components/DemoComponents";
 import { Features } from "./components/DemoComponents";
 import { SimpleOffRampFlow } from "./components/SimpleOffRampFlow";
 import { SpendUSDCFlow } from "./components/SpendUSDCFlow";
+import { UserProfile } from "./components/UserProfile";
 import { WalletDebug } from "./components/WalletDebug";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
 import { getClientInfo } from "@/lib/sdk-actions";
@@ -288,6 +289,7 @@ export default function App() {
           {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
           {activeTab === "offramp" && <SimpleOffRampFlow />}
           {activeTab === "spend" && <SpendUSDCFlow />}
+          {activeTab === "profile" && <UserProfile setActiveTab={setActiveTab} />}
         </main>
 
       </div>

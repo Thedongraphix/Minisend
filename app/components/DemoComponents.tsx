@@ -12,7 +12,7 @@ type ButtonProps = {
   onClick?: () => void;
   disabled?: boolean;
   type?: "button" | "submit" | "reset";
-  iconName?: "heart" | "star" | "check" | "plus" | "arrow-right" | "dollar-sign" | "sparkles";
+  iconName?: "heart" | "star" | "check" | "plus" | "arrow-right" | "dollar-sign" | "sparkles" | "user";
   roundedFull?: boolean;
   fullWidth?: boolean;
 }
@@ -55,7 +55,7 @@ export function Button({
     ...baseClasses,
     variantClasses[variant],
     sizeClasses[size],
-    roundedFull ? "rounded-full" : "rounded-xl",
+    roundedFull ? "rounded-full" : "rounded-2xl",
     fullWidth ? "w-full" : "w-auto",
     className
   ];
@@ -296,6 +296,15 @@ export function Home({ setActiveTab }: HomeProps) {
                 >
                   Spend USDC
                 </Button>
+                <Button
+                  onClick={() => setActiveTab("profile")}
+                  variant="outlined"
+                  size="medium"
+                  fullWidth
+                  iconName="user"
+                >
+                  Profile
+                </Button>
               </div>
             )}
           </div>
@@ -315,7 +324,7 @@ export function Home({ setActiveTab }: HomeProps) {
 }
 
 type IconProps = {
-  name: "heart" | "star" | "check" | "plus" | "arrow-right" | "dollar-sign" | "sparkles";
+  name: "heart" | "star" | "check" | "plus" | "arrow-right" | "dollar-sign" | "sparkles" | "user";
   size?: "sm" | "md" | "lg";
   className?: string;
 }
@@ -436,6 +445,22 @@ export function Icon({ name, size = "md", className = "" }: IconProps) {
         <path d="M12 3l1.09 3.26L16.35 8 13.09 9.74 12 13l-1.09-3.26L7.65 8l3.26-1.74L12 3z" />
         <path d="M5 3l.5 1.5L7 5l-1.5.5L5 7l-.5-1.5L3 5l1.5-.5L5 3z" />
         <path d="M19 17l.5 1.5L21 19l-1.5.5L19 21l-.5-1.5L17 19l1.5-.5L19 17z" />
+      </svg>
+    ),
+    user: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>User</title>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
       </svg>
     ),
   };
