@@ -38,13 +38,13 @@ interface DailyExpenditure {
 
 export function UserProfile({ setActiveTab }: UserProfileProps) {
   const { address } = useAccount();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [displayedOrders, setDisplayedOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dailyExpenditure, setDailyExpenditure] = useState<DailyExpenditure[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMoreOrders, setHasMoreOrders] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [displayLimit, setDisplayLimit] = useState(20);
 
   useEffect(() => {
     if (!address) {
@@ -52,88 +52,92 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
       return;
     }
 
-    loadUserTransactions();
+    loadAllUserTransactions();
   }, [address, setActiveTab]);
 
-  const loadUserTransactions = async (page = 1, append = false) => {
+  const loadAllUserTransactions = async () => {
     if (!address) return;
 
     try {
-      if (page === 1) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
-      
-      // Fetch orders directly from PayCrest API with pagination
-      // Start with larger page size to get more orders
-      const pageSize = 50; // Increased from default 10
-      const response = await fetch(`/api/paycrest/orders?network=base&token=USDC&page=${page}&pageSize=${pageSize}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      console.log(`PayCrest API page ${page} response:`, data);
-      console.log('Total orders in system:', data.data?.total || 0);
-      console.log('Orders on this page:', data.data?.orders?.length || 0);
+      setLoading(true);
+      let allUserOrders: Order[] = [];
+      let page = 1;
+      let hasMore = true;
+      const pageSize = 50;
+
+      console.log('Starting to fetch ALL user transactions...');
       console.log('User wallet address:', address);
-      
-      // PayCrest returns orders in data.orders array
-      const ordersArray = data.data?.orders || [];
-      const totalInSystem = data.data?.total || 0;
-      const currentPageSize = data.data?.pageSize || pageSize;
-      
-      if (page === 1) {
-        // Debug: log some sample addresses on first load
-        console.log('Sample fromAddresses:', ordersArray.slice(0, 2).map((o: PayCrestOrder) => o.fromAddress));
-        console.log('Sample returnAddresses:', ordersArray.slice(0, 2).map((o: PayCrestOrder) => o.returnAddress));
+
+      // Fetch all pages until we have all transactions
+      while (hasMore) {
+        console.log(`Fetching page ${page}...`);
+        
+        const response = await fetch(`/api/paycrest/orders?network=base&token=USDC&page=${page}&pageSize=${pageSize}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        const ordersArray = data.data?.orders || [];
+        const totalInSystem = data.data?.total || 0;
+        const currentPageSize = data.data?.pageSize || pageSize;
+        
+        console.log(`Page ${page}: ${ordersArray.length} orders, Total in system: ${totalInSystem}`);
+        
+        // Filter orders by current wallet address
+        const userOrders = ordersArray.filter((order: PayCrestOrder) => 
+          order.returnAddress?.toLowerCase() === address?.toLowerCase() ||
+          order.fromAddress?.toLowerCase() === address?.toLowerCase()
+        );
+        
+        console.log(`Filtered user orders on page ${page}:`, userOrders.length);
+        
+        // Convert PayCrest order format to our Order interface
+        const convertedOrders = userOrders.map((order: PayCrestOrder) => ({
+          id: order.id,
+          paycrest_order_id: order.id,
+          wallet_address: order.fromAddress,
+          amount_in_usdc: parseFloat(order.amount),
+          amount_in_local: parseFloat(order.amount) * parseFloat(order.rate),
+          local_currency: order.recipient.currency,
+          phone_number: order.recipient.accountIdentifier,
+          account_number: order.recipient.accountIdentifier,
+          status: order.status,
+          created_at: order.createdAt,
+          memo: order.recipient.memo,
+          rate: parseFloat(order.rate)
+        }));
+        
+        allUserOrders = [...allUserOrders, ...convertedOrders];
+        
+        // Check if we have more pages
+        hasMore = (page * currentPageSize) < totalInSystem;
+        page++;
+        
+        // Safety check to prevent infinite loops
+        if (page > 20) {
+          console.warn('Stopping at page 20 to prevent infinite loop');
+          break;
+        }
       }
       
-      // Filter orders by current wallet address (sender is returnAddress or fromAddress)
-      const userOrders = ordersArray.filter((order: PayCrestOrder) => 
-        order.returnAddress?.toLowerCase() === address?.toLowerCase() ||
-        order.fromAddress?.toLowerCase() === address?.toLowerCase()
-      );
+      console.log(`✅ Loaded ALL user transactions: ${allUserOrders.length} total`);
       
-      console.log(`Filtered user orders on page ${page}:`, userOrders.length);
+      // Sort by most recent first
+      allUserOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
-      // Convert PayCrest order format to our Order interface
-      const convertedOrders = userOrders.map((order: PayCrestOrder) => ({
-        id: order.id,
-        paycrest_order_id: order.id,
-        wallet_address: order.fromAddress, // Use sender address
-        amount_in_usdc: parseFloat(order.amount),
-        amount_in_local: parseFloat(order.amount) * parseFloat(order.rate), // Calculate local amount
-        local_currency: order.recipient.currency,
-        phone_number: order.recipient.accountIdentifier,
-        account_number: order.recipient.accountIdentifier,
-        status: order.status,
-        created_at: order.createdAt,
-        memo: order.recipient.memo,
-        rate: parseFloat(order.rate)
-      }));
+      // Set all orders and initial display
+      setAllOrders(allUserOrders);
+      setDisplayedOrders(allUserOrders.slice(0, displayLimit));
       
-      // Update orders state
-      if (append && page > 1) {
-        setOrders(prev => [...prev, ...convertedOrders]);
-      } else {
-        setOrders(convertedOrders);
-      }
-      
-      // Update pagination state
-      setCurrentPage(page);
-      setHasMoreOrders((page * currentPageSize) < totalInSystem);
-      
-      // Calculate daily expenditure from all loaded orders
-      const allOrders = append ? [...orders, ...convertedOrders] : convertedOrders;
-      const daily = calculateDailyExpenditure(allOrders);
+      // Calculate daily expenditure from ALL transactions
+      const daily = calculateDailyExpenditure(allUserOrders);
       setDailyExpenditure(daily);
       
     } catch (err) {
@@ -141,13 +145,40 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
       console.error('Error loading transactions from PayCrest:', err);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
   };
 
-  const loadMoreTransactions = () => {
-    if (!loadingMore && hasMoreOrders) {
-      loadUserTransactions(currentPage + 1, true);
+  const loadMoreDisplayed = () => {
+    const newLimit = displayLimit + 20;
+    setDisplayLimit(newLimit);
+    if (selectedDate) {
+      // If filtering by date, show more from filtered results
+      const filtered = filterOrdersByDate(allOrders, selectedDate);
+      setDisplayedOrders(filtered.slice(0, newLimit));
+    } else {
+      // Show more from all orders
+      setDisplayedOrders(allOrders.slice(0, newLimit));
+    }
+  };
+
+  const filterOrdersByDate = (orders: Order[], dateStr: string) => {
+    return orders.filter(order => {
+      const orderDate = new Date(order.created_at).toISOString().split('T')[0];
+      return orderDate === dateStr;
+    });
+  };
+
+  const handleDateClick = (dateStr: string) => {
+    if (selectedDate === dateStr) {
+      // If clicking the same date, show all orders
+      setSelectedDate(null);
+      setDisplayedOrders(allOrders.slice(0, displayLimit));
+    } else {
+      // Filter by selected date
+      setSelectedDate(dateStr);
+      const filtered = filterOrdersByDate(allOrders, dateStr);
+      setDisplayedOrders(filtered);
+      setDisplayLimit(20); // Reset display limit when filtering
     }
   };
 
@@ -289,18 +320,18 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white/5 rounded-xl p-4">
             <p className="text-gray-400 text-sm">Total Transactions</p>
-            <p className="text-white text-2xl font-bold">{orders.length}</p>
+            <p className="text-white text-2xl font-bold">{allOrders.length}</p>
           </div>
           <div className="bg-white/5 rounded-xl p-4">
             <p className="text-gray-400 text-sm">Successful Payments</p>
             <p className="text-green-400 text-2xl font-bold">
-              {orders.filter(o => o.status === 'completed' || o.status === 'fulfilled' || o.status === 'settled').length}
+              {allOrders.filter(o => o.status === 'completed' || o.status === 'fulfilled' || o.status === 'settled').length}
             </p>
           </div>
           <div className="bg-white/5 rounded-xl p-4">
             <p className="text-gray-400 text-sm">This Month (USDC)</p>
             <p className="text-blue-400 text-2xl font-bold">
-              ${orders
+              ${allOrders
                 .filter(o => 
                   (o.status === 'completed' || o.status === 'fulfilled' || o.status === 'settled') &&
                   new Date(o.created_at).getMonth() === new Date().getMonth()
@@ -312,32 +343,50 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
         </div>
       </div>
 
-      {/* Daily Expenditure Chart */}
-      {dailyExpenditure.length > 0 && (
-        <div className="glass-effect rounded-3xl p-8">
-          <h3 className="text-white font-bold text-lg mb-4">Recent Activity</h3>
-          <div className="space-y-3">
-            {dailyExpenditure.map((day) => (
-              <div key={day.date} className="flex items-center justify-between py-3 border-b border-white/10 last:border-b-0">
-                <div>
-                  <p className="text-white font-medium">{formatDate(day.date)}</p>
-                  <p className="text-gray-400 text-sm">{day.count} transaction{day.count !== 1 ? 's' : ''}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-white font-bold">${day.totalUSDC.toFixed(2)}</p>
-                  <p className="text-gray-400 text-sm">{day.totalLocal.toFixed(0)} {day.currency}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Transaction History */}
+      {/* Combined Activity & Transaction History */}
       <div className="glass-effect rounded-3xl p-8">
-        <h3 className="text-white font-bold text-lg mb-4">Transaction History</h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-white font-bold text-lg">
+            {selectedDate ? `Transactions for ${formatDate(selectedDate)}` : 'Transaction History'}
+          </h3>
+          {selectedDate && (
+            <Button
+              onClick={() => handleDateClick(selectedDate)}
+              variant="ghost"
+              size="medium"
+              className="text-sm"
+            >
+              Show All
+            </Button>
+          )}
+        </div>
+
+        {/* Daily Activity (Clickable) */}
+        {!selectedDate && dailyExpenditure.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-gray-300 font-medium text-sm mb-3">Recent Activity (Click to filter)</h4>
+            <div className="space-y-2">
+              {dailyExpenditure.slice(0, 5).map((day) => (
+                <div 
+                  key={day.date} 
+                  onClick={() => handleDateClick(day.date)}
+                  className="flex items-center justify-between py-3 px-3 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors border border-transparent hover:border-blue-500/20"
+                >
+                  <div>
+                    <p className="text-white font-medium">{formatDate(day.date)}</p>
+                    <p className="text-gray-400 text-sm">{day.count} transaction{day.count !== 1 ? 's' : ''}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white font-bold">${day.totalUSDC.toFixed(2)}</p>
+                    <p className="text-gray-400 text-sm">{day.totalLocal.toFixed(0)} {day.currency}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
-        {orders.length === 0 ? (
+        {allOrders.length === 0 ? (
           <div className="text-center py-8">
             <Icon name="star" size="lg" className="text-gray-400 mx-auto mb-4" />
             <p className="text-gray-400">No transactions yet</p>
@@ -345,7 +394,7 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            {orders.map((order) => (
+            {displayedOrders.map((order) => (
               <div key={order.id} className="flex items-center justify-between py-4 border-b border-white/10 last:border-b-0">
                 <div className="flex items-center space-x-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -379,28 +428,30 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
             ))}
             
             {/* Load More Button */}
-            {hasMoreOrders && (
+            {!selectedDate && displayedOrders.length < allOrders.length && (
               <div className="text-center pt-6">
                 <Button
-                  onClick={loadMoreTransactions}
+                  onClick={loadMoreDisplayed}
                   variant="outlined"
                   size="medium"
-                  disabled={loadingMore}
                   className="min-w-32"
                 >
-                  {loadingMore ? 'Loading...' : 'Load More'}
+                  Load More
                 </Button>
                 <p className="text-gray-500 text-xs mt-2">
-                  Showing {orders.length} transactions
+                  Showing {displayedOrders.length} of {allOrders.length} transactions
                 </p>
               </div>
             )}
             
-            {/* Total count when all loaded */}
-            {!hasMoreOrders && orders.length > 0 && (
+            {/* Total count when all displayed */}
+            {(selectedDate || displayedOrders.length >= allOrders.length) && allOrders.length > 0 && (
               <div className="text-center pt-4">
                 <p className="text-gray-400 text-sm">
-                  All {orders.length} transactions loaded
+                  {selectedDate 
+                    ? `${displayedOrders.length} transactions on ${formatDate(selectedDate)}`
+                    : `All ${allOrders.length} transactions loaded`
+                  }
                 </p>
               </div>
             )}
