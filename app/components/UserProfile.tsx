@@ -5,6 +5,23 @@ import { useAccount } from 'wagmi';
 import { Button, Icon } from './DemoComponents';
 import { Order } from '../../lib/supabase/config';
 
+interface PayCrestOrder {
+  id: string;
+  amount: string;
+  receiveAddress: string;
+  status: string;
+  createdAt: string;
+  rate?: string;
+  localAmount?: string;
+  recipient?: {
+    identifier?: string;
+    accountNumber?: string;
+    currency?: string;
+    amount?: string;
+    memo?: string;
+  };
+}
+
 interface UserProfileProps {
   setActiveTab: (tab: string) => void;
 }
@@ -38,7 +55,8 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/user/orders?wallet=${encodeURIComponent(address)}&limit=50`);
+      // Fetch orders directly from PayCrest API
+      const response = await fetch('/api/paycrest/orders?network=base&token=USDC');
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -50,14 +68,35 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
         throw new Error(data.error);
       }
       
-      setOrders(data.orders || []);
+      // Filter orders by current wallet address (from receiveAddress)
+      const userOrders = (data.data || []).filter((order: PayCrestOrder) => 
+        order.receiveAddress?.toLowerCase() === address?.toLowerCase()
+      );
+      
+      // Convert PayCrest order format to our Order interface
+      const convertedOrders = userOrders.map((order: PayCrestOrder) => ({
+        id: order.id,
+        paycrest_order_id: order.id,
+        wallet_address: order.receiveAddress,
+        amount_in_usdc: parseFloat(order.amount),
+        amount_in_local: parseFloat(order.recipient?.amount || order.localAmount || '0'),
+        local_currency: order.recipient?.currency || 'KES',
+        phone_number: order.recipient?.identifier,
+        account_number: order.recipient?.accountNumber,
+        status: order.status,
+        created_at: order.createdAt,
+        memo: order.recipient?.memo,
+        rate: parseFloat(order.rate || '0')
+      }));
+      
+      setOrders(convertedOrders);
       
       // Calculate daily expenditure
-      const daily = calculateDailyExpenditure(data.orders || []);
+      const daily = calculateDailyExpenditure(convertedOrders);
       setDailyExpenditure(daily);
     } catch (err) {
-      setError('Failed to load transaction history');
-      console.error('Error loading transactions:', err);
+      setError('Failed to load transaction history from PayCrest');
+      console.error('Error loading transactions from PayCrest:', err);
     } finally {
       setLoading(false);
     }
