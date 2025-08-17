@@ -7,9 +7,14 @@ import { SimpleUSDCPayment } from './SimpleUSDCPayment';
 import { DirectUSDCBalance } from './DirectUSDCBalance';
 import { MobileWalletHandler } from './MobileWalletHandler';
 import { EnhancedPaymentSelector } from './EnhancedPaymentSelector';
+import { Button } from './DemoComponents';
 import Image from 'next/image';
 
-export function SpendUSDCFlow() {
+interface SpendUSDCFlowProps {
+  setActiveTab: (tab: string) => void;
+}
+
+export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
   const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
   
@@ -115,6 +120,19 @@ export function SpendUSDCFlow() {
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-6">
+      {/* Profile Button - Top Right */}
+      <div className="flex justify-end mb-4">
+        <Button
+          onClick={() => setActiveTab("profile")}
+          variant="ghost"
+          size="medium"
+          iconName="user"
+          className="!p-2"
+        >
+          Profile
+        </Button>
+      </div>
+      
       {/* Header with Step Indicator */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-white mb-2">Spend USDC</h2>

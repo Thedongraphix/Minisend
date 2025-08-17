@@ -6,9 +6,14 @@ import { useAccount } from 'wagmi';
 import { SimpleUSDCPayment } from './SimpleUSDCPayment';
 import { DirectUSDCBalance } from './DirectUSDCBalance';
 import { MobileWalletHandler } from './MobileWalletHandler';
+import { Button } from './DemoComponents';
 import Image from 'next/image';
 
-export function SimpleOffRampFlow() {
+interface SimpleOffRampFlowProps {
+  setActiveTab: (tab: string) => void;
+}
+
+export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
   const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
   
@@ -205,6 +210,19 @@ export function SimpleOffRampFlow() {
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-6">
+      {/* Profile Button - Top Right */}
+      <div className="flex justify-end mb-4">
+        <Button
+          onClick={() => setActiveTab("profile")}
+          variant="ghost"
+          size="medium"
+          iconName="user"
+          className="!p-2"
+        >
+          Profile
+        </Button>
+      </div>
+      
       {/* Header with Step Indicator */}
       <div className="text-center">
         
