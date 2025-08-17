@@ -16,12 +16,16 @@ export async function GET(request: NextRequest) {
     const network = searchParams.get('network');
     const token = searchParams.get('token'); 
     const status = searchParams.get('status');
+    const page = searchParams.get('page');
+    const pageSize = searchParams.get('pageSize');
     
     // Build query params
     const params = new URLSearchParams();
     if (network) params.append('network', network);
     if (token) params.append('token', token);
     if (status) params.append('status', status);
+    if (page) params.append('page', page);
+    if (pageSize) params.append('pageSize', pageSize);
     
     const queryString = params.toString();
     const url = `${PAYCREST_API_URL}/sender/orders${queryString ? `?${queryString}` : ''}`;

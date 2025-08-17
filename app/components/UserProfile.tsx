@@ -40,8 +40,11 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
   const { address } = useAccount();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dailyExpenditure, setDailyExpenditure] = useState<DailyExpenditure[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreOrders, setHasMoreOrders] = useState(false);
 
   useEffect(() => {
     if (!address) {
@@ -52,13 +55,20 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
     loadUserTransactions();
   }, [address, setActiveTab]);
 
-  const loadUserTransactions = async () => {
+  const loadUserTransactions = async (page = 1, append = false) => {
     if (!address) return;
 
     try {
-      setLoading(true);
-      // Fetch orders directly from PayCrest API
-      const response = await fetch('/api/paycrest/orders?network=base&token=USDC');
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      
+      // Fetch orders directly from PayCrest API with pagination
+      // Start with larger page size to get more orders
+      const pageSize = 50; // Increased from default 10
+      const response = await fetch(`/api/paycrest/orders?network=base&token=USDC&page=${page}&pageSize=${pageSize}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -70,17 +80,21 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
         throw new Error(data.error);
       }
       
-      console.log('PayCrest API response structure:', data);
-      console.log('Total orders found:', data.data?.orders?.length || 0);
+      console.log(`PayCrest API page ${page} response:`, data);
+      console.log('Total orders in system:', data.data?.total || 0);
+      console.log('Orders on this page:', data.data?.orders?.length || 0);
       console.log('User wallet address:', address);
       
       // PayCrest returns orders in data.orders array
       const ordersArray = data.data?.orders || [];
+      const totalInSystem = data.data?.total || 0;
+      const currentPageSize = data.data?.pageSize || pageSize;
       
-      // Debug: log some sample addresses
-      console.log('Sample receiveAddresses:', ordersArray.slice(0, 2).map((o: PayCrestOrder) => o.receiveAddress));
-      console.log('Sample fromAddresses:', ordersArray.slice(0, 2).map((o: PayCrestOrder) => o.fromAddress));
-      console.log('Sample returnAddresses:', ordersArray.slice(0, 2).map((o: PayCrestOrder) => o.returnAddress));
+      if (page === 1) {
+        // Debug: log some sample addresses on first load
+        console.log('Sample fromAddresses:', ordersArray.slice(0, 2).map((o: PayCrestOrder) => o.fromAddress));
+        console.log('Sample returnAddresses:', ordersArray.slice(0, 2).map((o: PayCrestOrder) => o.returnAddress));
+      }
       
       // Filter orders by current wallet address (sender is returnAddress or fromAddress)
       const userOrders = ordersArray.filter((order: PayCrestOrder) => 
@@ -88,7 +102,7 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
         order.fromAddress?.toLowerCase() === address?.toLowerCase()
       );
       
-      console.log('Filtered user orders:', userOrders.length);
+      console.log(`Filtered user orders on page ${page}:`, userOrders.length);
       
       // Convert PayCrest order format to our Order interface
       const convertedOrders = userOrders.map((order: PayCrestOrder) => ({
@@ -106,16 +120,34 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
         rate: parseFloat(order.rate)
       }));
       
-      setOrders(convertedOrders);
+      // Update orders state
+      if (append && page > 1) {
+        setOrders(prev => [...prev, ...convertedOrders]);
+      } else {
+        setOrders(convertedOrders);
+      }
       
-      // Calculate daily expenditure
-      const daily = calculateDailyExpenditure(convertedOrders);
+      // Update pagination state
+      setCurrentPage(page);
+      setHasMoreOrders((page * currentPageSize) < totalInSystem);
+      
+      // Calculate daily expenditure from all loaded orders
+      const allOrders = append ? [...orders, ...convertedOrders] : convertedOrders;
+      const daily = calculateDailyExpenditure(allOrders);
       setDailyExpenditure(daily);
+      
     } catch (err) {
       setError('Failed to load transaction history from PayCrest');
       console.error('Error loading transactions from PayCrest:', err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const loadMoreTransactions = () => {
+    if (!loadingMore && hasMoreOrders) {
+      loadUserTransactions(currentPage + 1, true);
     }
   };
 
@@ -313,7 +345,7 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            {orders.slice(0, 10).map((order) => (
+            {orders.map((order) => (
               <div key={order.id} className="flex items-center justify-between py-4 border-b border-white/10 last:border-b-0">
                 <div className="flex items-center space-x-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -346,10 +378,29 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
               </div>
             ))}
             
-            {orders.length > 10 && (
+            {/* Load More Button */}
+            {hasMoreOrders && (
+              <div className="text-center pt-6">
+                <Button
+                  onClick={loadMoreTransactions}
+                  variant="outlined"
+                  size="medium"
+                  disabled={loadingMore}
+                  className="min-w-32"
+                >
+                  {loadingMore ? 'Loading...' : 'Load More'}
+                </Button>
+                <p className="text-gray-500 text-xs mt-2">
+                  Showing {orders.length} transactions
+                </p>
+              </div>
+            )}
+            
+            {/* Total count when all loaded */}
+            {!hasMoreOrders && orders.length > 0 && (
               <div className="text-center pt-4">
                 <p className="text-gray-400 text-sm">
-                  Showing 10 of {orders.length} transactions
+                  All {orders.length} transactions loaded
                 </p>
               </div>
             )}
