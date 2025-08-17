@@ -45,6 +45,7 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
   const [dailyExpenditure, setDailyExpenditure] = useState<DailyExpenditure[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState(20);
+  const [dailyDisplayLimit, setDailyDisplayLimit] = useState(5);
 
   useEffect(() => {
     if (!address) {
@@ -207,8 +208,7 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
     });
 
     return Array.from(dailyMap.values())
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 7); // Last 7 days
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
   const getPaymentDestination = (order: Order) => {
@@ -366,7 +366,7 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
           <div className="mb-6">
             <h4 className="text-gray-300 font-medium text-sm mb-3">Recent Activity (Click to filter)</h4>
             <div className="space-y-2">
-              {dailyExpenditure.slice(0, 5).map((day) => (
+              {dailyExpenditure.slice(0, dailyDisplayLimit).map((day) => (
                 <div 
                   key={day.date} 
                   onClick={() => handleDateClick(day.date)}
@@ -382,6 +382,23 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
                   </div>
                 </div>
               ))}
+              
+              {/* Show More Button for Daily Activity */}
+              {dailyDisplayLimit < dailyExpenditure.length && (
+                <div className="text-center pt-3">
+                  <Button
+                    onClick={() => setDailyDisplayLimit(prev => prev + 5)}
+                    variant="ghost"
+                    size="medium"
+                    className="text-sm text-blue-400 hover:text-blue-300"
+                  >
+                    Show More Days
+                  </Button>
+                  <p className="text-gray-500 text-xs mt-1">
+                    Showing {dailyDisplayLimit} of {dailyExpenditure.length} days
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
