@@ -11,14 +11,14 @@ interface PayCrestOrder {
   receiveAddress: string;
   status: string;
   createdAt: string;
-  rate?: string;
-  localAmount?: string;
-  recipient?: {
-    identifier?: string;
-    accountNumber?: string;
-    currency?: string;
-    amount?: string;
-    memo?: string;
+  rate: string;
+  amountPaid: string;
+  recipient: {
+    accountIdentifier: string;
+    accountName: string;
+    currency: string;
+    memo: string;
+    institution: string;
   };
 }
 
@@ -68,8 +68,13 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
         throw new Error(data.error);
       }
       
+      console.log('PayCrest API response structure:', data);
+      
+      // PayCrest returns orders in data.orders array
+      const ordersArray = data.data?.orders || [];
+      
       // Filter orders by current wallet address (from receiveAddress)
-      const userOrders = (data.data || []).filter((order: PayCrestOrder) => 
+      const userOrders = ordersArray.filter((order: PayCrestOrder) => 
         order.receiveAddress?.toLowerCase() === address?.toLowerCase()
       );
       
@@ -79,14 +84,14 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
         paycrest_order_id: order.id,
         wallet_address: order.receiveAddress,
         amount_in_usdc: parseFloat(order.amount),
-        amount_in_local: parseFloat(order.recipient?.amount || order.localAmount || '0'),
-        local_currency: order.recipient?.currency || 'KES',
-        phone_number: order.recipient?.identifier,
-        account_number: order.recipient?.accountNumber,
+        amount_in_local: parseFloat(order.amount) * parseFloat(order.rate), // Calculate local amount
+        local_currency: order.recipient.currency,
+        phone_number: order.recipient.accountIdentifier,
+        account_number: order.recipient.accountIdentifier,
         status: order.status,
         created_at: order.createdAt,
-        memo: order.recipient?.memo,
-        rate: parseFloat(order.rate || '0')
+        memo: order.recipient.memo,
+        rate: parseFloat(order.rate)
       }));
       
       setOrders(convertedOrders);
