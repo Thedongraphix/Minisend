@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { base } from 'viem/chains';
 import {
   Wallet,
   ConnectWallet,
@@ -41,12 +42,12 @@ export function MobileWalletHandler({
       <Wallet>
         <ConnectWallet>
           <Avatar className="h-6 w-6" />
-          <Name />
+          <Name chain={base} />
         </ConnectWallet>
         <WalletDropdown>
           <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
             <Avatar/>
-            <Name />
+            <Name chain={base} />
             <Address />
             
             {showBalance && <EthBalance />}
