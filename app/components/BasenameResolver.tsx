@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getAddress } from '@coinbase/onchainkit/identity';
 import { getName } from '@coinbase/onchainkit/identity';
 import { base } from 'viem/chains';
 
