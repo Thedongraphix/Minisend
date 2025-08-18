@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { Button, Icon } from './DemoComponents';
 import { Order } from '../../lib/supabase/config';
@@ -47,16 +47,7 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
   const [displayLimit, setDisplayLimit] = useState(20);
   const [dailyDisplayLimit, setDailyDisplayLimit] = useState(5);
 
-  useEffect(() => {
-    if (!address) {
-      setActiveTab('home');
-      return;
-    }
-
-    loadAllUserTransactions();
-  }, [address, setActiveTab]);
-
-  const loadAllUserTransactions = async () => {
+  const loadAllUserTransactions = useCallback(async () => {
     if (!address) return;
 
     try {
@@ -147,20 +138,16 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [address, displayLimit]);
 
-  const loadMoreDisplayed = () => {
-    const newLimit = displayLimit + 20;
-    setDisplayLimit(newLimit);
-    if (selectedDate) {
-      // If filtering by date, show more from filtered results
-      const filtered = filterOrdersByDate(allOrders, selectedDate);
-      setDisplayedOrders(filtered.slice(0, newLimit));
-    } else {
-      // Show more from all orders
-      setDisplayedOrders(allOrders.slice(0, newLimit));
+  useEffect(() => {
+    if (!address) {
+      setActiveTab('home');
+      return;
     }
-  };
+
+    loadAllUserTransactions();
+  }, [address, setActiveTab, loadAllUserTransactions]);
 
   const filterOrdersByDate = (orders: Order[], dateStr: string) => {
     return orders.filter(order => {

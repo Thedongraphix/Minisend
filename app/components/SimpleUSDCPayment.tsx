@@ -172,7 +172,7 @@ export function SimpleUSDCPayment({
     
     // Start polling after 10 seconds to allow PayCrest processing time
     setTimeout(poll, 10000);
-  }, [onError, currency, tillNumber, paybillNumber, paybillAccount]);
+  }, [onError, currency]);
 
   // Create PayCrest order
   const createPaycrestOrder = useCallback(async () => {
