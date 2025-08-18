@@ -361,48 +361,6 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
           )}
         </div>
 
-        {/* Daily Activity (Clickable) */}
-        {!selectedDate && dailyExpenditure.length > 0 && (
-          <div className="mb-6">
-            <h4 className="text-gray-300 font-medium text-sm mb-3">Recent Activity (Click to filter)</h4>
-            <div className="space-y-2">
-              {dailyExpenditure.slice(0, dailyDisplayLimit).map((day) => (
-                <div 
-                  key={day.date} 
-                  onClick={() => handleDateClick(day.date)}
-                  className="flex items-center justify-between py-3 px-3 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors border border-transparent hover:border-blue-500/20"
-                >
-                  <div>
-                    <p className="text-white font-medium">{formatDate(day.date)}</p>
-                    <p className="text-gray-400 text-sm">{day.count} transaction{day.count !== 1 ? 's' : ''}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white font-bold">${day.totalUSDC.toFixed(2)}</p>
-                    <p className="text-gray-400 text-sm">{day.totalLocal.toFixed(0)} {day.currency}</p>
-                  </div>
-                </div>
-              ))}
-              
-              {/* Show More Button for Daily Activity */}
-              {dailyDisplayLimit < dailyExpenditure.length && (
-                <div className="text-center pt-3">
-                  <Button
-                    onClick={() => setDailyDisplayLimit(prev => prev + 5)}
-                    variant="ghost"
-                    size="medium"
-                    className="text-sm text-blue-400 hover:text-blue-300"
-                  >
-                    Show More Days
-                  </Button>
-                  <p className="text-gray-500 text-xs mt-1">
-                    Showing {dailyDisplayLimit} of {dailyExpenditure.length} days
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
         {allOrders.length === 0 ? (
           <div className="text-center py-8">
             <Icon name="star" size="lg" className="text-gray-400 mx-auto mb-4" />
@@ -410,69 +368,94 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
             <p className="text-gray-500 text-sm">Start by making your first payment</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {displayedOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between py-4 border-b border-white/10 last:border-b-0">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    ['completed', 'fulfilled', 'settled'].includes(order.status)
-                      ? 'bg-green-500/20' 
-                      : ['pending', 'processing', 'validated'].includes(order.status)
-                        ? 'bg-yellow-500/20' 
-                        : 'bg-red-500/20'
-                  }`}>
-                    <Icon 
-                      name={getStatusIcon(order.status)} 
-                      size="sm" 
-                      className={getStatusColor(order.status)}
-                    />
-                  </div>
-                  <div>
-                    <p className="text-white font-medium">
-                      ${order.amount_in_usdc.toFixed(2)} → {getPaymentDestination(order)}
-                    </p>
-                    <p className="text-gray-400 text-sm">
-                      {formatDate(order.created_at)} • {order.local_currency} {order.amount_in_local.toFixed(0)}
-                    </p>
-                  </div>
+          <>
+            {/* Daily Activity Overview (when no specific date is selected) */}
+            {!selectedDate && dailyExpenditure.length > 0 && (
+              <div>
+                <h4 className="text-gray-300 font-medium text-sm mb-3">Recent Activity (Click to view details)</h4>
+                <div className="space-y-2">
+                  {dailyExpenditure.slice(0, dailyDisplayLimit).map((day) => (
+                    <div 
+                      key={day.date} 
+                      onClick={() => handleDateClick(day.date)}
+                      className="flex items-center justify-between py-3 px-3 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors border border-transparent hover:border-blue-500/20"
+                    >
+                      <div>
+                        <p className="text-white font-medium">{formatDate(day.date)}</p>
+                        <p className="text-gray-400 text-sm">{day.count} transaction{day.count !== 1 ? 's' : ''}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white font-bold">${day.totalUSDC.toFixed(2)}</p>
+                        <p className="text-gray-400 text-sm">{day.totalLocal.toFixed(0)} {day.currency}</p>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Show More Button for Daily Activity */}
+                  {dailyDisplayLimit < dailyExpenditure.length && (
+                    <div className="text-center pt-3">
+                      <Button
+                        onClick={() => setDailyDisplayLimit(prev => prev + 5)}
+                        variant="ghost"
+                        size="medium"
+                        className="text-sm text-blue-400 hover:text-blue-300"
+                      >
+                        Show More Days
+                      </Button>
+                      <p className="text-gray-500 text-xs mt-1">
+                        Showing {dailyDisplayLimit} of {dailyExpenditure.length} days
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <div className="text-right">
-                  <span className={`text-sm font-medium capitalize ${getStatusColor(order.status)}`}>
-                    {order.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-            
-            {/* Load More Button */}
-            {!selectedDate && displayedOrders.length < allOrders.length && (
-              <div className="text-center pt-6">
-                <Button
-                  onClick={loadMoreDisplayed}
-                  variant="outlined"
-                  size="medium"
-                  className="min-w-32"
-                >
-                  Load More
-                </Button>
-                <p className="text-gray-500 text-xs mt-2">
-                  Showing {displayedOrders.length} of {allOrders.length} transactions
-                </p>
               </div>
             )}
-            
-            {/* Total count when all displayed */}
-            {(selectedDate || displayedOrders.length >= allOrders.length) && allOrders.length > 0 && (
-              <div className="text-center pt-4">
-                <p className="text-gray-400 text-sm">
-                  {selectedDate 
-                    ? `${displayedOrders.length} transactions on ${formatDate(selectedDate)}`
-                    : `All ${allOrders.length} transactions loaded`
-                  }
-                </p>
+
+            {/* Detailed Transaction List (when a specific date is selected) */}
+            {selectedDate && (
+              <div className="space-y-3">
+                {displayedOrders.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between py-4 border-b border-white/10 last:border-b-0">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        ['completed', 'fulfilled', 'settled'].includes(order.status)
+                          ? 'bg-green-500/20' 
+                          : ['pending', 'processing', 'validated'].includes(order.status)
+                            ? 'bg-yellow-500/20' 
+                            : 'bg-red-500/20'
+                      }`}>
+                        <Icon 
+                          name={getStatusIcon(order.status)} 
+                          size="sm" 
+                          className={getStatusColor(order.status)}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">
+                          ${order.amount_in_usdc.toFixed(2)} → {getPaymentDestination(order)}
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                          {formatDate(order.created_at)} • {order.local_currency} {order.amount_in_local.toFixed(0)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-sm font-medium capitalize ${getStatusColor(order.status)}`}>
+                        {order.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Total count for filtered transactions */}
+                <div className="text-center pt-4">
+                  <p className="text-gray-400 text-sm">
+                    {displayedOrders.length} transaction{displayedOrders.length !== 1 ? 's' : ''} on {formatDate(selectedDate)}
+                  </p>
+                </div>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
 
