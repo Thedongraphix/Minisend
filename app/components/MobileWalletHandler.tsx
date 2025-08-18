@@ -16,7 +16,6 @@ import {
   Identity,
   EthBalance,
 } from '@coinbase/onchainkit/identity';
-import { BasenameResolver } from './BasenameResolver';
 
 interface MobileWalletHandlerProps {
   onConnectionSuccess?: () => void;
@@ -43,20 +42,12 @@ export function MobileWalletHandler({
       <Wallet>
         <ConnectWallet>
           <Avatar className="h-6 w-6" />
-          {address ? (
-            <BasenameResolver address={address} />
-          ) : (
-            <Name chain={base} />
-          )}
+          <Name address={address} chain={base} />
         </ConnectWallet>
         <WalletDropdown>
           <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
             <Avatar/>
-            {address ? (
-              <BasenameResolver address={address} />
-            ) : (
-              <Name chain={base} />
-            )}
+            <Name address={address} chain={base} />
             <Address />
             
             {showBalance && <EthBalance />}
