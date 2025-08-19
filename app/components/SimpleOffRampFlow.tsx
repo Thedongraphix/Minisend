@@ -8,7 +8,11 @@ import { DirectUSDCBalance } from './DirectUSDCBalance';
 import { MobileWalletHandler } from './MobileWalletHandler';
 import Image from 'next/image';
 
-export function SimpleOffRampFlow() {
+interface SimpleOffRampFlowProps {
+  setActiveTab: (tab: string) => void;
+}
+
+export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
   const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
   
@@ -205,8 +209,17 @@ export function SimpleOffRampFlow() {
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-6">
-      {/* Header with Step Indicator */}
+      {/* Header with Back Button and Step Indicator */}
       <div className="text-center">
+        <div className="flex justify-start mb-4">
+          <button
+            onClick={() => setActiveTab('home')}
+            className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <span>←</span>
+            <span>Back to Home</span>
+          </button>
+        </div>
         
         <div className="inline-flex items-center space-x-2 text-xs text-blue-300 bg-blue-500/10 px-3 py-1 rounded-xl mt-2 border border-blue-400/20">
           <Image src="/Base_Network_Logo.svg" alt="Base Network" width={12} height={12} />
