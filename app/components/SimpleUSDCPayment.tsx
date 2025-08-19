@@ -9,9 +9,6 @@ import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 interface SimpleUSDCPaymentProps {
   amount: string;
   phoneNumber?: string;
-  tillNumber?: string; // NEW: Support for till numbers
-  paybillNumber?: string; // NEW: Support for paybill numbers
-  paybillAccount?: string; // NEW: Support for paybill account numbers
   accountNumber?: string;
   bankCode?: string;
   accountName: string;
@@ -25,9 +22,6 @@ interface SimpleUSDCPaymentProps {
 export function SimpleUSDCPayment({
   amount,
   phoneNumber,
-  tillNumber, // NEW: Add till number parameter
-  paybillNumber, // NEW: Add paybill number parameter
-  paybillAccount, // NEW: Add paybill account parameter
   accountNumber,
   bankCode,
   accountName,
@@ -37,23 +31,6 @@ export function SimpleUSDCPayment({
   onSuccess,
   onError
 }: SimpleUSDCPaymentProps) {
-  
-  // Helper function to get payment destination display
-  const getPaymentDestination = () => {
-    if (tillNumber) {
-      return `Till ${tillNumber}`;
-    }
-    if (paybillNumber && paybillAccount) {
-      return `Paybill ${paybillNumber} (Account: ${paybillAccount})`;
-    }
-    if (phoneNumber) {
-      return phoneNumber;
-    }
-    if (accountNumber) {
-      return accountNumber;
-    }
-    return 'recipient';
-  };
   const [paycrestOrder, setPaycrestOrder] = useState<{
     id: string;
     receiveAddress: string;
@@ -185,9 +162,6 @@ export function SimpleUSDCPayment({
         body: JSON.stringify({
           amount,
           phoneNumber,
-          tillNumber, // NEW: Include till number in API call
-          paybillNumber, // NEW: Include paybill number in API call
-          paybillAccount, // NEW: Include paybill account in API call
           accountNumber,
           bankCode,
           accountName,
@@ -243,7 +217,7 @@ export function SimpleUSDCPayment({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError]);
+  }, [amount, phoneNumber, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError]);
 
   // USDC transfer using OnchainKit standard format for proper gas estimation
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
@@ -356,7 +330,7 @@ export function SimpleUSDCPayment({
           onClick={createPaycrestOrder}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
         >
-          Send ${amount} → {getPaymentDestination()}
+          Send ${amount} → {phoneNumber}
         </button>
       )}
 
@@ -374,11 +348,11 @@ export function SimpleUSDCPayment({
           <div className="text-center space-y-2">
             <h3 className="text-white font-bold text-lg">Ready to Send Payment</h3>
             <p className="text-gray-300">
-              Send ${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC → {currency} to {getPaymentDestination()}
+              Send ${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC → {currency} to {phoneNumber}
             </p>
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
               <p className="text-yellow-300 text-sm font-medium">
-                🔐 You&apos;ll need to approve this transaction in your wallet
+                You&apos;ll need to approve this transaction in your wallet
               </p>
               <p className="text-yellow-200 text-xs mt-1">
                 Base Pay will ask you to confirm spending USDC from your wallet
@@ -406,7 +380,7 @@ export function SimpleUSDCPayment({
                 </div>
               </div>
               <p className="text-blue-300 text-xs mt-2">
-                💡 Click to approve USDC transfer from your wallet
+                Click to approve USDC transfer from your wallet
               </p>
               <p className="text-gray-400 text-xs mt-1">
                 {currency} will be sent to {currency === 'KES' ? 'mobile wallet' : 'bank account'} automatically
@@ -440,7 +414,7 @@ export function SimpleUSDCPayment({
             }}
           >
             <TransactionButton
-              text={`🔐 Approve & Send ${((parseFloat(paycrestOrder?.amount || '0') || 0) + (parseFloat(paycrestOrder?.senderFee || '0') || 0) + (parseFloat(paycrestOrder?.transactionFee || '0') || 0)).toFixed(2)} USDC`}
+              text={`Approve & Send ${((parseFloat(paycrestOrder?.amount || '0') || 0) + (parseFloat(paycrestOrder?.senderFee || '0') || 0) + (parseFloat(paycrestOrder?.transactionFee || '0') || 0)).toFixed(2)} USDC`}
               className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg"
             />
             
@@ -469,7 +443,7 @@ export function SimpleUSDCPayment({
               ✅ Payment sent → Converting to {currency}
             </p>
             <p className="text-gray-400 text-xs mt-1">
-              {currency} will be delivered to {getPaymentDestination()}
+              {currency} will be delivered to {currency === 'KES' ? phoneNumber : accountNumber}
             </p>
           </div>
         </div>
@@ -486,7 +460,7 @@ export function SimpleUSDCPayment({
           </div>
           <h3 className="text-white font-bold text-xl">Payment Sent</h3>
           <p className="text-gray-300 text-sm">
-            Your {currency} has been sent to {getPaymentDestination()}
+            Your {currency} has been sent to {currency === 'KES' ? phoneNumber : accountNumber}
           </p>
         </div>
       )}

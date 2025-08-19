@@ -1249,3 +1249,32 @@ The components are designed to work together hierarchically. For each component,
 * [`SwapMessageReact`](/onchainkit/swap/types#swapmessagereact)
 * [`SwapToggleButtonReact`](/onchainkit/swap/types#swaptogglebuttonreact)
 * [`SwapToastReact`](/onchainkit/swap/types#swaptoastreactt)
+
+
+
+// Follow docs.base.org/builderkits/onchainkit/getting-started
+// to install dependencies
+
+import {
+  ConnectWallet,
+  Wallet,
+  WalletDropdown,
+  WalletAdvancedAddressDetails,
+  WalletAdvancedTokenHoldings,
+  WalletAdvancedTransactionActions,
+  WalletAdvancedWalletActions,
+} from '@coinbase/onchainkit/wallet';
+
+function WalletAdvancedDemo() {
+  return (
+    <Wallet>
+      <ConnectWallet />
+      <WalletDropdown>
+        <WalletAdvancedWalletActions />
+        <WalletAdvancedAddressDetails />
+        <WalletAdvancedTransactionActions />
+        <WalletAdvancedTokenHoldings />
+      </WalletDropdown>
+    </Wallet>
+  )
+}

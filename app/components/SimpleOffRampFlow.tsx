@@ -6,14 +6,9 @@ import { useAccount } from 'wagmi';
 import { SimpleUSDCPayment } from './SimpleUSDCPayment';
 import { DirectUSDCBalance } from './DirectUSDCBalance';
 import { MobileWalletHandler } from './MobileWalletHandler';
-import { Button } from './DemoComponents';
 import Image from 'next/image';
 
-interface SimpleOffRampFlowProps {
-  setActiveTab: (tab: string) => void;
-}
-
-export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
+export function SimpleOffRampFlow() {
   const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
   
@@ -210,19 +205,6 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-6">
-      {/* Profile Button - Top Right */}
-      <div className="flex justify-end mb-4">
-        <Button
-          onClick={() => setActiveTab("profile")}
-          variant="ghost"
-          size="medium"
-          iconName="user"
-          className="!p-2"
-        >
-          Profile
-        </Button>
-      </div>
-      
       {/* Header with Step Indicator */}
       <div className="text-center">
         
@@ -563,6 +545,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
             <div className="flex space-x-4 justify-center pt-2">
               <a
                 href="https://x.com/_Minisend"
+                
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 flex items-center justify-center bg-gray-800 hover:bg-black text-white rounded-lg transition-colors"
