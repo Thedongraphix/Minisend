@@ -79,9 +79,10 @@ export async function GET(
         validUntil: order.validUntil,
         senderFee: order.senderFee,
         transactionFee: order.transactionFee,
-        // Settlement flags based on official PayCrest statuses
+        // Settlement flags based on official PayCrest statuses - optimized for speed
         isValidated: order.status === 'validated', // Funds sent to recipient's bank/mobile network
         isSettled: order.status === 'settled', // Order fully completed on blockchain
+        isDelivered: order.status === 'validated' || order.status === 'settled', // Either status means delivery success
         isFailed: ['refunded', 'expired'].includes(order.status),
         isPending: order.status === 'pending', // Order created, waiting for provider assignment
         isProcessing: order.status === 'processing' || order.status === 'pending' // Handle legacy processing status
@@ -92,6 +93,7 @@ export async function GET(
       status: order.status,
       isValidated: statusResponse.order.isValidated,
       isSettled: statusResponse.order.isSettled,
+      isDelivered: statusResponse.order.isDelivered,
       isFailed: statusResponse.order.isFailed
     });
 

@@ -46,11 +46,11 @@ export function SimpleUSDCPayment({
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
-  // Pure polling implementation for reliable status tracking
+  // Optimized polling that works alongside webhooks for maximum speed
   const startPolling = useCallback((orderId: string) => {
-    console.log('🔍 Starting PayCrest status polling for order:', orderId);
+    console.log('🔍 Starting hybrid polling + webhook tracking for order:', orderId);
     let attempts = 0;
-    const maxAttempts = 180; // 15 minutes max (5s interval)
+    const maxAttempts = 60; // Reduced to 5 minutes since webhooks handle most updates
     
     const poll = async () => {
       try {
@@ -86,12 +86,17 @@ export function SimpleUSDCPayment({
             // Show delivery confirmation - this is when M-Pesa actually gets the money
             setStatus('success');
             const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-            setStatusMessage(`${currency} delivered to your ${deliveryMethod}`);
+            setStatusMessage(`${currency} validated and delivered to your ${deliveryMethod}`);
+            console.log(`🎯 Fast delivery confirmed via validated status`);
             return;
             
           case 'settled':
             console.log('Order has been settled on blockchain');
-            // Already delivered, just log
+            // Show delivery confirmation for settled status as well
+            setStatus('success');
+            const settlementMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
+            setStatusMessage(`${currency} settled and delivered to your ${settlementMethod}`);
+            console.log(`🎯 Fast delivery confirmed via settled status`);
             return;
         }
         
@@ -110,13 +115,15 @@ export function SimpleUSDCPayment({
           return;
         }
         
-        // Continue polling for in-progress states
+        // Continue polling for in-progress states (reduced frequency since webhooks are primary)
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(poll, 5000); // Poll every 5 seconds
+          // Exponential backoff: faster polls initially, slower later since webhooks handle real-time updates
+          const pollInterval = attempts < 20 ? 3000 : 10000; // 3s for first 20 attempts, then 10s
+          setTimeout(poll, pollInterval);
         } else {
-          console.log('⏰ Polling timeout - payment may still be processing');
-          // Don't change UI - let user's success state remain
+          console.log('⏰ Polling timeout - webhook will handle any remaining updates');
+          // Don't change UI - webhook system will provide final updates
         }
         
       } catch (error) {
@@ -128,8 +135,8 @@ export function SimpleUSDCPayment({
       }
     };
     
-    // Start polling after 10 seconds to allow PayCrest processing time
-    setTimeout(poll, 10000);
+    // Start polling after 5 seconds (reduced since webhooks provide real-time updates)
+    setTimeout(poll, 5000);
   }, [onError, currency]);
 
   // Create PayCrest order

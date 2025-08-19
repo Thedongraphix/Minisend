@@ -39,10 +39,10 @@ export function SimplePayment({
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
-  // Polling function for payment status
+  // Hybrid polling + webhook system for maximum speed
   const startPolling = useCallback((orderId: string) => {
     let attempts = 0;
-    const maxAttempts = 180;
+    const maxAttempts = 60; // Reduced since webhooks provide real-time updates
     
     const poll = async () => {
       try {
@@ -51,17 +51,12 @@ export function SimplePayment({
           const result = await response.json();
           const order = result.order;
           
-          // Use validated status as delivery confirmation (funds reached recipient)
-          if (order?.status === 'validated') {
+          // Check for validated OR settled status for maximum delivery speed (per PayCrest docs)
+          if (order?.status === 'validated' || order?.status === 'settled') {
             const method = currency === 'KES' ? 'M-Pesa' : 'bank account';
-            setStatusMessage(`${currency} delivered to your ${method}`);
-            return;
-          }
-          
-          // Also handle settled status (blockchain completion)
-          if (order?.status === 'settled') {
-            const method = currency === 'KES' ? 'M-Pesa' : 'bank account';
-            setStatusMessage(`${currency} delivered to your ${method}`);
+            const statusText = order?.status === 'validated' ? 'validated and delivered' : 'settled and delivered';
+            setStatusMessage(`${currency} ${statusText} to your ${method}`);
+            console.log(`🎯 Fast delivery confirmed via ${order.status} status`);
             return;
           }
           
@@ -75,17 +70,22 @@ export function SimplePayment({
         
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(poll, 5000);
+          // Smart polling: faster initially, slower later since webhooks handle real-time updates
+          const pollInterval = attempts < 20 ? 3000 : 8000;
+          setTimeout(poll, pollInterval);
         }
       } catch {
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(poll, 5000);
+          // Smart polling: faster initially, slower later since webhooks handle real-time updates
+          const pollInterval = attempts < 20 ? 3000 : 8000;
+          setTimeout(poll, pollInterval);
         }
       }
     };
     
-    setTimeout(poll, 10000);
+    // Start faster since webhooks provide backup
+    setTimeout(poll, 5000);
   }, [currency, onError]);
 
   // Step 1: Get live rate and create order
