@@ -256,7 +256,7 @@ export default function App() {
               <span className="text-yellow-400 font-medium text-sm">Under Maintenance</span>
             </div>
             <p className="text-gray-300 text-xs leading-relaxed">
-              We're currently performing system maintenance to improve your experience. 
+              We&apos;re currently performing system maintenance to improve your experience. 
               Some features may be temporarily unavailable. Thank you for your patience.
             </p>
           </div>
