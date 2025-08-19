@@ -6,7 +6,7 @@ import crypto from 'crypto';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// PayCrest webhook event types as per documentation
+// PayCrest webhook event types as per apiguide.md documentation
 interface PaycrestWebhookEvent {
   event: 'order.initiated' | 'order.pending' | 'order.validated' | 'order.settled' | 'order.refunded' | 'order.expired';
   orderId: string;
@@ -16,7 +16,7 @@ interface PaycrestWebhookEvent {
     txHash?: string;
     providerId?: string;
     settlementAmount?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -121,45 +121,45 @@ async function handleWebhookEvent(event: PaycrestWebhookEvent) {
     let ourStatus = dbOrder.status;
     let shouldCreateSettlement = false;
     
+    // Map PayCrest webhook events to our order statuses (per apiguide.md)
     switch (event.event) {
       case 'order.initiated':
-        // Order initiated via API (before Gateway creation)
+        // Order initiated via API (before Gateway creation) - per apiguide.md
         ourStatus = 'pending';
-        console.log(`📝 Order ${orderId} initiated`);
+        console.log(`📝 Order ${orderId} initiated via API`);
         break;
         
       case 'order.pending':
-        // Order awaiting provider assignment
+        // Order awaiting provider assignment - per apiguide.md
         ourStatus = 'processing';
-        console.log(`⏳ Order ${orderId} pending provider assignment`);
+        console.log(`⏳ Order ${orderId} awaiting provider assignment`);
         break;
         
       case 'order.validated':
-        // Funds have been sent to recipient's bank/mobile network (value transfer confirmed)
+        // Order validated and ready for settlement - per apiguide.md
         // THIS IS WHEN THE USER SHOULD CONSIDER THE TRANSACTION SUCCESSFUL
         ourStatus = 'completed';
         shouldCreateSettlement = true;
-        console.log(`✅ Order ${orderId} validated - funds delivered to recipient`);
+        console.log(`✅ Order ${orderId} validated and ready for settlement`);
         break;
         
       case 'order.settled':
-        // Order fully completed on blockchain (provider received stablecoin)
-        // This is separate from sender-to-recipient money flow
+        // Order settled on blockchain - per apiguide.md
         ourStatus = 'completed';
         shouldCreateSettlement = true;
         console.log(`🏦 Order ${orderId} settled on blockchain`);
         break;
         
       case 'order.refunded':
-        // Funds refunded to sender
+        // Order refunded to sender - per apiguide.md
         ourStatus = 'failed';
         console.log(`🔄 Order ${orderId} refunded to sender`);
         break;
         
       case 'order.expired':
-        // Order expired without completion
+        // Order expired because no transfer was made to the receive address within the time limit - per apiguide.md
         ourStatus = 'failed';
-        console.log(`⏰ Order ${orderId} expired without completion`);
+        console.log(`⏰ Order ${orderId} expired - no transfer made within time limit`);
         break;
         
       default:
@@ -188,11 +188,10 @@ async function handleWebhookEvent(event: PaycrestWebhookEvent) {
         await DatabaseService.createSettlement({
           order_id: dbOrder.id,
           paycrest_settlement_id: orderId,
-          settlement_amount: data.settlementAmount || dbOrder.amount_in_local,
+          settlement_amount: parseFloat(data.settlementAmount || dbOrder.amount_in_local.toString()),
           settlement_currency: dbOrder.local_currency,
           settlement_method: dbOrder.carrier === 'MPESA' ? 'M-PESA' : 'Mobile Money',
-          settled_at: new Date().toISOString(),
-          provider_id: data.providerId
+          settled_at: new Date().toISOString()
         });
         console.log(`✅ Settlement record created for ${orderId}`);
       } catch (settlementError) {
