@@ -51,13 +51,22 @@ export function SimplePayment({
           const result = await response.json();
           const order = result.order;
           
+          // Use validated status as delivery confirmation (funds reached recipient)
+          if (order?.status === 'validated') {
+            const method = currency === 'KES' ? 'M-Pesa' : 'bank account';
+            setStatusMessage(`${currency} delivered to your ${method}`);
+            return;
+          }
+          
+          // Also handle settled status (blockchain completion)
           if (order?.status === 'settled') {
             const method = currency === 'KES' ? 'M-Pesa' : 'bank account';
             setStatusMessage(`${currency} delivered to your ${method}`);
             return;
           }
           
-          if (['refunded', 'expired', 'cancelled'].includes(order?.status)) {
+          // Handle official PayCrest failure statuses only
+          if (['refunded', 'expired'].includes(order?.status)) {
             setCurrentStep('error');
             onError(`Payment ${order.status}. Please try again.`);
             return;

@@ -63,7 +63,7 @@ export async function GET(
       );
     }
 
-    // Simple response format
+    // Simple response format with correct PayCrest status mapping
     const statusResponse = {
       success: true,
       order: {
@@ -79,15 +79,18 @@ export async function GET(
         validUntil: order.validUntil,
         senderFee: order.senderFee,
         transactionFee: order.transactionFee,
-        // Settlement flags
-        isSettled: ['fulfilled', 'validated', 'settled'].includes(order.status),
-        isFailed: ['refunded', 'expired', 'cancelled'].includes(order.status),
-        isProcessing: ['pending', 'processing'].includes(order.status)
+        // Settlement flags based on official PayCrest statuses
+        isValidated: order.status === 'validated', // Funds sent to recipient's bank/mobile network
+        isSettled: order.status === 'settled', // Order fully completed on blockchain
+        isFailed: ['refunded', 'expired'].includes(order.status),
+        isPending: order.status === 'pending', // Order created, waiting for provider assignment
+        isProcessing: order.status === 'processing' || order.status === 'pending' // Handle legacy processing status
       }
     };
 
     console.log(`✅ Order status response for ${orderId}:`, {
       status: order.status,
+      isValidated: statusResponse.order.isValidated,
       isSettled: statusResponse.order.isSettled,
       isFailed: statusResponse.order.isFailed
     });
@@ -102,13 +105,13 @@ export async function GET(
         if (dbOrder.paycrest_status !== order.status) {
           console.log(`🔄 Status changed from ${dbOrder.paycrest_status} to ${order.status}`)
           
-          // Map Paycrest status to our status
+          // Map Paycrest status to our status using official PayCrest statuses
           let ourStatus = dbOrder.status
-          if (['fulfilled', 'validated', 'settled'].includes(order.status)) {
+          if (['validated', 'settled'].includes(order.status)) {
             ourStatus = 'completed'
-          } else if (['refunded', 'expired', 'cancelled'].includes(order.status)) {
+          } else if (['refunded', 'expired'].includes(order.status)) {
             ourStatus = 'failed'
-          } else if (['pending', 'processing'].includes(order.status)) {
+          } else if (order.status === 'pending') {
             ourStatus = 'processing'
           }
 
@@ -119,14 +122,14 @@ export async function GET(
             order.status,
             {
               transaction_hash: order.txHash,
-              completed_at: ['fulfilled', 'validated', 'settled'].includes(order.status) 
+              completed_at: ['validated', 'settled'].includes(order.status) 
                 ? new Date().toISOString() 
                 : undefined
             }
           )
 
-          // Create settlement record if order is completed
-          if (['fulfilled', 'validated', 'settled'].includes(order.status)) {
+          // Create settlement record if order is completed (validated = funds delivered, settled = blockchain complete)
+          if (['validated', 'settled'].includes(order.status)) {
             console.log(`💰 Creating settlement record for completed order ${orderId}`)
             
             try {

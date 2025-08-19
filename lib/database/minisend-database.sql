@@ -1,5 +1,6 @@
--- Fresh Database Setup for Paycrest Integration
--- This script drops existing tables and creates new ones with correct schema
+-- PayCrest Production Database Schema
+-- Official database schema with webhook support and correct status mappings
+-- Version: 2.0 (Webhook-enabled)
 -- Run this in your Supabase SQL Editor
 
 -- ⚠️  WARNING: This will delete ALL existing data! ⚠️
@@ -55,7 +56,7 @@ CREATE TABLE orders (
     phone_number TEXT NOT NULL,
     account_name TEXT,
     carrier TEXT,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled', 'fulfilled', 'validated', 'settled', 'refunded', 'expired')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
     paycrest_status TEXT,
     transaction_hash TEXT,
     reference_id TEXT,
@@ -124,14 +125,21 @@ CREATE TABLE settlements (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi')
 );
 
--- 10. Create Webhook Events table
+-- 10. Create Webhook Events table (PayCrest webhook support)
 CREATE TABLE webhook_events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_type TEXT NOT NULL,
-    paycrest_order_id TEXT,
+    event_type TEXT NOT NULL, -- order.initiated, order.pending, order.validated, order.settled, order.refunded, order.expired
+    paycrest_order_id TEXT NOT NULL,
     order_id UUID REFERENCES orders(id),
     payload JSONB NOT NULL,
+    signature TEXT,
+    headers JSONB DEFAULT '{}',
+    user_agent TEXT,
+    processed BOOLEAN DEFAULT FALSE,
     processed_at TIMESTAMP WITH TIME ZONE,
+    error_message TEXT,
+    webhook_timestamp TIMESTAMP WITH TIME ZONE, -- PayCrest timestamp from webhook
+    verification_status TEXT DEFAULT 'pending', -- verified, failed, pending
     created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi')
 );
 
@@ -145,14 +153,16 @@ CREATE TABLE analytics_events (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi')
 );
 
--- 12. Create Polling Attempts table
+-- 12. Create Polling Attempts table (RESEARCH-BASED + webhook tracking)
 CREATE TABLE polling_attempts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID REFERENCES orders(id) NOT NULL,
     paycrest_order_id TEXT NOT NULL,
-    status_returned TEXT,
-    attempt_number INTEGER NOT NULL,
-    response_data JSONB,
+    attempt_number INTEGER NOT NULL, -- 0 = webhook, >0 = polling attempt
+    status_returned TEXT, -- PayCrest status: pending, validated, settled, refunded, expired
+    response_data JSONB DEFAULT '{}',
+    response_time_ms INTEGER,
+    error_message TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() AT TIME ZONE 'Africa/Nairobi')
 );
 
@@ -182,6 +192,9 @@ CREATE INDEX idx_status_history_order_id ON status_history(order_id);
 CREATE INDEX idx_status_history_changed_at ON status_history(changed_at DESC);
 CREATE INDEX idx_fees_order_id ON fees(order_id);
 CREATE INDEX idx_webhook_events_order_id ON webhook_events(order_id);
+CREATE INDEX idx_webhook_events_paycrest_id ON webhook_events(paycrest_order_id);
+CREATE INDEX idx_webhook_events_event_type ON webhook_events(event_type);
+CREATE INDEX idx_webhook_events_processed ON webhook_events(processed);
 CREATE INDEX idx_analytics_events_user_id ON analytics_events(user_id);
 CREATE INDEX idx_polling_attempts_order_id ON polling_attempts(order_id);
 
@@ -201,10 +214,10 @@ SELECT
     AVG(amount_in_usdc) as avg_usdc,
     AVG(amount_in_local) as avg_local,
     AVG(COALESCE(rate, 0)) as avg_rate,
-    COUNT(CASE WHEN status IN ('completed', 'settled', 'fulfilled') THEN 1 END) as successful_orders,
-    COUNT(CASE WHEN status IN ('failed', 'cancelled', 'refunded', 'expired') THEN 1 END) as failed_orders,
+    COUNT(CASE WHEN status = 'completed' THEN 1 END) as successful_orders,
+    COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_orders,
     ROUND(
-        COUNT(CASE WHEN status IN ('completed', 'settled', 'fulfilled') THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0), 
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0), 
         2
     ) as success_rate_percent
 FROM orders 
@@ -341,7 +354,7 @@ COMMENT ON TABLE paycrest_orders IS 'Raw Paycrest API request/response data for 
 COMMENT ON TABLE status_history IS 'Complete audit trail of all status changes';
 COMMENT ON TABLE fees IS 'Detailed fee breakdown for transparency';
 COMMENT ON TABLE settlements IS 'Successful settlement records';
-COMMENT ON TABLE webhook_events IS 'All webhook events from Paycrest';
+COMMENT ON TABLE webhook_events IS 'PayCrest webhook events: order.initiated, order.pending, order.validated, order.settled, order.refunded, order.expired';
 COMMENT ON TABLE analytics_events IS 'User interaction and system events';
 COMMENT ON TABLE polling_attempts IS 'Order status polling history';
 COMMENT ON TABLE carrier_detections IS 'Phone number carrier detection results';
@@ -355,11 +368,14 @@ COMMENT ON COLUMN orders.transaction_fee IS 'Network transaction fee (USDC)';
 COMMENT ON COLUMN orders.total_amount IS 'Total amount including fees (USDC)';
 COMMENT ON COLUMN orders.institution_code IS 'Paycrest institution code (e.g., SAFAKEPC)';
 COMMENT ON COLUMN orders.recipient_data IS 'Full recipient object from Paycrest API';
+COMMENT ON COLUMN orders.status IS 'Internal order status: pending, processing, completed, failed (mapped from PayCrest statuses)';
+COMMENT ON COLUMN orders.paycrest_status IS 'Raw PayCrest status: pending, validated, settled, refunded, expired';
 
 -- Database setup complete!
 SELECT 
-    'Fresh database setup completed successfully! 🎉' as status,
-    'All tables created with Paycrest compatibility' as message,
+    'PayCrest Production Schema v2.0 setup completed! 🎉' as status,
+    'Webhook support enabled with signature verification' as webhooks,
+    'Official PayCrest status mappings implemented' as statuses,
     'EAT timezone configured' as timezone,
     'RLS enabled with proper policies' as security,
-    'Ready for Paycrest integration!' as ready;
+    'Ready for fast fiat delivery!' as ready;

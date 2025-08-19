@@ -81,10 +81,6 @@ export function SimpleUSDCPayment({
             console.log('Order is pending provider assignment');
             break;
             
-          case 'processing':
-            console.log('Provider assigned, fulfillment in progress');
-            break;
-            
           case 'validated':
             console.log('Funds have been sent to recipient\'s bank/mobile network (value transfer confirmed)');
             // Show delivery confirmation - this is when M-Pesa actually gets the money
@@ -97,17 +93,9 @@ export function SimpleUSDCPayment({
             console.log('Order has been settled on blockchain');
             // Already delivered, just log
             return;
-            
-          case 'fulfilled':
-            console.log('Payment completed by provider');
-            // Show delivery confirmation
-            setStatus('success');
-            const method = currency === 'NGN' ? 'bank account' : 'mobile number';
-            setStatusMessage(`${currency} delivered to your ${method}`);
-            return;
         }
         
-        // Handle failure states per PayCrest docs
+        // Handle failure states per PayCrest docs (only official statuses)
         if (order?.status === 'refunded') {
           console.log('Order was refunded to the sender');
           setStatus('error');
@@ -119,13 +107,6 @@ export function SimpleUSDCPayment({
           console.log('Order expired without completion');
           setStatus('error');
           onError('Payment expired. Please try again.');
-          return;
-        }
-        
-        if (order?.status === 'cancelled') {
-          console.log('Order was cancelled');
-          setStatus('error');
-          onError('Payment was cancelled. Please try again.');
           return;
         }
         
