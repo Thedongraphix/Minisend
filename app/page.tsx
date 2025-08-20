@@ -247,6 +247,7 @@ export default function App() {
           />
           <h1 className="text-2xl font-bold text-white">Minisend</h1>
         </div>
+      </div>
              
       <div className="w-full max-w-md mx-auto px-4 pb-6">
         {saveFrameButton && (
