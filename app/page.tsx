@@ -247,22 +247,7 @@ export default function App() {
           />
           <h1 className="text-2xl font-bold text-white">Minisend</h1>
         </div>
-        
-        {/* Maintenance Notice */}
-        <div className="mt-4 mx-4">
-          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
-            <div className="flex items-center justify-center space-x-2 mb-1">
-              <Icon name="sparkles" size="sm" className="text-yellow-400" />
-              <span className="text-yellow-400 font-medium text-sm">Under Maintenance</span>
-            </div>
-            <p className="text-gray-300 text-xs leading-relaxed">
-              We&apos;re currently performing system maintenance to improve your experience. 
-              Some features may be temporarily unavailable. Thank you for your patience.
-            </p>
-          </div>
-        </div>
-      </div>
-      
+             
       <div className="w-full max-w-md mx-auto px-4 pb-6">
         {saveFrameButton && (
           <div className="flex justify-end mb-4">
