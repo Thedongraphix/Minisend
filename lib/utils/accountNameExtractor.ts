@@ -28,10 +28,28 @@ export function extractAccountNameFromMemo(memo: string): string | null {
   return null;
 }
 
+// Type definitions for PayCrest order objects
+interface PaycrestRecipient {
+  accountName: string;
+  memo?: string;
+  institution?: string;
+  accountIdentifier?: string;
+  currency?: string;
+  providerId?: string;
+  metadata?: unknown;
+  nonce?: string;
+}
+
+interface PaycrestOrder {
+  id: string;
+  recipient?: PaycrestRecipient;
+  [key: string]: unknown;
+}
+
 /**
  * Fix PayCrest order object by replacing "OK" account names with extracted names from memo
  */
-export function fixPaycrestAccountName(order: any): any {
+export function fixPaycrestAccountName(order: PaycrestOrder): PaycrestOrder {
   if (!order || !order.recipient) {
     return order;
   }
@@ -58,7 +76,7 @@ export function fixPaycrestAccountName(order: any): any {
 /**
  * Fix an array of PayCrest orders
  */
-export function fixPaycrestOrdersAccountNames(orders: any[]): any[] {
+export function fixPaycrestOrdersAccountNames(orders: PaycrestOrder[]): PaycrestOrder[] {
   if (!Array.isArray(orders)) {
     return orders;
   }
