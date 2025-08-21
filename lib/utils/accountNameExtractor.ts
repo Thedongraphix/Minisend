@@ -42,6 +42,7 @@ interface PaycrestRecipient {
 
 interface PaycrestOrder {
   id: string;
+  status: string;
   recipient?: PaycrestRecipient;
   [key: string]: unknown;
 }
