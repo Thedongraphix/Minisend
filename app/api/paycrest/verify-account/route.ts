@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { formatTillNumber, formatPhoneNumber } from '@/lib/utils/tillValidator';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
@@ -15,19 +16,52 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('🔍 Account verification request:', body);
     
-    const { accountNumber, bankCode } = body;
+    const { 
+      accountNumber, 
+      bankCode, 
+      phoneNumber, 
+      tillNumber, 
+      paybillNumber,
+      currency 
+    } = body;
 
-    if (!accountNumber || !bankCode) {
-      return NextResponse.json(
-        { error: 'Missing required fields: accountNumber, bankCode' },
-        { status: 400 }
-      );
+    // Validate required fields based on payment type
+    let institution: string;
+    let accountIdentifier: string;
+
+    if (currency === 'KES') {
+      // For Kenya, accept phone number, till number, or paybill number
+      if (phoneNumber) {
+        institution = 'SAFAKEPC';
+        accountIdentifier = formatPhoneNumber(phoneNumber);
+      } else if (tillNumber) {
+        institution = 'SAFAKEPC';
+        accountIdentifier = formatTillNumber(tillNumber);
+      } else if (paybillNumber) {
+        institution = 'SAFAKEPC';
+        accountIdentifier = formatTillNumber(paybillNumber);
+      } else {
+        return NextResponse.json(
+          { error: 'Missing required field: phoneNumber, tillNumber, or paybillNumber for KES' },
+          { status: 400 }
+        );
+      }
+    } else {
+      // For other currencies, require account number and bank code
+      if (!accountNumber || !bankCode) {
+        return NextResponse.json(
+          { error: 'Missing required fields: accountNumber, bankCode' },
+          { status: 400 }
+        );
+      }
+      institution = bankCode;
+      accountIdentifier = accountNumber;
     }
 
     // Create verify account payload according to PayCrest docs
     const verifyData = {
-      institution: bankCode,
-      accountIdentifier: accountNumber
+      institution,
+      accountIdentifier
     };
 
     console.log('📦 PayCrest verify account payload:', JSON.stringify(verifyData, null, 2));
