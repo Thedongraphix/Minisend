@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fixPaycrestOrdersAccountNames } from '@/lib/utils/accountNameExtractor';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
@@ -51,9 +52,18 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     console.log('📊 Orders response:', data);
 
+    // Fix account names in orders (PayCrest returns "OK" instead of actual names)
+    const fixedData = {
+      ...data,
+      data: {
+        ...data.data,
+        orders: data.data?.orders ? fixPaycrestOrdersAccountNames(data.data.orders) : data.data?.orders
+      }
+    };
+
     return NextResponse.json({
       success: true,
-      ...data
+      ...fixedData
     });
 
   } catch (error) {

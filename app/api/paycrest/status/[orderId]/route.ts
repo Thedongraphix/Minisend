@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/supabase/config';
+import { fixPaycrestAccountName } from '@/lib/utils/accountNameExtractor';
 
 // Force dynamic rendering and Node.js runtime
 export const runtime = 'nodejs';
@@ -63,29 +64,32 @@ export async function GET(
       );
     }
 
+    // Fix account name (PayCrest returns "OK" instead of actual names)
+    const fixedOrder = fixPaycrestAccountName(order);
+
     // Simple response format with correct PayCrest status mapping
     const statusResponse = {
       success: true,
       order: {
-        id: order.id,
-        status: order.status,
-        amount: order.amount,
-        token: order.token,
-        network: order.network,
-        currency: order.recipient?.currency || 'KES',
-        recipient: order.recipient,
-        reference: order.reference,
-        receiveAddress: order.receiveAddress,
-        validUntil: order.validUntil,
-        senderFee: order.senderFee,
-        transactionFee: order.transactionFee,
+        id: fixedOrder.id,
+        status: fixedOrder.status,
+        amount: fixedOrder.amount,
+        token: fixedOrder.token,
+        network: fixedOrder.network,
+        currency: fixedOrder.recipient?.currency || 'KES',
+        recipient: fixedOrder.recipient,
+        reference: fixedOrder.reference,
+        receiveAddress: fixedOrder.receiveAddress,
+        validUntil: fixedOrder.validUntil,
+        senderFee: fixedOrder.senderFee,
+        transactionFee: fixedOrder.transactionFee,
         // Settlement flags based on official PayCrest statuses - optimized for speed
-        isValidated: order.status === 'validated', // Funds sent to recipient's bank/mobile network
-        isSettled: order.status === 'settled', // Order fully completed on blockchain
-        isDelivered: order.status === 'validated' || order.status === 'settled', // Either status means delivery success
-        isFailed: ['refunded', 'expired'].includes(order.status),
-        isPending: order.status === 'pending', // Order created, waiting for provider assignment
-        isProcessing: order.status === 'processing' || order.status === 'pending' // Handle legacy processing status
+        isValidated: fixedOrder.status === 'validated', // Funds sent to recipient's bank/mobile network
+        isSettled: fixedOrder.status === 'settled', // Order fully completed on blockchain
+        isDelivered: fixedOrder.status === 'validated' || fixedOrder.status === 'settled', // Either status means delivery success
+        isFailed: ['refunded', 'expired'].includes(fixedOrder.status),
+        isPending: fixedOrder.status === 'pending', // Order created, waiting for provider assignment
+        isProcessing: fixedOrder.status === 'processing' || fixedOrder.status === 'pending' // Handle legacy processing status
       }
     };
 
