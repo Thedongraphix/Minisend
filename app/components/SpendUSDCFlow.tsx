@@ -288,9 +288,9 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
           <SimpleUSDCPayment
             amount={formData.amount}
             phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
-            accountNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : 
-                          paymentMethod.type === 'paybill' ? paymentMethod.accountNumber : undefined}
-            bankCode={paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined}
+            tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
+            paybillNumber={paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined}
+            paybillAccount={paymentMethod.type === 'paybill' ? paymentMethod.accountNumber : undefined}
             accountName={formData.accountName}
             currency={formData.currency}
             returnAddress={address || ''}
