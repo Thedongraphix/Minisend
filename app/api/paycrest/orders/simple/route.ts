@@ -276,9 +276,17 @@ export async function POST(request: NextRequest) {
       // Don't fail the API call if database fails
     }
 
+    // Return response with corrected account name (PayCrest returns "OK" instead of actual name)
     return NextResponse.json({
       success: true,
-      order: order.data,
+      order: {
+        ...order.data,
+        // Override PayCrest's "OK" response with the actual user-provided account name
+        recipient: {
+          ...order.data.recipient,
+          accountName: accountName // Use original account name from request
+        }
+      },
     });
 
   } catch (error) {

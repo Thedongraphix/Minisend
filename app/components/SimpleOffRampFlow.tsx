@@ -125,8 +125,9 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
 
       const data = await response.json();
       
-      if (data.success && data.accountName) {
-        setFormData(prev => ({ ...prev, accountName: data.accountName }));
+      if (data.success) {
+        // Don't overwrite user's account name with PayCrest's response ("OK")
+        // Keep the user-entered account name and just mark as verified
         setAccountVerified(true);
       } else {
         setAccountVerified(false);
