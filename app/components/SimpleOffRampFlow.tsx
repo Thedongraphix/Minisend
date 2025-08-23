@@ -535,11 +535,9 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
           
-          <div className="space-y-4">
-            <p className="text-gray-300 text-sm">
-              Your {formData.currency} has been sent to {formData.phoneNumber}
-            </p> 
-          </div>
+          <p className="text-gray-300 text-sm">
+            Your {formData.currency} has been sent to {formData.phoneNumber}
+          </p>
           
           <div className="space-y-4">
             <button

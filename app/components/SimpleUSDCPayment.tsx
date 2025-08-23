@@ -351,9 +351,10 @@ export function SimpleUSDCPayment({
               <p className="text-yellow-300 text-sm font-medium">
                 You&apos;ll need to approve this transaction in your wallet
               </p>
-              <p className="text-yellow-200 text-xs mt-1">
+              {/*<p className="text-yellow-200 text-xs mt-1">
                 Base Pay will ask you to confirm spending USDC from your wallet
-              </p>
+              </p>*/}
+
             </div>
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
               <div className="text-xs text-blue-300 space-y-1">
