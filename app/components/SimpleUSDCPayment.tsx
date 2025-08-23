@@ -436,14 +436,6 @@ export function SimpleUSDCPayment({
             </p>
           </div>
           
-          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-            <p className="text-green-300 text-sm">
-              ✅ Payment sent → Converting to {currency}
-            </p>
-            <p className="text-gray-400 text-xs mt-1">
-              {currency} will be delivered to {currency === 'KES' ? phoneNumber : accountNumber}
-            </p>
-          </div>
         </div>
       )}
 
