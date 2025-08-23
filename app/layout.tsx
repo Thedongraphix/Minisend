@@ -100,6 +100,9 @@ export default function RootLayout({
         <meta name="twitter:domain" content="minisend.xyz" />
         <meta name="theme-color" content="#1D4ED8" />
         <link rel="canonical" href={process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet" />
         
         {/* Farcaster specific meta tag - correct format for Mini App embeds */}
         <meta name="fc:frame" content={JSON.stringify({
@@ -142,7 +145,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-background">
+      <body className="bg-background font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>
