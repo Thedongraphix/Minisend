@@ -42,13 +42,17 @@ export function MobileWalletHandler({
       <Wallet>
         <ConnectWallet>
           <Avatar className="h-6 w-6" />
-          <Name address={address} chain={base} />
+          <Name address={address} chain={base} className="text-white" />
         </ConnectWallet>
         <WalletDropdown>
           <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-            <Avatar/>
-            <Name address={address} chain={base} />
-            <Address />
+            <Avatar />
+            <Name 
+              address={address} 
+              chain={base} 
+              className="text-white font-semibold" 
+            />
+            <Address className="text-gray-300 text-sm" />
             
             {showBalance && <EthBalance />}
           </Identity>

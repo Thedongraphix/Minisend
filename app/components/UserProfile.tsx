@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
+import { base } from 'viem/chains';
+import { Name, Avatar } from '@coinbase/onchainkit/identity';
 import { Button, Icon } from './DemoComponents';
 import { Order } from '../../lib/supabase/config';
 
@@ -288,11 +290,16 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
       {/* Profile Header */}
       <div className="glass-effect rounded-3xl p-8">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-2">Your Profile</h2>
-            <p className="text-gray-400 text-sm">
-              {address?.slice(0, 6)}...{address?.slice(-4)}
-            </p>
+          <div className="flex items-center space-x-3">
+            <Avatar className="h-12 w-12" />
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-1">Your Profile</h2>
+              <Name 
+                address={address} 
+                chain={base} 
+                className="text-gray-300 text-sm font-medium"
+              />
+            </div>
           </div>
           <Button
             onClick={() => setActiveTab('home')}

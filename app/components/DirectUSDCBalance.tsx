@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { getNetworkConfig, getUSDCContract } from '@/lib/contracts'
 import { base } from 'viem/chains'
+import { Name } from '@coinbase/onchainkit/identity'
 import Image from 'next/image'
 
 export function DirectUSDCBalance() {
@@ -249,13 +250,17 @@ export function DirectUSDCBalance() {
             
           </div>
           
-          {/* Center Section - Card Number */}
+          {/* Center Section - User Identity */}
           <div className="space-y-1">
-            <p className="text-gray-400 text-[10px] font-medium tracking-[0.3em] uppercase">Coinbase Wallet</p>
+            <p className="text-gray-400 text-[10px] font-medium tracking-[0.3em] uppercase">Wallet Owner</p>
             <div className="flex items-center space-x-2">
-              <p className="text-white font-mono text-lg tracking-[0.15em] font-medium">
-                {address ? `${address.slice(0, 6)} •••• •••• ${address.slice(-4)}` : '•••• •••• •••• ••••'}
-              </p>
+              <div className="text-white text-lg font-medium">
+                <Name 
+                  address={address} 
+                  chain={base} 
+                  className="text-white font-semibold tracking-[0.05em]"
+                />
+              </div>
               {address && (
                 <button
                   onClick={() => copyToClipboard(address)}
