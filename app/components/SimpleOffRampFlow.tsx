@@ -58,9 +58,9 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
     isConnected
   });
 
-  // Fetch exchange rates
-  const fetchRate = async (amount: string, currency: string) => {
-    if (!amount || parseFloat(amount) <= 0) {
+  // Fetch exchange rates (using 1 USDC to get the base rate)
+  const fetchRate = async (fiatAmount: string, currency: string) => {
+    if (!fiatAmount || parseFloat(fiatAmount) <= 0) {
       setCurrentRate(null);
       return;
     }
@@ -69,7 +69,8 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
     setRateError(null);
     
     try {
-      const response = await fetch(`/api/paycrest/rates/USDC/${amount}/${currency}`);
+      // Use 1 USDC to get the base exchange rate
+      const response = await fetch(`/api/paycrest/rates/USDC/1/${currency}`);
       const data = await response.json();
       
       if (data.success) {
@@ -257,49 +258,31 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
 
       {/* USDC Balance */}
       <DirectUSDCBalance />
+      
+      {/* Fiat Amount Banner */}
+      {formData.amount && parseFloat(formData.amount) > 0 && (
+        <div className="bg-black border border-gray-700 rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-lg">{formData.currency === 'KES' ? 'KSh' : '₦'}</span>
+              </div>
+              <div>
+                <div className="text-white font-semibold text-lg">
+                  {parseFloat(formData.amount).toLocaleString()} {formData.currency}
+                </div>
+                <div className="text-gray-400 text-sm">
+                  {rateLoading ? 'Calculating USDC...' : currentRate ? `≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC` : rateError ? 'Using fallback rate' : 'Rate unavailable'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form Step */}
       {step === 'form' && (
         <div className="space-y-4">
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">Amount ($)</label>
-            <input
-              type="number"
-              value={formData.amount}
-              onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-              placeholder="0.00"
-              className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
-              min="0.50"
-              max="10000"
-              step="0.01"
-            />
-            
-            {/* Real-time Fiat Conversion Display */}
-            {formData.amount && parseFloat(formData.amount) > 0 && (
-              <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-blue-300 text-sm font-medium">You&apos;ll receive approximately:</span>
-                  {rateLoading ? (
-                    <div className="animate-pulse">
-                      <div className="h-4 bg-gray-600 rounded w-20"></div>
-                    </div>
-                  ) : currentRate ? (
-                    <span className="text-blue-400 text-lg font-semibold">
-                      {(parseFloat(formData.amount) * currentRate).toLocaleString()} {formData.currency}
-                    </span>
-                  ) : (
-                    <span className="text-gray-400 text-sm">Rate unavailable</span>
-                  )}
-                </div>
-                {!rateLoading && currentRate && (
-                  <div className="text-xs text-blue-300/70 mt-1">
-                    1 USDC = {currentRate.toLocaleString()} {formData.currency}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
           <div>
             <label className="block text-white text-sm font-medium mb-2">Currency</label>
             <select
@@ -318,40 +301,23 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
             </select>
           </div>
 
-          {/* Exchange Rate Display */}
-          {formData.amount && (
-            <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-300">Exchange Rate:</span>
-                <div className="text-right">
-                  {rateLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-sm text-gray-300">Loading...</span>
-                    </div>
-                  ) : currentRate ? (
-                    <div>
-                      <div className="text-white font-medium">
-                        1 USD = {currentRate.toLocaleString()} {formData.currency}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        You&apos;ll receive ≈ {(parseFloat(formData.amount) * currentRate).toLocaleString()} {formData.currency}
-                      </div>
-                    </div>
-                  ) : rateError ? (
-                    <div className="text-red-400 text-xs">
-                      Rate unavailable
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-              {rateError && (
-                <div className="mt-2 text-xs text-yellow-400">
-                  Using fallback rate - order will use live rates
-                </div>
-              )}
-            </div>
-          )}
+          <div>
+            <label className="block text-white text-sm font-medium mb-2">
+              Amount ({formData.currency})
+            </label>
+            <input
+              type="number"
+              value={formData.amount}
+              onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+              placeholder="0.00"
+              className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
+              min="50"
+              max={formData.currency === 'KES' ? "1000000" : "10000000"}
+              step="1"
+            />
+            
+          </div>
+
 
           {/* Conditional input fields based on currency */}
           {formData.currency === 'KES' ? (
@@ -516,22 +482,22 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
             <h3 className="text-white font-medium mb-2">Payment Summary</h3>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between text-gray-300">
-                <span>Amount:</span>
-                <span>${formData.amount}</span>
+                <span>You&apos;ll receive:</span>
+                <span>{parseFloat(formData.amount).toLocaleString()} {formData.currency}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>USDC cost:</span>
+                <span>${currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : '...'} USDC</span>
               </div>
               <div className="flex justify-between text-gray-300">
                 <span>To:</span>
                 <span>{formData.phoneNumber}</span>
               </div>
-              <div className="flex justify-between text-gray-300">
-                <span>Currency:</span>
-                <span>{formData.currency}</span>
-              </div>
             </div>
           </div>
 
           <SimpleUSDCPayment
-            amount={formData.amount}
+            amount={currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : formData.amount}
             phoneNumber={formData.phoneNumber}
             accountNumber={formData.accountNumber}
             bankCode={formData.bankCode}

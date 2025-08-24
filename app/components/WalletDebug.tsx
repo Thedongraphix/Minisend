@@ -20,7 +20,7 @@ export function WalletDebug() {
       <div className="space-y-1">
         <p>Environment: {isInFarcaster ? '🟢 Farcaster' : '🌐 Web'}</p>
         <p>Connected: {isConnected ? '✅' : '❌'}</p>
-        <p>User: {address ? <Name address={address} chain={base} className="text-blue-300" /> : 'None'}</p>
+        <div>User: {address ? <Name address={address} chain={base} className="text-blue-300" /> : 'None'}</div>
         <p>Address: {address ? `${address.slice(0, 8)}...` : 'None'}</p>
         <p>Chain: {chainId}</p>
         <p>Connector: {connector?.name || 'None'}</p>
