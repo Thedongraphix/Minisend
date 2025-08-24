@@ -122,11 +122,12 @@ export async function POST(request: NextRequest) {
 
     if (currency === 'KES') {
       if (paybillNumber && paybillAccount) {
-        // Paybill number formatting - use paybill number as identifier and account in memo
-        formattedIdentifier = formatTillNumber(paybillNumber); // Same formatting as till
-        institution = 'SAFAKEPC'; // Using M-Pesa institution for paybill numbers (same network)
+        // For paybill: use account number as identifier, paybill goes in memo
+        // This follows standard M-Pesa paybill format where account number is the target
+        formattedIdentifier = paybillAccount; // Use account number as identifier
+        institution = 'SAFAKEPC'; // M-Pesa institution for paybill numbers
         paymentType = 'paybill';
-        console.log('🏛️ Using paybill number:', { paybillNumber, paybillAccount, formattedIdentifier, institution });
+        console.log('🏛️ Using paybill format:', { paybillNumber, paybillAccount, formattedIdentifier, institution });
       } else if (tillNumber) {
         // Till number formatting
         formattedIdentifier = formatTillNumber(tillNumber);
@@ -162,8 +163,8 @@ export async function POST(request: NextRequest) {
         accountIdentifier: formattedIdentifier,
         accountName,
         memo: paymentType === 'paybill' 
-          ? `Payment from Minisend to ${accountName} - Account: ${paybillAccount}` 
-          : `Payment from Minisend to ${accountName}`, // Include account number for paybills
+          ? `Paybill ${paybillNumber} - ${accountName}` 
+          : `Payment to ${accountName}`, // Clean memo format
         metadata: {}, // Required empty object
         currency,
       },
