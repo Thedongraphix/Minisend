@@ -162,9 +162,7 @@ export async function POST(request: NextRequest) {
         institution,
         accountIdentifier: formattedIdentifier,
         accountName,
-        memo: paymentType === 'paybill' 
-          ? `Paybill ${paybillNumber} - ${accountName}` 
-          : `Payment to ${accountName}`, // Clean memo format
+        memo: `Payment from Minisend to ${accountName}`, // Consistent memo format across all payment types
         metadata: {}, // Required empty object
         currency,
       },
