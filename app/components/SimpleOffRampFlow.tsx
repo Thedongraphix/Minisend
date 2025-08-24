@@ -178,6 +178,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
     }
   }, [formData.currency]);
 
+
   // Reset form fields when currency changes
   useEffect(() => {
     setFormData(prev => ({
@@ -272,6 +273,31 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
               max="10000"
               step="0.01"
             />
+            
+            {/* Real-time Fiat Conversion Display */}
+            {formData.amount && parseFloat(formData.amount) > 0 && (
+              <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-300 text-sm font-medium">You&apos;ll receive approximately:</span>
+                  {rateLoading ? (
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-gray-600 rounded w-20"></div>
+                    </div>
+                  ) : currentRate ? (
+                    <span className="text-blue-400 text-lg font-semibold">
+                      {(parseFloat(formData.amount) * currentRate).toLocaleString()} {formData.currency}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-sm">Rate unavailable</span>
+                  )}
+                </div>
+                {!rateLoading && currentRate && (
+                  <div className="text-xs text-blue-300/70 mt-1">
+                    1 USDC = {currentRate.toLocaleString()} {formData.currency}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
