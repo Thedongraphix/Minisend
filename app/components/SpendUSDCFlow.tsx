@@ -175,7 +175,7 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
                   {parseFloat(formData.amount).toLocaleString()} {formData.currency}
                 </div>
                 <div className="text-gray-400 text-sm">
-                  {rateLoading ? 'Calculating USDC...' : currentRate ? `≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC` : 'Rate unavailable'}
+                  {rateLoading ? 'Calculating USDC...' : currentRate ? `≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC` : rateError ? 'Using fallback rate' : 'Rate unavailable'}
                 </div>
               </div>
             </div>
