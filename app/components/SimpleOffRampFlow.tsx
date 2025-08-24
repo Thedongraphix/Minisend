@@ -258,30 +258,31 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
 
       {/* USDC Balance */}
       <DirectUSDCBalance />
-      
-      {/* Fiat Amount Banner */}
-      {formData.amount && parseFloat(formData.amount) > 0 && (
-        <div className="bg-black border border-gray-700 rounded-2xl p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">{formData.currency === 'KES' ? 'KSh' : '₦'}</span>
-              </div>
-              <div>
-                <div className="text-white font-semibold text-lg">
-                  {parseFloat(formData.amount).toLocaleString()} {formData.currency}
-                </div>
-                <div className="text-gray-400 text-sm">
-                  {rateLoading ? 'Calculating USDC...' : currentRate ? `≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC` : rateError ? 'Using fallback rate' : 'Rate unavailable'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Form Step */}
       {step === 'form' && (
+        <>
+          {/* Fiat Amount Banner */}
+          {formData.amount && parseFloat(formData.amount) > 0 && (
+            <div className="bg-black border border-gray-700 rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">{formData.currency === 'KES' ? 'KSh' : '₦'}</span>
+                  </div>
+                  <div>
+                    <div className="text-white font-semibold text-lg">
+                      {parseFloat(formData.amount).toLocaleString()} {formData.currency}
+                    </div>
+                    <div className="text-gray-400 text-sm">
+                      {rateLoading ? 'Calculating USDC...' : currentRate ? `≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC` : rateError ? 'Using fallback rate' : 'Rate unavailable'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        
         <div className="space-y-4">
           <div>
             <label className="block text-white text-sm font-medium mb-2">Currency</label>
@@ -472,7 +473,8 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
           >
             Continue to Payment
           </button>
-        </div>
+          </div>
+        </>
       )}
 
       {/* Payment Step */}
