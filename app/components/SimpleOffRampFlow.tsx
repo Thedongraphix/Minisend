@@ -567,6 +567,17 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
               </a>
               
               <a
+                href="https://t.me/minisendapp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 flex items-center justify-center bg-gray-800 hover:bg-blue-500 text-white rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 0C5.374 0 0 5.373 0 12s5.374 12 12 12 12-5.373 12-12S18.626 0 12 0zm5.568 8.16l-1.61 7.59c-.12.54-.44.67-.89.42l-2.47-1.82-1.19 1.14c-.13.13-.24.24-.5.24l.18-2.51 4.56-4.12c.2-.18-.04-.28-.31-.1L9.39 13.17l-2.43-.76c-.53-.17-.54-.53.11-.78l9.49-3.66c.44-.17.83.11.68.78z"/>
+                </svg>
+              </a>
+              
+              <a
                 href="https://farcaster.xyz/miniapps/ZflAoR5O08hC/minisend"
                 target="_blank"
                 rel="noopener noreferrer"
