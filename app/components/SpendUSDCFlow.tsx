@@ -120,8 +120,15 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-6">
-      {/* Profile Button - Top Right */}
-      <div className="flex justify-end mb-4">
+      {/* Back Button and Profile Button */}
+      <div className="flex justify-between items-center mb-4">
+        <button
+          onClick={() => setActiveTab('home')}
+          className="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+        >
+          <span>←</span>
+          <span>Back to Home</span>
+        </button>
         <Button
           onClick={() => setActiveTab("profile")}
           variant="ghost"
