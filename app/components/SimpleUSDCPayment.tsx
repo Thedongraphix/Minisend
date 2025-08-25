@@ -10,8 +10,6 @@ interface SimpleUSDCPaymentProps {
   amount: string;
   phoneNumber?: string;
   tillNumber?: string;
-  paybillNumber?: string;
-  paybillAccount?: string;
   accountNumber?: string;
   bankCode?: string;
   accountName: string;
@@ -26,8 +24,6 @@ export function SimpleUSDCPayment({
   amount,
   phoneNumber,
   tillNumber,
-  paybillNumber,
-  paybillAccount,
   accountNumber,
   bankCode,
   accountName,
@@ -157,8 +153,6 @@ export function SimpleUSDCPayment({
           amount,
           phoneNumber,
           tillNumber,
-          paybillNumber,
-          paybillAccount,
           accountNumber,
           bankCode,
           accountName,
@@ -214,7 +208,7 @@ export function SimpleUSDCPayment({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError]);
+  }, [amount, phoneNumber, tillNumber, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError]);
 
   // USDC transfer using OnchainKit standard format for proper gas estimation
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
@@ -327,7 +321,7 @@ export function SimpleUSDCPayment({
           onClick={createPaycrestOrder}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
         >
-          Send ${amount} → {phoneNumber || (tillNumber ? `Till ${tillNumber}` : paybillNumber ? `Paybill ${paybillNumber}` : accountNumber)}
+          Send ${amount} → {phoneNumber || (tillNumber ? `Till ${tillNumber}` : accountNumber)}
         </button>
       )}
 
@@ -345,7 +339,7 @@ export function SimpleUSDCPayment({
           <div className="text-center space-y-2">
             <h3 className="text-white font-bold text-lg">Ready to Send Payment</h3>
             <p className="text-gray-300">
-              Send ${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC → {currency} to {phoneNumber || (tillNumber ? `Till ${tillNumber}` : paybillNumber ? `Paybill ${paybillNumber}` : accountNumber)}
+              Send ${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC → {currency} to {phoneNumber || (tillNumber ? `Till ${tillNumber}` : accountNumber)}
             </p>
             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
               <p className="text-yellow-300 text-sm font-medium">
@@ -381,7 +375,7 @@ export function SimpleUSDCPayment({
                 Click to approve USDC transfer from your wallet
               </p>
               <p className="text-gray-400 text-xs mt-1">
-                {currency} will be sent to {phoneNumber ? 'mobile wallet' : tillNumber ? 'till number' : paybillNumber ? 'paybill account' : 'bank account'} automatically
+                {currency} will be sent to {phoneNumber ? 'mobile wallet' : tillNumber ? 'till number' : 'bank account'} automatically
               </p>
             </div>
           </div>

@@ -198,10 +198,10 @@ export function isPaymentDestinationSupported(
   currency: 'KES' | 'NGN'
 ): boolean {
   if (currency === 'NGN') {
-    return false; // Till/paybill numbers not supported for NGN
+    return false; // Till numbers not supported for NGN
   }
   
-  return destination.type === 'phone' || destination.type === 'till' || destination.type === 'paybill';
+  return destination.type === 'phone' || destination.type === 'till';
 }
 
 /**

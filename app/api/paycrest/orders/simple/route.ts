@@ -23,9 +23,7 @@ export async function POST(request: NextRequest) {
     const { 
       amount, 
       phoneNumber, 
-      tillNumber, // NEW: Add till number support
-      paybillNumber, // NEW: Add paybill number support
-      paybillAccount, // NEW: Add paybill account number support
+      tillNumber, // Add till number support
       accountNumber,
       bankCode,
       accountName, 
@@ -43,17 +41,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Currency-specific validation
-    if (currency === 'KES' && !phoneNumber && !tillNumber && !paybillNumber) {
+    if (currency === 'KES' && !phoneNumber && !tillNumber) {
       return NextResponse.json(
-        { error: 'Phone number, till number, or paybill number is required for KES transactions' },
-        { status: 400 }
-      );
-    }
-
-    // Paybill specific validation
-    if (paybillNumber && !paybillAccount) {
-      return NextResponse.json(
-        { error: 'Paybill account number is required when using paybill number' },
+        { error: 'Phone number or till number is required for KES transactions' },
         { status: 400 }
       );
     }
@@ -118,17 +108,10 @@ export async function POST(request: NextRequest) {
     // Format identifier and set institution based on currency
     let formattedIdentifier: string;
     let institution: string;
-    let paymentType: 'phone' | 'till' | 'paybill' | 'bank' = 'phone';
+    let paymentType: 'phone' | 'till' | 'bank' = 'phone';
 
     if (currency === 'KES') {
-      if (paybillNumber && paybillAccount) {
-        // For paybill: use account number as identifier, paybill goes in memo
-        // This follows standard M-Pesa paybill format where account number is the target
-        formattedIdentifier = paybillAccount; // Use account number as identifier
-        institution = 'SAFAKEPC'; // M-Pesa institution for paybill numbers
-        paymentType = 'paybill';
-        console.log('🏛️ Using paybill format:', { paybillNumber, paybillAccount, formattedIdentifier, institution });
-      } else if (tillNumber) {
+      if (tillNumber) {
         // Till number formatting
         formattedIdentifier = formatTillNumber(tillNumber);
         institution = 'SAFAKEPC'; // Using M-Pesa institution for till numbers (same network)
@@ -141,7 +124,7 @@ export async function POST(request: NextRequest) {
         paymentType = 'phone';
         console.log('📱 Using phone number:', { phoneNumber, formattedIdentifier, institution });
       } else {
-        throw new Error('Either phone number, till number, or paybill number is required for KES');
+        throw new Error('Either phone number or till number is required for KES');
       }
     } else if (currency === 'NGN') {
       // Nigeria account number - use as provided
@@ -241,14 +224,14 @@ export async function POST(request: NextRequest) {
         phoneNumber: currency === 'KES' && paymentType === 'phone' ? formattedIdentifier : '', // Phone number for KES phone payments only
         accountNumber: currency === 'NGN' ? formattedIdentifier : '', // Account number for NGN only
         tillNumber: currency === 'KES' && paymentType === 'till' ? formattedIdentifier : '', // Till number for KES till payments
-        paybillNumber: currency === 'KES' && paymentType === 'paybill' ? formattedIdentifier : '', // Paybill number for KES paybill payments
-        paybillAccount: currency === 'KES' && paymentType === 'paybill' ? paybillAccount : '', // Paybill account for KES paybill payments
+        paybillNumber: '', // Paybill no longer supported
+        paybillAccount: '', // Paybill no longer supported
         accountName,
         currency,
         returnAddress,
         rate: exchangeRate,
         provider: currency === 'KES' 
-          ? (paymentType === 'paybill' ? 'MPESA_PAYBILL' : paymentType === 'till' ? 'MPESA_TILL' : (detectedCarrier === 'SAFARICOM' ? 'MPESA' : 'AIRTEL'))
+          ? (paymentType === 'till' ? 'MPESA_TILL' : (detectedCarrier === 'SAFARICOM' ? 'MPESA' : 'AIRTEL'))
           : 'BANK_TRANSFER',
         localAmount: localAmount.toString(),
         institutionCode: institutionCode

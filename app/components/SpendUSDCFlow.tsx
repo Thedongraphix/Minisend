@@ -44,10 +44,9 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
     currency: 'KES' as 'KES' | 'NGN'
   });
   const [paymentMethod, setPaymentMethod] = useState<{
-    type: 'phone' | 'till' | 'paybill';
+    type: 'phone' | 'till';
     value: string;
     formatted: string;
-    accountNumber?: string; // For paybill numbers
   } | null>(null);
   const [currentRate, setCurrentRate] = useState<number | null>(null);
   const [rateLoading, setRateLoading] = useState(false);
@@ -258,15 +257,8 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
                 <span>
                   {paymentMethod.type === 'till' && `Till ${paymentMethod.formatted}`}
                   {paymentMethod.type === 'phone' && paymentMethod.formatted}
-                  {paymentMethod.type === 'paybill' && `Paybill ${paymentMethod.formatted}`}
                 </span>
               </div>
-              {paymentMethod.type === 'paybill' && paymentMethod.accountNumber && (
-                <div className="flex justify-between text-gray-300">
-                  <span>Account:</span>
-                  <span>{paymentMethod.accountNumber}</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -274,8 +266,6 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
             amount={currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : formData.amount}
             phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
             tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
-            paybillNumber={paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined}
-            paybillAccount={paymentMethod.type === 'paybill' ? paymentMethod.accountNumber : undefined}
             accountName={formData.accountName}
             currency={formData.currency}
             returnAddress={address || ''}
