@@ -15,6 +15,7 @@ import { SimpleOffRampFlow } from "./components/SimpleOffRampFlow";
 import { SpendUSDCFlow } from "./components/SpendUSDCFlow";
 import { UserProfile } from "./components/UserProfile";
 import { WalletDebug } from "./components/WalletDebug";
+import { MobileWalletHandler } from "./components/MobileWalletHandler";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
 import { getClientInfo } from "@/lib/sdk-actions";
 import Image from 'next/image';
@@ -237,15 +238,25 @@ export default function App() {
   return (
     <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme">
       {/* Main heading outside container */}
-      <div className="w-full text-center py-6">
-        <div className="flex items-center justify-center space-x-3 mb-2">
-          <Image 
-            src="/minisend-logo.png" 
-            alt="Minisend" 
-            width={40}
-            height={40}
-          />
-          <h1 className="text-2xl font-bold text-white">Minisend</h1>
+      <div className="w-full py-6 px-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-3">
+            <Image 
+              src="/minisend-logo.png" 
+              alt="Minisend" 
+              width={40}
+              height={40}
+            />
+            <h1 className="text-2xl font-bold text-white">Minisend</h1>
+          </div>
+          
+          {/* Basename display in top right */}
+          <div className="flex items-center">
+            <MobileWalletHandler 
+              showBalance={true}
+              className=""
+            />
+          </div>
         </div>
       </div>
              

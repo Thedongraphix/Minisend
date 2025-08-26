@@ -224,14 +224,13 @@ type HomeProps = {
 };
 
 export function Home({ setActiveTab }: HomeProps) {
-  const { isConnected } = useAccount();
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
     setMounted(true);
   }, []);
   
-  // Prevent hydration mismatch by not rendering wallet-dependent content on server
+  // Prevent hydration mismatch by not rendering content on server
   if (!mounted) {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -242,7 +241,6 @@ export function Home({ setActiveTab }: HomeProps) {
             </p>
               
             <div className="space-y-3">
-              <div className="text-gray-400 text-sm">Connect your wallet to get started</div>
               <div className="flex justify-center">
                 <div className="animate-pulse bg-gray-700 h-12 w-32 rounded-lg"></div>
               </div>
@@ -268,50 +266,36 @@ export function Home({ setActiveTab }: HomeProps) {
             Convert USDC to mobile money. Send to M-Pesa and banks in Kenya & Nigeria.
           </p>
             
+          {/* Action Buttons - Show immediately */}
           <div className="space-y-3">
-            <div className="text-gray-400 text-sm">Connect your wallet to get started</div>
-            
-            {/* Enhanced Mobile Wallet Handler */}
-            <MobileWalletHandler 
-              showBalance={true}
-              className="w-full"
-            />
-            
-            {/* Action Buttons - Show when connected */}
-            {isConnected && (
-              <div className="space-y-3">
-                <Button
-                  onClick={() => setActiveTab("offramp")}
-                  variant="primary"
-                  size="large"
-                  fullWidth
-                  roundedFull
-                >
-                  Start Offramp
-                </Button>
-                <Button
-                  onClick={() => setActiveTab("spend")}
-                  variant="secondary"
-                  size="large"
-                  fullWidth
-                  roundedFull
-                >
-                  Spend USDC
-                </Button>
-              </div>
-            )}
+            <Button
+              onClick={() => setActiveTab("offramp")}
+              variant="primary"
+              size="large"
+              fullWidth
+              roundedFull
+            >
+              Start Offramp
+            </Button>
+            <Button
+              onClick={() => setActiveTab("spend")}
+              variant="secondary"
+              size="large"
+              fullWidth
+              roundedFull
+            >
+              Spend USDC
+            </Button>
           </div>
         </div>
       </Card>
       
-      {!isConnected && (
-        <div className="text-center">
-          <div className="flex justify-center space-x-4 text-xs text-gray-500">
-            <span>🇰🇪 Kenya</span>
-            <span>🇳🇬 Nigeria</span>
-          </div>
+      <div className="text-center">
+        <div className="flex justify-center space-x-4 text-xs text-gray-500">
+          <span>🇰🇪 Kenya</span>
+          <span>🇳🇬 Nigeria</span>
         </div>
-      )}
+      </div>
     </div>
   );
 }
