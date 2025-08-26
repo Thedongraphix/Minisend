@@ -1,8 +1,6 @@
 "use client";
 
 import { type ReactNode, useEffect, useState } from "react";
-import { useAccount } from 'wagmi';
-import { MobileWalletHandler } from "./MobileWalletHandler";
 
 type ButtonProps = {
   children: ReactNode;
