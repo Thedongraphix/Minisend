@@ -240,21 +240,22 @@ export default function App() {
       {/* Main heading outside container */}
       <div className="w-full py-6 px-4">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
             <Image 
               src="/minisend-logo.png" 
               alt="Minisend" 
               width={40}
               height={40}
+              className="flex-shrink-0"
             />
-            <h1 className="text-2xl font-bold text-white">Minisend</h1>
+            <h1 className="text-2xl font-bold text-white truncate">Minisend</h1>
           </div>
           
-          {/* Basename display in top right */}
-          <div className="flex items-center">
+          {/* Basename display in top right - smaller on mobile */}
+          <div className="flex items-center flex-shrink-0 ml-2">
             <MobileWalletHandler 
-              showBalance={true}
-              className=""
+              showBalance={false}
+              className="scale-75 sm:scale-100"
             />
           </div>
         </div>
