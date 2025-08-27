@@ -1,3 +1,19 @@
+import posthog from 'posthog-js';
+
+// Initialize PostHog
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
+    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
+    person_profiles: 'identified_only',
+    loaded: (posthog) => {
+      if (process.env.NODE_ENV === 'development') posthog.debug();
+    },
+    capture_pageview: false, // We'll handle pageviews manually
+    capture_pageleave: true,
+    disable_session_recording: false,
+  });
+}
+
 // Types for analytics events
 interface AnalyticsEvent {
   event: string;
@@ -107,7 +123,32 @@ export function trackEvent(event: string, properties?: Record<string, unknown>):
 
   analyticsEvents.push(analyticsEvent);
   
-  // Log for debugging (in production, send to analytics service)
+  // Send to PostHog
+  if (typeof window !== 'undefined' && posthog) {
+    // Identify user if we have userId
+    if (properties?.userId && typeof properties.userId === 'string') {
+      posthog.identify(properties.userId, {
+        clientId: analyticsEvent.clientId,
+        clientFid: analyticsEvent.clientFid,
+        clientName: properties.clientName,
+        isFrameAdded: properties.isFrameAdded,
+        isCoinbaseWallet: properties.isCoinbaseWallet,
+      });
+    }
+    
+    // Track the event
+    posthog.capture(event, {
+      ...properties,
+      timestamp: analyticsEvent.timestamp,
+      // Add additional context
+      $current_url: window.location.href,
+      $referrer: document.referrer,
+      platform: 'farcaster_miniapp',
+      app: 'minisend',
+    });
+  }
+  
+  // Log for debugging
   console.log("Analytics Event:", analyticsEvent);
 
   // Update user activity
@@ -130,6 +171,13 @@ export function trackOffRampEvent(event: string, data: {
   step?: number;
   error?: string;
   success?: boolean;
+  transactionHash?: string;
+  orderId?: string;
+  phoneNumber?: string;
+  accountNumber?: string;
+  bankCode?: string;
+  rate?: number;
+  usdcAmount?: number;
 }, context?: { user?: { fid?: number }; client?: { clientFid?: number; added?: boolean } }): void {
   let userId: string | undefined;
   let clientId: number | undefined;
@@ -147,6 +195,9 @@ export function trackOffRampEvent(event: string, data: {
     clientId,
     userFid,
     isKenyaApp: true,
+    // Sanitize sensitive data
+    phoneNumber: data.phoneNumber ? data.phoneNumber.substring(0, 4) + '****' + data.phoneNumber.substring(data.phoneNumber.length - 4) : undefined,
+    accountNumber: data.accountNumber ? '****' + data.accountNumber.substring(data.accountNumber.length - 4) : undefined,
   });
 }
 
@@ -207,6 +258,113 @@ export function getAnalyticsSummary() {
     sessions: Array.from(userSessions.values()),
   };
 }
+
+/**
+ * Track swap-related events
+ */
+export function trackSwapEvent(event: string, data: {
+  fromToken?: string;
+  toToken?: string;
+  fromAmount?: string;
+  toAmount?: string;
+  error?: string;
+  success?: boolean;
+  transactionHash?: string;
+}, context?: { user?: { fid?: number }; client?: { clientFid?: number; added?: boolean } }): void {
+  let userId: string | undefined;
+  let clientId: number | undefined;
+  let userFid: number | undefined;
+
+  if (context?.user?.fid) {
+    userId = `fid:${context.user.fid}`;
+    clientId = context.client?.clientFid;
+    userFid = context.user.fid;
+  }
+
+  trackEvent(`swap_${event}`, {
+    ...data,
+    userId,
+    clientId,
+    userFid,
+    platform: 'base_network',
+  });
+}
+
+/**
+ * Track wallet connection events
+ */
+export function trackWalletEvent(event: string, data: {
+  walletType?: string;
+  address?: string;
+  error?: string;
+  success?: boolean;
+}, context?: { user?: { fid?: number }; client?: { clientFid?: number; added?: boolean } }): void {
+  let userId: string | undefined;
+  let clientId: number | undefined;
+  let userFid: number | undefined;
+
+  if (context?.user?.fid) {
+    userId = `fid:${context.user.fid}`;
+    clientId = context.client?.clientFid;
+    userFid = context.user.fid;
+  }
+
+  trackEvent(`wallet_${event}`, {
+    ...data,
+    userId,
+    clientId,
+    userFid,
+    // Sanitize address to first 6 and last 4 chars
+    address: data.address ? `${data.address.substring(0, 6)}...${data.address.substring(data.address.length - 4)}` : undefined,
+  });
+}
+
+/**
+ * Track API performance events
+ */
+export function trackAPIEvent(event: string, data: {
+  endpoint?: string;
+  method?: string;
+  statusCode?: number;
+  responseTime?: number;
+  error?: string;
+  success?: boolean;
+}, context?: { user?: { fid?: number }; client?: { clientFid?: number; added?: boolean } }): void {
+  let userId: string | undefined;
+  let clientId: number | undefined;
+  let userFid: number | undefined;
+
+  if (context?.user?.fid) {
+    userId = `fid:${context.user.fid}`;
+    clientId = context.client?.clientFid;
+    userFid = context.user.fid;
+  }
+
+  trackEvent(`api_${event}`, {
+    ...data,
+    userId,
+    clientId,
+    userFid,
+  });
+}
+
+/**
+ * Track page views manually
+ */
+export function trackPageView(page: string, properties?: Record<string, unknown>): void {
+  if (typeof window !== 'undefined' && posthog) {
+    posthog.capture('$pageview', {
+      $current_url: window.location.href,
+      page,
+      ...properties,
+    });
+  }
+}
+
+/**
+ * Export PostHog instance for advanced usage
+ */
+export { posthog };
 
 /**
  * Export data for external analytics services
