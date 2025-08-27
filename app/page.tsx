@@ -13,6 +13,7 @@ import { Home } from "./components/DemoComponents";
 import { Features } from "./components/DemoComponents";
 import { SimpleOffRampFlow } from "./components/SimpleOffRampFlow";
 import { SpendUSDCFlow } from "./components/SpendUSDCFlow";
+import { SwapComponent } from "./components/SwapComponent";
 import { UserProfile } from "./components/UserProfile";
 import { WalletDebug } from "./components/WalletDebug";
 import { MobileWalletHandler } from "./components/MobileWalletHandler";
@@ -251,12 +252,20 @@ export default function App() {
             <h1 className="text-2xl font-bold text-white truncate">Minisend</h1>
           </div>
           
-          {/* Basename display in top right - smaller on mobile */}
-          <div className="flex items-center flex-shrink-0 ml-2">
+          {/* Wallet and Swap buttons - smaller on mobile */}
+          <div className="flex items-center space-x-2 flex-shrink-0 ml-2 sm:ml-0 sm:mr-4">
             <MobileWalletHandler 
               showBalance={false}
               className="scale-75 sm:scale-100"
             />
+            <div className="scale-75 sm:scale-100">
+              <button
+                onClick={() => setActiveTab("swap")}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+              >
+                Swap
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -301,6 +310,7 @@ export default function App() {
           {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
           {activeTab === "offramp" && <SimpleOffRampFlow setActiveTab={setActiveTab} />}
           {activeTab === "spend" && <SpendUSDCFlow setActiveTab={setActiveTab} />}
+          {activeTab === "swap" && <SwapComponent setActiveTab={setActiveTab} />}
           {activeTab === "profile" && <UserProfile setActiveTab={setActiveTab} />}
         </main>
 

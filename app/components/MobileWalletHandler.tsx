@@ -56,6 +56,7 @@ export function MobileWalletHandler({
             
             {showBalance && <EthBalance />}
           </Identity>
+          
           <WalletDropdownDisconnect />
         </WalletDropdown>
       </Wallet>
