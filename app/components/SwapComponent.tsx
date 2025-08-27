@@ -85,7 +85,7 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
           </p>
           
           <div className="w-full max-w-xs mx-auto">
-            <Swap>
+            <Swap className="[&>h3]:hidden [&>*>h3]:hidden">
               <div className="space-y-2">
                 <SwapAmountInput
                   label="From"
