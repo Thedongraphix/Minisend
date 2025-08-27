@@ -44,15 +44,15 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
 
   if (!address) {
     return (
-      <div className="space-y-6 animate-fade-in">
-        <div className="glass-effect rounded-3xl card-shadow overflow-hidden">
-          <div className="p-8 text-center">
-            <h3 className="text-2xl font-bold text-white mb-4">Swap Tokens</h3>
-            <p className="text-gray-300 mb-6">
-              Connect your wallet to swap ETH to USDC and get ready for seamless payments.
+      <div className="space-y-4 animate-fade-in">
+        <div className="glass-effect rounded-2xl card-shadow overflow-hidden">
+          <div className="p-6 text-center">
+            <h3 className="text-xl font-bold text-white mb-2">Swap Tokens</h3>
+            <p className="text-gray-400 mb-4 text-sm">
+              Connect your wallet to swap ETH to USDC
             </p>
             
-            <div className="mb-6">
+            <div className="mb-4">
               <Wallet>
                 <ConnectWallet>
                   <Avatar className="h-6 w-6" />
@@ -76,37 +76,33 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="glass-effect rounded-3xl card-shadow overflow-hidden">
-        <div className="p-8">
-          <h3 className="text-2xl font-bold text-white mb-2 text-center">Swap Tokens</h3>
-          <p className="text-gray-300 mb-6 text-center text-sm">
+    <div className="space-y-4 animate-fade-in">
+      <div className="glass-effect rounded-2xl card-shadow overflow-hidden">
+        <div className="p-6">
+          <h3 className="text-xl font-bold text-white mb-1 text-center">Swap Tokens</h3>
+          <p className="text-gray-400 mb-4 text-center text-xs">
             Convert ETH to USDC for mobile money payments
           </p>
           
-          <div className="w-full max-w-md mx-auto">
+          <div className="w-full max-w-sm mx-auto">
             <Swap>
-              <div className="space-y-6">
-                <div className="relative mb-4">
-                  <SwapAmountInput
-                    label="From"
-                    swappableTokens={swappableTokens}
-                    token={ETHToken}
-                    type="from"
-                  />
-                </div>
-                <div className="flex justify-center py-4 relative z-20">
+              <div className="space-y-3">
+                <SwapAmountInput
+                  label="From"
+                  swappableTokens={swappableTokens}
+                  token={ETHToken}
+                  type="from"
+                />
+                <div className="flex justify-center py-1">
                   <SwapToggleButton />
                 </div>
-                <div className="relative mt-4">
-                  <SwapAmountInput
-                    label="To"
-                    swappableTokens={swappableTokens}
-                    token={USDCToken}
-                    type="to"
-                  />
-                </div>
-                <div className="pt-6 relative z-10">
+                <SwapAmountInput
+                  label="To"
+                  swappableTokens={swappableTokens}
+                  token={USDCToken}
+                  type="to"
+                />
+                <div className="pt-3">
                   <SwapButton />
                 </div>
                 <SwapMessage />
@@ -115,14 +111,14 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
             </Swap>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-700 flex gap-3">
+          <div className="mt-4 pt-3 border-t border-gray-700 flex gap-2">
             <Button 
               variant="outlined" 
               onClick={() => setActiveTab("home")} 
               fullWidth 
               size="medium"
             >
-              Back to Home
+              Back
             </Button>
             <Button 
               variant="secondary" 
@@ -130,7 +126,7 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
               fullWidth 
               size="medium"
             >
-              Cash Out USDC
+              Cash Out
             </Button>
           </div>
         </div>
