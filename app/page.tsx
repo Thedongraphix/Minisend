@@ -184,13 +184,44 @@ export default function App() {
       userFid: context.user.fid,
       tab: activeTab,
       clientName: clientInfo.clientName,
+      timestamp: Date.now(),
     });
   }, [mounted, activeTab, context]);
 
+  // Track frame addition attempts
   const handleAddFrame = useCallback(async () => {
-    const frameAdded = await addFrame();
-    setFrameAdded(Boolean(frameAdded));
-  }, [addFrame]);
+    const clientInfo = getClientInfo(context || { client: {} });
+    const userId = context?.user?.fid ? `fid:${context.user.fid}` : undefined;
+    
+    try {
+      trackEvent("frame_add_attempt", {
+        userId,
+        clientId: context?.client?.clientFid,
+        userFid: context?.user?.fid,
+        clientName: clientInfo.clientName,
+      });
+      
+      const frameAdded = await addFrame();
+      setFrameAdded(Boolean(frameAdded));
+      
+      trackEvent("frame_add_result", {
+        userId,
+        clientId: context?.client?.clientFid,
+        userFid: context?.user?.fid,
+        success: Boolean(frameAdded),
+        clientName: clientInfo.clientName,
+      });
+    } catch (error) {
+      trackEvent("frame_add_error", {
+        userId,
+        clientId: context?.client?.clientFid,
+        userFid: context?.user?.fid,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        clientName: clientInfo.clientName,
+      });
+    }
+  }, [addFrame, context]);
+
 
   const saveFrameButton = useMemo(() => {
     if (!mounted) return null;
