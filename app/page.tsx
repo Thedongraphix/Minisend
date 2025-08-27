@@ -252,20 +252,12 @@ export default function App() {
             <h1 className="text-2xl font-bold text-white truncate">Minisend</h1>
           </div>
           
-          {/* Wallet and Swap buttons - smaller on mobile */}
-          <div className="flex items-center space-x-2 flex-shrink-0 ml-2 sm:ml-0 sm:mr-4">
+          {/* Basename display in top right - smaller on mobile */}
+          <div className="flex items-center flex-shrink-0 ml-2">
             <MobileWalletHandler 
               showBalance={false}
               className="scale-75 sm:scale-100"
             />
-            <div className="scale-75 sm:scale-100">
-              <button
-                onClick={() => setActiveTab("swap")}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
-              >
-                Swap
-              </button>
-            </div>
           </div>
         </div>
       </div>

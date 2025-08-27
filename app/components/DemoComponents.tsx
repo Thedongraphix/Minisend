@@ -276,8 +276,17 @@ export function Home({ setActiveTab }: HomeProps) {
               Start Offramp
             </Button>
             <Button
-              onClick={() => setActiveTab("spend")}
+              onClick={() => setActiveTab("swap")}
               variant="secondary"
+              size="large"
+              fullWidth
+              roundedFull
+            >
+              Swap ETH to USDC
+            </Button>
+            <Button
+              onClick={() => setActiveTab("spend")}
+              variant="outlined"
               size="large"
               fullWidth
               roundedFull
