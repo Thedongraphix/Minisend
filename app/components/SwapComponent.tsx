@@ -1,6 +1,7 @@
 "use client";
 
 import { useAccount } from 'wagmi';
+import { useEffect } from 'react';
 import {
   Swap,
   SwapAmountInput,
@@ -13,13 +14,30 @@ import { Avatar, Name } from '@coinbase/onchainkit/identity';
 import { Wallet, ConnectWallet } from '@coinbase/onchainkit/wallet';
 import type { Token } from '@coinbase/onchainkit/token';
 import { Button } from './DemoComponents';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { trackSwapEvent, trackWalletEvent } from '@/lib/analytics';
 
 interface SwapComponentProps {
   setActiveTab: (tab: string) => void;
 }
 
 export function SwapComponent({ setActiveTab }: SwapComponentProps) {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
+  const { context } = useMiniKit();
+
+  // Track component mount and wallet connection state
+  useEffect(() => {
+    trackSwapEvent('component_mounted', {
+      success: true,
+    }, context || undefined);
+
+    if (isConnected && address) {
+      trackWalletEvent('wallet_connected_swap', {
+        address,
+        success: true,
+      }, context || undefined);
+    }
+  }, [address, isConnected, context]);
 
   const ETHToken: Token = {
     address: "",
