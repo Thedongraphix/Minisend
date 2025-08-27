@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { useAccount } from 'wagmi';
 import { SimpleUSDCPayment } from './SimpleUSDCPayment';
@@ -8,6 +8,7 @@ import { DirectUSDCBalance } from './DirectUSDCBalance';
 import { MobileWalletHandler } from './MobileWalletHandler';
 import { Button } from './DemoComponents';
 import Image from 'next/image';
+import { trackOffRampEvent, trackAPIEvent, trackWalletEvent } from '@/lib/analytics';
 
 interface SimpleOffRampFlowProps {
   setActiveTab: (tab: string) => void;
@@ -23,7 +24,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
     setMounted(true);
   }, []);
 
-  // Log environment information for debugging
+  // Log environment information for debugging and track component mount
   useEffect(() => {
     if (mounted && context) {
       console.log('MiniKit Environment:', {
@@ -32,6 +33,20 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
         address,
         isConnected
       });
+      
+      // Track offramp flow start
+      trackOffRampEvent('flow_started', {
+        step: 1,
+        success: true,
+      }, context || undefined);
+      
+      // Track wallet connection status
+      if (isConnected && address) {
+        trackWalletEvent('wallet_connected_offramp', {
+          address,
+          success: true,
+        }, context || undefined);
+      }
     }
   }, [mounted, context, address, isConnected]);
 
@@ -59,7 +74,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
   });
 
   // Fetch exchange rates (using 1 USDC to get the base rate)
-  const fetchRate = async (fiatAmount: string, currency: string) => {
+  const fetchRate = useCallback(async (fiatAmount: string, currency: string) => {
     if (!fiatAmount || parseFloat(fiatAmount) <= 0) {
       setCurrentRate(null);
       return;
@@ -67,26 +82,77 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
     
     setRateLoading(true);
     setRateError(null);
+    const startTime = Date.now();
+    
+    // Track rate fetch attempt
+    trackAPIEvent('rate_fetch_attempt', {
+      endpoint: '/api/paycrest/rates',
+      method: 'GET',
+    }, context || undefined);
     
     try {
       // Use 1 USDC to get the base exchange rate
       const response = await fetch(`/api/paycrest/rates/USDC/1/${currency}`);
       const data = await response.json();
+      const responseTime = Date.now() - startTime;
       
       if (data.success) {
         setCurrentRate(data.rate);
+        
+        // Track successful rate fetch
+        trackAPIEvent('rate_fetch_success', {
+          endpoint: '/api/paycrest/rates',
+          method: 'GET',
+          responseTime,
+          statusCode: response.status,
+          success: true,
+        }, context || undefined);
+        
+        trackOffRampEvent('rate_fetched', {
+          currency,
+          rate: data.rate,
+          amount: parseFloat(fiatAmount),
+          usdcAmount: parseFloat(fiatAmount) / data.rate,
+          success: true,
+        }, context || undefined);
       } else {
         throw new Error(data.error || 'Failed to fetch rate');
       }
     } catch (error) {
+      const responseTime = Date.now() - startTime;
       console.error('Rate fetch error:', error);
       setRateError(error instanceof Error ? error.message : 'Failed to fetch rate');
+      
+      // Track rate fetch error
+      trackAPIEvent('rate_fetch_error', {
+        endpoint: '/api/paycrest/rates',
+        method: 'GET',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        responseTime,
+        success: false,
+      }, context || undefined);
+      
+      trackOffRampEvent('rate_fetch_error', {
+        currency,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        success: false,
+      }, context || undefined);
+      
       // Set fallback rates
-      setCurrentRate(currency === 'KES' ? 150.5 : 1650.0);
+      const fallbackRate = currency === 'KES' ? 150.5 : 1650.0;
+      setCurrentRate(fallbackRate);
+      
+      trackOffRampEvent('fallback_rate_used', {
+        currency,
+        rate: fallbackRate,
+        amount: parseFloat(fiatAmount),
+        usdcAmount: parseFloat(fiatAmount) / fallbackRate,
+        success: true,
+      }, context || undefined);
     } finally {
       setRateLoading(false);
     }
-  };
+  }, [context]);
 
   // Fetch institutions for NGN
   const fetchInstitutions = async (currency: string) => {
@@ -170,7 +236,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
     }, 500); // Debounce for 500ms
 
     return () => clearTimeout(debounceTimer);
-  }, [formData.amount, formData.currency]);
+  }, [formData.amount, formData.currency, fetchRate]); // Fixed dependency
 
   // Fetch institutions when currency changes
   useEffect(() => {
@@ -190,7 +256,22 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
       accountName: ''
     }));
     setAccountVerified(false);
-  }, [formData.currency]);
+    
+    // Track currency selection
+    trackOffRampEvent('currency_selected', {
+      currency: formData.currency,
+      step: 1,
+    }, context || undefined);
+  }, [formData.currency, context]);
+
+  // Track step changes
+  useEffect(() => {
+    trackOffRampEvent('step_changed', {
+      step: step === 'form' ? 1 : step === 'payment' ? 2 : 3,
+      currency: formData.currency,
+      amount: parseFloat(formData.amount) || 0,
+    }, context || undefined);
+  }, [step, formData.currency, formData.amount, context]);
 
   // Show wallet connection if not connected or not mounted
   if (!mounted || !isConnected) {
@@ -462,7 +543,19 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
           )}
 
           <button
-            onClick={() => setStep('payment')}
+            onClick={() => {
+              // Track form completion
+              trackOffRampEvent('form_completed', {
+                currency: formData.currency,
+                amount: parseFloat(formData.amount),
+                usdcAmount: currentRate ? parseFloat(formData.amount) / currentRate : undefined,
+                rate: currentRate || undefined,
+                step: 1,
+                success: true,
+              }, context || undefined);
+              
+              setStep('payment');
+            }}
             disabled={
               !formData.amount || 
               !formData.accountName ||
@@ -507,10 +600,35 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
             currency={formData.currency}
             returnAddress={address || ''}
             rate={currentRate} // Pass the fetched rate
-            onSuccess={() => setStep('success')}
+            onSuccess={() => {
+              // Track payment success
+              trackOffRampEvent('payment_completed', {
+                currency: formData.currency,
+                amount: parseFloat(formData.amount),
+                usdcAmount: currentRate ? parseFloat(formData.amount) / currentRate : undefined,
+                rate: currentRate || undefined,
+                phoneNumber: formData.phoneNumber,
+                accountNumber: formData.accountNumber,
+                bankCode: formData.bankCode,
+                step: 2,
+                success: true,
+              }, context || undefined);
+              
+              setStep('success');
+            }}
             onError={(error) => {
               console.error('Payment error:', error);
-              // Could show error message here
+              
+              // Track payment error
+              trackOffRampEvent('payment_error', {
+                currency: formData.currency,
+                amount: parseFloat(formData.amount),
+                usdcAmount: currentRate ? parseFloat(formData.amount) / currentRate : undefined,
+                rate: currentRate || undefined,
+                error: error,
+                step: 2,
+                success: false,
+              }, context || undefined);
             }}
           />
 
@@ -536,6 +654,23 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
           <div className="space-y-4">
             <button
               onClick={() => {
+                // Track flow completion
+                trackOffRampEvent('flow_completed', {
+                  currency: formData.currency,
+                  amount: parseFloat(formData.amount),
+                  usdcAmount: currentRate ? parseFloat(formData.amount) / currentRate : undefined,
+                  rate: currentRate || undefined,
+                  step: 3,
+                  success: true,
+                }, context || undefined);
+                
+                // Track repeat action intent
+                trackOffRampEvent('repeat_payment_clicked', {
+                  currency: formData.currency,
+                  amount: parseFloat(formData.amount),
+                  success: true,
+                }, context || undefined);
+                
                 setStep('form');
                 setFormData({ amount: '', phoneNumber: '', accountNumber: '', bankCode: '', accountName: '', currency: 'KES' });
                 setCurrentRate(null);
