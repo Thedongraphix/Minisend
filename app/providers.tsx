@@ -3,6 +3,7 @@
 import { type ReactNode } from "react";
 import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
 import { base } from "viem/chains";
+import { PostHogProvider } from "@/lib/posthog-provider";
 
 export function Providers(props: { children: ReactNode }) {
   return (
@@ -23,7 +24,9 @@ export function Providers(props: { children: ReactNode }) {
         },
       }}
     >
-      {props.children}
+      <PostHogProvider>
+        {props.children}
+      </PostHogProvider>
     </MiniKitProvider>
   );
 }
