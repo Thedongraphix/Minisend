@@ -247,7 +247,7 @@ export function Home({ setActiveTab }: HomeProps) {
                 <span className="text-sm font-medium">Maintenance Notice</span>
               </div>
               <p className="text-amber-300 text-sm mt-2 text-center">
-                We're temporarily under short maintenance and will be back soon. Thank you for your patience!
+                We&apos;re temporarily under short maintenance and will be back soon. Thank you for your patience!
               </p>
             </div>
               
@@ -286,7 +286,7 @@ export function Home({ setActiveTab }: HomeProps) {
               <span className="text-sm font-medium">Maintenance Notice</span>
             </div>
             <p className="text-amber-300 text-sm mt-2 text-center">
-              We're temporarily under short maintenance and will be back soon. Thank you for your patience!
+              We&apos;re temporarily under short maintenance and will be back soon. Thank you for your patience!
             </p>
           </div>
             
