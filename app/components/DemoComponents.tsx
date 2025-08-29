@@ -286,8 +286,9 @@ export function Home({ setActiveTab }: HomeProps) {
               <span className="text-sm font-medium">Maintenance Notice</span>
             </div>
             <p className="text-amber-300 text-sm mt-2 text-center">
-              We&apos;re temporarily under short maintenance and will be back soon. Thank you for your patience!
-            </p>
+              Scheduled maintenance today 11:00 PM - 10:00 AM EAT. USDC→NGN/KES withdrawals and transaction processing temporarily unavailable. All pending transactions will be processed afterwards. We apologize for any inconvenience.
+
+           </p>
           </div>
             
           {/* Action Buttons - Show immediately */}
