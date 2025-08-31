@@ -102,16 +102,16 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
             Convert ETH to USDC for mobile money payments
           </p>
           
-          <div className="w-full max-w-xs mx-auto">
+          <div className="w-full">
             <Swap className="[&>h3]:hidden [&>*>h3]:hidden">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <SwapAmountInput
                   label="From"
                   swappableTokens={swappableTokens}
                   token={ETHToken}
                   type="from"
                 />
-                <div className="flex justify-center -my-0.5">
+                <div className="flex justify-center -my-1">
                   <SwapToggleButton />
                 </div>
                 <SwapAmountInput
@@ -120,7 +120,7 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
                   token={USDCToken}
                   type="to"
                 />
-                <div className="pt-1.5">
+                <div className="pt-2">
                   <SwapButton />
                 </div>
                 <SwapMessage />
@@ -129,7 +129,7 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
             </Swap>
           </div>
 
-          <div className="mt-2 pt-1.5 border-t border-gray-700 flex gap-1.5">
+          <div className="mt-3 pt-2 border-t border-gray-700 flex gap-2">
             <Button 
               variant="outlined" 
               onClick={() => setActiveTab("home")} 
