@@ -62,15 +62,15 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
 
   if (!address) {
     return (
-      <div className="space-y-3 animate-fade-in">
-        <div className="glass-effect rounded-xl card-shadow overflow-hidden max-w-sm mx-auto">
-          <div className="p-4 text-center">
-            <h3 className="text-lg font-bold text-white mb-1">Swap Tokens</h3>
-            <p className="text-gray-400 mb-3 text-xs">
+      <div className="space-y-2 animate-fade-in">
+        <div className="glass-effect rounded-xl card-shadow overflow-hidden max-w-xs mx-auto">
+          <div className="p-3 text-center">
+            <h3 className="text-base font-bold text-white mb-1">Swap Tokens</h3>
+            <p className="text-gray-400 mb-2 text-xs">
               Connect your wallet to swap ETH to USDC
             </p>
             
-            <div className="mb-3">
+            <div className="mb-2">
               <Wallet>
                 <ConnectWallet>
                   <Avatar className="h-6 w-6" />
@@ -94,24 +94,24 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
   }
 
   return (
-    <div className="space-y-3 animate-fade-in">
-      <div className="glass-effect rounded-xl card-shadow overflow-hidden max-w-sm mx-auto">
-        <div className="p-4">
-          <h3 className="text-lg font-bold text-white mb-1 text-center">Swap Tokens</h3>
-          <p className="text-gray-400 mb-3 text-center text-xs">
+    <div className="space-y-2 animate-fade-in">
+      <div className="glass-effect rounded-xl card-shadow overflow-hidden max-w-xs mx-auto">
+        <div className="p-3">
+          <h3 className="text-base font-bold text-white mb-1 text-center">Swap Tokens</h3>
+          <p className="text-gray-400 mb-2 text-center text-xs">
             Convert ETH to USDC for mobile money payments
           </p>
           
           <div className="w-full max-w-xs mx-auto">
             <Swap className="[&>h3]:hidden [&>*>h3]:hidden">
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <SwapAmountInput
                   label="From"
                   swappableTokens={swappableTokens}
                   token={ETHToken}
                   type="from"
                 />
-                <div className="flex justify-center -my-1">
+                <div className="flex justify-center -my-0.5">
                   <SwapToggleButton />
                 </div>
                 <SwapAmountInput
@@ -120,7 +120,7 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
                   token={USDCToken}
                   type="to"
                 />
-                <div className="pt-2">
+                <div className="pt-1.5">
                   <SwapButton />
                 </div>
                 <SwapMessage />
@@ -129,7 +129,7 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
             </Swap>
           </div>
 
-          <div className="mt-3 pt-2 border-t border-gray-700 flex gap-2">
+          <div className="mt-2 pt-1.5 border-t border-gray-700 flex gap-1.5">
             <Button 
               variant="outlined" 
               onClick={() => setActiveTab("home")} 
