@@ -263,7 +263,7 @@ export function Home({ setActiveTab }: HomeProps) {
             Convert USDC to mobile money. Send to M-Pesa and banks in Kenya & Nigeria.
           </p>
 
-          {/* Maintenance Notice 
+          {/* Maintenance Notice */}
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-4">
             <div className="flex items-center justify-center space-x-2 text-amber-400">
               <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -272,12 +272,12 @@ export function Home({ setActiveTab }: HomeProps) {
               <span className="text-sm font-medium">Maintenance Notice</span>
             </div>
             <p className="text-amber-300 text-sm mt-2 text-center">
-              We have a scheduled maintenance from today 5:00 PM - tomorrow 10:00 AM EAT. 
+              We have a scheduled maintenance from today 8:00 am - 3:00 pm EAT. 
 USDC→NGN/KES withdrawals and transaction processing temporarily unavailable.We apologize for any inconvenience.
 
            </p>
           </div>
-          */}
+          
             
           {/* Action Buttons - Show immediately */}
           <div className="space-y-3">
