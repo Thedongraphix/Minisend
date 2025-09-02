@@ -196,10 +196,6 @@ export async function estimateTransactionCost(): Promise<{
   try {
     const gasPrice = await publicClient.getGasPrice()
     
-    // Rough estimate: USDC transfer costs ~21,000 gas
-    const estimatedGas = 21000n
-    const _totalCost = gasPrice * estimatedGas
-    
     // Convert to USD (very rough estimate, would need ETH/USD price)
     // For now, assume $0.50 per transaction as conservative estimate
     const estimatedCostUSD = 0.5
