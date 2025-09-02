@@ -20,7 +20,7 @@ export async function GET(
       );
     }
 
-    console.log(`🔍 Checking PayCrest order status for ${orderId}`);
+    console.log(`🔍 Checking PayCrest order status`);
 
     // Get order status from PayCrest API
     const paycrestApiKey = process.env.PAYCREST_API_KEY;
@@ -93,7 +93,7 @@ export async function GET(
       }
     };
 
-    console.log(`✅ Order status response for ${orderId}:`, {
+    console.log(`✅ Order status response:`, {
       status: order.status,
       isValidated: statusResponse.order.isValidated,
       isSettled: statusResponse.order.isSettled,
@@ -136,7 +136,7 @@ export async function GET(
 
           // Create settlement record if order is completed (validated = funds delivered, settled = blockchain complete)
           if (['validated', 'settled'].includes(order.status)) {
-            console.log(`💰 Creating settlement record for completed order ${orderId}`)
+            console.log(`💰 Creating settlement record for completed order`)
             
             try {
               await DatabaseService.createSettlement({
@@ -147,7 +147,7 @@ export async function GET(
                 settlement_method: dbOrder.carrier === 'MPESA' ? 'M-PESA' : 'Mobile Money',
                 settled_at: new Date().toISOString()
               })
-              console.log(`✅ Settlement record created for ${orderId}`)
+              console.log(`✅ Settlement record created`)
             } catch (settlementError) {
               console.error(`❌ Failed to create settlement for ${orderId}:`, settlementError)
             }
@@ -172,7 +172,7 @@ export async function GET(
           )
         }
       } else {
-        console.log(`⚠️ Order ${orderId} not found in database`)
+        console.log(`⚠️ Order not found in database`)
       }
 
     } catch (dbError) {

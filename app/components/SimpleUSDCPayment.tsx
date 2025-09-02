@@ -50,13 +50,11 @@ export function SimpleUSDCPayment({
 
   // Optimized polling that works alongside webhooks for maximum speed
   const startPolling = useCallback((orderId: string) => {
-    console.log('🔍 Starting hybrid polling + webhook tracking for order:', orderId);
     let attempts = 0;
     const maxAttempts = 60; // Reduced to 5 minutes since webhooks handle most updates
     
     const poll = async () => {
       try {
-        console.log(`📡 Polling attempt ${attempts + 1}/${maxAttempts} for order:`, orderId);
         const response = await fetch(`/api/paycrest/status/${orderId}`);
         
         if (!response.ok) {
@@ -71,34 +69,24 @@ export function SimpleUSDCPayment({
         const result = await response.json();
         const order = result.order;
         
-        console.log('📊 Payment status:', { 
-          orderId, 
-          status: order?.status, 
-          attempt: attempts + 1
-        });
         
         // Handle specific status updates per PayCrest docs
         switch (order?.status) {
           case 'pending':
-            console.log('Order is pending provider assignment');
             break;
             
           case 'validated':
-            console.log('Funds have been sent to recipient\'s bank/mobile network (value transfer confirmed)');
             // Show delivery confirmation - this is when M-Pesa actually gets the money
             setStatus('success');
             const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
             setStatusMessage(`${currency} validated and delivered to your ${deliveryMethod}`);
-            console.log(`🎯 Fast delivery confirmed via validated status`);
             return;
             
           case 'settled':
-            console.log('Order has been settled on blockchain');
             // Show delivery confirmation for settled status as well
             setStatus('success');
             const settlementMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
             setStatusMessage(`${currency} settled and delivered to your ${settlementMethod}`);
-            console.log(`🎯 Fast delivery confirmed via settled status`);
             return;
         }
         
@@ -273,7 +261,6 @@ export function SimpleUSDCPayment({
         // Start fallback success after 30 seconds if transaction doesn't complete normally
         if (!fallbackMonitoringStarted && paycrestOrder?.id) {
           setFallbackMonitoringStarted(true);
-          console.log('⏰ Starting fallback success timer for order:', paycrestOrder.id);
           setTimeout(() => {
             console.log('🔄 Fallback: Assuming transaction completed after 30s delay');
             setStatus('success');
@@ -299,7 +286,6 @@ export function SimpleUSDCPayment({
         
         // Start background polling to track delivery and handle failures
         if (paycrestOrder?.id) {
-          console.log('🚀 Starting background polling for order:', paycrestOrder.id);
           startPolling(paycrestOrder.id);
         }
         
@@ -392,7 +378,6 @@ export function SimpleUSDCPayment({
               
               // Start background polling to track delivery and handle failures
               if (paycrestOrder?.id) {
-                console.log('🚀 Starting background polling for order:', paycrestOrder.id);
                 startPolling(paycrestOrder.id);
               }
               

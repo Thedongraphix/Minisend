@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
         formattedIdentifier = formatPhoneNumber(phoneNumber);
         institution = 'SAFAKEPC'; // M-PESA provider ID from PayCrest API
         paymentType = 'phone';
-        console.log('📱 Using phone number:', { phoneNumber, formattedIdentifier, institution });
+        console.log('📱 Using phone number for transaction');
       } else {
         throw new Error('Either phone number or till number is required for KES');
       }
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
       // Ensure user exists in database
       let user = await DatabaseService.getUserByWallet(returnAddress)
       if (!user) {
-        console.log('👤 Creating new user for wallet:', returnAddress)
+        console.log('👤 Creating new user')
         user = await DatabaseService.createUser(returnAddress, formattedIdentifier)
         console.log('✅ User created:', user.id)
       } else {
@@ -260,7 +260,7 @@ export async function POST(request: NextRequest) {
         institutionCode: institutionCode
       })
 
-      console.log('📊 Order saved to database:', dbOrder.id)
+      console.log('📊 Order saved to database successfully')
 
       // Log analytics event
       await DatabaseService.logAnalyticsEvent(

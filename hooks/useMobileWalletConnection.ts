@@ -78,7 +78,7 @@ export function useMobileWalletConnection() {
   // Clear errors on successful connection
   useEffect(() => {
     if (isConnected) {
-      console.log('🎉 Wallet connected successfully:', address);
+      console.log('🎉 Wallet connected successfully');
       setLastError(null);
     }
   }, [isConnected, address]);

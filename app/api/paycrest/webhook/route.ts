@@ -111,11 +111,11 @@ async function handleWebhookEvent(event: PaycrestWebhookEvent) {
     const dbOrder = await DatabaseService.getOrderByPaycrestId(orderId);
     
     if (!dbOrder) {
-      console.log(`⚠️ Order ${orderId} not found in database - this may be from another system`);
+      console.log(`⚠️ Order not found in database - this may be from another system`);
       return;
     }
 
-    console.log(`🔄 Processing webhook for order ${orderId}: ${eventType}`);
+    console.log(`🔄 Processing webhook: ${eventType}`);
 
     // Map PayCrest webhook events to our order statuses
     let ourStatus = dbOrder.status;
@@ -126,13 +126,13 @@ async function handleWebhookEvent(event: PaycrestWebhookEvent) {
       case 'order.initiated':
         // Order initiated via API (before Gateway creation) - per apiguide.md
         ourStatus = 'pending';
-        console.log(`📝 Order ${orderId} initiated via API`);
+        console.log(`📝 Order initiated via API`);
         break;
         
       case 'order.pending':
         // Order awaiting provider assignment - per apiguide.md
         ourStatus = 'processing';
-        console.log(`⏳ Order ${orderId} awaiting provider assignment`);
+        console.log(`⏳ Order awaiting provider assignment`);
         break;
         
       case 'order.validated':
@@ -140,30 +140,30 @@ async function handleWebhookEvent(event: PaycrestWebhookEvent) {
         // THIS IS WHEN THE USER SHOULD CONSIDER THE TRANSACTION SUCCESSFUL
         ourStatus = 'completed';
         shouldCreateSettlement = true;
-        console.log(`✅ Order ${orderId} validated and ready for settlement`);
+        console.log(`✅ Order validated and ready for settlement`);
         break;
         
       case 'order.settled':
         // Order settled on blockchain - per apiguide.md
         ourStatus = 'completed';
         shouldCreateSettlement = true;
-        console.log(`🏦 Order ${orderId} settled on blockchain`);
+        console.log(`🏦 Order settled on blockchain`);
         break;
         
       case 'order.refunded':
         // Order refunded to sender - per apiguide.md
         ourStatus = 'failed';
-        console.log(`🔄 Order ${orderId} refunded to sender`);
+        console.log(`🔄 Order refunded to sender`);
         break;
         
       case 'order.expired':
         // Order expired because no transfer was made to the receive address within the time limit - per apiguide.md
         ourStatus = 'failed';
-        console.log(`⏰ Order ${orderId} expired - no transfer made within time limit`);
+        console.log(`⏰ Order expired - no transfer made within time limit`);
         break;
         
       default:
-        console.log(`⚠️ Unknown webhook event type: ${event.event} for order ${orderId}`);
+        console.log(`⚠️ Unknown webhook event type: ${event.event}`);
         return;
     }
 
@@ -182,7 +182,7 @@ async function handleWebhookEvent(event: PaycrestWebhookEvent) {
 
     // Create settlement record for validated/settled orders
     if (shouldCreateSettlement && (event.event === 'order.validated' || event.event === 'order.settled')) {
-      console.log(`💰 Creating settlement record for ${event.event} order ${orderId}`);
+      console.log(`💰 Creating settlement record for ${event.event}`);
       
       try {
         await DatabaseService.createSettlement({
@@ -193,9 +193,9 @@ async function handleWebhookEvent(event: PaycrestWebhookEvent) {
           settlement_method: dbOrder.carrier === 'MPESA' ? 'M-PESA' : 'Mobile Money',
           settled_at: new Date().toISOString()
         });
-        console.log(`✅ Settlement record created for ${orderId}`);
+        console.log(`✅ Settlement record created`);
       } catch (settlementError) {
-        console.error(`❌ Failed to create settlement for ${orderId}:`, settlementError);
+        console.error(`❌ Failed to create settlement:`, settlementError);
       }
     }
 
@@ -213,13 +213,13 @@ async function handleWebhookEvent(event: PaycrestWebhookEvent) {
         }
       );
     } catch (logError) {
-      console.error(`❌ Failed to log webhook event for ${orderId}:`, logError);
+      console.error(`❌ Failed to log webhook event:`, logError);
     }
 
-    console.log(`✅ Webhook event ${event.event} processed successfully for order ${orderId}`);
+    console.log(`✅ Webhook event ${event.event} processed successfully`);
 
   } catch (error) {
-    console.error(`❌ Error processing webhook for order ${orderId}:`, error);
+    console.error(`❌ Error processing webhook:`, error);
     throw error;
   }
 }

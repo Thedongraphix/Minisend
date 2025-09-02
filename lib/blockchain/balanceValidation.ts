@@ -51,7 +51,7 @@ export async function validateWalletBalance(
   bufferPercentage: number = 0.1 // 10% buffer for gas fees
 ): Promise<BalanceCheckResult> {
   try {
-    console.log(`🔍 Checking USDC balance for ${walletAddress}`)
+    console.log(`🔍 Checking USDC balance`)
     
     if (!walletAddress || !walletAddress.startsWith('0x') || walletAddress.length !== 42) {
       throw new Error('Invalid wallet address format')

@@ -39,7 +39,7 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
       let allUserOrders: Order[] = [];
 
       console.log('Starting to fetch ALL user transactions...');
-      console.log('User wallet address:', address);
+      console.log('Loading user transactions');
 
       // Fetch user orders directly from secure database endpoint
       const response = await fetch(`/api/user/orders?wallet=${address}&limit=1000`);

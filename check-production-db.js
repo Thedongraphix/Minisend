@@ -33,11 +33,11 @@ async function checkProductionDatabase() {
     } else {
       console.log('📊 RECENT ORDERS:')
       recentOrders.forEach((order, index) => {
-        console.log(`${index + 1}. Order: ${order.paycrest_order_id}`)
+        console.log(`${index + 1}. Order found`)
         console.log(`   Status: ${order.status} (Paycrest: ${order.paycrest_status})`) 
         console.log(`   Amount: $${order.amount_in_usdc} USDC → ${order.amount_in_local} ${order.local_currency}`)
-        console.log(`   Phone: ${order.phone_number}`)
-        console.log(`   Wallet: ${order.wallet_address}`)
+        console.log(`   Phone: [REDACTED]`)
+        console.log(`   Wallet: [REDACTED]`)
         console.log(`   Rate: ${order.rate}`)
         console.log(`   Institution: ${order.institution_code}`)
         console.log(`   Created: ${order.created_at}`)
@@ -52,11 +52,11 @@ async function checkProductionDatabase() {
     
     if (specificOrder) {
       console.log('✅ Found order af95c7dc-a4b2-48de-ba86-417117941e37 in database:')
-      console.log(`   Database ID: ${specificOrder.id}`)
+      console.log(`   Database ID: [REDACTED]`)
       console.log(`   Status: ${specificOrder.status}`)
       console.log(`   Paycrest Status: ${specificOrder.paycrest_status}`)
       console.log(`   Amount: $${specificOrder.amount_in_usdc} USDC → ${specificOrder.amount_in_local} ${specificOrder.local_currency}`)
-      console.log(`   Phone: ${specificOrder.phone_number}`)
+      console.log(`   Phone: [REDACTED]`)
       console.log(`   Rate: ${specificOrder.rate}`)
       console.log(`   Institution: ${specificOrder.institution_code}`)
       console.log(`   Created: ${specificOrder.created_at}`)
@@ -71,10 +71,10 @@ async function checkProductionDatabase() {
     
     if (newOrder) {
       console.log('✅ Found new order 39c5012e-55c0-42a8-9439-c9aabcb8fcce in database:')
-      console.log(`   Database ID: ${newOrder.id}`)
+      console.log(`   Database ID: [REDACTED]`)
       console.log(`   Status: ${newOrder.status}`)
       console.log(`   Amount: $${newOrder.amount_in_usdc} USDC → ${newOrder.amount_in_local} ${newOrder.local_currency}`)
-      console.log(`   Phone: ${newOrder.phone_number}`)
+      console.log(`   Phone: [REDACTED]`)
       console.log(`   Institution: ${newOrder.institution_code}`)
       console.log(`   Created: ${newOrder.created_at}`)
     } else {
