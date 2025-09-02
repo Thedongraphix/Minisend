@@ -7,24 +7,6 @@ import { Name, Avatar } from '@coinbase/onchainkit/identity';
 import { Button, Icon } from './DemoComponents';
 import { Order } from '../../lib/supabase/config';
 
-interface PayCrestOrder {
-  id: string;
-  amount: string;
-  receiveAddress: string;
-  returnAddress: string; // User's wallet address
-  fromAddress: string;   // User's wallet address (sender)
-  status: string;
-  createdAt: string;
-  rate: string;
-  amountPaid: string;
-  recipient: {
-    accountIdentifier: string;
-    accountName: string;
-    currency: string;
-    memo: string;
-    institution: string;
-  };
-}
 
 interface UserProfileProps {
   setActiveTab: (tab: string) => void;
@@ -55,9 +37,6 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
     try {
       setLoading(true);
       let allUserOrders: Order[] = [];
-      let page = 1;
-      let hasMore = true;
-      const pageSize = 50;
 
       console.log('Starting to fetch ALL user transactions...');
       console.log('User wallet address:', address);

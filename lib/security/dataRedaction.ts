@@ -77,7 +77,7 @@ export interface RedactionOptions {
   includeFullAccountName?: boolean
 }
 
-export function redactOrderData(order: any, options: RedactionOptions = {}): any {
+export function redactOrderData(order: Record<string, unknown>, options: RedactionOptions = {}): Record<string, unknown> {
   if (!order) return order
   
   const redacted = { ...order }
@@ -114,7 +114,7 @@ export function redactOrderData(order: any, options: RedactionOptions = {}): any
 }
 
 // Redact array of orders
-export function redactOrdersArray(orders: any[], options: RedactionOptions = {}): any[] {
+export function redactOrdersArray(orders: Record<string, unknown>[], options: RedactionOptions = {}): Record<string, unknown>[] {
   if (!Array.isArray(orders)) return orders
   return orders.map(order => redactOrderData(order, options))
 }
