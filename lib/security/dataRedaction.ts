@@ -83,30 +83,31 @@ export function redactOrderData(order: Record<string, unknown>, options: Redacti
   const redacted = { ...order }
   
   // Redact recipient data
-  if (redacted.recipient) {
+  if (redacted.recipient && typeof redacted.recipient === 'object') {
+    const recipient = redacted.recipient as Record<string, unknown>
     redacted.recipient = {
-      ...redacted.recipient,
-      accountIdentifier: redacted.recipient.accountIdentifier 
-        ? redactPhoneNumber(redacted.recipient.accountIdentifier)
-        : redacted.recipient.accountIdentifier,
-      accountName: redacted.recipient.accountName && !options.includeFullAccountName
-        ? redactAccountName(redacted.recipient.accountName)
-        : redacted.recipient.accountName,
-      memo: redacted.recipient.memo 
-        ? redactMemo(redacted.recipient.memo)
-        : redacted.recipient.memo
+      ...recipient,
+      accountIdentifier: typeof recipient.accountIdentifier === 'string' 
+        ? redactPhoneNumber(recipient.accountIdentifier)
+        : recipient.accountIdentifier,
+      accountName: typeof recipient.accountName === 'string' && !options.includeFullAccountName
+        ? redactAccountName(recipient.accountName)
+        : recipient.accountName,
+      memo: typeof recipient.memo === 'string' 
+        ? redactMemo(recipient.memo)
+        : recipient.memo
     }
   }
   
   // Redact wallet addresses unless explicitly included
   if (!options.includeWalletAddress) {
-    if (redacted.fromAddress) redacted.fromAddress = redactWalletAddress(redacted.fromAddress)
-    if (redacted.receiveAddress) redacted.receiveAddress = redactWalletAddress(redacted.receiveAddress)
-    if (redacted.returnAddress) redacted.returnAddress = redactWalletAddress(redacted.returnAddress)
+    if (typeof redacted.fromAddress === 'string') redacted.fromAddress = redactWalletAddress(redacted.fromAddress)
+    if (typeof redacted.receiveAddress === 'string') redacted.receiveAddress = redactWalletAddress(redacted.receiveAddress)
+    if (typeof redacted.returnAddress === 'string') redacted.returnAddress = redactWalletAddress(redacted.returnAddress)
   }
   
   // Redact transaction hash unless explicitly included
-  if (!options.includeTxHash && redacted.txHash) {
+  if (!options.includeTxHash && typeof redacted.txHash === 'string') {
     redacted.txHash = redactTxHash(redacted.txHash)
   }
   

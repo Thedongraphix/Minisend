@@ -67,7 +67,7 @@ export async function validateWalletBalance(
       abi: USDC_ABI,
       functionName: 'balanceOf',
       args: [walletAddress as `0x${string}`]
-    })
+    }) as bigint
     
     // USDC has 6 decimals
     const balanceInUSDC = parseFloat(formatUnits(balance, 6))

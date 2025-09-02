@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
   };
 
   // Log the attempt for security monitoring
-  console.warn(`🔒 SECURITY: Blocked access to disabled endpoint /api/paycrest/orders from IP: ${request.ip || request.headers.get('x-forwarded-for') || 'unknown'}`);
+  const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  console.warn(`🔒 SECURITY: Blocked access to disabled endpoint /api/paycrest/orders from IP: ${clientIP}`);
 
   return NextResponse.json(
     { 
