@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Create order record from Paycrest response
-      const dbOrder = await DatabaseService.createOrderFromPaycrest(order, {
+      await DatabaseService.createOrderFromPaycrest(order, {
         amount: amountNum.toString(),
         phoneNumber: currency === 'KES' && paymentType === 'phone' ? formattedIdentifier : '', // Phone number for KES phone payments only
         accountNumber: currency === 'NGN' ? formattedIdentifier : '', // Account number for NGN only
