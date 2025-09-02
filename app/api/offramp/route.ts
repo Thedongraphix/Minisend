@@ -235,10 +235,10 @@ async function processPaycrestOffRamp(params: {
   chainId: number
 }) {
   try {
-    console.log(`🚀 Creating PayCrest order: $${params.usdcAmount} USDC → KSH ${params.kshAmount} for ${params.phoneNumber}`)
+    console.log(`🚀 Creating PayCrest order: $${params.usdcAmount} USDC → KSH ${params.kshAmount}`)
     
-    // Create PayCrest order via API call to our endpoint
-    const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/paycrest/orders`, {
+    // Create PayCrest order via API call to our endpoint (using correct simple endpoint)
+    const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/paycrest/orders/simple`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -247,6 +247,7 @@ async function processPaycrestOffRamp(params: {
         amount: params.usdcAmount.toString(),
         phoneNumber: params.phoneNumber,
         accountName: params.accountName,
+        currency: 'KES', // Add required currency field
         returnAddress: params.walletAddress,
         provider: 'MPESA',
         reference: params.transactionId

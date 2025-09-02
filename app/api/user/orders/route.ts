@@ -7,22 +7,17 @@ export async function GET(request: NextRequest) {
     const walletAddress = searchParams.get('wallet');
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    console.log('API Request - Wallet:', walletAddress, 'Limit:', limit);
-
     if (!walletAddress) {
       return NextResponse.json(
         { error: 'Wallet address is required' },
         { status: 400 }
       );
     }
-
-    console.log('Fetching orders for wallet:', walletAddress);
     
     // Try to fetch orders, but handle gracefully if table doesn't exist or is empty
     let orders: Order[];
     try {
       orders = await DatabaseService.getOrdersByWallet(walletAddress, limit);
-      console.log('Orders fetched successfully:', orders.length);
     } catch (dbError) {
       console.warn('Database query failed, returning empty orders:', dbError);
       orders = []; // Return empty array if database query fails

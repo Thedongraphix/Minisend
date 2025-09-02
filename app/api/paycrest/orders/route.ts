@@ -1,76 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fixPaycrestOrdersAccountNames } from '@/lib/utils/accountNameExtractor';
 
-const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
-const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
+// 🚨 SECURITY: This endpoint has been DISABLED due to critical data exposure vulnerability
+// Reported by cybersecurity audit - CVSS 9.1 Critical
+// 
+// Issue: Public endpoint was exposing:
+// - Customer phone numbers
+// - Recipient names  
+// - Wallet addresses
+// - Transaction hashes
+// - PII in memo fields
+//
+// Resolution: Endpoint completely disabled to prevent data harvesting
+// Users should use /api/user/orders for authenticated access to their own data
 
 export async function GET(request: NextRequest) {
-  try {
-    if (!PAYCREST_API_KEY) {
-      return NextResponse.json(
-        { error: 'PayCrest API key not configured' },
-        { status: 500 }
-      );
+  const securityHeaders = {
+    'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+    'Pragma': 'no-cache', 
+    'Expires': '0',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer'
+  };
+
+  // Log the attempt for security monitoring
+  console.warn(`🔒 SECURITY: Blocked access to disabled endpoint /api/paycrest/orders from IP: ${request.ip || request.headers.get('x-forwarded-for') || 'unknown'}`);
+
+  return NextResponse.json(
+    { 
+      error: 'This endpoint has been disabled for security reasons',
+      message: 'This endpoint was exposing sensitive customer data and has been permanently disabled.',
+      alternatives: [
+        {
+          endpoint: '/api/user/orders',
+          description: 'Get orders for a specific wallet address',
+          usage: '/api/user/orders?wallet=0x...'
+        }
+      ],
+      securityNotice: 'If you need access to this data, please contact support with a valid business case.',
+      timestamp: new Date().toISOString()
+    },
+    { 
+      status: 410, // 410 Gone - endpoint permanently removed
+      headers: securityHeaders 
     }
-
-    const { searchParams } = new URL(request.url);
-    const network = searchParams.get('network');
-    const token = searchParams.get('token'); 
-    const status = searchParams.get('status');
-    const page = searchParams.get('page');
-    const pageSize = searchParams.get('pageSize');
-    
-    // Build query params
-    const params = new URLSearchParams();
-    if (network) params.append('network', network);
-    if (token) params.append('token', token);
-    if (status) params.append('status', status);
-    if (page) params.append('page', page);
-    if (pageSize) params.append('pageSize', pageSize);
-    
-    const queryString = params.toString();
-    const url = `${PAYCREST_API_URL}/sender/orders${queryString ? `?${queryString}` : ''}`;
-    
-    console.log('🔍 Fetching orders from:', url);
-    
-    const response = await fetch(url, {
-      headers: {
-        'API-Key': PAYCREST_API_KEY!,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('PayCrest API error:', response.status, errorText);
-      return NextResponse.json(
-        { error: `PayCrest API error: ${response.status} - ${errorText}` },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    console.log('📊 Orders response:', data);
-
-    // Fix account names in orders (PayCrest returns "OK" instead of actual names)
-    const fixedData = {
-      ...data,
-      data: {
-        ...data.data,
-        orders: data.data?.orders ? fixPaycrestOrdersAccountNames(data.data.orders) : data.data?.orders
-      }
-    };
-
-    return NextResponse.json({
-      success: true,
-      ...fixedData
-    });
-
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch orders' },
-      { status: 500 }
-    );
-  }
+  );
 }

@@ -62,64 +62,21 @@ export function UserProfile({ setActiveTab }: UserProfileProps) {
       console.log('Starting to fetch ALL user transactions...');
       console.log('User wallet address:', address);
 
-      // Fetch all pages until we have all transactions
-      while (hasMore) {
-        console.log(`Fetching page ${page}...`);
-        
-        const response = await fetch(`/api/paycrest/orders?network=base&token=USDC&page=${page}&pageSize=${pageSize}`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        
-        const ordersArray = data.data?.orders || [];
-        const totalInSystem = data.data?.total || 0;
-        const currentPageSize = data.data?.pageSize || pageSize;
-        
-        console.log(`Page ${page}: ${ordersArray.length} orders, Total in system: ${totalInSystem}`);
-        
-        // Filter orders by current wallet address
-        const userOrders = ordersArray.filter((order: PayCrestOrder) => 
-          order.returnAddress?.toLowerCase() === address?.toLowerCase() ||
-          order.fromAddress?.toLowerCase() === address?.toLowerCase()
-        );
-        
-        console.log(`Filtered user orders on page ${page}:`, userOrders.length);
-        
-        // Convert PayCrest order format to our Order interface
-        const convertedOrders = userOrders.map((order: PayCrestOrder) => ({
-          id: order.id,
-          paycrest_order_id: order.id,
-          wallet_address: order.fromAddress,
-          amount_in_usdc: parseFloat(order.amount),
-          amount_in_local: parseFloat(order.amount) * parseFloat(order.rate),
-          local_currency: order.recipient.currency,
-          phone_number: order.recipient.accountIdentifier,
-          account_number: order.recipient.accountIdentifier,
-          status: order.status,
-          created_at: order.createdAt,
-          memo: order.recipient.memo,
-          rate: parseFloat(order.rate)
-        }));
-        
-        allUserOrders = [...allUserOrders, ...convertedOrders];
-        
-        // Check if we have more pages
-        hasMore = (page * currentPageSize) < totalInSystem;
-        page++;
-        
-        // Safety check to prevent infinite loops
-        if (page > 20) {
-          console.warn('Stopping at page 20 to prevent infinite loop');
-          break;
-        }
+      // Fetch user orders directly from secure database endpoint
+      const response = await fetch(`/api/user/orders?wallet=${address}&limit=1000`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      allUserOrders = data.orders || [];
+      console.log(`✅ Loaded ${allUserOrders.length} user transactions from database`);
       
       console.log(`✅ Loaded ALL user transactions: ${allUserOrders.length} total`);
       

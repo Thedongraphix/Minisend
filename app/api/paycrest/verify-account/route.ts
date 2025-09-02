@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log('🔍 Account verification request:', body);
+    console.log('🔍 Account verification request received');
     
     const { 
       accountNumber, 
