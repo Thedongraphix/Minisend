@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/supabase/config';
 import { detectKenyanCarrier } from '@/lib/utils/phoneCarrier';
 import { formatTillNumber, formatPhoneNumber } from '@/lib/utils/tillValidator';
-import { validateWalletForOrder } from '@/lib/blockchain/balanceValidation';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
@@ -65,27 +64,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 🔐 SECURITY: Validate wallet has sufficient USDC balance
-    console.log('🔍 Validating wallet balance before creating order');
-    const walletValidation = await validateWalletForOrder(returnAddress, amountNum);
-    
-    if (!walletValidation.isValid) {
-      console.log('❌ Wallet validation failed:', walletValidation.reason);
-      return NextResponse.json(
-        { 
-          error: 'Wallet validation failed', 
-          details: walletValidation.reason,
-          balanceInfo: {
-            required: walletValidation.balanceCheck.requiredInUSDC,
-            available: walletValidation.balanceCheck.balanceInUSDC,
-            insufficient: walletValidation.balanceCheck.insufficientBy
-          }
-        },
-        { status: 400 }
-      );
-    }
-    
-    console.log('✅ Wallet balance validation passed');
 
     // Get rate - use provided rate or fetch from PayCrest
     let exchangeRate: number;
