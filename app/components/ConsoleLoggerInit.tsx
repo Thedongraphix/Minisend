@@ -14,18 +14,26 @@ export function ConsoleLoggerInit() {
     // Initialize database logging system
     const initializeDatabaseLogger = async () => {
       try {
-        // Check if Supabase is configured
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-          const originalConsole = (window as unknown as { __originalConsole?: Console }).__originalConsole || console;
-          originalConsole.warn('⚠️ Supabase not configured - console logging to database disabled');
+        // Debug environment variables
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        
+        const originalConsole = (window as unknown as { __originalConsole?: Console }).__originalConsole || console;
+        
+        if (!supabaseUrl || !supabaseKey) {
+          originalConsole.warn('⚠️ Supabase environment variables missing:', {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!supabaseKey,
+            urlLength: supabaseUrl?.length || 0,
+            keyLength: supabaseKey?.length || 0
+          });
           return;
         }
+        
+        originalConsole.log('✅ Supabase environment variables found - initializing database logger');
 
         const { initializeConsoleLogger } = await import('@/lib/console-logger');
         const logger = initializeConsoleLogger();
-        
-        // Use original console if available for this confirmation
-        const originalConsole = (window as unknown as { __originalConsole?: Console }).__originalConsole || console;
         
         if (process.env.NODE_ENV === 'development') {
           originalConsole.log('✅ Database logger initialized - dev mode: console + database');
