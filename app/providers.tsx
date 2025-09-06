@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
 import { base } from "viem/chains";
 import { PostHogProvider } from "@/lib/posthog-provider";
+import { ConsoleLoggerInit } from "@/app/components/ConsoleLoggerInit";
 
 export function Providers(props: { children: ReactNode }) {
   return (
@@ -24,6 +25,7 @@ export function Providers(props: { children: ReactNode }) {
         },
       }}
     >
+      <ConsoleLoggerInit />
       <PostHogProvider>
         {props.children}
       </PostHogProvider>
