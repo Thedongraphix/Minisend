@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLabel, TransactionStatusAction } from '@coinbase/onchainkit/transaction';
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
@@ -44,12 +44,20 @@ export function SimpleUSDCPayment({
   const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [fallbackMonitoringStarted, setFallbackMonitoringStarted] = useState(false);
+  const pollingStartedRef = useRef(false);
 
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
   // Optimized polling that works alongside webhooks for maximum speed
   const startPolling = useCallback((orderId: string) => {
+    // Prevent multiple polling instances
+    if (pollingStartedRef.current) {
+      console.log('🚫 Polling already started, skipping duplicate');
+      return;
+    }
+    pollingStartedRef.current = true;
+    
     let attempts = 0;
     const maxAttempts = 60; // Reduced to 5 minutes since webhooks handle most updates
     
@@ -132,6 +140,8 @@ export function SimpleUSDCPayment({
   // Create PayCrest order
   const createPaycrestOrder = useCallback(async () => {
     setStatus('creating-order');
+    // Reset polling state for new order
+    pollingStartedRef.current = false;
     
     try {
       const response = await fetch('/api/paycrest/orders/simple', {
@@ -251,7 +261,7 @@ export function SimpleUSDCPayment({
 
 
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
-    console.log('Transaction status:', status);
+    console.log('📱 onStatus callback - Transaction status:', status.statusName, status);
     
     switch (status.statusName) {
       case 'buildingTransaction':
@@ -279,13 +289,14 @@ export function SimpleUSDCPayment({
         setStatusMessage('🔐 Waiting for wallet approval... Please confirm in your wallet');
         break;
       case 'success':
-        console.log('✅ Transaction status: SUCCESS - payment sent to PayCrest');
+        console.log('✅ onStatus SUCCESS - payment sent to PayCrest');
         setStatus('success');
         const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
         setStatusMessage(`Payment sent to ${deliveryMethod}`);
         
         // Start background polling to track delivery and handle failures
         if (paycrestOrder?.id) {
+          console.log('🔄 onStatus: Starting polling for order', paycrestOrder.id);
           startPolling(paycrestOrder.id);
         }
         
@@ -371,17 +382,19 @@ export function SimpleUSDCPayment({
             calls={calls}
             onStatus={handleTransactionStatus}
             onSuccess={(response) => {
-              console.log('🎯 Transaction successful:', response);
+              console.log('🎯 Transaction onSuccess callback triggered:', response);
+              // The onStatus callback already handles success - this is a fallback for desktop
+              console.log('📝 onSuccess: Current status is', status);
               setStatus('success');
               const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
               setStatusMessage(`Payment sent to ${deliveryMethod}`);
               
-              // Start background polling to track delivery and handle failures
-              if (paycrestOrder?.id) {
+              // Start polling only if not already started by onStatus
+              if (paycrestOrder?.id && !pollingStartedRef.current) {
+                console.log('🔄 onSuccess: Starting polling as fallback');
                 startPolling(paycrestOrder.id);
               }
               
-              // Call onSuccess immediately - user has successfully sent funds to PayCrest
               setTimeout(() => onSuccess(), 2000);
             }}
             onError={(error) => {
