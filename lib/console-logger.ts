@@ -4,8 +4,8 @@
  * Provides zero-console production environment while maintaining dev experience
  */
 
-// Import supabase getter function for lazy loading
-import { getSupabaseClient } from '@/lib/supabase/config';
+// Import standard supabase client
+import { supabase } from '@/lib/supabase/config';
 import { redactPhoneNumber, redactWalletAddress, redactTxHash } from '@/lib/security/dataRedaction';
 
 interface LogEntry {
@@ -179,9 +179,8 @@ class ConsoleLogger {
     try {
       const logsToProcess = this.logQueue.splice(0, this.BATCH_SIZE);
       
-      // Insert logs into Supabase using lazy-loaded client
-      const supabaseClient = getSupabaseClient()
-      const { error } = await supabaseClient
+      // Insert logs into Supabase
+      const { error } = await supabase
         .from('system_logs')
         .insert(logsToProcess);
       

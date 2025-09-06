@@ -13,42 +13,24 @@ export function ConsoleLoggerInit() {
 
     // Initialize database logging system
     const initializeDatabaseLogger = async () => {
+      const originalConsole = (window as unknown as { __originalConsole?: Console }).__originalConsole || console;
+      
       try {
-        // Debug environment variables
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        
-        const originalConsole = (window as unknown as { __originalConsole?: Console }).__originalConsole || console;
-        
-        if (!supabaseUrl || !supabaseKey) {
-          originalConsole.warn('⚠️ Supabase environment variables missing:', {
-            hasUrl: !!supabaseUrl,
-            hasKey: !!supabaseKey,
-            urlLength: supabaseUrl?.length || 0,
-            keyLength: supabaseKey?.length || 0
-          });
-          return;
-        }
-        
-        originalConsole.log('✅ Supabase environment variables found - initializing database logger');
-
+        // Simple check - just try to initialize the logger
         const { initializeConsoleLogger } = await import('@/lib/console-logger');
         const logger = initializeConsoleLogger();
         
         if (process.env.NODE_ENV === 'development') {
-          originalConsole.log('✅ Database logger initialized - dev mode: console + database');
+          originalConsole.log('✅ Console logger initialized - dev mode: console + database');
           originalConsole.log('📊 Logger stats:', logger.getStats());
         } else {
-          // In production, use the original console for this one confirmation
-          if ((window as unknown as { __originalConsole?: Console }).__originalConsole) {
-            originalConsole.log('🔇 Production console override active - logs stored in database only');
-          }
+          originalConsole.log('🔇 Production console override active - logs stored in database');
         }
         
       } catch (error) {
-        // Use original console for critical initialization errors
-        const originalConsole = (window as unknown as { __originalConsole?: Console }).__originalConsole || console;
+        // Just log the error and continue - console override is still active
         originalConsole.error('❌ Failed to initialize database logger:', error);
+        originalConsole.log('🔇 Console override remains active - logs will be silent in production');
       }
     };
 

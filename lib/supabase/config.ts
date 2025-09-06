@@ -1,62 +1,21 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
-// Cached clients to avoid recreating them
-let _supabase: SupabaseClient | null = null
-let _supabaseAdmin: SupabaseClient | null = null
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-// Lazy-loaded client-side Supabase client (with RLS)
-export function getSupabaseClient(): SupabaseClient {
-  if (_supabase) return _supabase
-  
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables')
-  }
-  
-  _supabase = createClient(supabaseUrl, supabaseAnonKey)
-  return _supabase
-}
+// Client-side Supabase client (with RLS)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Lazy-loaded server-side Supabase client (bypasses RLS)
-export function getSupabaseAdminClient(): SupabaseClient {
-  if (_supabaseAdmin) return _supabaseAdmin
-  
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables')
-  }
-  
-  _supabaseAdmin = supabaseServiceKey 
-    ? createClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      })
-    : createClient(supabaseUrl, supabaseAnonKey)
-    
-  return _supabaseAdmin
-}
-
-// Export the lazy-loaded clients for backward compatibility
-export let supabase: SupabaseClient
-export let supabaseAdmin: SupabaseClient
-
-// Initialize only when accessed
-try {
-  supabase = getSupabaseClient()
-  supabaseAdmin = getSupabaseAdminClient()
-} catch {
-  // If environment variables are not available, create dummy exports
-  // The actual initialization will happen when the functions are called
-  supabase = {} as SupabaseClient
-  supabaseAdmin = {} as SupabaseClient
-}
+// Server-side Supabase client (bypasses RLS)
+export const supabaseAdmin = supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+  : supabase
 
 // Database types
 export interface User {
