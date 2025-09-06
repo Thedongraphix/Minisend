@@ -128,6 +128,37 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              // Initialize console logger FIRST - before anything else logs
+              (function() {
+                const isDevelopment = "${process.env.NODE_ENV}" === "development";
+                const hasSupabase = "${process.env.NEXT_PUBLIC_SUPABASE_URL}" !== "";
+                
+                if (hasSupabase && typeof window !== 'undefined') {
+                  // Store original console methods before anything else
+                  const originalConsole = {
+                    log: console.log,
+                    error: console.error,
+                    warn: console.warn,
+                    info: console.info,
+                    debug: console.debug
+                  };
+                  
+                  // Simple immediate override for production silence
+                  if (!isDevelopment) {
+                    console.log = function() { /* silent in production */ };
+                    console.error = function() { /* silent in production */ };
+                    console.warn = function() { /* silent in production */ };
+                    console.info = function() { /* silent in production */ };
+                    console.debug = function() { /* silent in production */ };
+                    
+                    // Keep original console available for critical errors
+                    window.__originalConsole = originalConsole;
+                  }
+                  
+                  console.log('🔇 Console override active - production silence enabled');
+                }
+              })();
+              
               // Only enable Eruda for development and testing
               if (typeof window !== 'undefined') {
                 const hostname = window.location.hostname;
