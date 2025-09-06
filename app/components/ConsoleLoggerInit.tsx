@@ -16,10 +16,7 @@ export function ConsoleLoggerInit() {
     if (process.env.NODE_ENV === 'development') {
       originalConsole.log('🛠️ Development mode - console logging active');
     } else {
-      // In production, just confirm the override is working
-      originalConsole.log('🔇 Production console override active - all logs suppressed');
-      
-      // Additional safety: override any console methods that might have been missed
+      // In production, silently reinforce the override without any messages
       setTimeout(() => {
         console.log = function() { /* silent */ };
         console.error = function() { /* silent */ };

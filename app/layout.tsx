@@ -154,8 +154,6 @@ export default function RootLayout({
                     // Keep original console available for critical errors
                     window.__originalConsole = originalConsole;
                   }
-                  
-                  console.log('🔇 Console override active - production silence enabled');
                 }
               })();
               
