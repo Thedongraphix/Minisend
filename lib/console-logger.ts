@@ -4,7 +4,8 @@
  * Provides zero-console production environment while maintaining dev experience
  */
 
-import { supabaseAdmin } from '@/lib/supabase/config';
+// Import supabase client (not admin) for client-side usage
+import { supabase } from '@/lib/supabase/config';
 import { redactPhoneNumber, redactWalletAddress, redactTxHash } from '@/lib/security/dataRedaction';
 
 interface LogEntry {
@@ -21,7 +22,7 @@ interface LogEntry {
 class ConsoleLogger {
   private isDevelopment = process.env.NODE_ENV === 'development';
   private isClient = typeof window !== 'undefined';
-  private enableDatabaseLogging = process.env.NEXT_PUBLIC_SUPABASE_URL ? true : false;
+  private enableDatabaseLogging = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   
   // Store original console methods
   private originalConsole = {
@@ -178,8 +179,8 @@ class ConsoleLogger {
     try {
       const logsToProcess = this.logQueue.splice(0, this.BATCH_SIZE);
       
-      // Insert logs into Supabase
-      const { error } = await supabaseAdmin
+      // Insert logs into Supabase using client
+      const { error } = await supabase
         .from('system_logs')
         .insert(logsToProcess);
       

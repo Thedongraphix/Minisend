@@ -14,6 +14,13 @@ export function ConsoleLoggerInit() {
     // Initialize database logging system
     const initializeDatabaseLogger = async () => {
       try {
+        // Check if Supabase is configured
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          const originalConsole = (window as unknown as { __originalConsole?: Console }).__originalConsole || console;
+          originalConsole.warn('⚠️ Supabase not configured - console logging to database disabled');
+          return;
+        }
+
         const { initializeConsoleLogger } = await import('@/lib/console-logger');
         const logger = initializeConsoleLogger();
         
