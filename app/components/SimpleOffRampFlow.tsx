@@ -210,7 +210,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
     } finally {
       setVerifyingAccount(false);
     }
-  }, []);
+  }, [formData.accountName]);
 
   // Check if account number format is valid (10+ digits for Nigerian banks)
   const isAccountNumberValid = formData.accountNumber.length >= 10 && 
@@ -671,7 +671,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
               account_number: formData.accountNumber,
               bank_code: formData.bankCode,
               wallet_address: address || '',
-              rate: currentRate,
+              rate: currentRate || 0,
               sender_fee: 0,
               transaction_fee: 0,
               status: 'completed',
