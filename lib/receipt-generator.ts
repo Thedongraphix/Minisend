@@ -72,76 +72,94 @@ export class ReceiptGenerator {
   }
 
   private async addHeader(): Promise<void> {
-    // Brand header with gradient-like effect using brand colors
-    this.pdf.setFillColor(99, 102, 241); // Indigo blue background
-    this.pdf.rect(this.margin, this.currentY, this.contentWidth, 30, 'F');
+    // Brand header with Farcaster purple background
+    this.pdf.setFillColor(124, 101, 193); // Farcaster Purple
+    this.pdf.rect(this.margin, this.currentY, this.contentWidth, 25, 'F');
     
-    // Purple accent bar
-    this.pdf.setFillColor(147, 51, 234); // Purple accent
-    this.pdf.rect(this.margin, this.currentY + 30, this.contentWidth, 3, 'F');
+    // Add accent bar (Base Blue)
+    this.pdf.setFillColor(0, 82, 255); // Base Blue
+    this.pdf.rect(this.margin, this.currentY + 25, this.contentWidth, 3, 'F');
     
-    // Company name - Clean, bold typography in white
-    this.pdf.setTextColor(255, 255, 255); // White text for contrast
+    // Add Minisend logo (we'll simulate it with a circle and arrow for PDF)
+    this.pdf.setFillColor(59, 130, 246); // Blue circle
+    this.pdf.circle(this.margin + 12, this.currentY + 12, 8, 'F');
+    
+    // Add arrow in logo
+    this.pdf.setDrawColor(255, 255, 255);
+    this.pdf.setLineWidth(1.5);
+    this.pdf.line(this.margin + 7, this.currentY + 12, this.margin + 17, this.currentY + 12);
+    this.pdf.line(this.margin + 14, this.currentY + 9, this.margin + 17, this.currentY + 12);
+    this.pdf.line(this.margin + 14, this.currentY + 15, this.margin + 17, this.currentY + 12);
+    
+    // Company name and logo area
+    this.pdf.setTextColor(255, 255, 255); // White text
     this.pdf.setFontSize(28);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Minisend', this.margin + 8, this.currentY + 20);
+    this.pdf.text('Minisend', this.margin + 25, this.currentY + 18);
     
-    // Tagline in light text
-    this.pdf.setTextColor(219, 234, 254); // Very light blue
-    this.pdf.setFontSize(8);
+    // Tagline
+    this.pdf.setFontSize(10);
     this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text('USDC to Mobile Money', this.margin + 8, this.currentY + 27);
+    this.pdf.text('USDC to Mobile Money • Powered by Base', this.margin + 25, this.currentY + 23);
     
-    // Receipt info - right aligned, in white for contrast
-    this.pdf.setTextColor(255, 255, 255); // White text
-    this.pdf.setFontSize(11);
+    // Receipt info on the right
+    this.pdf.setTextColor(255, 255, 255);
+    this.pdf.setFontSize(12);
     this.pdf.setFont('helvetica', 'bold');
-    const receiptText = 'Receipt';
+    const receiptText = 'RECEIPT';
     const receiptWidth = this.pdf.getTextWidth(receiptText);
-    this.pdf.text(receiptText, this.pageWidth - this.margin - receiptWidth - 8, this.currentY + 12);
+    this.pdf.text(receiptText, this.pageWidth - this.margin - receiptWidth - 10, this.currentY + 12);
     
     this.pdf.setFontSize(9);
     this.pdf.setFont('helvetica', 'normal');
-    this.pdf.setTextColor(219, 234, 254); // Light blue
     const receiptNumber = `#${this.data.receiptNumber}`;
     const receiptNumWidth = this.pdf.getTextWidth(receiptNumber);
-    this.pdf.text(receiptNumber, this.pageWidth - this.margin - receiptNumWidth - 8, this.currentY + 19);
+    this.pdf.text(receiptNumber, this.pageWidth - this.margin - receiptNumWidth - 10, this.currentY + 18);
     
     const dateText = this.formatDate(this.data.date);
     const dateWidth = this.pdf.getTextWidth(dateText);
-    this.pdf.text(dateText, this.pageWidth - this.margin - dateWidth - 8, this.currentY + 26);
+    this.pdf.text(dateText, this.pageWidth - this.margin - dateWidth - 10, this.currentY + 23);
     
-    this.currentY += 43;
+    this.currentY += 28;
   }
 
   private addTransactionSummary(): void {
-    // Remove status indicator - clean minimal design
-    this.currentY += 5;
+    // Status Badge
+    const statusColor = this.data.status === 'completed' ? [16, 185, 129] : 
+                       this.data.status === 'pending' ? [245, 158, 11] : [239, 68, 68];
     
-    // Clean transaction summary - card with subtle brand accent
-    this.pdf.setFillColor(255, 255, 255);
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 40, 4, 4, 'F');
-    this.pdf.setDrawColor(147, 51, 234, 0.3); // Light purple border
-    this.pdf.setLineWidth(1.5);
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 40, 4, 4, 'S');
+    this.pdf.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+    this.pdf.roundedRect(this.margin, this.currentY, 40, 8, 2, 2, 'F');
     
-    // Left side - Amount with brand colors
-    this.pdf.setTextColor(100, 116, 139);
-    this.pdf.setFontSize(9);
-    this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text('You Sent', this.margin + 15, this.currentY + 12);
-    
-    this.pdf.setFontSize(22);
+    this.pdf.setTextColor(255, 255, 255);
+    this.pdf.setFontSize(10);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.setTextColor(99, 102, 241); // Blue for amount
-    const amountText = `${this.formatCurrency(this.data.localAmount)} ${this.data.localCurrency}`;
-    this.pdf.text(amountText, this.margin + 15, this.currentY + 25);
+    const statusText = this.data.status.toUpperCase();
+    this.pdf.text(statusText, this.margin + (40 - this.pdf.getTextWidth(statusText)) / 2, this.currentY + 5.5);
     
-    this.pdf.setFontSize(9);
-    this.pdf.setTextColor(147, 51, 234); // Purple for USDC equivalent
+    this.currentY += 15;
+    
+    // Main transaction summary box
+    this.pdf.setFillColor(249, 250, 251); // Light background
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 35, 3, 3, 'F');
+    
+    // Left side - Amount sent
+    this.pdf.setTextColor(31, 41, 55); // Dark text
+    this.pdf.setFontSize(10);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.text('Amount Sent', this.margin + 10, this.currentY + 8);
+    
+    this.pdf.setFontSize(20);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setTextColor(124, 101, 193); // Farcaster Purple
+    const amountText = `${this.formatCurrency(this.data.localAmount)} ${this.data.localCurrency}`;
+    this.pdf.text(amountText, this.margin + 10, this.currentY + 20);
+    
+    this.pdf.setFontSize(10);
+    this.pdf.setTextColor(107, 114, 128); // Gray
     this.pdf.setFont('helvetica', 'normal');
     const usdcText = `≈ $${this.data.usdcAmount.toFixed(4)} USDC`;
-    this.pdf.text(usdcText, this.margin + 15, this.currentY + 33);
+    this.pdf.text(usdcText, this.margin + 10, this.currentY + 27);
     
     // Right side - Recipient
     const rightX = this.margin + this.contentWidth - 80;
@@ -204,24 +222,19 @@ export class ReceiptGenerator {
     
     this.addDetailsTable(feeDetails);
     
-    // Net amount received box with brand colors
-    this.pdf.setFillColor(99, 102, 241, 0.1); // Light blue background (Indigo)
-    this.pdf.roundedRect(this.margin, this.currentY + 5, this.contentWidth, 15, 3, 3, 'F');
+    // Net amount received box with proper formatting
+    this.pdf.setFillColor(16, 185, 129); // Green background
+    this.pdf.roundedRect(this.margin, this.currentY + 5, this.contentWidth, 12, 2, 2, 'F');
     
-    // Add subtle border with purple accent
-    this.pdf.setDrawColor(147, 51, 234); // Purple border
-    this.pdf.setLineWidth(0.5);
-    this.pdf.roundedRect(this.margin, this.currentY + 5, this.contentWidth, 15, 3, 3, 'S');
-    
-    this.pdf.setTextColor(15, 23, 42); // Dark slate for high contrast
+    this.pdf.setTextColor(255, 255, 255); // White text
     this.pdf.setFontSize(11);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Net Amount Received by Recipient:', this.margin + 10, this.currentY + 14);
+    this.pdf.text('Net Amount Received by Recipient:', this.margin + 10, this.currentY + 12);
     
-    this.pdf.setTextColor(99, 102, 241); // Blue for amount
+    this.pdf.setTextColor(255, 255, 255); // White for amount
     const netAmount = `${this.formatCurrency(this.data.netAmount)} ${this.data.localCurrency}`;
     const netWidth = this.pdf.getTextWidth(netAmount);
-    this.pdf.text(netAmount, this.pageWidth - this.margin - netWidth - 10, this.currentY + 14);
+    this.pdf.text(netAmount, this.pageWidth - this.margin - netWidth - 10, this.currentY + 12);
     
     this.currentY += 17;
   }
@@ -294,13 +307,24 @@ export class ReceiptGenerator {
     this.pdf.text(`Email: ${this.data.supportEmail}`, this.margin + 10, this.currentY + 15);
     this.pdf.text(`Visit: ${this.data.supportUrl}`, this.margin + 10, this.currentY + 20);
     
-    // Branding footer
-    this.pdf.setTextColor(124, 101, 193); // Farcaster Purple
+    // Base branding with logo simulation
+    const baseX = this.pageWidth - this.margin - 60;
+    
+    // Simulate Base logo (blue circle with white "b")
+    this.pdf.setFillColor(0, 82, 255); // Base Blue
+    this.pdf.circle(baseX, this.currentY + 15, 6, 'F');
+    
+    // Add "b" in the center of circle
+    this.pdf.setTextColor(255, 255, 255);
+    this.pdf.setFontSize(8);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text('b', baseX - 2, this.currentY + 17);
+    
+    // "Built on Base" text
+    this.pdf.setTextColor(0, 82, 255); // Base Blue
     this.pdf.setFontSize(9);
     this.pdf.setFont('helvetica', 'bold');
-    const brandText = 'Powered by Farcaster • Built on Base';
-    const brandWidth = this.pdf.getTextWidth(brandText);
-    this.pdf.text(brandText, this.pageWidth - this.margin - brandWidth - 10, this.currentY + 15);
+    this.pdf.text('Built on Base', baseX + 10, this.currentY + 17);
     
     // Disclaimer
     this.currentY += 30;
