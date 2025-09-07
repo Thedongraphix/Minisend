@@ -167,7 +167,7 @@ export function CompactReceiptButton({
   );
 }
 
-// Receipt section for success pages - minimal version
+
 export function ReceiptSection({ 
   orderData, 
   className = '' 
@@ -178,7 +178,7 @@ export function ReceiptSection({
   if (!orderData) return null;
 
   return (
-    <div className={className}>
+    <div className={`${className} space-y-3`}>
       <ReceiptDownloadButton 
         orderData={orderData}
         variant="primary"

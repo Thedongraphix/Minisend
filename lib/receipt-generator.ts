@@ -34,30 +34,28 @@ export class ReceiptGenerator {
     // Set up the document with Plus Jakarta Sans-like styling
     this.setupFontStyling();
     
-    // Header Section
-    await this.addHeader();
-    this.addSpacing(15);
-    
-    // Transaction Summary
-    this.addTransactionSummary();
+    // Header Section (exactly like preview)
+    await this.addPreviewStyleHeader();
     this.addSpacing(10);
     
-    // Payment Details
-    this.addPaymentDetails();
-    this.addSpacing(10);
-    
-    // Fee Breakdown
-    this.addFeeBreakdown();
+    // Transaction Summary Card (exactly like preview)
+    this.addPreviewStyleTransactionCard();
     this.addSpacing(15);
     
-    // QR Code & Transaction Hash
-    if (this.options.includeQRCode && this.data.blockchainTxHash) {
-      await this.addQRCodeSection();
-      this.addSpacing(10);
-    }
+    // Payment Details Section (exactly like preview)
+    this.addPreviewStylePaymentDetails();
+    this.addSpacing(15);
     
-    // Footer
-    this.addFooter();
+    // Fee Breakdown Section (exactly like preview)
+    this.addPreviewStyleFeeBreakdown();
+    this.addSpacing(15);
+    
+    // Net Amount Section (exactly like preview)
+    this.addPreviewStyleNetAmount();
+    this.addSpacing(20);
+    
+    // Footer (exactly like preview)
+    await this.addPreviewStyleFooter();
     
     return this.pdf.output('blob');
   }
@@ -71,126 +69,405 @@ export class ReceiptGenerator {
     // Note: jsPDF doesn't support character spacing directly, but we can adjust sizing accordingly
   }
 
-  private async addHeader(): Promise<void> {
-    // Brand header with Farcaster purple background
-    this.pdf.setFillColor(124, 101, 193); // Farcaster Purple
-    this.pdf.rect(this.margin, this.currentY, this.contentWidth, 25, 'F');
+  // New preview-style header matching the preview page exactly
+  private async addPreviewStyleHeader(): Promise<void> {
+    // White background with subtle border
+    this.pdf.setFillColor(255, 255, 255);
+    this.pdf.rect(this.margin, this.currentY, this.contentWidth, 40, 'F');
     
-    // Add accent bar (Base Blue)
-    this.pdf.setFillColor(0, 82, 255); // Base Blue
-    this.pdf.rect(this.margin, this.currentY + 25, this.contentWidth, 3, 'F');
+    // Bottom border
+    this.pdf.setDrawColor(226, 232, 240);
+    this.pdf.setLineWidth(0.5);
+    this.pdf.line(this.margin, this.currentY + 40, this.margin + this.contentWidth, this.currentY + 40);
     
-    // Add Minisend logo (we'll simulate it with a circle and arrow for PDF)
-    this.pdf.setFillColor(59, 130, 246); // Blue circle
-    this.pdf.circle(this.margin + 12, this.currentY + 12, 8, 'F');
+    // Left side - Logo and company info
+    try {
+      const logoImg = new Image();
+      logoImg.src = '/minisend-logo.png';
+      
+      await new Promise((resolve) => {
+        logoImg.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = logoImg.width;
+          canvas.height = logoImg.height;
+          ctx!.drawImage(logoImg, 0, 0);
+          const logoDataUrl = canvas.toDataURL('image/png');
+          
+          // Logo - smaller size like preview
+          this.pdf.addImage(logoDataUrl, 'PNG', this.margin + 5, this.currentY + 10, 15, 12);
+          resolve(true);
+        };
+        logoImg.onerror = () => {
+          // Fallback: Simple 'M' in rectangle
+          this.pdf.setFillColor(59, 130, 246);
+          this.pdf.roundedRect(this.margin + 5, this.currentY + 10, 15, 12, 2, 2, 'F');
+          this.pdf.setTextColor(255, 255, 255);
+          this.pdf.setFontSize(10);
+          this.pdf.setFont('helvetica', 'bold');
+          this.pdf.text('M', this.margin + 11, this.currentY + 18);
+          resolve(true);
+        };
+      });
+    } catch {
+      // Simple fallback
+      this.pdf.setFillColor(59, 130, 246);
+      this.pdf.roundedRect(this.margin + 5, this.currentY + 10, 15, 12, 2, 2, 'F');
+      this.pdf.setTextColor(255, 255, 255);
+      this.pdf.setFontSize(10);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.text('M', this.margin + 11, this.currentY + 18);
+    }
     
-    // Add arrow in logo
-    this.pdf.setDrawColor(255, 255, 255);
-    this.pdf.setLineWidth(1.5);
-    this.pdf.line(this.margin + 7, this.currentY + 12, this.margin + 17, this.currentY + 12);
-    this.pdf.line(this.margin + 14, this.currentY + 9, this.margin + 17, this.currentY + 12);
-    this.pdf.line(this.margin + 14, this.currentY + 15, this.margin + 17, this.currentY + 12);
-    
-    // Company name and logo area
-    this.pdf.setTextColor(255, 255, 255); // White text
-    this.pdf.setFontSize(28);
+    // Company name
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.setFontSize(24);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Minisend', this.margin + 25, this.currentY + 18);
+    this.pdf.text('Minisend', this.margin + 25, this.currentY + 20);
     
     // Tagline
     this.pdf.setFontSize(10);
     this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text('USDC to Mobile Money • Powered by Base', this.margin + 25, this.currentY + 23);
+    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.text('USDC to Mobile Money', this.margin + 25, this.currentY + 28);
     
-    // Receipt info on the right
-    this.pdf.setTextColor(255, 255, 255);
-    this.pdf.setFontSize(12);
+    // Right side - Receipt info
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.setFontSize(18);
     this.pdf.setFont('helvetica', 'bold');
     const receiptText = 'RECEIPT';
     const receiptWidth = this.pdf.getTextWidth(receiptText);
-    this.pdf.text(receiptText, this.pageWidth - this.margin - receiptWidth - 10, this.currentY + 12);
+    this.pdf.text(receiptText, this.pageWidth - this.margin - receiptWidth - 5, this.currentY + 15);
     
-    this.pdf.setFontSize(9);
+    this.pdf.setFontSize(10);
     this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setTextColor(107, 114, 128);
     const receiptNumber = `#${this.data.receiptNumber}`;
     const receiptNumWidth = this.pdf.getTextWidth(receiptNumber);
-    this.pdf.text(receiptNumber, this.pageWidth - this.margin - receiptNumWidth - 10, this.currentY + 18);
+    this.pdf.text(receiptNumber, this.pageWidth - this.margin - receiptNumWidth - 5, this.currentY + 23);
     
     const dateText = this.formatDate(this.data.date);
     const dateWidth = this.pdf.getTextWidth(dateText);
-    this.pdf.text(dateText, this.pageWidth - this.margin - dateWidth - 10, this.currentY + 23);
+    this.pdf.text(dateText, this.pageWidth - this.margin - dateWidth - 5, this.currentY + 31);
     
-    this.currentY += 28;
+    this.currentY += 50;
   }
 
-  private addTransactionSummary(): void {
-    // Status Badge
-    const statusColor = this.data.status === 'completed' ? [16, 185, 129] : 
-                       this.data.status === 'pending' ? [245, 158, 11] : [239, 68, 68];
+  // Transaction summary card exactly like preview page
+  private addPreviewStyleTransactionCard(): void {
+    // White card with border
+    this.pdf.setFillColor(255, 255, 255);
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 45, 4, 4, 'F');
+    this.pdf.setDrawColor(226, 232, 240);
+    this.pdf.setLineWidth(1);
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 45, 4, 4, 'S');
     
-    this.pdf.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
-    this.pdf.roundedRect(this.margin, this.currentY, 40, 8, 2, 2, 'F');
-    
-    this.pdf.setTextColor(255, 255, 255);
-    this.pdf.setFontSize(10);
-    this.pdf.setFont('helvetica', 'bold');
-    const statusText = this.data.status.toUpperCase();
-    this.pdf.text(statusText, this.margin + (40 - this.pdf.getTextWidth(statusText)) / 2, this.currentY + 5.5);
-    
-    this.currentY += 15;
-    
-    // Main transaction summary box
-    this.pdf.setFillColor(249, 250, 251); // Light background
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 35, 3, 3, 'F');
-    
-    // Left side - Amount sent
-    this.pdf.setTextColor(31, 41, 55); // Dark text
+    // Left side - Amount Sent
+    this.pdf.setTextColor(107, 114, 128);
     this.pdf.setFontSize(10);
     this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text('Amount Sent', this.margin + 10, this.currentY + 8);
+    this.pdf.text('Amount Sent', this.margin + 15, this.currentY + 15);
     
-    this.pdf.setFontSize(20);
+    // Large amount
+    this.pdf.setFontSize(24);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.setTextColor(124, 101, 193); // Farcaster Purple
-    const amountText = `${this.formatCurrency(this.data.localAmount)} ${this.data.localCurrency}`;
-    this.pdf.text(amountText, this.margin + 10, this.currentY + 20);
-    
-    this.pdf.setFontSize(10);
-    this.pdf.setTextColor(107, 114, 128); // Gray
-    this.pdf.setFont('helvetica', 'normal');
-    const usdcText = `≈ $${this.data.usdcAmount.toFixed(4)} USDC`;
-    this.pdf.text(usdcText, this.margin + 10, this.currentY + 27);
-    
-    // Right side - Recipient
-    const rightX = this.margin + this.contentWidth - 80;
     this.pdf.setTextColor(31, 41, 55);
+    const amountText = `${this.formatCurrency(this.data.localAmount)} ${this.data.localCurrency}`;
+    this.pdf.text(amountText, this.margin + 15, this.currentY + 28);
+    
+    // USDC equivalent with ~ sign
+    this.pdf.setFontSize(10);
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.setFont('helvetica', 'bold');
+    const usdcText = `~ $${this.data.usdcAmount.toFixed(4)} USDC`;
+    this.pdf.text(usdcText, this.margin + 15, this.currentY + 38);
+    
+    // Right side - Sent To
+    const rightX = this.margin + this.contentWidth - 90;
+    this.pdf.setTextColor(107, 114, 128);
     this.pdf.setFontSize(10);
     this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text('Sent To', rightX, this.currentY + 8);
+    this.pdf.text('Sent To', rightX, this.currentY + 15);
     
-    this.pdf.setFontSize(12);
+    // Recipient name in blue
+    this.pdf.setFontSize(14);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.setTextColor(0, 82, 255); // Base Blue
-    
-    // Handle long recipient names
+    this.pdf.setTextColor(37, 99, 235);
     const recipientName = this.data.recipientName;
-    const maxWidth = 70;
-    if (this.pdf.getTextWidth(recipientName) > maxWidth) {
-      const splitName = this.pdf.splitTextToSize(recipientName, maxWidth);
-      this.pdf.text(splitName, rightX, this.currentY + 16);
+    if (recipientName.length > 15) {
+      this.pdf.text(recipientName.substring(0, 15) + '...', rightX, this.currentY + 26);
     } else {
-      this.pdf.text(recipientName, rightX, this.currentY + 16);
+      this.pdf.text(recipientName, rightX, this.currentY + 26);
     }
     
-    this.pdf.setFontSize(9);
-    this.pdf.setTextColor(107, 114, 128);
-    this.pdf.setFont('helvetica', 'normal');
+    // Mobile/Account number - bold
+    this.pdf.setFontSize(10);
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.setFont('helvetica', 'bold');
     const contactText = this.data.localCurrency === 'KES' ? 
       `Mobile: ${this.data.recipientContact}` : 
       `Account: ${this.data.recipientContact}`;
-    this.pdf.text(contactText, rightX, this.currentY + 27);
+    this.pdf.text(contactText, rightX, this.currentY + 36);
     
-    this.currentY += 35;
+    this.currentY += 55;
+  }
+
+  // Payment Details section exactly like preview page
+  private addPreviewStylePaymentDetails(): void {
+    // Section header
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.setFontSize(14);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text('Payment Details', this.margin, this.currentY);
+    this.currentY += 10;
+    
+    // Grid layout - 2 columns like preview
+    const leftCol = this.margin;
+    const rightCol = this.margin + (this.contentWidth / 2);
+    const rowHeight = 8;
+    
+    // Row 1: Exchange Rate | Network
+    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.setFontSize(10);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.text('Exchange Rate:', leftCol, this.currentY);
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.text(`1 USDC = ${this.data.exchangeRate.toFixed(2)} ${this.data.localCurrency}`, leftCol + 32, this.currentY);
+    
+    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.text('Network:', rightCol, this.currentY);
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.text('Base (Ethereum L2)', rightCol + 22, this.currentY);
+    this.currentY += rowHeight;
+    
+    // Row 2: Token | Sender Wallet
+    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.text('Token:', leftCol, this.currentY);
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.text('USDC', leftCol + 18, this.currentY);
+    
+    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.text('Sender Wallet:', rightCol, this.currentY);
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.text(this.truncateAddress(this.data.senderWallet), rightCol + 37, this.currentY);
+    
+    this.currentY += 15;
+  }
+
+  // Fee Breakdown section exactly like preview page
+  private addPreviewStyleFeeBreakdown(): void {
+    // Section header
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.setFontSize(14);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text('Fee Breakdown', this.margin, this.currentY);
+    this.currentY += 10;
+    
+    const rowHeight = 6;
+    
+    // Fee rows
+    this.pdf.setFontSize(10);
+    
+    // Sender Fee
+    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.text('Sender Fee:', this.margin, this.currentY);
+    this.pdf.setTextColor(31, 41, 55);
+    const senderFeeText = `$${this.data.senderFee.toFixed(4)} USDC`;
+    const senderFeeWidth = this.pdf.getTextWidth(senderFeeText);
+    this.pdf.text(senderFeeText, this.pageWidth - this.margin - senderFeeWidth, this.currentY);
+    this.currentY += rowHeight;
+    
+    // Transaction Fee
+    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.text('Transaction Fee:', this.margin, this.currentY);
+    this.pdf.setTextColor(31, 41, 55);
+    const txFeeText = `$${this.data.transactionFee.toFixed(4)} USDC`;
+    const txFeeWidth = this.pdf.getTextWidth(txFeeText);
+    this.pdf.text(txFeeText, this.pageWidth - this.margin - txFeeWidth, this.currentY);
+    this.currentY += rowHeight + 2;
+    
+    // Total Fees with border
+    this.pdf.setDrawColor(226, 232, 240);
+    this.pdf.setLineWidth(0.5);
+    this.pdf.line(this.margin, this.currentY - 1, this.pageWidth - this.margin, this.currentY - 1);
+    
+    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text('Total Fees:', this.margin, this.currentY + 4);
+    this.pdf.setTextColor(31, 41, 55);
+    const totalFeesText = `$${this.data.totalFees.toFixed(4)} USDC`;
+    const totalFeesWidth = this.pdf.getTextWidth(totalFeesText);
+    this.pdf.text(totalFeesText, this.pageWidth - this.margin - totalFeesWidth, this.currentY + 4);
+    
+    this.currentY += 15;
+  }
+
+  // Net Amount section exactly like preview page
+  private addPreviewStyleNetAmount(): void {
+    // Light gray background with border
+    this.pdf.setFillColor(248, 250, 252);
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 15, 3, 3, 'F');
+    this.pdf.setDrawColor(226, 232, 240);
+    this.pdf.setLineWidth(0.5);
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 15, 3, 3, 'S');
+    
+    // Text
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.setFontSize(11);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text('Net Amount Received by Recipient:', this.margin + 10, this.currentY + 10);
+    
+    const netAmountText = `${this.formatCurrency(this.data.netAmount)} ${this.data.localCurrency}`;
+    const netAmountWidth = this.pdf.getTextWidth(netAmountText);
+    this.pdf.text(netAmountText, this.pageWidth - this.margin - netAmountWidth - 10, this.currentY + 10);
+    
+    this.currentY += 25;
+  }
+
+  // Footer exactly like preview page
+  private async addPreviewStyleFooter(): Promise<void> {
+    // Move to bottom area
+    this.currentY = this.pageHeight - 50;
+    
+    // White background with border
+    this.pdf.setFillColor(255, 255, 255);
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 30, 3, 3, 'F');
+    this.pdf.setDrawColor(226, 232, 240);
+    this.pdf.setLineWidth(0.5);
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 30, 3, 3, 'S');
+    
+    // Left side - Help section
+    this.pdf.setTextColor(31, 41, 55);
+    this.pdf.setFontSize(11);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text('Need Help?', this.margin + 10, this.currentY + 12);
+    
+    this.pdf.setFontSize(9);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.text(`Email: ${this.data.supportEmail}`, this.margin + 10, this.currentY + 20);
+    this.pdf.text(`Visit: ${this.data.supportUrl}`, this.margin + 10, this.currentY + 26);
+    
+    // Right side - Base logo with "Built on" text positioned correctly
+    const rightAreaX = this.pageWidth - this.margin - 90;
+    
+    // "Built on" text first
+    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.setFontSize(9);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.text('Built on', rightAreaX, this.currentY + 18);
+    
+    // Base logo next to "Built on" - closer spacing
+    const logoX = rightAreaX + 18;
+    
+    try {
+      const svgResponse = await fetch('/Base_lockup_2color.svg');
+      if (svgResponse.ok) {
+        const svgText = await svgResponse.text();
+        const svgBlob = new Blob([svgText], { type: 'image/svg+xml' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+        
+        const baseLogoImg = new Image();
+        baseLogoImg.src = svgUrl;
+        
+        await new Promise((resolve) => {
+          baseLogoImg.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 80;
+            canvas.height = 20;
+            ctx!.drawImage(baseLogoImg, 0, 0, 80, 20);
+            const baseLogoDataUrl = canvas.toDataURL('image/png');
+            
+            // Add smaller Base logo
+            this.pdf.addImage(baseLogoDataUrl, 'PNG', logoX, this.currentY + 12, 20, 5);
+            
+            URL.revokeObjectURL(svgUrl);
+            resolve(true);
+          };
+          baseLogoImg.onerror = () => {
+            URL.revokeObjectURL(svgUrl);
+            resolve(false);
+          };
+        });
+      } else {
+        throw new Error('Failed to fetch SVG');
+      }
+    } catch {
+      // Fallback silently
+      // Fallback: Blue rectangle with "base" text - smaller size
+      this.pdf.setFillColor(0, 82, 255);
+      this.pdf.roundedRect(logoX, this.currentY + 14, 20, 6, 1, 1, 'F');
+      
+      this.pdf.setTextColor(255, 255, 255);
+      this.pdf.setFontSize(6);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.text('base', logoX + 5, this.currentY + 18);
+    }
+  }
+
+  private addTransactionSummary(): void {
+    // Transaction summary card - exactly like preview page
+    this.pdf.setFillColor(255, 255, 255); // White background
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 45, 4, 4, 'F');
+    
+    // Border exactly like preview
+    this.pdf.setDrawColor(226, 232, 240); // Light gray border
+    this.pdf.setLineWidth(1);
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 45, 4, 4, 'S');
+    
+    // Left side - Amount sent (exactly like preview)
+    this.pdf.setTextColor(107, 114, 128); // Gray text
+    this.pdf.setFontSize(10);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.text('Amount Sent', this.margin + 15, this.currentY + 15);
+    
+    // Large amount text - exactly like preview
+    this.pdf.setFontSize(24);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setTextColor(31, 41, 55); // Dark gray for amount
+    const amountText = `${this.formatCurrency(this.data.localAmount)} ${this.data.localCurrency}`;
+    this.pdf.text(amountText, this.margin + 15, this.currentY + 28);
+    
+    // USDC equivalent - bold like preview
+    this.pdf.setFontSize(10);
+    this.pdf.setTextColor(31, 41, 55); // Dark gray
+    this.pdf.setFont('helvetica', 'bold'); // Make USDC amount bold
+    const usdcText = `≈ $${this.data.usdcAmount.toFixed(4)} USDC`;
+    this.pdf.text(usdcText, this.margin + 15, this.currentY + 38);
+    
+    // Right side - Recipient (exactly like preview)
+    const rightX = this.margin + this.contentWidth - 90;
+    
+    // "Sent To" label
+    this.pdf.setTextColor(107, 114, 128); // Gray text like preview
+    this.pdf.setFontSize(10);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.text('Sent To', rightX, this.currentY + 15);
+    
+    // Recipient name - blue color like preview
+    this.pdf.setFontSize(14);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setTextColor(37, 99, 235); // Blue color like preview
+    
+    const recipientName = this.data.recipientName;
+    if (recipientName.length > 15) {
+      this.pdf.text(recipientName.substring(0, 15) + '...', rightX, this.currentY + 26);
+    } else {
+      this.pdf.text(recipientName, rightX, this.currentY + 26);
+    }
+    
+    // Mobile/Account number - bold black like preview
+    this.pdf.setFontSize(10);
+    this.pdf.setTextColor(31, 41, 55); // Dark gray
+    this.pdf.setFont('helvetica', 'bold'); // Bold like preview
+    const contactText = this.data.localCurrency === 'KES' ? 
+      `Mobile: ${this.data.recipientContact}` : 
+      `Account: ${this.data.recipientContact}`;
+    this.pdf.text(contactText, rightX, this.currentY + 36);
+    
+    this.currentY += 55;
   }
 
   private addPaymentDetails(): void {
@@ -222,19 +499,25 @@ export class ReceiptGenerator {
     
     this.addDetailsTable(feeDetails);
     
-    // Net amount received box with proper formatting
-    this.pdf.setFillColor(16, 185, 129); // Green background
-    this.pdf.roundedRect(this.margin, this.currentY + 5, this.contentWidth, 12, 2, 2, 'F');
+    // Net amount received box - clean white with border
+    this.pdf.setFillColor(248, 250, 252); // Very light gray background
+    this.pdf.roundedRect(this.margin, this.currentY + 5, this.contentWidth, 15, 3, 3, 'F');
     
-    this.pdf.setTextColor(255, 255, 255); // White text
+    // Add border
+    this.pdf.setDrawColor(226, 232, 240); // Light gray border
+    this.pdf.setLineWidth(0.5);
+    this.pdf.roundedRect(this.margin, this.currentY + 5, this.contentWidth, 15, 3, 3, 'S');
+    
+    this.pdf.setTextColor(31, 41, 55); // Dark text for good contrast
     this.pdf.setFontSize(11);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Net Amount Received by Recipient:', this.margin + 10, this.currentY + 12);
+    this.pdf.text('Net Amount Received by Recipient:', this.margin + 10, this.currentY + 14);
     
-    this.pdf.setTextColor(255, 255, 255); // White for amount
+    this.pdf.setTextColor(31, 41, 55); // Dark text for amount
+    this.pdf.setFont('helvetica', 'bold');
     const netAmount = `${this.formatCurrency(this.data.netAmount)} ${this.data.localCurrency}`;
     const netWidth = this.pdf.getTextWidth(netAmount);
-    this.pdf.text(netAmount, this.pageWidth - this.margin - netWidth - 10, this.currentY + 12);
+    this.pdf.text(netAmount, this.pageWidth - this.margin - netWidth - 10, this.currentY + 14);
     
     this.currentY += 17;
   }
@@ -278,8 +561,8 @@ export class ReceiptGenerator {
       this.pdf.text('Scan QR code to view on BaseScan', this.margin + qrSize + 10, this.currentY + 22);
       
       this.currentY += qrSize;
-    } catch (error) {
-      console.error('Failed to generate QR code:', error);
+    } catch {
+      // Continue without QR code
       // Continue without QR code
       this.pdf.setTextColor(107, 114, 128);
       this.pdf.setFontSize(10);
@@ -288,43 +571,89 @@ export class ReceiptGenerator {
     }
   }
 
-  private addFooter(): void {
+  private async addFooter(): Promise<void> {
     // Move to bottom of page
     this.currentY = this.pageHeight - 40;
     
-    // Support section
-    this.pdf.setFillColor(249, 250, 251);
+    // Support section - clean white background
+    this.pdf.setFillColor(255, 255, 255); // White background
     this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 25, 3, 3, 'F');
     
-    this.pdf.setTextColor(31, 41, 55);
+    // Subtle border
+    this.pdf.setDrawColor(226, 232, 240); // Light gray border
+    this.pdf.setLineWidth(0.5);
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 25, 3, 3, 'S');
+    
+    this.pdf.setTextColor(31, 41, 55); // Dark text
     this.pdf.setFontSize(11);
     this.pdf.setFont('helvetica', 'bold');
     this.pdf.text('Need Help?', this.margin + 10, this.currentY + 8);
     
     this.pdf.setFontSize(9);
     this.pdf.setFont('helvetica', 'normal');
-    this.pdf.setTextColor(107, 114, 128);
+    this.pdf.setTextColor(107, 114, 128); // Gray text
     this.pdf.text(`Email: ${this.data.supportEmail}`, this.margin + 10, this.currentY + 15);
     this.pdf.text(`Visit: ${this.data.supportUrl}`, this.margin + 10, this.currentY + 20);
     
-    // Base branding with logo simulation
-    const baseX = this.pageWidth - this.margin - 60;
+    // Base branding with actual logo from your project - exactly like preview
+    const baseX = this.pageWidth - this.margin - 80;
     
-    // Simulate Base logo (blue circle with white "b")
-    this.pdf.setFillColor(0, 82, 255); // Base Blue
-    this.pdf.circle(baseX, this.currentY + 15, 6, 'F');
-    
-    // Add "b" in the center of circle
-    this.pdf.setTextColor(255, 255, 255);
-    this.pdf.setFontSize(8);
-    this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('b', baseX - 2, this.currentY + 17);
-    
-    // "Built on Base" text
-    this.pdf.setTextColor(0, 82, 255); // Base Blue
-    this.pdf.setFontSize(9);
-    this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Built on Base', baseX + 10, this.currentY + 17);
+    try {
+      // For SVG files, we need to fetch and convert them differently
+      const svgResponse = await fetch('/Base_lockup_2color.svg');
+      if (svgResponse.ok) {
+        const svgText = await svgResponse.text();
+        
+        // Create a blob URL from the SVG
+        const svgBlob = new Blob([svgText], { type: 'image/svg+xml' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+        
+        const baseLogoImg = new Image();
+        baseLogoImg.src = svgUrl;
+        
+        await new Promise((resolve) => {
+          baseLogoImg.onload = () => {
+            // Convert SVG to canvas and then to base64
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 120;
+            canvas.height = 30;
+            ctx!.drawImage(baseLogoImg, 0, 0, 120, 30);
+            const baseLogoDataUrl = canvas.toDataURL('image/png');
+            
+            // Add Base logo to PDF
+            this.pdf.addImage(baseLogoDataUrl, 'PNG', baseX, this.currentY + 10, 30, 8);
+            
+            // Clean up blob URL
+            URL.revokeObjectURL(svgUrl);
+            resolve(true);
+          };
+          baseLogoImg.onerror = () => {
+            URL.revokeObjectURL(svgUrl);
+            resolve(false);
+          };
+        });
+      } else {
+        throw new Error('Failed to fetch SVG');
+      }
+    } catch {
+      // Fallback silently
+      // Fallback: Create Base logo exactly like preview - blue square with "base" text
+      this.pdf.setFillColor(0, 82, 255); // Base Blue
+      this.pdf.roundedRect(baseX, this.currentY + 12, 24, 8, 1, 1, 'F');
+      
+      // Add "base" text in white
+      this.pdf.setTextColor(255, 255, 255); // White text
+      this.pdf.setFontSize(7);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.text('base', baseX + 6, this.currentY + 17);
+      
+      // Add "Built on" text next to logo
+      this.pdf.setTextColor(107, 114, 128); // Gray text like preview
+      this.pdf.setFontSize(9);
+      this.pdf.setFont('helvetica', 'normal');
+      this.pdf.text('Built on', baseX + 28, this.currentY + 16);
+    }
     
     // Disclaimer
     this.currentY += 30;
