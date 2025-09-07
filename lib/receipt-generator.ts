@@ -72,73 +72,60 @@ export class ReceiptGenerator {
   }
 
   private async addHeader(): Promise<void> {
-    // Modern clean header with subtle styling
-    this.pdf.setFillColor(248, 250, 252); // Very light gray background
-    this.pdf.rect(this.margin, this.currentY, this.contentWidth, 35, 'F');
+    // Brand header with gradient-like effect using brand colors
+    this.pdf.setFillColor(99, 102, 241); // Indigo blue background
+    this.pdf.rect(this.margin, this.currentY, this.contentWidth, 30, 'F');
     
-    // Subtle border
-    this.pdf.setDrawColor(226, 232, 240);
-    this.pdf.setLineWidth(0.5);
-    this.pdf.line(this.margin, this.currentY + 35, this.margin + this.contentWidth, this.currentY + 35);
+    // Purple accent bar
+    this.pdf.setFillColor(147, 51, 234); // Purple accent
+    this.pdf.rect(this.margin, this.currentY + 30, this.contentWidth, 3, 'F');
     
-    // Company name - Clean, bold typography
-    this.pdf.setTextColor(15, 23, 42); // Very dark gray/slate
-    this.pdf.setFontSize(32);
+    // Company name - Clean, bold typography in white
+    this.pdf.setTextColor(255, 255, 255); // White text for contrast
+    this.pdf.setFontSize(28);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Minisend', this.margin + 5, this.currentY + 22);
+    this.pdf.text('Minisend', this.margin + 8, this.currentY + 20);
     
-    // Subtle tagline
-    this.pdf.setTextColor(100, 116, 139); // Medium gray
-    this.pdf.setFontSize(9);
+    // Tagline in light text
+    this.pdf.setTextColor(219, 234, 254); // Very light blue
+    this.pdf.setFontSize(8);
     this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text('Crypto to Mobile Money', this.margin + 5, this.currentY + 30);
+    this.pdf.text('USDC to Mobile Money', this.margin + 8, this.currentY + 27);
     
-    // Receipt info - right aligned, minimal
-    this.pdf.setTextColor(71, 85, 105); // Darker gray
+    // Receipt info - right aligned, in white for contrast
+    this.pdf.setTextColor(255, 255, 255); // White text
     this.pdf.setFontSize(11);
     this.pdf.setFont('helvetica', 'bold');
     const receiptText = 'Receipt';
     const receiptWidth = this.pdf.getTextWidth(receiptText);
-    this.pdf.text(receiptText, this.pageWidth - this.margin - receiptWidth - 5, this.currentY + 15);
+    this.pdf.text(receiptText, this.pageWidth - this.margin - receiptWidth - 8, this.currentY + 12);
     
-    this.pdf.setFontSize(10);
+    this.pdf.setFontSize(9);
     this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setTextColor(219, 234, 254); // Light blue
     const receiptNumber = `#${this.data.receiptNumber}`;
     const receiptNumWidth = this.pdf.getTextWidth(receiptNumber);
-    this.pdf.text(receiptNumber, this.pageWidth - this.margin - receiptNumWidth - 5, this.currentY + 23);
+    this.pdf.text(receiptNumber, this.pageWidth - this.margin - receiptNumWidth - 8, this.currentY + 19);
     
     const dateText = this.formatDate(this.data.date);
     const dateWidth = this.pdf.getTextWidth(dateText);
-    this.pdf.text(dateText, this.pageWidth - this.margin - dateWidth - 5, this.currentY + 31);
+    this.pdf.text(dateText, this.pageWidth - this.margin - dateWidth - 8, this.currentY + 26);
     
-    this.currentY += 45;
+    this.currentY += 43;
   }
 
   private addTransactionSummary(): void {
-    // Modern status indicator - minimal and clean
-    const statusColor = this.data.status === 'completed' ? [34, 197, 94] : 
-                       this.data.status === 'pending' ? [251, 146, 60] : [248, 113, 113];
+    // Remove status indicator - clean minimal design
+    this.currentY += 5;
     
-    // Subtle status badge
-    this.pdf.setFillColor(statusColor[0], statusColor[1], statusColor[2], 0.1);
-    this.pdf.roundedRect(this.margin, this.currentY, 45, 10, 5, 5, 'F');
-    
-    this.pdf.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
-    this.pdf.setFontSize(8);
-    this.pdf.setFont('helvetica', 'bold');
-    const statusText = this.data.status.charAt(0).toUpperCase() + this.data.status.slice(1);
-    this.pdf.text(statusText, this.margin + (45 - this.pdf.getTextWidth(statusText)) / 2, this.currentY + 6.5);
-    
-    this.currentY += 20;
-    
-    // Clean transaction summary - card-like design
+    // Clean transaction summary - card with subtle brand accent
     this.pdf.setFillColor(255, 255, 255);
     this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 40, 4, 4, 'F');
-    this.pdf.setDrawColor(241, 245, 249);
-    this.pdf.setLineWidth(1);
+    this.pdf.setDrawColor(147, 51, 234, 0.3); // Light purple border
+    this.pdf.setLineWidth(1.5);
     this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 40, 4, 4, 'S');
     
-    // Left side - Amount with modern typography
+    // Left side - Amount with brand colors
     this.pdf.setTextColor(100, 116, 139);
     this.pdf.setFontSize(9);
     this.pdf.setFont('helvetica', 'normal');
@@ -146,12 +133,12 @@ export class ReceiptGenerator {
     
     this.pdf.setFontSize(22);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.setTextColor(15, 23, 42);
+    this.pdf.setTextColor(99, 102, 241); // Blue for amount
     const amountText = `${this.formatCurrency(this.data.localAmount)} ${this.data.localCurrency}`;
     this.pdf.text(amountText, this.margin + 15, this.currentY + 25);
     
     this.pdf.setFontSize(9);
-    this.pdf.setTextColor(148, 163, 184);
+    this.pdf.setTextColor(147, 51, 234); // Purple for USDC equivalent
     this.pdf.setFont('helvetica', 'normal');
     const usdcText = `≈ $${this.data.usdcAmount.toFixed(4)} USDC`;
     this.pdf.text(usdcText, this.margin + 15, this.currentY + 33);
@@ -217,19 +204,24 @@ export class ReceiptGenerator {
     
     this.addDetailsTable(feeDetails);
     
-    // Net amount received box
-    this.pdf.setFillColor(16, 185, 129, 0.1); // Light green background
-    this.pdf.roundedRect(this.margin, this.currentY + 5, this.contentWidth, 12, 2, 2, 'F');
+    // Net amount received box with brand colors
+    this.pdf.setFillColor(99, 102, 241, 0.1); // Light blue background (Indigo)
+    this.pdf.roundedRect(this.margin, this.currentY + 5, this.contentWidth, 15, 3, 3, 'F');
     
-    this.pdf.setTextColor(31, 41, 55);
+    // Add subtle border with purple accent
+    this.pdf.setDrawColor(147, 51, 234); // Purple border
+    this.pdf.setLineWidth(0.5);
+    this.pdf.roundedRect(this.margin, this.currentY + 5, this.contentWidth, 15, 3, 3, 'S');
+    
+    this.pdf.setTextColor(15, 23, 42); // Dark slate for high contrast
     this.pdf.setFontSize(11);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Net Amount Received by Recipient:', this.margin + 10, this.currentY + 12);
+    this.pdf.text('Net Amount Received by Recipient:', this.margin + 10, this.currentY + 14);
     
-    this.pdf.setTextColor(16, 185, 129); // Green
+    this.pdf.setTextColor(99, 102, 241); // Blue for amount
     const netAmount = `${this.formatCurrency(this.data.netAmount)} ${this.data.localCurrency}`;
     const netWidth = this.pdf.getTextWidth(netAmount);
-    this.pdf.text(netAmount, this.pageWidth - this.margin - netWidth - 10, this.currentY + 12);
+    this.pdf.text(netAmount, this.pageWidth - this.margin - netWidth - 10, this.currentY + 14);
     
     this.currentY += 17;
   }

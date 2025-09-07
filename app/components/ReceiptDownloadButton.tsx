@@ -73,7 +73,7 @@ export function ReceiptDownloadButton({
     lg: 'px-6 py-3 text-base'
   };
 
-  const baseStyles = 'inline-flex items-center gap-2 font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'inline-flex items-center justify-center gap-2 font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
     <div className="space-y-2">
