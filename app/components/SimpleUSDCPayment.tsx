@@ -459,7 +459,7 @@ export function SimpleUSDCPayment({
                 account_number: accountNumber,
                 bank_code: bankCode,
                 wallet_address: returnAddress,
-                rate: rate || 0,
+                rate: rate ?? 0,
                 sender_fee: parseFloat(paycrestOrder.senderFee || '0'),
                 transaction_fee: parseFloat(paycrestOrder.transactionFee || '0'),
                 status: 'completed',

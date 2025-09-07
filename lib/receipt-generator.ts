@@ -379,7 +379,7 @@ export function createReceiptFromOrder(orderData: OrderData): ReceiptData {
   const receiptNumber = `MSR${Date.now().toString().slice(-8)}`;
   
   return {
-    transactionId: orderData.id || orderData.paycrest_order_id,
+    transactionId: orderData.id || orderData.paycrest_order_id || `TXN${Date.now()}`,
     paycrestOrderId: orderData.paycrest_order_id || orderData.id,
     date: orderData.created_at || now,
     status: orderData.status || 'completed',
@@ -396,8 +396,8 @@ export function createReceiptFromOrder(orderData: OrderData): ReceiptData {
     
     recipientName: orderData.account_name || orderData.accountName || 'Unknown',
     recipientContact: orderData.local_currency === 'KES' ? 
-      (orderData.phone_number || orderData.phoneNumber) : 
-      (orderData.account_number || orderData.accountNumber),
+      (orderData.phone_number || orderData.phoneNumber || 'Unknown') : 
+      (orderData.account_number || orderData.accountNumber || 'Unknown'),
     recipientBank: orderData.bank_name || undefined,
     recipientBankCode: orderData.bank_code || orderData.bankCode || undefined,
     
