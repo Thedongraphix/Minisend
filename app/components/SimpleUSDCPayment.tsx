@@ -5,6 +5,7 @@ import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLab
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
+import { ReceiptSection } from './ReceiptDownloadButton';
 
 interface SimpleUSDCPaymentProps {
   amount: string;
@@ -444,6 +445,32 @@ export function SimpleUSDCPayment({
           <p className="text-gray-300 text-sm">
             Your {currency} has been sent to {currency === 'KES' ? phoneNumber : accountName}
           </p>
+          
+          {/* Receipt Download Section */}
+          {paycrestOrder && (
+            <ReceiptSection 
+              orderData={{
+                id: paycrestOrder.id,
+                amount_in_usdc: parseFloat(amount),
+                amount_in_local: rate ? parseFloat(amount) * rate : 0,
+                local_currency: currency,
+                account_name: accountName,
+                phone_number: phoneNumber,
+                account_number: accountNumber,
+                bank_code: bankCode,
+                wallet_address: returnAddress,
+                rate: rate,
+                sender_fee: parseFloat(paycrestOrder.senderFee || '0'),
+                transaction_fee: parseFloat(paycrestOrder.transactionFee || '0'),
+                status: 'completed',
+                created_at: new Date().toISOString(),
+                paycrest_order_id: paycrestOrder.id,
+                receive_address: paycrestOrder.receiveAddress,
+                valid_until: paycrestOrder.validUntil,
+              }}
+              className="mt-4"
+            />
+          )}
         </div>
       )}
     </div>

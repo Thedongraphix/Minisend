@@ -9,6 +9,7 @@ import { MobileWalletHandler } from './MobileWalletHandler';
 import { Button } from './DemoComponents';
 import Image from 'next/image';
 import { trackOffRampEvent, trackAPIEvent, trackWalletEvent } from '@/lib/analytics';
+import { ReceiptSection } from './ReceiptDownloadButton';
 
 interface SimpleOffRampFlowProps {
   setActiveTab: (tab: string) => void;
@@ -230,7 +231,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
       setAccountVerified(false);
       setFormData(prev => ({ ...prev, accountName: '' }));
     }
-  }, [formData.accountNumber, formData.bankCode, formData.currency, isAccountNumberValid, accountVerified]);
+  }, [formData.accountNumber, formData.bankCode, formData.currency, isAccountNumberValid, accountVerified, verifyAccount]);
 
   // Auto-fetch rates when amount or currency changes
   useEffect(() => {
@@ -657,6 +658,27 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
           <p className="text-gray-300 text-sm">
             Your {formData.currency} has been sent to {formData.currency === 'KES' ? formData.phoneNumber : formData.accountName}
           </p>
+          
+          {/* Receipt Download Section */}
+          <ReceiptSection 
+            orderData={{
+              id: `order_${Date.now()}`,
+              amount_in_usdc: currentRate ? parseFloat(formData.amount) / currentRate : parseFloat(formData.amount),
+              amount_in_local: parseFloat(formData.amount),
+              local_currency: formData.currency,
+              account_name: formData.accountName,
+              phone_number: formData.phoneNumber,
+              account_number: formData.accountNumber,
+              bank_code: formData.bankCode,
+              wallet_address: address,
+              rate: currentRate,
+              sender_fee: 0,
+              transaction_fee: 0,
+              status: 'completed',
+              created_at: new Date().toISOString(),
+            }}
+            className="mt-6"
+          />
           
           <div className="space-y-4">
             <button
