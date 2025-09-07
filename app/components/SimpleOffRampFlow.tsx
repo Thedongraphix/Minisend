@@ -175,7 +175,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
   };
 
   // Verify account for NGN
-  const verifyAccount = async (accountNumber: string, bankCode: string) => {
+  const verifyAccount = useCallback(async (accountNumber: string, bankCode: string) => {
     if (!accountNumber || !bankCode) return;
     
     setVerifyingAccount(true);
@@ -210,7 +210,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
     } finally {
       setVerifyingAccount(false);
     }
-  };
+  }, []);
 
   // Check if account number format is valid (10+ digits for Nigerian banks)
   const isAccountNumberValid = formData.accountNumber.length >= 10 && 
@@ -670,7 +670,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
               phone_number: formData.phoneNumber,
               account_number: formData.accountNumber,
               bank_code: formData.bankCode,
-              wallet_address: address,
+              wallet_address: address || '',
               rate: currentRate,
               sender_fee: 0,
               transaction_fee: 0,
