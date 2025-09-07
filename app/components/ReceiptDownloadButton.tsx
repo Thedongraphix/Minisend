@@ -61,7 +61,7 @@ export function ReceiptDownloadButton({
 
   // Variant styles
   const variantStyles = {
-    primary: 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl',
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl',
     secondary: 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600',
     minimal: 'bg-transparent hover:bg-gray-100 text-gray-700 border border-gray-300 hover:border-gray-400'
   };
@@ -181,8 +181,8 @@ export function ReceiptSection({
     <div className={className}>
       <ReceiptDownloadButton 
         orderData={orderData}
-        variant="secondary"
-        size="md"
+        variant="primary"
+        size="lg"
         className="w-full"
       />
     </div>

@@ -63,7 +63,7 @@ export const MINISEND_RECEIPT_STYLES: ReceiptStyles = {
   backgroundPrimary: '#FFFFFF', // White
   backgroundSecondary: '#F9FAFB', // Light Gray
   
-  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+  fontFamily: 'Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, sans-serif',
   headerFontSize: 24,
   bodyFontSize: 12,
   smallFontSize: 10,

@@ -681,34 +681,6 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
           />
           
           <div className="space-y-4">
-            <button
-              onClick={() => {
-                // Track flow completion
-                trackOffRampEvent('flow_completed', {
-                  currency: formData.currency,
-                  amount: parseFloat(formData.amount),
-                  usdcAmount: currentRate ? parseFloat(formData.amount) / currentRate : undefined,
-                  rate: currentRate || undefined,
-                  step: 3,
-                  success: true,
-                }, context || undefined);
-                
-                // Track repeat action intent
-                trackOffRampEvent('repeat_payment_clicked', {
-                  currency: formData.currency,
-                  amount: parseFloat(formData.amount),
-                  success: true,
-                }, context || undefined);
-                
-                setStep('form');
-                setFormData({ amount: '', phoneNumber: '', accountNumber: '', bankCode: '', accountName: '', currency: 'KES' });
-                setCurrentRate(null);
-                setAccountVerified(false);
-              }}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
-            >
-              Send Another Payment
-            </button>
             
             {/* Social Icons */}
             <div className="flex space-x-4 justify-center pt-2">
