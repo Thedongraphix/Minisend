@@ -219,7 +219,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
 
   // Auto-verify account when account number and bank code are provided and format is valid
   useEffect(() => {
-    if (formData.currency === 'NGN' && formData.bankCode && isAccountNumberValid) {
+    if (formData.currency === 'NGN' && formData.bankCode && isAccountNumberValid && !accountVerified) {
       const debounceTimer = setTimeout(() => {
         verifyAccount(formData.accountNumber, formData.bankCode);
       }, 1000); // Debounce for 1 second
@@ -230,7 +230,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
       setAccountVerified(false);
       setFormData(prev => ({ ...prev, accountName: '' }));
     }
-  }, [formData.accountNumber, formData.bankCode, formData.currency, isAccountNumberValid, verifyAccount]);
+  }, [formData.accountNumber, formData.bankCode, formData.currency, isAccountNumberValid, accountVerified]);
 
   // Auto-fetch rates when amount or currency changes
   useEffect(() => {
