@@ -591,7 +591,9 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
               </div>
               <div className="flex justify-between text-gray-300">
                 <span>To:</span>
-                <span>{formData.phoneNumber}</span>
+                <span>
+                  {formData.currency === 'KES' ? formData.phoneNumber : formData.accountName}
+                </span>
               </div>
             </div>
           </div>
