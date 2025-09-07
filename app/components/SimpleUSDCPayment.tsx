@@ -442,7 +442,7 @@ export function SimpleUSDCPayment({
           </div>
           <h3 className="text-white font-bold text-xl">Payment Sent</h3>
           <p className="text-gray-300 text-sm">
-            Your {currency} has been sent to {currency === 'KES' ? phoneNumber : accountNumber}
+            Your {currency} has been sent to {currency === 'KES' ? phoneNumber : accountName}
           </p>
         </div>
       )}
