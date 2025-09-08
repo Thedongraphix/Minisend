@@ -31,34 +31,29 @@ export class ReceiptGenerator {
   }
 
   async generatePDF(): Promise<Blob> {
-    // Set background color for the entire page
-    this.pdf.setFillColor(248, 250, 252); // Light gray background
+    // Set clean background
+    this.pdf.setFillColor(248, 250, 252);
     this.pdf.rect(0, 0, this.pageWidth, this.pageHeight, 'F');
     
-    // Set up modern font styling
+    // Initialize font settings
     this.setupFontStyling();
     
-    // Modern header with Minisend logo
+    // Header section
     await this.addPreviewStyleHeader();
-    this.addSpacing(15);
     
-    // Clean transaction summary card
+    // Transaction summary card
     this.addPreviewStyleTransactionCard();
-    this.addSpacing(20);
     
-    // Streamlined payment details
+    // Payment details
     this.addPreviewStylePaymentDetails();
-    this.addSpacing(20);
     
-    // Simplified fee breakdown (only if fees exist)
+    // Fee breakdown (only if fees exist)
     this.addPreviewStyleFeeBreakdown();
-    this.addSpacing(15);
     
-    // Success-styled net amount
+    // Net amount received
     this.addPreviewStyleNetAmount();
-    this.addSpacing(25);
     
-    // Modern footer with Base branding
+    // Footer
     await this.addPreviewStyleFooter();
     
     return this.pdf.output('blob');
@@ -74,18 +69,24 @@ export class ReceiptGenerator {
     this.pdf.setFontSize(10); // Default readable size
   }
 
-  // Modern, clean header with Minisend branding
+  // Fixed header section with proper spacing
   private async addPreviewStyleHeader(): Promise<void> {
-    // Clean background with minimal styling
+    const headerHeight = 60;
+    
+    // Clean white background
     this.pdf.setFillColor(255, 255, 255);
-    this.pdf.rect(this.margin, this.currentY, this.contentWidth, 50, 'F');
+    this.pdf.rect(this.margin, this.currentY, this.contentWidth, headerHeight, 'F');
     
     // Subtle bottom border
-    this.pdf.setDrawColor(240, 240, 240);
+    this.pdf.setDrawColor(229, 231, 235);
     this.pdf.setLineWidth(1);
-    this.pdf.line(this.margin, this.currentY + 50, this.margin + this.contentWidth, this.currentY + 50);
+    this.pdf.line(this.margin, this.currentY + headerHeight, this.margin + this.contentWidth, this.currentY + headerHeight);
     
-    // Left side - Minisend logo and branding
+    // Left side - Logo area
+    const logoX = this.margin + 10;
+    const logoY = this.currentY + 15;
+    const logoSize = 18;
+    
     try {
       const logoImg = new Image();
       logoImg.src = '/minisend-logo.png';
@@ -99,181 +100,202 @@ export class ReceiptGenerator {
           ctx!.drawImage(logoImg, 0, 0);
           const logoDataUrl = canvas.toDataURL('image/png');
           
-          // Logo with better sizing and positioning
-          this.pdf.addImage(logoDataUrl, 'PNG', this.margin + 8, this.currentY + 12, 20, 18);
+          this.pdf.addImage(logoDataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
           resolve(true);
         };
         logoImg.onerror = () => {
-          // Modern fallback with gradient-like styling
-          this.pdf.setFillColor(168, 85, 247); // Purple like your logo
-          this.pdf.roundedRect(this.margin + 8, this.currentY + 12, 20, 18, 3, 3, 'F');
+          // Fallback logo
+          this.pdf.setFillColor(168, 85, 247);
+          this.pdf.roundedRect(logoX, logoY, logoSize, logoSize, 3, 3, 'F');
           this.pdf.setTextColor(255, 255, 255);
-          this.pdf.setFontSize(12);
+          this.pdf.setFontSize(10);
           this.pdf.setFont('helvetica', 'bold');
-          this.pdf.text('M', this.margin + 16, this.currentY + 23);
+          this.pdf.text('M', logoX + 7, logoY + 12);
           resolve(true);
         };
       });
     } catch {
-      // Fallback with modern purple styling
+      // Fallback logo
       this.pdf.setFillColor(168, 85, 247);
-      this.pdf.roundedRect(this.margin + 8, this.currentY + 12, 20, 18, 3, 3, 'F');
+      this.pdf.roundedRect(logoX, logoY, logoSize, logoSize, 3, 3, 'F');
       this.pdf.setTextColor(255, 255, 255);
-      this.pdf.setFontSize(12);
+      this.pdf.setFontSize(10);
       this.pdf.setFont('helvetica', 'bold');
-      this.pdf.text('M', this.margin + 16, this.currentY + 23);
+      this.pdf.text('M', logoX + 7, logoY + 12);
     }
     
-    // Company name with modern typography
-    this.pdf.setTextColor(17, 24, 39); // Darker, cleaner text
-    this.pdf.setFontSize(28);
-    this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Minisend', this.margin + 35, this.currentY + 24);
-    
-    // Tagline with better spacing
-    this.pdf.setFontSize(11);
-    this.pdf.setFont('helvetica', 'normal');
-    this.pdf.setTextColor(100, 116, 139);
-    this.pdf.text('Instant USDC to Mobile Money', this.margin + 35, this.currentY + 36);
-    
-    // Right side - Receipt info with cleaner layout
+    // Company name - positioned after logo with spacing
+    const companyX = logoX + logoSize + 10;
     this.pdf.setTextColor(17, 24, 39);
-    this.pdf.setFontSize(20);
+    this.pdf.setFontSize(22);
     this.pdf.setFont('helvetica', 'bold');
-    const receiptText = 'RECEIPT';
-    const receiptWidth = this.pdf.getTextWidth(receiptText);
-    this.pdf.text(receiptText, this.pageWidth - this.margin - receiptWidth - 8, this.currentY + 20);
+    this.pdf.text('Minisend', companyX, this.currentY + 28);
     
-    this.pdf.setFontSize(11);
+    // Tagline - positioned below company name
+    this.pdf.setFontSize(9);
     this.pdf.setFont('helvetica', 'normal');
     this.pdf.setTextColor(100, 116, 139);
-    const receiptNumber = `#${this.data.receiptNumber}`;
-    const receiptNumWidth = this.pdf.getTextWidth(receiptNumber);
-    this.pdf.text(receiptNumber, this.pageWidth - this.margin - receiptNumWidth - 8, this.currentY + 30);
+    this.pdf.text('Instant USDC to Mobile Money', companyX, this.currentY + 38);
     
-    const dateText = this.formatDate(this.data.date);
-    const dateWidth = this.pdf.getTextWidth(dateText);
-    this.pdf.text(dateText, this.pageWidth - this.margin - dateWidth - 8, this.currentY + 40);
+    // Right side - Receipt info
+    const rightAreaX = this.pageWidth - this.margin - 70;
     
-    this.currentY += 65;
+    this.pdf.setTextColor(17, 24, 39);
+    this.pdf.setFontSize(16);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text('RECEIPT', rightAreaX, this.currentY + 22);
+    
+    this.pdf.setFontSize(9);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setTextColor(100, 116, 139);
+    this.pdf.text(`#${this.data.receiptNumber}`, rightAreaX, this.currentY + 32);
+    this.pdf.text(this.formatDate(this.data.date), rightAreaX, this.currentY + 42);
+    
+    this.currentY += headerHeight + 10;
   }
 
-  // Clean, modern transaction summary card
+  // Fixed transaction card with proper spacing
   private addPreviewStyleTransactionCard(): void {
-    // Subtle gradient-like background with rounded corners
-    this.pdf.setFillColor(249, 250, 251);
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 55, 6, 6, 'F');
+    const cardHeight = 65;
+    const cardPadding = 15;
     
-    // Subtle border
+    // Card background
+    this.pdf.setFillColor(249, 250, 251);
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, cardHeight, 6, 6, 'F');
+    
+    // Card border
     this.pdf.setDrawColor(229, 231, 235);
     this.pdf.setLineWidth(1);
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 55, 6, 6, 'S');
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, cardHeight, 6, 6, 'S');
     
-    // Left side - Amount section with better hierarchy
+    // Define column positions
+    const leftColX = this.margin + cardPadding;
+    const rightColX = this.margin + (this.contentWidth * 0.6);
+    const cardY = this.currentY;
+    
+    // Left column - Amount section
     this.pdf.setTextColor(100, 116, 139);
-    this.pdf.setFontSize(12);
+    this.pdf.setFontSize(10);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('AMOUNT SENT', this.margin + 20, this.currentY + 18);
+    this.pdf.text('AMOUNT SENT', leftColX, cardY + 18);
     
-    // Large amount with cleaner typography
-    this.pdf.setFontSize(26);
+    // Large amount - positioned with proper spacing
+    this.pdf.setFontSize(20);
     this.pdf.setFont('helvetica', 'bold');
     this.pdf.setTextColor(17, 24, 39);
     const amountText = `${this.formatCurrency(this.data.localAmount)} ${this.data.localCurrency}`;
-    this.pdf.text(amountText, this.margin + 20, this.currentY + 35);
+    this.pdf.text(amountText, leftColX, cardY + 35);
     
-    // USDC equivalent with cleaner formatting
-    this.pdf.setFontSize(11);
+    // USDC equivalent - positioned below amount
+    this.pdf.setFontSize(9);
     this.pdf.setTextColor(100, 116, 139);
     this.pdf.setFont('helvetica', 'normal');
     const usdcText = `≈ $${this.data.usdcAmount.toFixed(4)} USDC`;
-    this.pdf.text(usdcText, this.margin + 20, this.currentY + 47);
+    this.pdf.text(usdcText, leftColX, cardY + 48);
     
-    // Right side - Recipient section
-    const rightX = this.margin + this.contentWidth - 110;
+    // Right column - Recipient section
     this.pdf.setTextColor(100, 116, 139);
+    this.pdf.setFontSize(10);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text('RECIPIENT', rightColX, cardY + 18);
+    
+    // Recipient name - positioned with proper spacing
     this.pdf.setFontSize(12);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('RECIPIENT', rightX, this.currentY + 18);
-    
-    // Recipient name with purple accent color
-    this.pdf.setFontSize(15);
-    this.pdf.setFont('helvetica', 'bold');
-    this.pdf.setTextColor(168, 85, 247); // Purple like your logo
+    this.pdf.setTextColor(168, 85, 247);
     const recipientName = this.data.recipientName;
-    if (recipientName.length > 18) {
-      this.pdf.text(recipientName.substring(0, 18) + '...', rightX, this.currentY + 33);
-    } else {
-      this.pdf.text(recipientName, rightX, this.currentY + 33);
-    }
+    const maxNameLength = 20;
+    const displayName = recipientName.length > maxNameLength ? 
+      recipientName.substring(0, maxNameLength) + '...' : recipientName;
+    this.pdf.text(displayName, rightColX, cardY + 32);
     
-    // Contact info with cleaner formatting
-    this.pdf.setFontSize(10);
+    // Contact info - positioned below name
+    this.pdf.setFontSize(9);
     this.pdf.setTextColor(75, 85, 99);
     this.pdf.setFont('helvetica', 'normal');
     const contactText = this.data.localCurrency === 'KES' ? 
       this.data.recipientContact : 
       `***${this.data.recipientContact.slice(-4)}`;
-    this.pdf.text(contactText, rightX, this.currentY + 45);
+    this.pdf.text(contactText, rightColX, cardY + 45);
     
-    this.currentY += 70;
+    this.currentY += cardHeight + 15;
   }
 
-  // Modern payment details with card-like design
+  // Fixed payment details section with proper spacing
   private addPreviewStylePaymentDetails(): void {
-    // Section header with better spacing
+    // Section header
     this.pdf.setTextColor(17, 24, 39);
-    this.pdf.setFontSize(16);
+    this.pdf.setFontSize(14);
     this.pdf.setFont('helvetica', 'bold');
     this.pdf.text('TRANSACTION DETAILS', this.margin, this.currentY);
-    this.currentY += 18;
+    this.currentY += 20;
     
-    // Clean details card
+    // Details card with proper height
+    const cardHeight = 55;
+    const cardPadding = 12;
+    
     this.pdf.setFillColor(255, 255, 255);
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 35, 4, 4, 'F');
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, cardHeight, 4, 4, 'F');
     this.pdf.setDrawColor(229, 231, 235);
     this.pdf.setLineWidth(1);
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 35, 4, 4, 'S');
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, cardHeight, 4, 4, 'S');
     
-    // Two column layout with better spacing
-    const leftCol = this.margin + 15;
-    const rightCol = this.margin + (this.contentWidth / 2) + 10;
-    const detailY = this.currentY + 12;
+    // Define column positions with proper spacing
+    const leftCol = this.margin + cardPadding;
+    const rightCol = this.margin + (this.contentWidth * 0.52);
+    const cardY = this.currentY;
     
-    // Exchange Rate
+    // Row 1: Exchange Rate and Network
+    let rowY = cardY + 15;
+    
+    // Exchange Rate - Left column
     this.pdf.setTextColor(100, 116, 139);
-    this.pdf.setFontSize(10);
+    this.pdf.setFontSize(8);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Exchange Rate', leftCol, detailY);
-    this.pdf.setTextColor(17, 24, 39);
-    this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text(`1 USDC = ${this.data.exchangeRate.toFixed(2)} ${this.data.localCurrency}`, leftCol, detailY + 8);
+    this.pdf.text('Exchange Rate', leftCol, rowY);
     
-    // Network
+    this.pdf.setTextColor(17, 24, 39);
+    this.pdf.setFontSize(9);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.text(`1 USDC = ${this.data.exchangeRate.toFixed(2)} ${this.data.localCurrency}`, leftCol, rowY + 10);
+    
+    // Network - Right column
     this.pdf.setTextColor(100, 116, 139);
+    this.pdf.setFontSize(8);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Network', rightCol, detailY);
-    this.pdf.setTextColor(17, 24, 39);
-    this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text('Base Network', rightCol, detailY + 8);
+    this.pdf.text('Network', rightCol, rowY);
     
-    // Token
+    this.pdf.setTextColor(17, 24, 39);
+    this.pdf.setFontSize(9);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.text('Base Network', rightCol, rowY + 10);
+    
+    // Row 2: Token and From
+    rowY += 25;
+    
+    // Token - Left column
     this.pdf.setTextColor(100, 116, 139);
+    this.pdf.setFontSize(8);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Token', leftCol, detailY + 18);
-    this.pdf.setTextColor(17, 24, 39);
-    this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text('USD Coin (USDC)', leftCol, detailY + 26);
+    this.pdf.text('Token', leftCol, rowY);
     
-    // Sender (shortened)
+    this.pdf.setTextColor(17, 24, 39);
+    this.pdf.setFontSize(9);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.text('USD Coin (USDC)', leftCol, rowY + 10);
+    
+    // From - Right column
     this.pdf.setTextColor(100, 116, 139);
+    this.pdf.setFontSize(8);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('From', rightCol, detailY + 18);
-    this.pdf.setTextColor(17, 24, 39);
-    this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text(this.truncateAddress(this.data.senderWallet), rightCol, detailY + 26);
+    this.pdf.text('From', rightCol, rowY);
     
-    this.currentY += 55;
+    this.pdf.setTextColor(17, 24, 39);
+    this.pdf.setFontSize(9);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.text(this.truncateAddress(this.data.senderWallet), rightCol, rowY + 10);
+    
+    this.currentY += cardHeight + 15;
   }
 
   // Simplified, clean fee breakdown
@@ -315,69 +337,88 @@ export class ReceiptGenerator {
     }
   }
 
-  // Success-styled net amount section
+  // Fixed net amount section with proper spacing
   private addPreviewStyleNetAmount(): void {
+    const sectionHeight = 35;
+    const sectionPadding = 15;
+    
     // Success green background
     this.pdf.setFillColor(240, 253, 244);
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 30, 6, 6, 'F');
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, sectionHeight, 6, 6, 'F');
     this.pdf.setDrawColor(34, 197, 94);
     this.pdf.setLineWidth(2);
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 30, 6, 6, 'S');
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, sectionHeight, 6, 6, 'S');
     
-    // Success indicator
+    const sectionY = this.currentY;
+    
+    // Success indicator circle
     this.pdf.setFillColor(34, 197, 94);
-    this.pdf.circle(this.margin + 20, this.currentY + 15, 4, 'F');
+    this.pdf.circle(this.margin + 20, sectionY + 17, 4, 'F');
     this.pdf.setTextColor(255, 255, 255);
-    this.pdf.setFontSize(8);
+    this.pdf.setFontSize(6);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('✓', this.margin + 18, this.currentY + 18); // Checkmark
+    this.pdf.text('✓', this.margin + 18, sectionY + 20);
     
-    // Text content
+    // Text content with proper positioning
     this.pdf.setTextColor(21, 128, 61);
-    this.pdf.setFontSize(13);
+    this.pdf.setFontSize(11);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('RECIPIENT RECEIVED', this.margin + 35, this.currentY + 12);
+    this.pdf.text('RECIPIENT RECEIVED', this.margin + 35, sectionY + 14);
     
+    // Amount on the right side
     const netAmountText = `${this.formatCurrency(this.data.netAmount)} ${this.data.localCurrency}`;
     const netAmountWidth = this.pdf.getTextWidth(netAmountText);
-    this.pdf.setFontSize(16);
-    this.pdf.text(netAmountText, this.pageWidth - this.margin - netAmountWidth - 15, this.currentY + 18);
+    this.pdf.setFontSize(14);
+    this.pdf.text(netAmountText, this.pageWidth - this.margin - netAmountWidth - sectionPadding, sectionY + 22);
     
-    this.currentY += 45;
+    this.currentY += sectionHeight + 15;
   }
 
-  // Modern, clean footer with proper Base branding
+  // Fixed footer section with proper positioning
   private async addPreviewStyleFooter(): Promise<void> {
-    // Position at bottom with proper spacing
-    this.currentY = this.pageHeight - 70;
+    // Ensure we have enough space at bottom
+    const footerHeight = 50;
+    const disclaimerHeight = 15;
+    const totalBottomSpace = footerHeight + disclaimerHeight;
     
-    // Clean footer background
+    // Position footer with proper spacing from last element
+    this.currentY = Math.max(this.currentY + 20, this.pageHeight - totalBottomSpace - 20);
+    
+    // Footer card background
     this.pdf.setFillColor(250, 250, 250);
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 45, 6, 6, 'F');
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, footerHeight, 6, 6, 'F');
     this.pdf.setDrawColor(229, 231, 235);
     this.pdf.setLineWidth(1);
-    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, 45, 6, 6, 'S');
+    this.pdf.roundedRect(this.margin, this.currentY, this.contentWidth, footerHeight, 6, 6, 'S');
+    
+    const footerY = this.currentY;
+    const footerPadding = 15;
     
     // Left side - Support section
+    const leftX = this.margin + footerPadding;
     this.pdf.setTextColor(17, 24, 39);
-    this.pdf.setFontSize(12);
+    this.pdf.setFontSize(11);
     this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('Need Help?', this.margin + 15, this.currentY + 16);
+    this.pdf.text('Need Help?', leftX, footerY + 15);
     
-    this.pdf.setFontSize(10);
+    this.pdf.setFontSize(8);
     this.pdf.setFont('helvetica', 'normal');
     this.pdf.setTextColor(100, 116, 139);
-    this.pdf.text('support@minisend.xyz', this.margin + 15, this.currentY + 26);
-    this.pdf.text('minisend.xyz/support', this.margin + 15, this.currentY + 35);
+    this.pdf.text('support@minisend.xyz', leftX, footerY + 26);
+    this.pdf.text('minisend.xyz/support', leftX, footerY + 36);
     
-    // Right side - "Built on Base" branding
-    const rightAreaX = this.pageWidth - this.margin - 70;
+    // Right side - Base branding
+    const rightX = this.margin + this.contentWidth - 80;
     
-    // "Built on" text with better typography
+    // "Built on" text
     this.pdf.setTextColor(100, 116, 139);
-    this.pdf.setFontSize(10);
+    this.pdf.setFontSize(9);
     this.pdf.setFont('helvetica', 'normal');
-    this.pdf.text('Built on', rightAreaX - 20, this.currentY + 20);
+    this.pdf.text('Built on', rightX, footerY + 20);
+    
+    // Base logo positioning
+    const logoX = rightX + 25;
+    const logoY = footerY + 14;
     
     try {
       const svgResponse = await fetch('/Base_lockup_2color.svg');
@@ -398,45 +439,41 @@ export class ReceiptGenerator {
             ctx!.drawImage(baseLogoImg, 0, 0, 120, 30);
             const baseLogoDataUrl = canvas.toDataURL('image/png');
             
-            // Add Base logo with proper sizing
-            this.pdf.addImage(baseLogoDataUrl, 'PNG', rightAreaX + 8, this.currentY + 14, 35, 9);
+            this.pdf.addImage(baseLogoDataUrl, 'PNG', logoX, logoY, 30, 8);
             
             URL.revokeObjectURL(svgUrl);
             resolve(true);
           };
           baseLogoImg.onerror = () => {
             URL.revokeObjectURL(svgUrl);
-            // Modern fallback
-            this.pdf.setFillColor(0, 82, 255);
-            this.pdf.roundedRect(rightAreaX + 8, this.currentY + 16, 35, 8, 2, 2, 'F');
-            this.pdf.setTextColor(255, 255, 255);
-            this.pdf.setFontSize(8);
-            this.pdf.setFont('helvetica', 'bold');
-            this.pdf.text('BASE', rightAreaX + 20, this.currentY + 21);
+            this.addBaseFallback(logoX, logoY);
             resolve(false);
           };
         });
       } else {
-        throw new Error('Failed to fetch SVG');
+        this.addBaseFallback(logoX, logoY);
       }
     } catch {
-      // Clean fallback
-      this.pdf.setFillColor(0, 82, 255);
-      this.pdf.roundedRect(rightAreaX + 8, this.currentY + 16, 35, 8, 2, 2, 'F');
-      this.pdf.setTextColor(255, 255, 255);
-      this.pdf.setFontSize(8);
-      this.pdf.setFont('helvetica', 'bold');
-      this.pdf.text('BASE', rightAreaX + 20, this.currentY + 21);
+      this.addBaseFallback(logoX, logoY);
     }
     
-    // Bottom disclaimer with better formatting
-    this.currentY += 50;
+    // Bottom disclaimer - positioned below footer
+    this.currentY = footerY + footerHeight + 10;
     this.pdf.setTextColor(156, 163, 175);
-    this.pdf.setFontSize(8);
+    this.pdf.setFontSize(7);
     this.pdf.setFont('helvetica', 'normal');
     const disclaimer = 'This receipt serves as proof of your cryptocurrency transaction. Please retain for your records.';
     const disclaimerLines = this.pdf.splitTextToSize(disclaimer, this.contentWidth - 20);
     this.pdf.text(disclaimerLines, this.margin + 10, this.currentY);
+  }
+  
+  private addBaseFallback(x: number, y: number): void {
+    this.pdf.setFillColor(0, 82, 255);
+    this.pdf.roundedRect(x, y + 2, 30, 6, 2, 2, 'F');
+    this.pdf.setTextColor(255, 255, 255);
+    this.pdf.setFontSize(6);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text('BASE', x + 8, y + 6);
   }
 
   private addTransactionSummary(): void {
