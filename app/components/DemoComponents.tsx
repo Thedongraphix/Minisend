@@ -244,13 +244,6 @@ export function Home({ setActiveTab }: HomeProps) {
             </div>
           </div>
         </Card>
-        
-        <div className="text-center">
-          <div className="flex justify-center space-x-4 text-xs text-gray-500">
-            <span>🇰🇪 Kenya</span>
-            <span>🇳🇬 Nigeria</span>
-          </div>
-        </div>
       </div>
     );
   }
@@ -312,13 +305,6 @@ USDC→NGN/KES withdrawals and transaction processing temporarily unavailable.We
           </div>
         </div>
       </Card>
-      
-      <div className="text-center">
-        <div className="flex justify-center space-x-4 text-xs text-gray-500">
-          <span>🇰🇪 Kenya</span>
-          <span>🇳🇬 Nigeria</span>
-        </div>
-      </div>
     </div>
   );
 }

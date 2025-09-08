@@ -341,14 +341,13 @@ export default function App() {
       
       {/* Footer outside container */}
       <div className="w-full text-center px-4 py-4">
-        <div className="flex items-center justify-center space-x-2">
+        <div className="flex items-center justify-center space-x-3">
           <Image 
-            src="/Base_Network_Logo.svg" 
+            src="/Base_lockup_white.png" 
             alt="Base Network" 
-            width={16}
+            width={60}
             height={16}
           />
-          <span className="text-sm text-gray-400">Built on Base with MiniKit</span>
         </div>
       </div>
       
