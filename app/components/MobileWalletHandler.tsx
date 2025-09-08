@@ -8,6 +8,7 @@ import {
   ConnectWallet,
   WalletDropdown,
   WalletDropdownDisconnect,
+  WalletDropdownFundLink,
 } from '@coinbase/onchainkit/wallet';
 import {
   Address,
@@ -57,6 +58,7 @@ export function MobileWalletHandler({
             {showBalance && <EthBalance />}
           </Identity>
           
+          <WalletDropdownFundLink />
           <WalletDropdownDisconnect />
         </WalletDropdown>
       </Wallet>
