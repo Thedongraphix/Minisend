@@ -341,12 +341,13 @@ export default function App() {
       
       {/* Footer outside container */}
       <div className="w-full text-center px-4 py-4">
-        <div className="flex items-center justify-center space-x-3">
+        <div className="flex items-center justify-center">
           <Image 
-            src="/Base_lockup_white.png" 
-            alt="Base Network" 
-            width={60}
-            height={16}
+            src="/Base_lockup_2color.svg" 
+            alt="Built on Base" 
+            width={70}
+            height={18}
+            className="h-4 w-auto filter brightness-0 invert opacity-90"
           />
         </div>
       </div>
