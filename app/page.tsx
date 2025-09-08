@@ -17,7 +17,6 @@ import { SwapComponent } from "./components/SwapComponent";
 import { UserProfile } from "./components/UserProfile";
 import { WalletDebug } from "./components/WalletDebug";
 import { MobileWalletHandler } from "./components/MobileWalletHandler";
-import { WalletIsland } from "./components/WalletIsland";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
 import { getClientInfo } from "@/lib/sdk-actions";
 import Image from 'next/image';
@@ -353,7 +352,7 @@ export default function App() {
         </div>
       </div>
       
-      <WalletIsland />
+ 
       <WalletDebug />
     </div>
   );
