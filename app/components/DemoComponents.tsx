@@ -285,15 +285,7 @@ USDC→NGN/KES withdrawals and transaction processing temporarily unavailable.We
             >
               Start Offramp
             </Button>
-            <Button
-              onClick={() => setActiveTab("swap")}
-              variant="secondary"
-              size="large"
-              fullWidth
-              roundedFull
-            >
-              Swap ETH to USDC
-            </Button>
+            
             <Button
               onClick={() => setActiveTab("spend")}
               variant="outlined"
