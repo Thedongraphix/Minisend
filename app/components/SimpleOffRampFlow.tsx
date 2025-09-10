@@ -427,7 +427,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
                   type="text"
                   value={formData.accountName}
                   onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
-                  placeholder="John Doe"
+                  placeholder="Your legal name"
                   className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
                 />
               </div>
