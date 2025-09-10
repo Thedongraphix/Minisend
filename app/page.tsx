@@ -17,6 +17,7 @@ import { SwapComponent } from "./components/SwapComponent";
 import { UserProfile } from "./components/UserProfile";
 import { WalletDebug } from "./components/WalletDebug";
 import { MobileWalletHandler } from "./components/MobileWalletHandler";
+import { PWAProvider } from "./components/PWAProvider";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
 import { getClientInfo } from "@/lib/sdk-actions";
 import Image from 'next/image';
@@ -268,7 +269,8 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme">
+    <PWAProvider>
+      <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme">
       {/* Main heading outside container */}
       <div className="w-full py-6 px-4">
         <div className="flex items-center justify-between mb-2">
@@ -354,6 +356,7 @@ export default function App() {
       
  
       <WalletDebug />
-    </div>
+      </div>
+    </PWAProvider>
   );
 }

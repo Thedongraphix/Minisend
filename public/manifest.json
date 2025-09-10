@@ -1,15 +1,16 @@
 {
   "name": "Minisend",
   "short_name": "Minisend",
-  "description": "USDC to mobile money instantly",
+  "description": "Convert USDC to mobile money. Send to M-Pesa and banks instantly.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
-  "theme_color": "#1D4ED8",
+  "theme_color": "#0052ff",
   "orientation": "portrait",
   "scope": "/",
   "lang": "en",
   "categories": ["finance", "utilities", "business"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/minisend-logo.png",
@@ -22,12 +23,18 @@
       "sizes": "512x512", 
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cash Out",
+      "url": "/?tab=offramp",
+      "icons": [{ "src": "/minisend-logo.png", "sizes": "96x96" }]
     },
     {
-      "src": "/minisend-logo.png",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "name": "Swap", 
+      "url": "/?tab=swap",
+      "icons": [{ "src": "/minisend-logo.png", "sizes": "96x96" }]
     }
   ]
 }
