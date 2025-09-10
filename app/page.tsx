@@ -16,12 +16,12 @@ import { SpendUSDCFlow } from "./components/SpendUSDCFlow";
 import { SwapComponent } from "./components/SwapComponent";
 import { UserProfile } from "./components/UserProfile";
 import { WalletDebug } from "./components/WalletDebug";
-import { MobileWalletHandler } from "./components/MobileWalletHandler";
 import { PWAProvider } from "./components/PWAProvider";
 import { initializeUserSession, trackEvent } from "@/lib/analytics";
 import { getClientInfo } from "@/lib/sdk-actions";
 import Image from 'next/image';
 import "./theme.css";
+import { WalletIsland } from "./components/WalletIsland";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
@@ -285,10 +285,9 @@ export default function App() {
             <h1 className="text-2xl font-bold text-white truncate">Minisend</h1>
           </div>
           
-          {/* Basename display in top right - smaller on mobile */}
+          {/* Wallet Island in top right */}
           <div className="flex items-center flex-shrink-0 ml-2">
-            <MobileWalletHandler 
-              showBalance={false}
+            <WalletIsland 
               className="scale-75 sm:scale-100"
             />
           </div>
@@ -354,7 +353,6 @@ export default function App() {
         </div>
       </div>
       
- 
       <WalletDebug />
       </div>
     </PWAProvider>
