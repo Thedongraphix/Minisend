@@ -105,23 +105,29 @@ export function SwapComponent({ setActiveTab }: SwapComponentProps) {
           <div className="w-full">
             <Swap className="[&>h3]:hidden [&>*>h3]:hidden">
               <div className="space-y-2">
-                <SwapAmountInput
-                  label="From"
-                  swappableTokens={swappableTokens}
-                  token={ETHToken}
-                  type="from"
-                />
-                <div className="flex justify-center -my-1">
-                  <SwapToggleButton />
+                <div className="touch-manipulation">
+                  <SwapAmountInput
+                    label="From"
+                    swappableTokens={swappableTokens}
+                    token={ETHToken}
+                    type="from"
+                    className="[&_button]:touch-manipulation [&_select]:touch-manipulation"
+                  />
                 </div>
-                <SwapAmountInput
-                  label="To"
-                  swappableTokens={swappableTokens}
-                  token={USDCToken}
-                  type="to"
-                />
+                <div className="flex justify-center -my-1">
+                  <SwapToggleButton className="touch-manipulation" />
+                </div>
+                <div className="touch-manipulation">
+                  <SwapAmountInput
+                    label="To"
+                    swappableTokens={swappableTokens}
+                    token={USDCToken}
+                    type="to"
+                    className="[&_button]:touch-manipulation [&_select]:touch-manipulation"
+                  />
+                </div>
                 <div className="pt-2">
-                  <SwapButton />
+                  <SwapButton className="touch-manipulation" />
                 </div>
                 <SwapMessage />
               </div>
