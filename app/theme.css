@@ -119,3 +119,52 @@ body {
     opacity: 0;
   }
 }
+
+/* Mobile touch optimization */
+@media (max-width: 768px) {
+  .mini-app-theme {
+    /* Improve button touch targets */
+    --ock-button-min-width: 44px;
+    --ock-button-min-height: 44px;
+  }
+
+  /* Fix dropdown touch issues */
+  .mini-app-theme [data-testid*="swap"] button,
+  .mini-app-theme [data-testid*="swap"] select,
+  .mini-app-theme [data-testid*="wallet"] button,
+  .mini-app-theme [data-testid*="wallet"] select {
+    touch-action: manipulation !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+
+  /* Improve dropdown visibility */
+  .mini-app-theme [role="listbox"],
+  .mini-app-theme [role="menu"],
+  .mini-app-theme [data-radix-popper-content-wrapper] {
+    z-index: 9999 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid var(--app-accent) !important;
+  }
+
+  /* Fix mobile dropdown positioning */
+  .mini-app-theme [data-radix-popper-content-wrapper] {
+    transform-origin: var(--radix-popper-transform-origin) !important;
+    will-change: transform, opacity !important;
+  }
+}
+
+/* Touch manipulation for better mobile experience */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+.touch-manipulation button,
+.touch-manipulation select,
+.touch-manipulation input {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
