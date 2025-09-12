@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import {
   Wallet,
   ConnectWallet,
@@ -8,6 +9,7 @@ import {
   WalletAdvancedAddressDetails,
   WalletAdvancedTransactionActions,
   WalletAdvancedTokenHoldings,
+  WalletDropdownFundLink,
 } from '@coinbase/onchainkit/wallet';
 import {
   Avatar,
@@ -21,6 +23,19 @@ interface WalletIslandProps {
 export function WalletIsland({ 
   className = '' 
 }: WalletIslandProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <div className={className}>
       <Wallet>
@@ -31,8 +46,9 @@ export function WalletIsland({
         <WalletDropdown>
           <WalletAdvancedWalletActions />
           <WalletAdvancedAddressDetails />
+          <WalletDropdownFundLink text="Buy Crypto" openIn={isMobile ? "tab" : "popup"} />
           <WalletAdvancedTransactionActions />
-          <WalletAdvancedTokenHoldings />
+          {!isMobile && <WalletAdvancedTokenHoldings />}
         </WalletDropdown>
       </Wallet>
     </div>
