@@ -19,7 +19,7 @@ export function useUSDCBalance(): UseUSDCBalanceReturn {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
 
-  // Use regular wagmi address
+  // Use regular wagmi addresses
   const effectiveAddress = address
   const hasWallet = isConnected && address
 
