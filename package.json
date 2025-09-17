@@ -29,7 +29,7 @@
     "test-db-full": "node test-database-integration.js"
   },
   "dependencies": {
-    "@coinbase/onchainkit": "^1.0.2",
+    "@coinbase/onchainkit": "^0.38.19",
     "@farcaster/frame-sdk": "^0.0.64",
     "@farcaster/frame-wagmi-connector": "^0.0.53",
     "@farcaster/miniapp-wagmi-connector": "^1.0.0",

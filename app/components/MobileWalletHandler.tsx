@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useAccount } from 'wagmi';
-import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { base } from 'viem/chains';
 import {
   Wallet,
@@ -31,7 +30,6 @@ export function MobileWalletHandler({
   className = ''
 }: MobileWalletHandlerProps) {
   const { isConnected, address } = useAccount();
-  const { context } = useMiniKit();
 
   useEffect(() => {
     if (isConnected && onConnectionSuccess) {

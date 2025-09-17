@@ -17,8 +17,7 @@ import { SwapComponent } from "./components/SwapComponent";
 import { UserProfile } from "./components/UserProfile";
 import { WalletDebug } from "./components/WalletDebug";
 import { PWAProvider } from "./components/PWAProvider";
-import { initializeUserSession, trackEvent } from "@/lib/analytics";
-import { getClientInfo } from "@/lib/sdk-actions";
+// Analytics imports removed - not used in current implementation
 import Image from 'next/image';
 import "./theme.css";
 import { WalletIsland } from "./components/WalletIsland";
