@@ -36,193 +36,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
-    
-    const initializeFrame = async () => {
-      // Enhanced mobile detection
-      const isMobile = typeof window !== 'undefined' && (
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-        window.innerWidth <= 768
-      );
-      
-      const isInFrame = typeof window !== 'undefined' && window.parent !== window;
-      const isCoinbaseWallet = typeof window !== 'undefined' && (
-        context?.user?.fid !== undefined || 
-        window.location.href.includes('coinbase') ||
-        navigator.userAgent.includes('CoinbaseWallet')
-      );
-      
-      console.log('🖼️ Frame initialization:', {
-        isFrameReady,
-        isMobile,
-        isInFrame,
-        isCoinbaseWallet,
-        context: context ? 'available' : 'unavailable',
-        userAgent: navigator.userAgent.substring(0, 100)
-      });
-      
-      if (!isFrameReady) {
-        try {
-          // Pre-initialization mobile optimizations
-          if (isMobile) {
-            // Optimize viewport for mobile frame context
-            const viewport = document.querySelector('meta[name="viewport"]');
-            if (viewport) {
-              viewport.setAttribute('content', 
-                'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
-              );
-            }
-            
-            // Prevent gesture conflicts during frame initialization
-            document.body.style.touchAction = 'manipulation';
-            document.body.style.userSelect = 'none';
-            document.body.style.setProperty('-webkit-user-select', 'none');
-            document.body.style.setProperty('-webkit-touch-callout', 'none');
-            
-            // Add mobile-specific frame ready delay
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-          
-          // Enhanced frame initialization with timeout
-          const frameInitPromise = setFrameReady();
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Frame initialization timeout')), 10000)
-          );
-          
-          await Promise.race([frameInitPromise, timeoutPromise]);
-          console.log('✅ Frame marked as ready successfully');
-          
-        } catch (error) {
-          console.error('❌ Frame initialization error:', error);
-          
-          // Enhanced fallback with multiple retry strategies
-          if (isMobile || isInFrame) {
-            const retryStrategies = [
-              { delay: 1000, timeout: 8000 },
-              { delay: 2000, timeout: 5000 },
-              { delay: 3000, timeout: 3000 }
-            ];
-            
-            for (const [index, strategy] of retryStrategies.entries()) {
-              try {
-                console.log(`🔄 Attempting frame initialization retry ${index + 1}...`);
-                
-                await new Promise(resolve => setTimeout(resolve, strategy.delay));
-                
-                const retryPromise = setFrameReady();
-                const retryTimeout = new Promise((_, reject) =>
-                  setTimeout(() => reject(new Error('Retry timeout')), strategy.timeout)
-                );
-                
-                await Promise.race([retryPromise, retryTimeout]);
-                console.log(`✅ Frame initialization retry ${index + 1} succeeded`);
-                break;
-                
-              } catch (retryError) {
-                console.error(`❌ Frame initialization retry ${index + 1} failed:`, retryError);
-                
-                if (index === retryStrategies.length - 1) {
-                  console.error('💥 All frame initialization retries exhausted');
-                  // Continue anyway - some features may still work
-                }
-              }
-            }
-          }
-        } finally {
-          // Cleanup mobile optimizations after a delay
-          if (isMobile) {
-            setTimeout(() => {
-              document.body.style.touchAction = '';
-              document.body.style.userSelect = '';
-              document.body.style.removeProperty('-webkit-user-select');
-              document.body.style.removeProperty('-webkit-touch-callout');
-            }, 2000);
-          }
-        }
-      } else {
-        console.log('✅ Frame already ready');
-      }
-    };
-
-    // Debounce initialization to prevent multiple calls
-    const timeoutId = setTimeout(initializeFrame, 100);
-    return () => clearTimeout(timeoutId);
-  }, [mounted, setFrameReady, isFrameReady, context]);
-
-  // Initialize analytics session when context is available
-  useEffect(() => {
-    if (!mounted || !context || !isFrameReady || !context.user?.fid) return;
-    
-    const session = initializeUserSession(context);
-    const clientInfo = getClientInfo(context);
-    
-    // Only track if we have valid session data
-    if (session) {
-      trackEvent("app_loaded", {
-        userId: session.userId,
-        clientId: session.clientId,
-        clientFid: session.clientFid,
-        userFid: context.user.fid,
-        clientName: clientInfo.clientName,
-        isCoinbaseWallet: clientInfo.isCoinbaseWallet,
-        isFrameAdded: clientInfo.isFrameAdded,
-      });
+    if (!isFrameReady) {
+      setFrameReady();
     }
-  }, [mounted, context, isFrameReady]);
+  }, [setFrameReady, isFrameReady]);
 
-  // Track tab changes for analytics
-  useEffect(() => {
-    if (!mounted || !context || !context.user?.fid) return;
-    
-    const clientInfo = getClientInfo(context);
-    const userId = `fid:${context.user.fid}`;
-    const clientId = context.client?.clientFid;
-    
-    trackEvent("tab_changed", {
-      userId,
-      clientId,
-      clientFid: context.user.fid,
-      userFid: context.user.fid,
-      tab: activeTab,
-      clientName: clientInfo.clientName,
-      timestamp: Date.now(),
-    });
-  }, [mounted, activeTab, context]);
-
-  // Track frame addition attempts
   const handleAddFrame = useCallback(async () => {
-    const clientInfo = getClientInfo(context || { client: {} });
-    const userId = context?.user?.fid ? `fid:${context.user.fid}` : undefined;
-    
     try {
-      trackEvent("frame_add_attempt", {
-        userId,
-        clientId: context?.client?.clientFid,
-        userFid: context?.user?.fid,
-        clientName: clientInfo.clientName,
-      });
-      
       const frameAdded = await addFrame();
       setFrameAdded(Boolean(frameAdded));
-      
-      trackEvent("frame_add_result", {
-        userId,
-        clientId: context?.client?.clientFid,
-        userFid: context?.user?.fid,
-        success: Boolean(frameAdded),
-        clientName: clientInfo.clientName,
-      });
     } catch (error) {
-      trackEvent("frame_add_error", {
-        userId,
-        clientId: context?.client?.clientFid,
-        userFid: context?.user?.fid,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        clientName: clientInfo.clientName,
-      });
+      console.error('Frame add error:', error);
     }
-  }, [addFrame, context]);
-
+  }, [addFrame]);
 
   const saveFrameButton = useMemo(() => {
     if (!mounted) return null;
@@ -293,7 +119,7 @@ export default function App() {
           </div>
         </div>
       </div>
-             
+
       <div className="w-full max-w-md mx-auto px-4 pb-6">
         {saveFrameButton && (
           <div className="flex justify-end mb-4">
