@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useAccount } from 'wagmi';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import {
   Wallet,
   ConnectWallet,
@@ -20,21 +22,24 @@ interface WalletIslandProps {
   className?: string;
 }
 
-export function WalletIsland({ 
-  className = '' 
+export function WalletIsland({
+  className = ''
 }: WalletIslandProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const { isConnected } = useAccount();
+  const { context } = useMiniKit();
 
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
 
   return (
     <div className={className}>
