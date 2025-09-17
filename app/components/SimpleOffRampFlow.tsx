@@ -10,6 +10,7 @@ import { Button } from './DemoComponents';
 import Image from 'next/image';
 import { trackOffRampEvent, trackAPIEvent, trackWalletEvent } from '@/lib/analytics';
 import { ReceiptSection } from './ReceiptDownloadButton';
+import { useUSDCBalance } from '@/hooks/useUSDCBalance';
 
 interface SimpleOffRampFlowProps {
   setActiveTab: (tab: string) => void;
@@ -18,6 +19,11 @@ interface SimpleOffRampFlowProps {
 export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
   const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
+
+  // MiniKit should work through wagmi automatically
+  const hasWallet = isConnected && address;
+  const walletAddress = address;
+  const isMiniKitEnvironment = !!context?.user;
   
   const [mounted, setMounted] = useState(false);
   
@@ -32,24 +38,26 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
         clientFid: context.user?.fid,
         location: context.location,
         address,
-        isConnected
+        isConnected,
+        hasWallet,
+        isMiniKitEnvironment
       });
-      
+
       // Track offramp flow start
       trackOffRampEvent('flow_started', {
         step: 1,
         success: true,
       }, context || undefined);
-      
-      // Track wallet connection status
-      if (isConnected && address) {
+
+      // Track wallet connection status for both MiniKit and manual connections
+      if (hasWallet && walletAddress) {
         trackWalletEvent('wallet_connected_offramp', {
-          address,
+          address: walletAddress,
           success: true,
         }, context || undefined);
       }
     }
-  }, [mounted, context, address, isConnected]);
+  }, [mounted, context, address, isConnected, hasWallet, walletAddress, isMiniKitEnvironment]);
 
   // Form state
   const [step, setStep] = useState<'form' | 'payment' | 'success'>('form');
@@ -68,10 +76,14 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
   const [accountVerified, setAccountVerified] = useState(false);
   const [institutions, setInstitutions] = useState<{code: string, name: string, type: string}[]>([]);
   const [loadingInstitutions, setLoadingInstitutions] = useState(false);
+  const { balanceNum: usdcBalance } = useUSDCBalance();
 
-  console.log('Wallet connection state:', { 
+  console.log('Wallet connection state:', {
     address,
-    isConnected
+    isConnected,
+    hasWallet,
+    isMiniKitEnvironment,
+    context: context?.user ? 'MiniKit user detected' : 'No MiniKit user'
   });
 
   // Fetch exchange rates (using 1 USDC to get the base rate)
@@ -233,6 +245,23 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
     }
   }, [formData.accountNumber, formData.bankCode, formData.currency, isAccountNumberValid, accountVerified, verifyAccount]);
 
+  // Handle "Send All" USDC functionality
+  const handleSendAll = useCallback(async () => {
+    if (!currentRate || usdcBalance <= 0) return;
+
+    // Calculate max fiat amount using current rate
+    const maxFiatAmount = (usdcBalance * currentRate).toFixed(2);
+    setFormData(prev => ({ ...prev, amount: maxFiatAmount }));
+
+    // Track max amount selection
+    trackOffRampEvent('max_amount_selected', {
+      currency: formData.currency,
+      amount: parseFloat(maxFiatAmount),
+      usdcAmount: usdcBalance,
+      success: true,
+    }, context || undefined);
+  }, [currentRate, usdcBalance, formData.currency, context]);
+
   // Auto-fetch rates when amount or currency changes
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -280,7 +309,8 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
   }, [step, formData.currency, formData.amount, context]);
 
   // Show wallet connection if not connected or not mounted
-  if (!mounted || !isConnected) {
+  // For MiniKit users, auto-detect wallet from context
+  if (!mounted || !hasWallet) {
     return (
       <div className="max-w-md mx-auto p-6">
         <div className="text-center mb-8">
@@ -393,17 +423,35 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
             <label className="block text-white text-sm font-medium mb-2">
               Amount ({formData.currency})
             </label>
-            <input
-              type="number"
-              value={formData.amount}
-              onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-              placeholder="0.00"
-              className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
-              min="50"
-              max={formData.currency === 'KES' ? "1000000" : "10000000"}
-              step="1"
-            />
-            
+            <div className="relative">
+              <input
+                type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                placeholder="0.00"
+                className="w-full px-4 py-3 pr-20 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
+                min="50"
+                max={formData.currency === 'KES' ? "1000000" : "10000000"}
+                step="1"
+              />
+              <button
+                onClick={handleSendAll}
+                disabled={!currentRate || usdcBalance <= 0 || rateLoading}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-xs font-medium rounded-lg transition-colors"
+                title={
+                  !currentRate ? "Waiting for exchange rate..." :
+                  usdcBalance <= 0 ? "No USDC balance available" :
+                  `Send all ${usdcBalance.toFixed(4)} USDC`
+                }
+              >
+                MAX
+              </button>
+            </div>
+            {currentRate && usdcBalance > 0 && (
+              <div className="mt-2 text-xs text-gray-400">
+                Available: {usdcBalance.toFixed(4)} USDC (≈ {(usdcBalance * currentRate).toLocaleString()} {formData.currency})
+              </div>
+            )}
           </div>
 
 
@@ -606,7 +654,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
             bankCode={formData.bankCode}
             accountName={formData.accountName}
             currency={formData.currency}
-            returnAddress={address || ''}
+            returnAddress={walletAddress || ''}
             rate={currentRate} // Pass the fetched rate
             onSuccess={() => {
               // Track payment success
@@ -670,7 +718,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
               phone_number: formData.phoneNumber,
               account_number: formData.accountNumber,
               bank_code: formData.bankCode,
-              wallet_address: address || '',
+              wallet_address: walletAddress || '',
               rate: currentRate || 0,
               sender_fee: 0,
               transaction_fee: 0,

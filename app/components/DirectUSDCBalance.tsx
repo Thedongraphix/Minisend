@@ -1,100 +1,35 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useAccount, useChainId } from 'wagmi'
-import { getNetworkConfig, getUSDCContract } from '@/lib/contracts'
+import { getNetworkConfig } from '@/lib/contracts'
 import { base } from 'viem/chains'
 import { Name } from '@coinbase/onchainkit/identity'
 import Image from 'next/image'
+import { useUSDCBalance } from '@/hooks/useUSDCBalance'
 
 export function DirectUSDCBalance() {
   // Use wagmi hooks for Coinbase Wallet connection
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const [mounted, setMounted] = useState(false)
-  
+
   useEffect(() => {
     setMounted(true)
   }, [])
-  
+
   // Debug logging
   console.log('DirectUSDCBalance - Coinbase Wallet:', {
     address,
     isConnected,
     chainId
   });
-  
-  const [balance, setBalance] = useState<string>('0.00')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string>('')
+
   const [isBalanceVisible, setIsBalanceVisible] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [copyFeedback, setCopyFeedback] = useState(false)
-  
+
   const networkConfig = getNetworkConfig(chainId)
-  const usdcContract = getUSDCContract(chainId)
-  
-  const fetchBalance = useCallback(async () => {
-    if (!address || chainId !== base.id) return
-    
-    // Capture address value to prevent race conditions
-    const currentAddress = address
-    if (!currentAddress) return
-    
-    setIsLoading(true)
-    setIsRefreshing(true)
-    setError('')
-    
-    try {
-      // Use Base mainnet RPC endpoint
-      const rpcUrl = 'https://mainnet.base.org'
-      
-      // ERC-20 balanceOf function call
-      const data = `0x70a08231000000000000000000000000${currentAddress.slice(2)}`
-      
-      const response = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: 'eth_call',
-          params: [
-            {
-              to: usdcContract,
-              data: data,
-            },
-            'latest'
-          ],
-          id: 1,
-        }),
-      })
-      
-      const result = await response.json()
-      
-      if (result.error) {
-        throw new Error(result.error.message)
-      }
-      
-      // Convert hex result to decimal and format (USDC has 6 decimals)
-      const balanceHex = result.result
-      const balanceBigInt = BigInt(balanceHex)
-      const balanceFormatted = Number(balanceBigInt) / 1000000 // 6 decimals
-      
-      setBalance(balanceFormatted.toFixed(2))
-    } catch (err) {
-      console.error('Error fetching USDC balance:', err)
-      setError('Failed to load balance')
-    } finally {
-      setIsLoading(false)
-      setTimeout(() => setIsRefreshing(false), 500) // Keep pulse effect briefly
-    }
-  }, [address, chainId, usdcContract])
-  
-  useEffect(() => {
-    fetchBalance()
-  }, [fetchBalance])
+  const { balance, isLoading, error, isRefreshing, fetchBalance } = useUSDCBalance()
 
   const copyToClipboard = async (text: string) => {
     try {
