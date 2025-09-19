@@ -6,6 +6,7 @@ import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 import type { ContractFunctionParameters } from 'viem';
+import { PaymentSpinner } from './PaymentSpinner';
 
 interface SimplePaymentProps {
   amount: string;
@@ -319,7 +320,9 @@ export function SimplePayment({
       {/* Step 3: Processing */}
       {currentStep === 'processing' && (
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-white/20 border-t-green-400 mx-auto"></div>
+          <div className="flex justify-center items-center">
+            <PaymentSpinner />
+          </div>
           <div className="space-y-2">
             <h3 className="text-white font-semibold text-lg">Processing Payment</h3>
             <p className="text-gray-300">
