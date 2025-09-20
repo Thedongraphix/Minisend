@@ -105,7 +105,6 @@ export class ReceiptGenerator {
       logoImg.crossOrigin = 'anonymous';
 
       await new Promise<boolean>((resolve) => {
-        const self = this;
         logoImg.onload = () => {
           try {
             const canvas = document.createElement('canvas');
@@ -122,7 +121,7 @@ export class ReceiptGenerator {
             const logoDataUrl = canvas.toDataURL('image/png');
 
             // Add logo to PDF with proper sizing
-            self.pdf.addImage(logoDataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
+            this.pdf.addImage(logoDataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
             resolve(true);
           } catch {
             resolve(false);
