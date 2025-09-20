@@ -34,9 +34,9 @@ export class ReceiptGenerator {
     await this.renderHeader();
     this.renderAmountCard();
     this.renderDetails();
-    this.renderNetAmount();
+    this.renderSupportSection();
     await this.renderFooter();
-    
+
     return this.pdf.output('blob');
   }
 
@@ -93,19 +93,53 @@ export class ReceiptGenerator {
   private async renderHeader(): Promise<void> {
     const h = 55;
     this.card(h, { rounded: 6 });
-    
+
     // Logo area
     const logoSize = 16;
     const logoX = this.page.margin + 12;
     const logoY = this.y + 12;
-    
-    // Simple logo fallback
-    this.setColor('primary', 'fill');
-    this.pdf.roundedRect(logoX, logoY, logoSize, logoSize, 3, 3, 'F');
-    this.pdf.setTextColor(255, 255, 255);
-    this.pdf.setFontSize(10);
-    this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('M', logoX + 6, logoY + 11);
+
+    // Load Minisend logo
+    try {
+      const logoImg = new Image();
+      logoImg.crossOrigin = 'anonymous';
+
+      await new Promise<boolean>((resolve) => {
+        const self = this;
+        logoImg.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              resolve(false);
+              return;
+            }
+
+            // Set canvas size to match logo dimensions
+            canvas.width = logoImg.width;
+            canvas.height = logoImg.height;
+            ctx.drawImage(logoImg, 0, 0);
+            const logoDataUrl = canvas.toDataURL('image/png');
+
+            // Add logo to PDF with proper sizing
+            self.pdf.addImage(logoDataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
+            resolve(true);
+          } catch {
+            resolve(false);
+          }
+        };
+        logoImg.onerror = () => resolve(false);
+        logoImg.src = '/minisend-logo.png';
+      });
+    } catch {
+      // Fallback to simple logo if loading fails
+      this.setColor('primary', 'fill');
+      this.pdf.roundedRect(logoX, logoY, logoSize, logoSize, 3, 3, 'F');
+      this.pdf.setTextColor(255, 255, 255);
+      this.pdf.setFontSize(10);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.text('M', logoX + 6, logoY + 11);
+    }
     
     // Company info
     this.text('Minisend', logoX + logoSize + 8, this.y + 22, 
@@ -196,33 +230,19 @@ export class ReceiptGenerator {
     this.y += h + 15;
   }
 
-  private renderNetAmount(): void {
-    const h = 32;
-    
-    // Success card
-    this.pdf.setFillColor(240, 253, 244);
-    this.pdf.roundedRect(this.page.margin, this.y, this.contentWidth, h, 6, 6, 'F');
-    this.setColor('success', 'draw');
-    this.pdf.setLineWidth(2);
-    this.pdf.roundedRect(this.page.margin, this.y, this.contentWidth, h, 6, 6, 'S');
-    
-    // Success icon
-    this.setColor('success', 'fill');
-    this.pdf.circle(this.page.margin + 18, this.y + 16, 3.5, 'F');
-    this.pdf.setTextColor(255, 255, 255);
-    this.pdf.setFontSize(8);
-    this.pdf.text('✓', this.page.margin + 16, this.y + 18);
-    
-    // Text content
-    this.pdf.setTextColor(21, 128, 61);
-    this.text('RECIPIENT RECEIVED', this.page.margin + 32, this.y + 13, 
-      { size: 10, style: 'bold' });
-    
-    const amount = `${this.formatAmount(this.data.netAmount)} ${this.data.localCurrency}`;
-    this.text(amount, this.page.width - this.page.margin - 15, this.y + 20, 
-      { size: 13, style: 'bold', align: 'right' });
-    
-    this.y += h + 20;
+  private renderSupportSection(): void {
+    // Simple support section without green panel
+    this.text('Need Help?', this.page.margin, this.y,
+      { size: 12, style: 'bold' });
+    this.y += 12;
+
+    this.text('Email: support@minisend.xyz', this.page.margin, this.y,
+      { size: 10, color: 'primary' });
+    this.y += 8;
+
+    this.text('Visit: minisend.xyz/support', this.page.margin, this.y,
+      { size: 10, color: 'primary' });
+    this.y += 20;
   }
 
   private async renderFooter(): Promise<void> {
@@ -251,14 +271,7 @@ export class ReceiptGenerator {
       }
     }
     
-    // Support info (right side)
-    const rightX = this.page.width - this.page.margin - 12;
-    this.text('Need Help?', rightX, this.y + 12, 
-      { size: 9, style: 'bold', align: 'right' });
-    this.text('support@minisend.xyz', rightX, this.y + 20, 
-      { size: 8, color: 'muted', align: 'right' });
-    this.text('minisend.xyz', rightX, this.y + 28, 
-      { size: 8, color: 'muted', align: 'right' });
+    // QR code section takes up the full footer space
     
     // Bottom disclaimer
     this.y += h + 8;
