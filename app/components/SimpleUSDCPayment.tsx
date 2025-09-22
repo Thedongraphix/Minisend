@@ -43,8 +43,13 @@ export function SimpleUSDCPayment({
     transactionFee: string;
     validUntil: string;
   } | null>(null);
-  const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'success' | 'error' | 'insufficient-funds'>('idle');
   const [statusMessage, setStatusMessage] = useState<string>('');
+  const [errorDetails, setErrorDetails] = useState<{
+    currentBalance?: number;
+    requiredAmount?: number;
+    insufficientBy?: number;
+  } | null>(null);
   const [fallbackMonitoringStarted, setFallbackMonitoringStarted] = useState(false);
   const pollingStartedRef = useRef(false);
 
@@ -164,7 +169,17 @@ export function SimpleUSDCPayment({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create PayCrest order');
+        const errorData = await response.json().catch(() => null);
+
+        // Handle insufficient funds error specifically
+        if (response.status === 400 && errorData?.error === 'Insufficient funds') {
+          setStatus('insufficient-funds');
+          setErrorDetails(errorData.balanceInfo);
+          setStatusMessage(errorData.details || 'Insufficient USDC balance');
+          return;
+        }
+
+        throw new Error(errorData?.error || 'Failed to create PayCrest order');
       }
 
       const data = await response.json();
@@ -436,6 +451,49 @@ export function SimpleUSDCPayment({
       )}
 
 
+      {/* Insufficient Funds */}
+      {status === 'insufficient-funds' && (
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 mx-auto bg-red-500 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <h3 className="text-white font-bold text-xl">Insufficient Funds</h3>
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+            <p className="text-red-300 text-sm mb-3">
+              Need more USDC to complete this transaction
+            </p>
+            {errorDetails && (
+              <div className="text-xs text-red-200 space-y-1">
+                <div className="flex justify-between">
+                  <span>Your Balance:</span>
+                  <span>${errorDetails.currentBalance?.toFixed(4) || '0.00'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Required:</span>
+                  <span>${errorDetails.requiredAmount?.toFixed(4) || '0.00'}</span>
+                </div>
+                <div className="border-t border-red-500/20 pt-1 flex justify-between font-semibold">
+                  <span>Need:</span>
+                  <span>${errorDetails.insufficientBy?.toFixed(4) || '0.00'} more</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              setStatus('idle');
+              setErrorDetails(null);
+              setStatusMessage('');
+            }}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
       {/* Success */}
       {status === 'success' && (
         <div className="text-center space-y-4">
@@ -448,10 +506,10 @@ export function SimpleUSDCPayment({
           <p className="text-gray-300 text-sm">
             Your {currency} has been sent to {currency === 'KES' ? phoneNumber : accountName}
           </p>
-          
+
           {/* Receipt Download Section */}
           {paycrestOrder && (
-            <ReceiptSection 
+            <ReceiptSection
               orderData={{
                 id: paycrestOrder.id,
                 amount_in_usdc: parseFloat(amount),

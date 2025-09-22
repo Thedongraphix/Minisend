@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/supabase/config';
 import { detectKenyanCarrier } from '@/lib/utils/phoneCarrier';
 import { formatTillNumber, formatPhoneNumber } from '@/lib/utils/tillValidator';
+import { validateWalletForOrder } from '@/lib/blockchain/balanceValidation';
+import { estimatePaycrestFees } from '@/lib/utils/feeEstimation';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
@@ -156,8 +158,35 @@ export async function POST(request: NextRequest) {
     
     console.log('📦 PayCrest order payload:', JSON.stringify(orderData, null, 2));
 
+    // 💰 Validate wallet has sufficient balance BEFORE creating PayCrest order
+    // Use conservative fee estimate based on typical PayCrest fee structure
+    const feeEstimate = estimatePaycrestFees(amountNum);
+
+    try {
+      const balanceValidation = await validateWalletForOrder(returnAddress, feeEstimate.totalAmountWithFees);
+
+      if (!balanceValidation.isValid) {
+        return NextResponse.json(
+          {
+            error: 'Insufficient funds',
+            details: `Need $${feeEstimate.totalAmountWithFees.toFixed(2)} USDC total (including fees)`,
+            balanceInfo: {
+              currentBalance: balanceValidation.balanceCheck.balanceInUSDC,
+              requiredAmount: feeEstimate.totalAmountWithFees,
+              baseAmount: amountNum,
+              estimatedFees: feeEstimate.totalEstimatedFees,
+              insufficientBy: balanceValidation.balanceCheck.insufficientBy
+            }
+          },
+          { status: 400 }
+        );
+      }
+    } catch {
+      // Continue with order creation - the balance validation has fail-open behavior
+    }
+
     console.log('🚀 Creating PayCrest order at:', `${PAYCREST_API_URL}/sender/orders`);
-    
+
     const orderResponse = await fetch(`${PAYCREST_API_URL}/sender/orders`, {
       method: 'POST',
       headers: {
@@ -186,6 +215,34 @@ export async function POST(request: NextRequest) {
 
     const order = await orderResponse.json();
     console.log('✅ PayCrest order created:', order);
+
+    // 🔒 Final balance validation with actual fees from PayCrest
+    try {
+      const senderFee = parseFloat(order.data.senderFee || '0');
+      const transactionFee = parseFloat(order.data.transactionFee || '0');
+      const totalAmountRequired = amountNum + senderFee + transactionFee;
+
+      const finalValidation = await validateWalletForOrder(returnAddress, totalAmountRequired);
+
+      if (!finalValidation.isValid) {
+        return NextResponse.json(
+          {
+            error: 'Insufficient funds',
+            details: `Need $${totalAmountRequired.toFixed(2)} USDC total (including fees)`,
+            balanceInfo: {
+              currentBalance: finalValidation.balanceCheck.balanceInUSDC,
+              requiredAmount: totalAmountRequired,
+              baseAmount: amountNum,
+              fees: senderFee + transactionFee,
+              insufficientBy: finalValidation.balanceCheck.insufficientBy
+            }
+          },
+          { status: 400 }
+        );
+      }
+    } catch {
+      // Continue with order creation - the balance validation has fail-open behavior
+    }
 
     // 🗄️ Store order in database
     try {

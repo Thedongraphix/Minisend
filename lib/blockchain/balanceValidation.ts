@@ -51,16 +51,14 @@ export async function validateWalletBalance(
   bufferPercentage: number = 0.1 // 10% buffer for gas fees
 ): Promise<BalanceCheckResult> {
   try {
-    console.log(`🔍 Checking USDC balance`)
-    
     if (!walletAddress || !walletAddress.startsWith('0x') || walletAddress.length !== 42) {
       throw new Error('Invalid wallet address format')
     }
-    
+
     if (requiredAmountUSDC <= 0) {
       throw new Error('Required amount must be positive')
     }
-    
+
     // Get USDC balance from Base network
     const balance = await publicClient.readContract({
       address: USDC_CONTRACT_ADDRESS,
@@ -68,15 +66,15 @@ export async function validateWalletBalance(
       functionName: 'balanceOf',
       args: [walletAddress as `0x${string}`]
     }) as bigint
-    
+
     // USDC has 6 decimals
     const balanceInUSDC = parseFloat(formatUnits(balance, 6))
-    
+
     // Add buffer for transaction fees and slippage
     const requiredWithBuffer = requiredAmountUSDC * (1 + bufferPercentage)
-    
+
     const hasBalance = balanceInUSDC >= requiredWithBuffer
-    
+
     const result: BalanceCheckResult = {
       hasBalance,
       currentBalance: balance.toString(),
@@ -85,19 +83,10 @@ export async function validateWalletBalance(
       requiredInUSDC: requiredWithBuffer,
       insufficientBy: hasBalance ? undefined : requiredWithBuffer - balanceInUSDC
     }
-    
-    console.log(`💰 Balance check result:`, {
-      address: walletAddress,
-      balance: balanceInUSDC,
-      required: requiredWithBuffer,
-      hasBalance
-    })
-    
+
     return result
-    
-  } catch (error) {
-    console.error('❌ Balance validation error:', error)
-    
+
+  } catch {
     // In case of RPC errors, we might want to allow the transaction to proceed
     // but log the error for monitoring
     return {
@@ -169,9 +158,7 @@ export async function validateWalletForOrder(
       balanceCheck
     }
     
-  } catch (error) {
-    console.error('❌ Wallet validation error:', error)
-    
+  } catch {
     return {
       isValid: false,
       reason: 'Unable to validate wallet balance. Please try again.',
@@ -204,8 +191,7 @@ export async function estimateTransactionCost(): Promise<{
       gasPrice: gasPrice.toString(),
       estimatedCostUSD
     }
-  } catch (error) {
-    console.error('❌ Gas estimation error:', error)
+  } catch {
     return {
       gasPrice: '0',
       estimatedCostUSD: 1.0 // Conservative fallback
@@ -227,7 +213,6 @@ export async function validateWalletBalanceWithCache(
   const cached = balanceCheckCache.get(cacheKey)
   
   if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-    console.log('📋 Using cached balance result')
     return cached.result
   }
   

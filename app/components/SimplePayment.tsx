@@ -27,7 +27,7 @@ export function SimplePayment({
   onSuccess,
   onError
 }: SimplePaymentProps) {
-  const [currentStep, setCurrentStep] = useState<'quote' | 'send' | 'processing' | 'success' | 'error'>('quote');
+  const [currentStep, setCurrentStep] = useState<'quote' | 'send' | 'processing' | 'success' | 'error' | 'insufficient-funds'>('quote');
   const [orderData, setOrderData] = useState<{
     id: string;
     receiveAddress: string;
@@ -36,6 +36,11 @@ export function SimplePayment({
     transactionFee: string;
   } | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
+  const [errorDetails, setErrorDetails] = useState<{
+    currentBalance?: number;
+    requiredAmount?: number;
+    insufficientBy?: number;
+  } | null>(null);
 
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -127,7 +132,17 @@ export function SimplePayment({
       });
 
       if (!orderResponse.ok) {
-        throw new Error('Failed to create order');
+        const errorData = await orderResponse.json().catch(() => null);
+
+        // Handle insufficient funds error specifically
+        if (orderResponse.status === 400 && errorData?.error === 'Insufficient funds') {
+          setCurrentStep('insufficient-funds');
+          setErrorDetails(errorData.balanceInfo);
+          setStatusMessage(errorData.details || 'Insufficient USDC balance');
+          return;
+        }
+
+        throw new Error(errorData?.error || 'Failed to create order');
       }
 
       const orderData = await orderResponse.json();
@@ -366,9 +381,52 @@ export function SimplePayment({
               Your KES has been sent to {phoneNumber}
             </p>
             <p className="text-gray-400 text-sm">
-              It will take approximately 1-2 minutes to receive the fiat
+              It will take approximately 60secs to receive the fiat
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Insufficient Funds */}
+      {currentStep === 'insufficient-funds' && (
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 mx-auto bg-red-500 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <h3 className="text-white font-bold text-xl">Insufficient Funds</h3>
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+            <p className="text-red-300 text-sm mb-3">
+              Need more USDC to complete this transaction
+            </p>
+            {errorDetails && (
+              <div className="text-xs text-red-200 space-y-1">
+                <div className="flex justify-between">
+                  <span>Your Balance:</span>
+                  <span>${errorDetails.currentBalance?.toFixed(4) || '0.00'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Required:</span>
+                  <span>${errorDetails.requiredAmount?.toFixed(4) || '0.00'}</span>
+                </div>
+                <div className="border-t border-red-500/20 pt-1 flex justify-between font-semibold">
+                  <span>Need:</span>
+                  <span>${errorDetails.insufficientBy?.toFixed(4) || '0.00'} more</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              setCurrentStep('quote');
+              setErrorDetails(null);
+              setStatusMessage('');
+            }}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       )}
 
