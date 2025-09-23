@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/supabase/config';
 import { detectKenyanCarrier } from '@/lib/utils/phoneCarrier';
 import { formatTillNumber, formatPhoneNumber } from '@/lib/utils/tillValidator';
-import { validateWalletForOrder } from '@/lib/blockchain/balanceValidation';
+import { validateWalletBalance } from '@/lib/blockchain/balanceValidation';
 import { estimatePaycrestFees } from '@/lib/utils/feeEstimation';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
@@ -159,23 +159,24 @@ export async function POST(request: NextRequest) {
     console.log('📦 PayCrest order payload:', JSON.stringify(orderData, null, 2));
 
     // 💰 Validate wallet has sufficient balance BEFORE creating PayCrest order
-    // Use conservative fee estimate based on typical PayCrest fee structure
+    // Minisend charges exactly 1% transaction fee, no gas fees
     const feeEstimate = estimatePaycrestFees(amountNum);
 
     try {
-      const balanceValidation = await validateWalletForOrder(returnAddress, feeEstimate.totalAmountWithFees);
+      // No gas fees on Minisend, so validate exact amount needed (base + 1% fee)
+      const balanceValidation = await validateWalletBalance(returnAddress, feeEstimate.totalAmountWithFees, 0); // No buffer needed
 
-      if (!balanceValidation.isValid) {
+      if (!balanceValidation.hasBalance) {
         return NextResponse.json(
           {
             error: 'Insufficient funds',
-            details: `Need $${feeEstimate.totalAmountWithFees.toFixed(2)} USDC total (including fees)`,
+            details: `Need $${feeEstimate.totalAmountWithFees.toFixed(4)} USDC total (including 1% fee)`,
             balanceInfo: {
-              currentBalance: balanceValidation.balanceCheck.balanceInUSDC,
+              currentBalance: balanceValidation.balanceInUSDC,
               requiredAmount: feeEstimate.totalAmountWithFees,
               baseAmount: amountNum,
               estimatedFees: feeEstimate.totalEstimatedFees,
-              insufficientBy: balanceValidation.balanceCheck.insufficientBy
+              insufficientBy: balanceValidation.insufficientBy
             }
           },
           { status: 400 }
@@ -222,19 +223,19 @@ export async function POST(request: NextRequest) {
       const transactionFee = parseFloat(order.data.transactionFee || '0');
       const totalAmountRequired = amountNum + senderFee + transactionFee;
 
-      const finalValidation = await validateWalletForOrder(returnAddress, totalAmountRequired);
+      const finalValidation = await validateWalletBalance(returnAddress, totalAmountRequired, 0); // Exact validation, no buffer
 
-      if (!finalValidation.isValid) {
+      if (!finalValidation.hasBalance) {
         return NextResponse.json(
           {
             error: 'Insufficient funds',
-            details: `Need $${totalAmountRequired.toFixed(2)} USDC total (including fees)`,
+            details: `Need $${totalAmountRequired.toFixed(4)} USDC total (including 1% fee)`,
             balanceInfo: {
-              currentBalance: finalValidation.balanceCheck.balanceInUSDC,
+              currentBalance: finalValidation.balanceInUSDC,
               requiredAmount: totalAmountRequired,
               baseAmount: amountNum,
               fees: senderFee + transactionFee,
-              insufficientBy: finalValidation.balanceCheck.insufficientBy
+              insufficientBy: finalValidation.insufficientBy
             }
           },
           { status: 400 }
