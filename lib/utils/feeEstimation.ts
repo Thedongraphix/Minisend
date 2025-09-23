@@ -9,7 +9,7 @@ export interface FeeEstimate {
   estimatedTransactionFee: number;
   totalEstimatedFees: number;
   totalAmountWithFees: number;
-  estimationMethod: 'conservative' | 'historical' | 'api';
+  estimationMethod: 'conservative' | 'historical' | 'api' | 'exact';
 }
 
 /**
