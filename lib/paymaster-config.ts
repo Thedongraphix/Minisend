@@ -12,11 +12,11 @@ export interface PaymasterConfig {
 }
 
 export const paymasterConfig: PaymasterConfig = {
-  // Get this from CDP Dashboard -> Paymaster -> Configuration
-  rpcUrl: process.env.NEXT_PUBLIC_PAYMASTER_RPC_URL || '',
+  // CDP Paymaster RPC URL from user
+  rpcUrl: process.env.NEXT_PUBLIC_PAYMASTER_RPC_URL || 'https://api.developer.coinbase.com/rpc/v1/base/Txp2FJyUa9zCucjPFPqWHc0oeHmStFuo',
   isEnabled: process.env.NODE_ENV === 'production' ?
     (process.env.NEXT_PUBLIC_PAYMASTER_ENABLED === 'true') : true, // Always enabled in dev
-  network: process.env.NEXT_PUBLIC_PAYMASTER_NETWORK as 'mainnet' | 'testnet' || 'testnet',
+  network: process.env.NEXT_PUBLIC_PAYMASTER_NETWORK as 'mainnet' | 'testnet' || 'mainnet', // Default to mainnet
 
   // USDC contract on Base - allowlist this in CDP Dashboard
   contractAllowlist: [

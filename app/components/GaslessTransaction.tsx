@@ -25,23 +25,14 @@ export function GaslessTransaction({
   children,
 }: GaslessTransactionProps) {
 
-  // Enhanced status handler
-  const handleStatus = (status: LifecycleStatus) => {
-    onStatus?.(status);
-  };
-
-  const handleSuccess = (response: unknown) => {
-    onSuccess?.(response);
-  };
-
   return (
     <div>
-      {/* OnchainKit Transaction with conditional paymaster */}
+      {/* OnchainKit Transaction with CDP paymaster */}
       <Transaction
         chainId={chainId}
         calls={calls}
-        onStatus={handleStatus}
-        onSuccess={handleSuccess}
+        onStatus={onStatus}
+        onSuccess={onSuccess}
         onError={onError}
       >
         {children || (
