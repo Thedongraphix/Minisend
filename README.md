@@ -1,100 +1,61 @@
 # Minisend - USDC to Mobile Money Platform
 
-A production-ready USDC to mobile money platform built on Base Network, featuring PayCrest integration with research-based polling implementation.
+A production-ready USDC to mobile money platform built on Base Network, enabling seamless conversion of cryptocurrency to local currencies in Kenya and Nigeria.
 
 ## 🚀 Features
 
 - **USDC to Mobile Money**: Convert USDC to KES (M-Pesa) or NGN (Bank Transfer)
-- **Base Network Integration**: Built on Coinbase's Base Network
+- **Base Network Integration**: Built on Coinbase's Base Network for fast, low-cost transactions
 - **Multi-Wallet Support**: MetaMask, Coinbase Wallet, Phantom, Rabby, Trust, Frame
-- **Research-Based PayCrest Integration**: Intelligent polling with settlement detection
 - **Enterprise-Grade Security**: OnchainKit integration with proper error handling
 - **🗄️ Complete Database Integration**: Automatic payment tracking with Supabase
 - **📊 Analytics & Reporting**: Real-time insights and payment analytics
 - **🕐 EAT Timezone Support**: All timestamps in East Africa Time
 - **📱 Carrier Detection**: Automatic Kenyan phone carrier identification
+- **💬 WhatsApp Support**: Floating WhatsApp icon for instant customer support
 
-## 🔬 Research-Based Implementation
+## 🌍 Supported Regions
 
-### PayCrest Webhook Limitations
+### Kenya 🇰🇪
+- **M-Pesa Integration**: Direct transfers to M-Pesa wallets
+- **Multiple Carriers**: Safaricom and Airtel support
+- **Real-time Rates**: Live USD to KES conversion
 
-**Critical Discovery**: PayCrest does not provide webhook notifications for order lifecycle events. Unlike established payment processors, PayCrest relies on polling-based status monitoring.
-
-**What This Means:**
-- Webhook endpoint `/api/paycrest/webhook` will receive no events from PayCrest
-- Cannot rely on webhook notifications for payment completion detection
-- **Polling is the only reliable method** for monitoring order status changes
-
-### Settlement Detection Strategy
-
-Payment completion is detected when `order.status === 'settled'`. This status definitively indicates successful fiat delivery to recipient.
-
-**Key Status Values:**
-- `"settled"` - Payment fully completed - fiat delivered to recipient
-
-- `"failed"` - Payment processing failed
-- `"cancelled"` - Order was cancelled
-- `"initiated"` - Order created, waiting for crypto deposit
-- `"pending"` - Order is pending processing
+### Nigeria 🇳🇬
+- **Bank Integration**: Direct transfers to Nigerian bank accounts
+- **Multiple Banks**: Support for major Nigerian banks including GTBank
+- **Real-time Rates**: Live USD to NGN conversion
 
 ## 🛠️ Technical Implementation
 
-### Intelligent Polling System
+### Intelligent Payment Processing
 
-The platform implements research-based polling with exponential backoff:
+The platform implements intelligent payment processing with real-time status monitoring:
 
 ```javascript
-const pollPayCrestOrder = async (orderId, maxAttempts = 20) => {
-  const baseDelay = 3000; // Start with 3 second intervals
-  const timeoutMs = 600000; // 10 minutes maximum
-  
-  while (attempts < maxAttempts) {
-    const response = await fetch(`/api/paycrest/status/${orderId}`);
-    const result = await response.json();
-    const order = result.order;
-    
-    // Check for definitive completion states
-    if (order.status === 'settled') {
-      return { success: true, completed: true, order };
-    }
-    
-    if (['failed', 'cancelled'].includes(order.status)) {
-      return { success: false, completed: true, order };
-    }
-    
-    // Exponential backoff
-    const delay = Math.min(baseDelay * Math.pow(1.4, attempts), 30000);
-    await new Promise(resolve => setTimeout(resolve, delay));
-    attempts++;
+const processPayment = async (orderData) => {
+  // Create payment order
+  const order = await createOrder(orderData);
+
+  // Monitor payment status with intelligent polling
+  const result = await monitorPaymentStatus(order.id);
+
+  // Handle completion or failure
+  if (result.success) {
+    return { success: true, order: result.order };
   }
+
+  return { success: false, error: result.error };
 };
 ```
 
-**Polling Features:**
-- Exponential backoff starting at 3 seconds
-- Maximum 20 polling attempts
-- 10-minute timeout limit
-- Focus on 'settled' status for completion detection
-- Fallback to database if API fails
+**Processing Features:**
+- Real-time status monitoring
+- Exponential backoff for optimal performance
+- Comprehensive error handling
+- Progress feedback for users
+- Automatic timeout management
 
-## 📋 API Endpoints
-
-### Core Endpoints
-
-- `POST /api/paycrest/orders` - Create payment order
-- `GET /api/paycrest/status/[orderId]` - Get order status with settlement detection
-- `GET /api/paycrest/rates` - Get exchange rates
-- `GET /api/paycrest/sender/stats` - Get sender statistics
-
-### Documentation
-
-- `GET /api/paycrest/orders-docs` - Complete API documentation with research findings
-
-### Webhook (Compatibility Only)
-
-- `POST /api/paycrest/webhook` - PayCrest webhook handler (compatibility only)
-
-**Note**: PayCrest does not send webhook events. This endpoint exists for compatibility but relies on polling for status updates.
 
 ## 🗄️ Database Integration
 
@@ -103,16 +64,16 @@ All payment data is automatically recorded in Supabase with EAT timezone:
 
 - **Order Details**: Amount, currency, phone numbers, wallet addresses
 - **Status History**: Complete audit trail of all status changes
-- **Analytics Events**: User interactions and conversion tracking  
+- **Analytics Events**: User interactions and conversion tracking
 - **Carrier Detection**: Automatic phone number carrier identification
-- **Raw API Data**: Full Paycrest request/response logs for debugging
+- **Transaction Logs**: Complete transaction history for debugging
 
 ### Database Setup
 ```bash
 # Setup database tables and views
 npm run setup-supabase
 
-# Test database connection  
+# Test database connection
 npm run test-db-quick
 
 # Full integration test
@@ -125,26 +86,26 @@ npm run test-db-full
 - `fee_analytics` - Fee breakdown by type and currency
 - `status_analytics` - Status transition tracking
 
-See [DATABASE.md](./DATABASE.md) for complete documentation.
-
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- PayCrest API credentials
 - Base Network RPC endpoint
+- Supabase account (for database)
 
 ### Environment Variables
 
 ```bash
-# PayCrest Configuration
-PAYCREST_API_KEY=your_api_key
-PAYCREST_CLIENT_SECRET=your_client_secret
-PAYCREST_BASE_URL=https://api.paycrest.io/v1
+# API Configuration
+API_KEY=your_api_key
+CLIENT_SECRET=your_client_secret
+BASE_URL=your_api_base_url
 
-# Database (Optional)
-DATABASE_URL=your_database_url
+# Database
+DATABASE_URL=your_supabase_database_url
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # App Configuration
 NEXT_PUBLIC_URL=http://localhost:3000
@@ -165,60 +126,43 @@ npm run build
 
 ## 🧪 Testing
 
-### Test PayCrest Integration
-
-```bash
-# Test order creation
-curl -X POST http://localhost:3000/api/paycrest/orders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "amount": "1",
-    "phoneNumber": "+254712345678",
-    "accountName": "Test User",
-    "currency": "KES",
-    "returnAddress": "0x742d35Cc6634C0532925a3b8D400b6b2e5e1C6eD"
-  }'
-
-# Test status polling
-curl http://localhost:3000/api/paycrest/status/order-id
-
-# Test documentation
-curl http://localhost:3000/api/paycrest/orders-docs
 ```
 
 ## 🔧 Architecture
 
 ### Frontend Components
 
-- `SimpleUSDCPayment.tsx` - Main payment component with intelligent polling
+- `SimpleUSDCPayment.tsx` - Main payment component with intelligent processing
 - `SimpleOffRampFlow.tsx` - Complete off-ramp flow
 - `DirectUSDCBalance.tsx` - USDC balance display
+- `WhatsAppFloatingIcon.tsx` - Customer support integration
 - `DemoComponents.tsx` - UI components and styling
 
 ### Backend Services
 
-- PayCrest API integration with intelligent polling
+- Payment API integration with intelligent monitoring
 - Database integration for order tracking
-- Analytics and webhook services
+- Analytics and reporting services
 - Rate fetching and validation
+- Real-time status updates
 
 ### Key Features
 
-1. **Research-Based Polling**: Intelligent status monitoring with exponential backoff
-2. **Settlement Detection**: Focus on 'settled' status for payment completion
+1. **Intelligent Processing**: Smart payment monitoring with real-time updates
+2. **Settlement Detection**: Accurate payment completion detection
 3. **Error Handling**: Comprehensive error handling with user feedback
 4. **Progress Tracking**: Real-time progress updates during payment processing
-5. **Timeout Management**: 10-minute maximum polling with graceful degradation
+5. **Timeout Management**: Optimal timeout handling with graceful degradation
 
 ## 🎯 Best Practices
 
-### For PayCrest Integration
+### For Payment Integration
 
-1. **Remove webhook dependency** - PayCrest doesn't send webhook events
-2. **Implement polling** using the provided patterns
-3. **Check for 'settled' status only** - ignore intermediate states for completion
-4. **Add timeout handling** - don't poll indefinitely
-5. **Provide progress feedback** - show users what's happening during processing
+1. **Real-time monitoring** - Implement proper status checking
+2. **User feedback** - Provide clear progress indicators
+3. **Error handling** - Handle all edge cases gracefully
+4. **Timeout management** - Don't process indefinitely
+5. **Security** - Validate all inputs and sanitize data
 
 ### For Production Deployment
 
@@ -236,7 +180,7 @@ curl http://localhost:3000/api/paycrest/orders-docs
 ## 💰 Supported Currencies
 
 - **KES (Kenyan Shillings)**: Via M-Pesa (Safaricom, Airtel)
-- **NGN (Nigerian Naira)**: Via bank transfer (GTBank)
+- **NGN (Nigerian Naira)**: Via bank transfer (multiple banks)
 
 ## 🔍 Monitoring and Analytics
 
@@ -247,19 +191,28 @@ The platform includes comprehensive monitoring:
 - Error tracking and reporting
 - Carrier detection for Kenyan numbers
 - Settlement time monitoring
+- User behavior analytics
 
 ## 🚨 Troubleshooting
 
 ### Common Issues
 
-1. **Spinning UI**: Ensure polling is properly implemented and checking for 'settled' status
-2. **Timeout Errors**: Check network connectivity and PayCrest API status
-3. **Order Not Found**: Verify order ID and API credentials
-4. **Payment Failures**: Check recipient details and network status
+1. **Payment Processing**: Ensure proper wallet connection and sufficient USDC balance
+2. **Network Issues**: Check Base Network connectivity and RPC endpoints
+3. **Rate Errors**: Verify exchange rate API availability
+4. **Order Status**: Check order ID validity and API credentials
 
 ### Debug Mode
 
-Enable debug logging by setting `NODE_ENV=development` and check console logs for detailed information about polling attempts and status changes.
+Enable debug logging by setting `NODE_ENV=development` and check console logs for detailed information about payment processing and status changes.
+
+## 💬 Support
+
+Need help? Click the floating WhatsApp icon in the app for instant support, or contact us through the following channels:
+
+- WhatsApp: Available via in-app floating icon
+- Email: support@minisend.xyz
+- Documentation: Check the in-app help section
 
 ## 📝 License
 
@@ -273,17 +226,8 @@ MIT License - see LICENSE file for details.
 4. Add tests if applicable
 5. Submit a pull request
 
-## 📞 Support
-
-For support and questions about the PayCrest integration:
-
-- Check the API documentation at `/api/paycrest/orders-docs`
-- Review the research findings in the documentation
-- Test with the provided endpoints
-- Monitor logs for detailed error information
-
 ---
 
 **Built with ❤️ on Base Network using OnchainKit**
 
-# Trigger deployment
+*Empowering seamless crypto-to-fiat conversions across Africa*
