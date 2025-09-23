@@ -7,6 +7,7 @@ import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 import type { ContractFunctionParameters } from 'viem';
 import { PaymentSpinner } from './PaymentSpinner';
+import { useWalletAnalytics } from '@/hooks/useWalletAnalytics';
 
 interface SimplePaymentProps {
   amount: string;
@@ -41,6 +42,9 @@ export function SimplePayment({
     requiredAmount?: number;
     insufficientBy?: number;
   } | null>(null);
+
+  // Wallet-based analytics
+  const { trackPayment } = useWalletAnalytics();
 
   // USDC contract on Base
   const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -97,11 +101,18 @@ export function SimplePayment({
   // Step 1: Get live rate and create order
   const createOrder = useCallback(async () => {
     setCurrentStep('quote');
-    
+
+    // Track payment initiation
+    await trackPayment('initiated', {
+      amount,
+      currency,
+      phoneNumber,
+    });
+
     try {
       // First, get live rate from PayCrest
       setStatusMessage('Getting live exchange rate...');
-      
+
       const rateResponse = await fetch(`/api/paycrest/rates/USDC/${amount}/${currency}`);
       
       if (!rateResponse.ok) {
@@ -139,6 +150,15 @@ export function SimplePayment({
           setCurrentStep('insufficient-funds');
           setErrorDetails(errorData.balanceInfo);
           setStatusMessage(errorData.details || 'Insufficient USDC balance');
+
+          // Track insufficient funds
+          await trackPayment('insufficient_funds', {
+            amount,
+            currency,
+            phoneNumber,
+            error: 'Insufficient USDC balance',
+            success: false
+          });
           return;
         }
 
@@ -150,15 +170,34 @@ export function SimplePayment({
       if (orderData.success && orderData.order) {
         setOrderData(orderData.order);
         setCurrentStep('send');
+
+        // Track successful order creation
+        await trackPayment('order_created', {
+          amount,
+          currency,
+          phoneNumber,
+          orderId: orderData.order.id,
+          success: true
+        });
       } else {
         throw new Error('Invalid order response');
       }
     } catch (error) {
       console.error('Order creation failed:', error);
       setCurrentStep('error');
+
+      // Track order creation failure
+      await trackPayment('order_creation_failed', {
+        amount,
+        currency,
+        phoneNumber,
+        error: error instanceof Error ? error.message : 'Failed to create order',
+        success: false
+      });
+
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, accountName, currency, returnAddress, onError]);
+  }, [amount, phoneNumber, accountName, currency, returnAddress, onError, trackPayment]);
 
   // Step 2: Create transaction calls for Base Pay using proper ContractFunctionParameters
   const calls: ContractFunctionParameters[] = useMemo(() => {
@@ -243,6 +282,15 @@ export function SimplePayment({
         setCurrentStep('processing');
         setStatusMessage('Transaction pending on Base network...');
         console.log('Transaction submitted to Base network');
+
+        // Track transaction submission
+        trackPayment('transaction_submitted', {
+          amount,
+          currency,
+          phoneNumber,
+          orderId: orderData?.id,
+          success: true
+        });
         break;
       case 'transactionLegacyExecuted':
         console.log('Legacy transaction executed:', status.statusData);
@@ -252,13 +300,23 @@ export function SimplePayment({
         const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
         setStatusMessage(`Payment sent to ${deliveryMethod}`);
         console.log('Transaction successful:', status.statusData);
-        
+
+        // Track successful transaction
+        trackPayment('transaction_successful', {
+          amount,
+          currency,
+          phoneNumber,
+          orderId: orderData?.id,
+          transactionHash: status.statusData?.transactionReceipts?.[0]?.transactionHash,
+          success: true
+        });
+
         // Start background polling for provider failures
         if (orderData?.id) {
           const orderId = orderData.id;
           setTimeout(() => startPolling(orderId), 0);
         }
-        
+
         // Call onSuccess immediately - user has successfully sent funds to PayCrest
         setTimeout(() => onSuccess(), 2000);
         break;
@@ -266,10 +324,21 @@ export function SimplePayment({
         setCurrentStep('error');
         console.error('Transaction error:', status.statusData);
         const errorMessage = status.statusData?.message || 'Transaction failed';
+
+        // Track transaction failure
+        trackPayment('transaction_failed', {
+          amount,
+          currency,
+          phoneNumber,
+          orderId: orderData?.id,
+          error: errorMessage,
+          success: false
+        });
+
         onError(errorMessage);
         break;
     }
-  }, [orderData?.id, onError, currency, onSuccess, calls, startPolling]);
+  }, [orderData?.id, onError, currency, onSuccess, calls, startPolling, trackPayment, amount, phoneNumber]);
 
 
 
