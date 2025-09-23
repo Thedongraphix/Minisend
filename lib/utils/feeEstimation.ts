@@ -17,22 +17,21 @@ export interface FeeEstimate {
  * Uses a percentage-based approach as a safety buffer
  */
 export function estimatePaycrestFees(baseAmountUSDC: number): FeeEstimate {
-  // Conservative estimates based on typical fintech fee structures
-  // PayCrest typically charges around 1-2% in total fees
-  const feePercentage = 0.02; // 2% conservative estimate
+  // Minisend charges exactly 1% transaction fee, no gas fees
+  const feePercentage = 0.01; // 1% Minisend transaction fee
 
   const totalEstimatedFees = baseAmountUSDC * feePercentage;
 
-  // Split between sender fee (usually larger) and transaction fee
-  const estimatedSenderFee = totalEstimatedFees * 0.8; // 80% of fees
-  const estimatedTransactionFee = totalEstimatedFees * 0.2; // 20% of fees
+  // All fee goes to Minisend transaction fee (1%), no separate sender fee
+  const estimatedSenderFee = totalEstimatedFees; // Minisend 1% fee
+  const estimatedTransactionFee = 0; // No additional transaction fees
 
   return {
     estimatedSenderFee,
     estimatedTransactionFee,
     totalEstimatedFees,
     totalAmountWithFees: baseAmountUSDC + totalEstimatedFees,
-    estimationMethod: 'conservative'
+    estimationMethod: 'exact'
   };
 }
 
