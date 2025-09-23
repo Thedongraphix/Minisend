@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useCallback, useRef } from 'react';
-import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLabel, TransactionStatusAction } from '@coinbase/onchainkit/transaction';
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 import { ReceiptSection } from './ReceiptDownloadButton';
 import { PaymentSpinner } from './PaymentSpinner';
+import { GaslessTransaction } from './GaslessTransaction';
 
 interface SimpleUSDCPaymentProps {
   amount: string;
@@ -60,7 +60,6 @@ export function SimpleUSDCPayment({
   const startPolling = useCallback((orderId: string) => {
     // Prevent multiple polling instances
     if (pollingStartedRef.current) {
-      console.log('🚫 Polling already started, skipping duplicate');
       return;
     }
     pollingStartedRef.current = true;
@@ -183,7 +182,6 @@ export function SimpleUSDCPayment({
       }
 
       const data = await response.json();
-      console.log('PayCrest order created:', data);
       
       if (data.success && data.order) {
         let orderData;
@@ -384,6 +382,10 @@ export function SimpleUSDCPayment({
                   <span>Total to Send:</span>
                   <span>${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)}</span>
                 </div>
+                <div className="flex justify-between text-xs text-green-400 mt-1">
+                  <span>Gas Fees:</span>
+                  <span>Free (saves $0.015)</span>
+                </div>
               </div>
               <p className="text-blue-300 text-xs mt-2">
                 Click to approve USDC transfer from your wallet
@@ -394,42 +396,28 @@ export function SimpleUSDCPayment({
             </div>
           </div>
           
-          <Transaction
+          <GaslessTransaction
             chainId={base.id}
             calls={calls}
+            buttonText={`Approve & Send ${((parseFloat(paycrestOrder?.amount || '0') || 0) + (parseFloat(paycrestOrder?.senderFee || '0') || 0) + (parseFloat(paycrestOrder?.transactionFee || '0') || 0)).toFixed(2)} USDC`}
             onStatus={handleTransactionStatus}
-            onSuccess={(response) => {
-              console.log('🎯 Transaction onSuccess callback triggered:', response);
-              // The onStatus callback already handles success - this is a fallback for desktop
-              console.log('📝 onSuccess: Current status is', status);
+            onSuccess={() => {
               setStatus('success');
               const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
               setStatusMessage(`Payment sent to ${deliveryMethod}`);
-              
+
               // Start polling only if not already started by onStatus
               if (paycrestOrder?.id && !pollingStartedRef.current) {
-                console.log('🔄 onSuccess: Starting polling as fallback');
                 startPolling(paycrestOrder.id);
               }
-              
+
               setTimeout(() => onSuccess(), 2000);
             }}
-            onError={(error) => {
-              console.error('Transaction error:', error);
+            onError={() => {
               setStatus('error');
               onError('Transaction failed');
             }}
-          >
-            <TransactionButton
-              text={`Approve & Send ${((parseFloat(paycrestOrder?.amount || '0') || 0) + (parseFloat(paycrestOrder?.senderFee || '0') || 0) + (parseFloat(paycrestOrder?.transactionFee || '0') || 0)).toFixed(2)} USDC`}
-              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg"
-            />
-            
-            <TransactionStatus>
-              <TransactionStatusLabel />
-              <TransactionStatusAction />
-            </TransactionStatus>
-          </Transaction>
+          />
         </div>
       )}
 
