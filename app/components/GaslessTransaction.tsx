@@ -1,0 +1,63 @@
+"use client";
+
+import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLabel, TransactionStatusAction } from '@coinbase/onchainkit/transaction';
+import { base } from 'wagmi/chains';
+import type { ContractFunctionParameters } from 'viem';
+import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
+
+interface GaslessTransactionProps {
+  calls: ContractFunctionParameters[];
+  chainId?: number;
+  onStatus?: (status: LifecycleStatus) => void;
+  onSuccess?: (response: unknown) => void;
+  onError?: (error: unknown) => void;
+  buttonText?: string;
+  children?: React.ReactNode;
+}
+
+export function GaslessTransaction({
+  calls,
+  chainId = base.id,
+  onStatus,
+  onSuccess,
+  onError,
+  buttonText = "Complete Transaction",
+  children,
+}: GaslessTransactionProps) {
+
+  // Enhanced status handler
+  const handleStatus = (status: LifecycleStatus) => {
+    onStatus?.(status);
+  };
+
+  const handleSuccess = (response: unknown) => {
+    onSuccess?.(response);
+  };
+
+  return (
+    <div>
+      {/* OnchainKit Transaction with conditional paymaster */}
+      <Transaction
+        chainId={chainId}
+        calls={calls}
+        onStatus={handleStatus}
+        onSuccess={handleSuccess}
+        onError={onError}
+      >
+        {children || (
+          <>
+            <TransactionButton
+              text={buttonText}
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg"
+            />
+
+            <TransactionStatus>
+              <TransactionStatusLabel />
+              <TransactionStatusAction />
+            </TransactionStatus>
+          </>
+        )}
+      </Transaction>
+    </div>
+  );
+}
