@@ -48,7 +48,7 @@ export interface BalanceCheckResult {
 export async function validateWalletBalance(
   walletAddress: string,
   requiredAmountUSDC: number,
-  bufferPercentage: number = 0.1 // 10% buffer for gas fees
+  bufferPercentage: number = 0 // No buffer by default since Minisend doesn't charge gas fees
 ): Promise<BalanceCheckResult> {
   try {
     if (!walletAddress || !walletAddress.startsWith('0x') || walletAddress.length !== 42) {
@@ -70,10 +70,11 @@ export async function validateWalletBalance(
     // USDC has 6 decimals
     const balanceInUSDC = parseFloat(formatUnits(balance, 6))
 
-    // Add buffer for transaction fees and slippage
+    // Add any specified buffer (0 by default for Minisend since no gas fees)
     const requiredWithBuffer = requiredAmountUSDC * (1 + bufferPercentage)
 
-    const hasBalance = balanceInUSDC >= requiredWithBuffer
+    // Use proper decimal comparison to avoid floating point issues (USDC has 6 decimals)
+    const hasBalance = Math.round(balanceInUSDC * 1e6) >= Math.round(requiredWithBuffer * 1e6)
 
     const result: BalanceCheckResult = {
       hasBalance,
