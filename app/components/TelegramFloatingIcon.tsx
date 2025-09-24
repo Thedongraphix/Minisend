@@ -2,7 +2,7 @@
 
 export function TelegramFloatingIcon() {
   const handleClick = () => {
-    window.open('https://t.me/minisend_support', '_blank', 'noopener,noreferrer');
+    window.open('https://t.me/minisendapp', '_blank', 'noopener,noreferrer');
   };
 
   return (
