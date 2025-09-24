@@ -194,7 +194,7 @@ export function Features({ setActiveTab }: FeaturesProps) {
               <div>
                 <h4 className="text-white font-medium mb-1">Instant Processing</h4>
                 <span className="text-gray-300 text-sm">
-                  Payments typically complete within 1-2 minutes
+                  Payments typically complete within 60seconds
                 </span>
               </div>
             </li>
