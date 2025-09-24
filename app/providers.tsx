@@ -27,8 +27,8 @@ export function Providers(props: { children: ReactNode }) {
           termsUrl: 'https://minisend.xyz/terms',
           privacyUrl: 'https://minisend.xyz/privacy',
         },
-        // Paymaster configuration for gasless transactions
-        paymaster: paymasterConfig.rpcUrl || undefined,
+        // CDP Paymaster for gasless transactions (OnchainKit built-in support)
+        paymaster: paymasterConfig.isEnabled ? paymasterConfig.rpcUrl : undefined,
       }}
     >
       <ConsoleLoggerInit />
