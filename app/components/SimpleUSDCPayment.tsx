@@ -7,6 +7,7 @@ import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 import { ReceiptSection } from './ReceiptDownloadButton';
 import { PaymentSpinner } from './PaymentSpinner';
 import { GaslessTransaction } from './GaslessTransaction';
+import { USDC_CONTRACTS } from '@/lib/paymaster-config';
 
 interface SimpleUSDCPaymentProps {
   amount: string;
@@ -53,8 +54,8 @@ export function SimpleUSDCPayment({
   const [fallbackMonitoringStarted, setFallbackMonitoringStarted] = useState(false);
   const pollingStartedRef = useRef(false);
 
-  // USDC contract on Base
-  const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+  // USDC contract on Base (using config constant)
+  const USDC_CONTRACT = USDC_CONTRACTS.mainnet;
 
   // Optimized polling that works alongside webhooks for maximum speed
   const startPolling = useCallback((orderId: string) => {
