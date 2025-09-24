@@ -22,6 +22,7 @@ import Image from 'next/image';
 import "./theme.css";
 import { WalletIsland } from "./components/WalletIsland";
 import { WhatsAppFloatingIcon } from "./components/WhatsAppFloatingIcon";
+import { TelegramFloatingIcon } from "./components/TelegramFloatingIcon";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
@@ -180,6 +181,7 @@ export default function App() {
       </div>
 
       <WalletDebug />
+      <TelegramFloatingIcon />
       <WhatsAppFloatingIcon />
       </div>
     </PWAProvider>
