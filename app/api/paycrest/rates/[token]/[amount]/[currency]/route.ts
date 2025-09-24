@@ -47,7 +47,7 @@ export async function GET(
     }
 
     // Fetch rate from PayCrest API
-    const response = await fetch(`${PAYCREST_API_URL}/rates/${token}/${amount}/${currency}`, {
+    const response = await fetch(`${PAYCREST_API_URL}/rates/${token}/${amount}/${currency}?network=base`, {
       headers: {
         'API-Key': PAYCREST_API_KEY!,
       },
