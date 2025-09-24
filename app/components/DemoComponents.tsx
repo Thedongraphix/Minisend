@@ -158,7 +158,7 @@ export function Features({ setActiveTab }: FeaturesProps) {
               <div>
                 <h4 className="text-white font-medium mb-1">Nigerian Banks</h4>
                 <span className="text-gray-300 text-sm">
-                  Send directly to bank accounts across Nigeria
+                  Send directly to 15 plus bank accounts across Nigeria
                 </span>
               </div>
             </li>
