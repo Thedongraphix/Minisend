@@ -355,9 +355,6 @@ export function PaymentProcessor({
                 <span className="text-gray-300">Total</span>
                 <span className="text-white font-bold text-lg">${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC</span>
               </div>
-              <p className="text-blue-300 text-xs">
-                Approve in wallet to send {currency}
-              </p>
             </div>
           </div>
           
