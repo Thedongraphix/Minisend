@@ -1,2 +1,2 @@
-export { WalletIsland } from './WalletIsland';
-export { MobileWalletHandler } from './MobileWalletHandler';
+export { ConnectWidget } from './ConnectWidget';
+export { ConnectionHandler } from './ConnectionHandler';

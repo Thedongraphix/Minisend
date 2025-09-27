@@ -1,6 +1,6 @@
 "use client";
 
-export function TelegramFloatingIcon() {
+export function TelegramButton() {
   const handleClick = () => {
     window.open('https://t.me/minisendapp', '_blank', 'noopener,noreferrer');
   };

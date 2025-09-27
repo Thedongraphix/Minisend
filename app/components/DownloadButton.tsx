@@ -4,19 +4,19 @@ import { useState } from 'react';
 import { generateReceiptPDF } from '@/lib/receipt-generator';
 import { OrderData } from '@/lib/types/order';
 
-interface ReceiptDownloadButtonProps {
+interface DownloadButtonProps {
   orderData: OrderData;
   className?: string;
   variant?: 'primary' | 'secondary' | 'minimal';
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function ReceiptDownloadButton({ 
-  orderData, 
+export function DownloadButton({
+  orderData,
   className = '',
   variant = 'primary',
   size = 'md'
-}: ReceiptDownloadButtonProps) {
+}: DownloadButtonProps) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -179,7 +179,7 @@ export function ReceiptSection({
 
   return (
     <div className={`${className} space-y-3`}>
-      <ReceiptDownloadButton 
+      <DownloadButton
         orderData={orderData}
         variant="primary"
         size="lg"

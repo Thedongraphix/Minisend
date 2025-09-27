@@ -16,13 +16,13 @@ import {
   Name,
 } from '@coinbase/onchainkit/identity';
 
-interface WalletIslandProps {
+interface ConnectWidgetProps {
   className?: string;
 }
 
-export function WalletIsland({
+export function ConnectWidget({
   className = ''
-}: WalletIslandProps) {
+}: ConnectWidgetProps) {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {

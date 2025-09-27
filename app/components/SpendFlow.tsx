@@ -3,18 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { useAccount } from 'wagmi';
-import { SimpleUSDCPayment } from './SimpleUSDCPayment';
-import { DirectUSDCBalance } from './DirectUSDCBalance';
-import { MobileWalletHandler } from './MobileWalletHandler';
-import { EnhancedPaymentSelector } from './EnhancedPaymentSelector';
-import { Button } from './DemoComponents';
+import { PaymentProcessor } from './PaymentProcessor';
+import { BalanceView } from './BalanceView';
+import { ConnectionHandler } from './ConnectionHandler';
+import { AdvancedSelector } from './AdvancedSelector';
+import { Button } from './BaseComponents';
 import Image from 'next/image';
 
-interface SpendUSDCFlowProps {
+interface SpendFlowProps {
   setActiveTab: (tab: string) => void;
 }
 
-export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
+export function SpendFlow({ setActiveTab }: SpendFlowProps) {
   const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
   
@@ -113,7 +113,7 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
           <p className="text-gray-300">Pay businesses with till numbers</p>
         </div>
 
-        <MobileWalletHandler showBalance={false} />
+        <ConnectionHandler showBalance={false} />
       </div>
     );
   }
@@ -166,25 +166,36 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
       </div>
 
       {/* USDC Balance */}
-      <DirectUSDCBalance />
+      <BalanceView />
 
       {/* Form Step */}
       {step === 'form' && (
         <>
           {/* Fiat Amount Banner */}
           {formData.amount && parseFloat(formData.amount) > 0 && (
-            <div className="bg-black border border-gray-700 rounded-2xl p-4">
+            <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-600/60 rounded-2xl p-5 shadow-lg shadow-black/25">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">{formData.currency === 'KES' ? 'KSh' : '₦'}</span>
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-purple-600/20 border border-purple-500/30 rounded-xl flex items-center justify-center">
+                    <span className="text-purple-300 font-bold text-xl">{formData.currency === 'KES' ? 'KSh' : '₦'}</span>
                   </div>
                   <div>
-                    <div className="text-white font-semibold text-lg">
+                    <div className="text-white font-bold text-xl">
                       {parseFloat(formData.amount).toLocaleString()} {formData.currency}
                     </div>
-                    <div className="text-gray-400 text-sm">
-                      {rateLoading ? 'Calculating USDC...' : currentRate ? `≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC` : rateError ? 'Using fallback rate' : 'Rate unavailable'}
+                    <div className="text-gray-300 text-sm font-medium">
+                      {rateLoading ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                          <span>Calculating USDC...</span>
+                        </div>
+                      ) : currentRate ? (
+                        <span className="text-purple-300">≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC</span>
+                      ) : rateError ? (
+                        <span className="text-amber-300">Using fallback rate</span>
+                      ) : (
+                        <span className="text-gray-400">Rate unavailable</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -212,7 +223,7 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
 
 
           {/* Enhanced Payment Method Selector - Phone, Till, and Paybill numbers */}
-          <EnhancedPaymentSelector
+          <AdvancedSelector
             currency={formData.currency}
             onPaymentMethodChange={setPaymentMethod}
             className="mb-4"
@@ -248,20 +259,27 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
       {/* Payment Step */}
       {step === 'payment' && paymentMethod && (
         <div>
-          <div className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10">
-            <h3 className="text-white font-medium mb-2">Payment Summary</h3>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between text-gray-300">
-                <span>Paying:</span>
-                <span>{parseFloat(formData.amount).toLocaleString()} {formData.currency}</span>
+          <div className="mb-6 p-6 bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-600/50 shadow-lg shadow-black/20">
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="w-6 h-6 bg-purple-500 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
-              <div className="flex justify-between text-gray-300">
-                <span>USDC cost:</span>
-                <span>${currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : '...'} USDC</span>
+              <h3 className="text-white font-semibold text-lg">Payment Summary</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2 border-b border-gray-600/30">
+                <span className="text-gray-300 font-medium">Paying</span>
+                <span className="text-white font-semibold text-lg">{parseFloat(formData.amount).toLocaleString()} {formData.currency}</span>
               </div>
-              <div className="flex justify-between text-gray-300">
-                <span>To:</span>
-                <span>
+              <div className="flex justify-between items-center py-2 border-b border-gray-600/30">
+                <span className="text-gray-300 font-medium">USDC cost</span>
+                <span className="text-purple-300 font-semibold">${currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : '...'} USDC</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-300 font-medium">To</span>
+                <span className="text-white font-medium">
                   {paymentMethod.type === 'till' && `Till ${paymentMethod.formatted}`}
                   {paymentMethod.type === 'phone' && paymentMethod.formatted}
                 </span>
@@ -269,7 +287,7 @@ export function SpendUSDCFlow({ setActiveTab }: SpendUSDCFlowProps) {
             </div>
           </div>
 
-          <SimpleUSDCPayment
+          <PaymentProcessor
             amount={currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : formData.amount}
             phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
             tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}

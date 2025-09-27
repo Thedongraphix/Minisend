@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
 import { base, baseSepolia } from "viem/chains";
 import { PostHogProvider } from "@/lib/posthog-provider";
-import { ConsoleLoggerInit } from "@/app/components/ConsoleLoggerInit";
+import { Logger } from "@/app/components/Logger";
 import { paymasterConfig } from "@/lib/paymaster-config";
 
 export function Providers(props: { children: ReactNode }) {
@@ -31,7 +31,7 @@ export function Providers(props: { children: ReactNode }) {
         paymaster: paymasterConfig.isEnabled ? paymasterConfig.rpcUrl : undefined,
       }}
     >
-      <ConsoleLoggerInit />
+      <Logger />
       <PostHogProvider>
         {props.children}
       </PostHogProvider>

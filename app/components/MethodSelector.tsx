@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { detectPaymentDestination, getPaymentDestinationDescription, isPaymentDestinationSupported } from '@/lib/utils/tillValidator';
 
-interface PaymentMethodSelectorProps {
+interface MethodSelectorProps {
   currency: 'KES' | 'NGN';
   onPaymentMethodChange: (method: { 
     type: 'phone' | 'till'; 
@@ -13,11 +13,11 @@ interface PaymentMethodSelectorProps {
   className?: string;
 }
 
-export function PaymentMethodSelector({ 
-  currency, 
-  onPaymentMethodChange, 
-  className = '' 
-}: PaymentMethodSelectorProps) {
+export function MethodSelector({
+  currency,
+  onPaymentMethodChange,
+  className = ''
+}: MethodSelectorProps) {
   const [paymentInput, setPaymentInput] = useState('');
   const [destination, setDestination] = useState(detectPaymentDestination(''));
   const [showHelper, setShowHelper] = useState(false);

@@ -5,7 +5,7 @@ import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { base } from 'viem/chains';
 import { Name } from '@coinbase/onchainkit/identity';
 
-export function WalletDebug() {
+export function DebugPanel() {
   const { address, isConnected, connector } = useAccount();
   const { context } = useMiniKit();
   const chainId = useChainId();

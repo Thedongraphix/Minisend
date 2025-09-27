@@ -6,7 +6,7 @@ import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 import type { ContractFunctionParameters } from 'viem';
-import { PaymentSpinner } from './PaymentSpinner';
+import { LoadingSpinner } from './LoadingSpinner';
 import { useWalletAnalytics } from '@/hooks/useWalletAnalytics';
 
 interface SimplePaymentProps {
@@ -405,7 +405,7 @@ export function SimplePayment({
       {currentStep === 'processing' && (
         <div className="text-center space-y-4">
           <div className="flex justify-center items-center">
-            <PaymentSpinner />
+            <LoadingSpinner />
           </div>
           <div className="space-y-2">
             <h3 className="text-white font-semibold text-lg">Processing Payment</h3>

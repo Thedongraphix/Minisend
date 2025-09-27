@@ -1,6 +1,6 @@
 "use client";
 
-export function WhatsAppFloatingIcon() {
+export function WhatsAppButton() {
   const handleClick = () => {
     window.open('https://wa.link/rx4ps9', '_blank', 'noopener,noreferrer');
   };

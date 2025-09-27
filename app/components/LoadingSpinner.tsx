@@ -1,6 +1,6 @@
 "use client";
 
-export function PaymentSpinner() {
+export function LoadingSpinner() {
   return (
     <div className="payment-spinner">
       <style jsx>{`

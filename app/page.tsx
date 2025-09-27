@@ -7,22 +7,22 @@ import {
 // Wallet components removed since we don't show wallet connection in main page anymore
 // Wallet components removed - now handled in Home component
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Button } from "./components/DemoComponents";
-import { Icon } from "./components/DemoComponents";
-import { Home } from "./components/DemoComponents";
-import { Features } from "./components/DemoComponents";
-import { SimpleOffRampFlow } from "./components/SimpleOffRampFlow";
-import { SpendUSDCFlow } from "./components/SpendUSDCFlow";
-import { SwapComponent } from "./components/SwapComponent";
-import { UserProfile } from "./components/UserProfile";
-import { WalletDebug } from "./components/WalletDebug";
-import { PWAProvider } from "./components/PWAProvider";
+import { Button } from "./components/BaseComponents";
+import { Icon } from "./components/BaseComponents";
+import { Home } from "./components/BaseComponents";
+import { Features } from "./components/BaseComponents";
+import { ExchangeFlow } from "./components/ExchangeFlow";
+import { SpendFlow } from "./components/SpendFlow";
+import { SwapInterface } from "./components/SwapInterface";
+import { ProfileView } from "./components/ProfileView";
+import { DebugPanel } from "./components/DebugPanel";
+import { AppProvider } from "./components/AppProvider";
 // Analytics imports removed - not used in current implementation
 import Image from 'next/image';
 import "./theme.css";
-import { WalletIsland } from "./components/WalletIsland";
-import { WhatsAppFloatingIcon } from "./components/WhatsAppFloatingIcon";
-import { TelegramFloatingIcon } from "./components/TelegramFloatingIcon";
+import { ConnectWidget } from "./components/ConnectWidget";
+import { WhatsAppButton } from "./components/WhatsAppButton";
+import { TelegramButton } from "./components/TelegramButton";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
@@ -96,7 +96,7 @@ export default function App() {
   }
 
   return (
-    <PWAProvider>
+    <AppProvider>
       <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme">
       {/* Main heading outside container */}
       <div className="w-full py-6 px-4">
@@ -114,7 +114,7 @@ export default function App() {
           
           {/* Wallet Island in top right */}
           <div className="flex items-center flex-shrink-0 ml-2">
-            <WalletIsland 
+            <ConnectWidget 
               className="scale-75 sm:scale-100"
             />
           </div>
@@ -159,10 +159,10 @@ export default function App() {
         <main className="flex-1">
           {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
           {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
-          {activeTab === "offramp" && <SimpleOffRampFlow setActiveTab={setActiveTab} />}
-          {activeTab === "spend" && <SpendUSDCFlow setActiveTab={setActiveTab} />}
-          {activeTab === "swap" && <SwapComponent setActiveTab={setActiveTab} />}
-          {activeTab === "profile" && <UserProfile setActiveTab={setActiveTab} />}
+          {activeTab === "offramp" && <ExchangeFlow setActiveTab={setActiveTab} />}
+          {activeTab === "spend" && <SpendFlow setActiveTab={setActiveTab} />}
+          {activeTab === "swap" && <SwapInterface setActiveTab={setActiveTab} />}
+          {activeTab === "profile" && <ProfileView setActiveTab={setActiveTab} />}
         </main>
 
       </div>
@@ -180,10 +180,10 @@ export default function App() {
         </div>
       </div>
 
-      <WalletDebug />
-      <TelegramFloatingIcon />
-      <WhatsAppFloatingIcon />
+      <DebugPanel />
+      <TelegramButton />
+      <WhatsAppButton />
       </div>
-    </PWAProvider>
+    </AppProvider>
   );
 }

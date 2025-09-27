@@ -23,7 +23,7 @@ interface AnalyticsSummary {
   };
 }
 
-export function WalletAnalyticsTest() {
+export function AnalyticsTest() {
   const { address, isConnected } = useAccount();
   const { context } = useMiniKit();
   const { user, isInitialized, isLoading, trackEvent, trackPayment, linkWithFID } = useWalletAnalytics();

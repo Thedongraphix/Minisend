@@ -4,19 +4,19 @@ import { base } from 'viem/chains';
 import { Name, Avatar } from '@coinbase/onchainkit/identity';
 import type { Address } from 'viem';
 
-interface UserIdentityProps {
+interface IdentityProps {
   address?: Address;
   showAvatar?: boolean;
   avatarSize?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-export function UserIdentity({
+export function Identity({
   address,
   showAvatar = false,
   avatarSize = 'sm',
   className = ''
-}: UserIdentityProps) {
+}: IdentityProps) {
   if (!address) return null;
 
   const avatarClasses = {

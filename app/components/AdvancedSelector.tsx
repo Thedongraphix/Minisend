@@ -9,17 +9,17 @@ interface PaymentMethodData {
   formatted: string;
 }
 
-interface EnhancedPaymentSelectorProps {
+interface AdvancedSelectorProps {
   currency: 'KES' | 'NGN';
   onPaymentMethodChange: (method: PaymentMethodData | null) => void;
   className?: string;
 }
 
-export function EnhancedPaymentSelector({ 
-  currency, 
-  onPaymentMethodChange, 
-  className = '' 
-}: EnhancedPaymentSelectorProps) {
+export function AdvancedSelector({
+  currency,
+  onPaymentMethodChange,
+  className = ''
+}: AdvancedSelectorProps) {
   const [paymentInput, setPaymentInput] = useState('');
   const [currentDestination, setCurrentDestination] = useState(detectPaymentDestination(''));
 

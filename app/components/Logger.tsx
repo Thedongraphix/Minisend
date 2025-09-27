@@ -6,7 +6,7 @@ import { useEffect } from 'react';
  * Simple console override - no database dependencies
  * Just ensures console is silent in production
  */
-export function ConsoleLoggerInit() {
+export function Logger() {
   useEffect(() => {
     // Only run on client-side
     if (typeof window === 'undefined') return;

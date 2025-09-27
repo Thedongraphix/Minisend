@@ -3,20 +3,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { useAccount } from 'wagmi';
-import { SimpleUSDCPayment } from './SimpleUSDCPayment';
-import { DirectUSDCBalance } from './DirectUSDCBalance';
-import { MobileWalletHandler } from './MobileWalletHandler';
-import { Button } from './DemoComponents';
+import { PaymentProcessor } from './PaymentProcessor';
+import { BalanceView } from './BalanceView';
+import { ConnectionHandler } from './ConnectionHandler';
+import { Button } from './BaseComponents';
 import Image from 'next/image';
 import { trackOffRampEvent, trackAPIEvent, trackWalletEvent } from '@/lib/analytics';
-import { ReceiptSection } from './ReceiptDownloadButton';
+import { ReceiptSection } from './DownloadButton';
 import { useUSDCBalance } from '@/hooks/useUSDCBalance';
 
-interface SimpleOffRampFlowProps {
+interface ExchangeFlowProps {
   setActiveTab: (tab: string) => void;
 }
 
-export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
+export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
 
@@ -323,7 +323,7 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
           <p className="text-gray-300">Send money to mobile wallets</p>
         </div>
 
-        <MobileWalletHandler showBalance={false} />
+        <ConnectionHandler showBalance={false} />
       </div>
     );
   }
@@ -374,25 +374,36 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
       </div>
 
       {/* USDC Balance */}
-      <DirectUSDCBalance />
+      <BalanceView />
 
       {/* Form Step */}
       {step === 'form' && (
         <>
           {/* Fiat Amount Banner */}
           {formData.amount && parseFloat(formData.amount) > 0 && (
-            <div className="bg-black border border-gray-700 rounded-2xl p-4">
+            <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-600/60 rounded-2xl p-5 shadow-lg shadow-black/25">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">{formData.currency === 'KES' ? 'KSh' : '₦'}</span>
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-blue-600/20 border border-blue-500/30 rounded-xl flex items-center justify-center">
+                    <span className="text-blue-300 font-bold text-xl">{formData.currency === 'KES' ? 'KSh' : '₦'}</span>
                   </div>
                   <div>
-                    <div className="text-white font-semibold text-lg">
+                    <div className="text-white font-bold text-xl">
                       {parseFloat(formData.amount).toLocaleString()} {formData.currency}
                     </div>
-                    <div className="text-gray-400 text-sm">
-                      {rateLoading ? 'Calculating USDC...' : currentRate ? `≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC` : rateError ? 'Using fallback rate' : 'Rate unavailable'}
+                    <div className="text-gray-300 text-sm font-medium">
+                      {rateLoading ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                          <span>Calculating USDC...</span>
+                        </div>
+                      ) : currentRate ? (
+                        <span className="text-blue-300">≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC</span>
+                      ) : rateError ? (
+                        <span className="text-amber-300">Using fallback rate</span>
+                      ) : (
+                        <span className="text-gray-400">Rate unavailable</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -578,16 +589,16 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
                 )}
                 
                 {accountVerified && formData.accountName && !verifyingAccount && (
-                  <div className="mt-2 p-3 bg-black border border-gray-700 rounded-2xl backdrop-blur-sm">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="mt-2 p-4 bg-green-500/10 border border-green-500/30 rounded-2xl backdrop-blur-sm">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       </div>
                       <div>
-                        <div className="text-white font-medium text-sm">Account Verified</div>
-                        <div className="text-gray-300 text-xs">{formData.accountName}</div>
+                        <div className="text-green-300 font-semibold text-sm">Account Verified</div>
+                        <div className="text-white font-medium text-sm">{formData.accountName}</div>
                       </div>
                     </div>
                   </div>
@@ -627,27 +638,34 @@ export function SimpleOffRampFlow({ setActiveTab }: SimpleOffRampFlowProps) {
       {/* Payment Step */}
       {step === 'payment' && (
         <div>
-          <div className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10">
-            <h3 className="text-white font-medium mb-2">Payment Summary</h3>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between text-gray-300">
-                <span>You&apos;ll receive:</span>
-                <span>{parseFloat(formData.amount).toLocaleString()} {formData.currency}</span>
+          <div className="mb-6 p-6 bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-600/50 shadow-lg shadow-black/20">
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
-              <div className="flex justify-between text-gray-300">
-                <span>USDC cost:</span>
-                <span>${currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : '...'} USDC</span>
+              <h3 className="text-white font-semibold text-lg">Payment Summary</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2 border-b border-gray-600/30">
+                <span className="text-gray-300 font-medium">You&apos;ll receive</span>
+                <span className="text-white font-semibold text-lg">{parseFloat(formData.amount).toLocaleString()} {formData.currency}</span>
               </div>
-              <div className="flex justify-between text-gray-300">
-                <span>To:</span>
-                <span>
+              <div className="flex justify-between items-center py-2 border-b border-gray-600/30">
+                <span className="text-gray-300 font-medium">USDC cost</span>
+                <span className="text-blue-300 font-semibold">${currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : '...'} USDC</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-300 font-medium">To</span>
+                <span className="text-white font-medium">
                   {formData.currency === 'KES' ? formData.phoneNumber : formData.accountName}
                 </span>
               </div>
             </div>
           </div>
 
-          <SimpleUSDCPayment
+          <PaymentProcessor
             amount={currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : formData.amount}
             phoneNumber={formData.phoneNumber}
             accountNumber={formData.accountNumber}

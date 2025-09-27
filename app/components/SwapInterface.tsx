@@ -13,15 +13,15 @@ import {
 import { Avatar, Name } from '@coinbase/onchainkit/identity';
 import { Wallet, ConnectWallet } from '@coinbase/onchainkit/wallet';
 import type { Token } from '@coinbase/onchainkit/token';
-import { Button } from './DemoComponents';
+import { Button } from './BaseComponents';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { trackSwapEvent, trackWalletEvent } from '@/lib/analytics';
 
-interface SwapComponentProps {
+interface SwapInterfaceProps {
   setActiveTab: (tab: string) => void;
 }
 
-export function SwapComponent({ setActiveTab }: SwapComponentProps) {
+export function SwapInterface({ setActiveTab }: SwapInterfaceProps) {
   const { address, isConnected } = useAccount();
   const { context } = useMiniKit();
 

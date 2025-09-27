@@ -4,11 +4,11 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { base } from 'viem/chains';
 import { Name, Avatar } from '@coinbase/onchainkit/identity';
-import { Button, Icon } from './DemoComponents';
+import { Button, Icon } from './BaseComponents';
 import { Order } from '../../lib/supabase/config';
 
 
-interface UserProfileProps {
+interface ProfileViewProps {
   setActiveTab: (tab: string) => void;
 }
 
@@ -20,7 +20,7 @@ interface DailyExpenditure {
   count: number;
 }
 
-export function UserProfile({ setActiveTab }: UserProfileProps) {
+export function ProfileView({ setActiveTab }: ProfileViewProps) {
   const { address } = useAccount();
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [displayedOrders, setDisplayedOrders] = useState<Order[]>([]);

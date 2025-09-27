@@ -8,7 +8,7 @@ import { Name } from '@coinbase/onchainkit/identity'
 import Image from 'next/image'
 import { useUSDCBalance } from '@/hooks/useUSDCBalance'
 
-export function DirectUSDCBalance() {
+export function BalanceView() {
   // Use wagmi hooks for Coinbase Wallet connection
   const { address, isConnected } = useAccount()
   const chainId = useChainId()

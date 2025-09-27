@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { usePWA } from './PWAProvider';
-import { Button } from './DemoComponents';
+import { usePWA } from './AppProvider';
+import { Button } from './BaseComponents';
 
-export function PWAInstallPrompt({ className = '' }: { className?: string }) {
+export function InstallPrompt({ className = '' }: { className?: string }) {
   const { isInstallable, isInstalled, installApp } = usePWA();
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [isIOS, setIsIOS] = useState(false);

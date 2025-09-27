@@ -18,17 +18,17 @@ import {
   EthBalance,
 } from '@coinbase/onchainkit/identity';
 
-interface MobileWalletHandlerProps {
+interface ConnectionHandlerProps {
   onConnectionSuccess?: () => void;
   showBalance?: boolean;
   className?: string;
 }
 
-export function MobileWalletHandler({
+export function ConnectionHandler({
   onConnectionSuccess,
   showBalance = false,
   className = ''
-}: MobileWalletHandlerProps) {
+}: ConnectionHandlerProps) {
   const { isConnected, address } = useAccount();
 
   useEffect(() => {

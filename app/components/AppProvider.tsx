@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-interface PWAProviderProps {
+interface AppProviderProps {
   children: React.ReactNode;
 }
 
@@ -14,7 +14,7 @@ interface BeforeInstallPromptEvent extends Event {
   }>;
 }
 
-export function PWAProvider({ children }: PWAProviderProps) {
+export function AppProvider({ children }: AppProviderProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);

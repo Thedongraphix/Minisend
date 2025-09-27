@@ -5,7 +5,7 @@ import { base } from 'wagmi/chains';
 import type { ContractFunctionParameters } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 
-interface GaslessTransactionProps {
+interface TransactionHandlerProps {
   calls: ContractFunctionParameters[];
   chainId?: number;
   onStatus?: (status: LifecycleStatus) => void;
@@ -15,7 +15,7 @@ interface GaslessTransactionProps {
   children?: React.ReactNode;
 }
 
-export function GaslessTransaction({
+export function TransactionHandler({
   calls,
   chainId = base.id,
   onStatus,
@@ -23,7 +23,7 @@ export function GaslessTransaction({
   onError,
   buttonText = "Complete Transaction",
   children,
-}: GaslessTransactionProps) {
+}: TransactionHandlerProps) {
 
   return (
     <div>
