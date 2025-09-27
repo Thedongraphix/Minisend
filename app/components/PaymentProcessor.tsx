@@ -349,55 +349,15 @@ export function PaymentProcessor({
       {/* Ready to Pay - Transaction Component */}
       {status === 'ready-to-pay' && paycrestOrder && (
         <div className="space-y-4">
-          <div className="text-center space-y-2">
-            <h3 className="text-white font-bold text-lg">Ready to Send Payment</h3>
-            
-            
-            <div className="bg-black/95 backdrop-blur-sm border border-gray-600 rounded-xl p-4 shadow-xl shadow-black/60">
-              <div className="flex items-center space-x-2 mb-3">
-                <div className="w-4 h-4 bg-green-500/30 border border-green-500/50 rounded flex items-center justify-center">
-                  <svg className="w-2.5 h-2.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                  </svg>
-                </div>
-                <span className="text-white font-medium text-sm">Transaction Details</span>
+          <div className="text-center space-y-3">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Total</span>
+                <span className="text-white font-bold text-lg">${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC</span>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-300">Payment Amount</span>
-                  <span className="text-white font-semibold">${paycrestOrder.amount}</span>
-                </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-gray-300">Service Fee</span>
-                  <span className="text-gray-100">${paycrestOrder.senderFee}</span>
-                </div>
-                {parseFloat(paycrestOrder.transactionFee) > 0 && (
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-gray-300">Network Fee</span>
-                    <span className="text-gray-100">${paycrestOrder.transactionFee}</span>
-                  </div>
-                )}
-                <div className="border-t border-gray-600/40 pt-2 mt-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-white font-semibold">Total to Send</span>
-                    <span className="text-white font-bold text-base">${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="bg-green-500/15 border border-green-500/30 rounded-lg p-2 mt-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-green-300 text-xs">Gas Fees</span>
-                    <span className="text-green-400 font-medium text-xs">Free (saves $0.015)</span>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-3 space-y-1">
-                <p className="text-blue-300 text-xs font-medium">
-                  Click to approve USDC transfer from your wallet
-                </p>
-                <p className="text-gray-400 text-xs">
-                  {currency} will be sent to {phoneNumber ? 'mobile wallet' : tillNumber ? 'till number' : 'bank account'} automatically
-                </p>
-              </div>
+              <p className="text-blue-300 text-xs">
+                Approve in wallet to send {currency}
+              </p>
             </div>
           </div>
           
