@@ -351,18 +351,8 @@ export function PaymentProcessor({
         <div className="space-y-4">
           <div className="text-center space-y-2">
             <h3 className="text-white font-bold text-lg">Ready to Send Payment</h3>
-            <p className="text-gray-300">
-              Send ${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC → {currency} to {phoneNumber || (tillNumber ? `Till ${tillNumber}` : accountNumber)}
-            </p>
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4">
-              <p className="text-yellow-300 text-sm font-medium">
-                You&apos;ll need to approve this transaction in your wallet
-              </p>
-              {/*<p className="text-yellow-200 text-xs mt-1">
-                Base Pay will ask you to confirm spending USDC from your wallet
-              </p>*/}
-
-            </div>
+            
+            
             <div className="bg-black/95 backdrop-blur-sm border border-gray-600 rounded-xl p-4 shadow-xl shadow-black/60">
               <div className="flex items-center space-x-2 mb-3">
                 <div className="w-4 h-4 bg-green-500/30 border border-green-500/50 rounded flex items-center justify-center">
