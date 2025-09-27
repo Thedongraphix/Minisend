@@ -190,7 +190,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
                           <span>Calculating USDC...</span>
                         </div>
                       ) : currentRate ? (
-                        <span className="text-purple-300">≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC</span>
+                        <span className="text-purple-300">≈ ${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC</span>
                       ) : rateError ? (
                         <span className="text-amber-300">Using fallback rate</span>
                       ) : (

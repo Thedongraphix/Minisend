@@ -398,7 +398,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                           <span>Calculating USDC...</span>
                         </div>
                       ) : currentRate ? (
-                        <span className="text-blue-300">≈ $${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC</span>
+                        <span className="text-blue-300">≈ ${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC</span>
                       ) : rateError ? (
                         <span className="text-amber-300">Using fallback rate</span>
                       ) : (
