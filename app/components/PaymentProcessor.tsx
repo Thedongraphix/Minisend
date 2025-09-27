@@ -352,8 +352,22 @@ export function PaymentProcessor({
           <div className="text-center space-y-3">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between items-center">
-                <span className="text-gray-300">Total</span>
-                <span className="text-white font-bold text-lg">${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC</span>
+                <span className="text-gray-300">Payment</span>
+                <span className="text-white">${paycrestOrder.amount}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300">Service Fee</span>
+                <span className="text-gray-100">${paycrestOrder.senderFee}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-green-300">Gas Fees</span>
+                <span className="text-green-400">Free (saves $0.015)</span>
+              </div>
+              <div className="border-t border-gray-600/40 pt-2 mt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-semibold">Total to Send</span>
+                  <span className="text-white font-bold text-lg">${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC</span>
+                </div>
               </div>
             </div>
           </div>
@@ -361,7 +375,7 @@ export function PaymentProcessor({
           <TransactionHandler
             chainId={base.id}
             calls={calls}
-            buttonText={`Approve & Send ${((parseFloat(paycrestOrder?.amount || '0') || 0) + (parseFloat(paycrestOrder?.senderFee || '0') || 0) + (parseFloat(paycrestOrder?.transactionFee || '0') || 0)).toFixed(2)} USDC`}
+            buttonText="Approve & Send"
             onStatus={handleTransactionStatus}
             onSuccess={() => {
               setStatus('success');
