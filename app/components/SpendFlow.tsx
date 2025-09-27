@@ -173,10 +173,10 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
         <>
           {/* Fiat Amount Banner */}
           {formData.amount && parseFloat(formData.amount) > 0 && (
-            <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-600/60 rounded-2xl p-5 shadow-lg shadow-black/25">
+            <div className="bg-black/95 backdrop-blur-sm border border-gray-600 rounded-2xl p-5 shadow-xl shadow-black/60">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-purple-600/20 border border-purple-500/30 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-purple-600/30 border border-purple-500/50 rounded-xl flex items-center justify-center">
                     <span className="text-purple-300 font-bold text-xl">{formData.currency === 'KES' ? 'KSh' : '₦'}</span>
                   </div>
                   <div>
@@ -259,9 +259,9 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
       {/* Payment Step */}
       {step === 'payment' && paymentMethod && (
         <div>
-          <div className="mb-6 p-6 bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-600/50 shadow-lg shadow-black/20">
+          <div className="mb-6 p-6 bg-black/95 backdrop-blur-sm rounded-2xl border border-gray-600 shadow-xl shadow-black/60">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-6 h-6 bg-purple-500 rounded-lg flex items-center justify-center">
+              <div className="w-6 h-6 bg-purple-600 rounded-lg flex items-center justify-center">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
