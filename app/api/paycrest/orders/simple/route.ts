@@ -188,30 +188,67 @@ export async function POST(request: NextRequest) {
 
     console.log('🚀 Creating PayCrest order at:', `${PAYCREST_API_URL}/sender/orders`);
 
-    const orderResponse = await fetch(`${PAYCREST_API_URL}/sender/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'API-Key': PAYCREST_API_KEY!,
-      },
-      body: JSON.stringify(orderData),
-    });
+    // Helper function to create order with retry logic for server errors
+    const createOrderWithRetry = async (maxRetries = 2) => {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`📡 Attempt ${attempt}/${maxRetries} - Creating PayCrest order`);
+
+          const response = await fetch(`${PAYCREST_API_URL}/sender/orders`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'API-Key': PAYCREST_API_KEY!,
+            },
+            body: JSON.stringify(orderData),
+          });
+
+          // If it's a 504 or 502 gateway error, retry after a delay
+          if ((response.status === 504 || response.status === 502) && attempt < maxRetries) {
+            console.log(`⏳ Server timeout (${response.status}), retrying in ${attempt * 2} seconds...`);
+            await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+            continue;
+          }
+
+          return response;
+        } catch (error) {
+          console.error(`❌ Network error on attempt ${attempt}:`, error);
+          if (attempt === maxRetries) throw error;
+
+          console.log(`⏳ Network error, retrying in ${attempt * 2} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+        }
+      }
+    };
+
+    const orderResponse = await createOrderWithRetry();
 
     console.log('📡 PayCrest order response status:', orderResponse.status);
     console.log('📡 PayCrest order response headers:', Object.fromEntries(orderResponse.headers.entries()));
     
     if (!orderResponse.ok) {
-      let errorData;
+      let errorMessage = `PayCrest API error ${orderResponse.status}`;
+
       try {
-        errorData = await orderResponse.json();
-        console.error('PayCrest order error (JSON):', JSON.stringify(errorData, null, 2));
-      } catch {
-        const errorText = await orderResponse.text();
-        console.error('PayCrest order error (text):', errorText);
-        throw new Error(`PayCrest API error ${orderResponse.status}: ${errorText}`);
+        // Clone the response so we can try both JSON and text
+        const responseClone = orderResponse.clone();
+        const contentType = orderResponse.headers.get('content-type') || '';
+
+        if (contentType.includes('application/json')) {
+          const errorData = await orderResponse.json();
+          console.error('PayCrest order error (JSON):', JSON.stringify(errorData, null, 2));
+          errorMessage = `Failed to create PayCrest order: ${errorData.message || JSON.stringify(errorData)}`;
+        } else {
+          const errorText = await responseClone.text();
+          console.error('PayCrest order error (text):', errorText.substring(0, 500)); // Log first 500 chars
+          errorMessage = `PayCrest API error ${orderResponse.status}: Server timeout or gateway error`;
+        }
+      } catch (parseError) {
+        console.error('Error parsing PayCrest response:', parseError);
+        errorMessage = `PayCrest API error ${orderResponse.status}: Unable to parse response`;
       }
-      
-      throw new Error(`Failed to create PayCrest order: ${errorData.message || JSON.stringify(errorData)}`);
+
+      throw new Error(errorMessage);
     }
 
     const order = await orderResponse.json();

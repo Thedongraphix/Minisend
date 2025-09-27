@@ -33,13 +33,43 @@ export async function GET(
       );
     }
 
-    const response = await fetch(`${paycrestBaseUrl}/sender/orders/${orderId}`, {
-      method: 'GET',
-      headers: {
-        'API-Key': paycrestApiKey,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Helper function to fetch with timeout and retry
+    const fetchWithRetry = async (maxRetries = 2, timeoutMs = 10000) => {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`📡 Attempt ${attempt}/${maxRetries} - Checking PayCrest order status`);
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+          const response = await fetch(`${paycrestBaseUrl}/sender/orders/${orderId}`, {
+            method: 'GET',
+            headers: {
+              'API-Key': paycrestApiKey,
+              'Content-Type': 'application/json',
+            },
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+          return response;
+
+        } catch (error) {
+          console.error(`❌ Attempt ${attempt} failed:`, error);
+
+          if (attempt === maxRetries) {
+            throw error;
+          }
+
+          // Wait before retry with exponential backoff
+          const delayMs = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`⏳ Retrying in ${delayMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+    };
+
+    const response = await fetchWithRetry();
 
     if (!response.ok) {
       console.error(`PayCrest API error: ${response.status}`);
