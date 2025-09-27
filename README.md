@@ -1,114 +1,103 @@
-# Minisend - USDC to Mobile Money Platform
+# Minisend
 
-A production-ready USDC to mobile money platform built on Base Network, enabling seamless conversion of cryptocurrency to local currencies in Kenya and Nigeria.
+**A comprehensive USDC-to-fiat offramp solution for creators and builders on Farcaster and Base Network**
 
-## 🚀 Features
+Minisend enables seamless conversion of USDC to local currencies (KES, NGN) through an intuitive miniapp interface, specifically designed for the Farcaster ecosystem and Base Network builders.
 
-- **USDC to Mobile Money**: Convert USDC to KES (M-Pesa) or NGN (Bank Transfer)
-- **Base Network Integration**: Built on Coinbase's Base Network for fast, low-cost transactions
-- **Multi-Wallet Support**: MetaMask, Coinbase Wallet, Phantom, Rabby, Trust, Frame
-- **Enterprise-Grade Security**: OnchainKit integration with proper error handling
-- **🗄️ Complete Database Integration**: Automatic payment tracking with Supabase
-- **📊 Analytics & Reporting**: Real-time insights and payment analytics
-- **🕐 EAT Timezone Support**: All timestamps in East Africa Time
-- **📱 Carrier Detection**: Automatic Kenyan phone carrier identification
-- **💬 WhatsApp Support**: Floating WhatsApp icon for instant customer support
+## Overview
 
-## 🌍 Supported Regions
+Minisend serves as a critical financial infrastructure component for the Farcaster creator economy and Base Network ecosystem. By providing instant USDC-to-fiat conversion capabilities, it enables creators, builders, and businesses to monetize their on-chain activities and convert cryptocurrency earnings into usable local currencies.
 
-### Kenya 🇰🇪
-- **M-Pesa Integration**: Direct transfers to M-Pesa wallets
-- **Multiple Carriers**: Safaricom and Airtel support
-- **Real-time Rates**: Live USD to KES conversion
+### For Farcaster Creators
+- **Direct monetization**: Convert Frame tips, token rewards, and creator earnings to local currency
+- **Seamless integration**: Native Farcaster miniapp with one-click access
+- **Creator-focused**: Designed for content creators, builders, and community managers
+- **Global reach**: Support for key African markets (Kenya, Nigeria) with expansion planned
 
-### Nigeria 🇳🇬
-- **Bank Integration**: Direct transfers to Nigerian bank accounts
-- **Multiple Banks**: Support for major Nigerian banks including GTBank
-- **Real-time Rates**: Live USD to NGN conversion
+### For Base Network Builders
+- **Developer tools**: API access for integrating offramp functionality into dApps
+- **Business solutions**: Enable businesses to accept USDC and pay suppliers in local currency
+- **Gasless transactions**: Free transaction fees using Base Network paymaster integration
+- **Enterprise-grade**: Production-ready infrastructure with comprehensive monitoring
 
-## 🛠️ Technical Implementation
+## Key Features
 
-### Intelligent Payment Processing
+**Multi-Currency Support**
+- Kenya: USDC to KES via M-Pesa (Safaricom, Airtel)
+- Nigeria: USDC to NGN via direct bank transfers
+- Real-time exchange rates with transparent fee structure
 
-The platform implements intelligent payment processing with real-time status monitoring:
+**Platform Integration**
+- Native Farcaster miniapp with Frame compatibility
+- Base Network optimized for fast, low-cost transactions
+- OnchainKit integration for enterprise-grade security
+- Multi-wallet support (MetaMask, Coinbase Wallet, Rainbow, etc.)
 
-```javascript
-const processPayment = async (orderData) => {
-  // Create payment order
-  const order = await createOrder(orderData);
+**Developer Infrastructure**
+- RESTful API for custom integrations
+- Webhook support for real-time status updates
+- Comprehensive analytics and reporting
+- Database integration with automated tracking
 
-  // Monitor payment status with intelligent polling
-  const result = await monitorPaymentStatus(order.id);
+**User Experience**
+- One-click conversion from Farcaster
+- Real-time transaction monitoring
+- Mobile-optimized interface
+- Transparent fee breakdown
 
-  // Handle completion or failure
-  if (result.success) {
-    return { success: true, order: result.order };
-  }
+## Supported Regions
 
-  return { success: false, error: result.error };
-};
-```
+### Kenya
+- **Payment Method**: M-Pesa direct transfers
+- **Carriers**: Safaricom, Airtel Money
+- **Currency**: Kenyan Shillings (KES)
+- **Settlement**: Near-instant mobile wallet delivery
 
-**Processing Features:**
-- Real-time status monitoring
-- Exponential backoff for optimal performance
-- Comprehensive error handling
-- Progress feedback for users
-- Automatic timeout management
+### Nigeria
+- **Payment Method**: Direct bank transfers
+- **Banks**: All major Nigerian banks (GTBank, Zenith, UBA, etc.)
+- **Currency**: Nigerian Naira (NGN)
+- **Settlement**: Same-day bank account delivery
 
+## Technical Architecture
 
-## 🗄️ Database Integration
+### Frontend Components
+- **ExchangeFlow**: Complete USDC-to-fiat conversion interface
+- **SpendFlow**: Business payment processing for till numbers
+- **PaymentProcessor**: Core transaction handling with real-time monitoring
+- **BalanceView**: USDC balance display with Base Network integration
 
-### Automatic Payment Tracking
-All payment data is automatically recorded in Supabase with EAT timezone:
+### Backend Services
+- **Payment API**: Intelligent order processing with status monitoring
+- **Database Layer**: Comprehensive tracking with Supabase integration
+- **Analytics Engine**: Real-time reporting and conversion metrics
+- **Rate Management**: Live exchange rate fetching and validation
 
-- **Order Details**: Amount, currency, phone numbers, wallet addresses
-- **Status History**: Complete audit trail of all status changes
-- **Analytics Events**: User interactions and conversion tracking
-- **Carrier Detection**: Automatic phone number carrier identification
-- **Transaction Logs**: Complete transaction history for debugging
+### Key Technologies
+- **Base Network**: Layer 2 solution for fast, low-cost USDC transactions
+- **OnchainKit**: Coinbase's toolkit for wallet connections and transactions
+- **PayCrest API**: Banking infrastructure for fiat settlements
+- **Supabase**: Real-time database with analytics capabilities
+- **Next.js 15**: Modern React framework with App Router
 
-### Database Setup
-```bash
-# Setup database tables and views
-npm run setup-supabase
+## Getting Started
 
-# Test database connection
-npm run test-db-quick
-
-# Full integration test
-npm run test-db-full
-```
-
-### Analytics Views
-- `order_analytics` - Daily summaries with success rates
-- `settlement_analytics` - Settlement timing and performance
-- `fee_analytics` - Fee breakdown by type and currency
-- `status_analytics` - Status transition tracking
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- Base Network RPC endpoint
-- Supabase account (for database)
-
-### Environment Variables
+### Environment Setup
 
 ```bash
 # API Configuration
-API_KEY=your_api_key
-CLIENT_SECRET=your_client_secret
-BASE_URL=your_api_base_url
+API_KEY=your_paycrest_api_key
+CLIENT_SECRET=your_paycrest_secret
+BASE_URL=https://api.paycrest.io
 
-# Database
+# Database Configuration
 DATABASE_URL=your_supabase_database_url
 SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# App Configuration
-NEXT_PUBLIC_URL=http://localhost:3000
+# Application Configuration
+NEXT_PUBLIC_URL=https://your-domain.com
+NEXT_PUBLIC_WC_PROJECT_ID=your_walletconnect_id
 ```
 
 ### Installation
@@ -117,6 +106,9 @@ NEXT_PUBLIC_URL=http://localhost:3000
 # Install dependencies
 npm install
 
+# Setup database tables
+npm run setup-supabase
+
 # Run development server
 npm run dev
 
@@ -124,110 +116,138 @@ npm run dev
 npm run build
 ```
 
-## 🧪 Testing
+### Database Testing
 
+```bash
+# Quick connectivity test
+npm run test-db-quick
+
+# Comprehensive integration test
+npm run test-db-full
 ```
 
-## 🔧 Architecture
+## API Integration
 
-### Frontend Components
+### Creating Payment Orders
 
-- `SimpleUSDCPayment.tsx` - Main payment component with intelligent processing
-- `SimpleOffRampFlow.tsx` - Complete off-ramp flow
-- `DirectUSDCBalance.tsx` - USDC balance display
-- `WhatsAppFloatingIcon.tsx` - Customer support integration
-- `DemoComponents.tsx` - UI components and styling
+```javascript
+// Create a USDC-to-fiat conversion order
+const response = await fetch('/api/paycrest/orders/simple', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    amount: '10.00',        // USDC amount
+    phoneNumber: '+254712345678', // Kenya M-Pesa
+    accountName: 'John Doe',
+    currency: 'KES',
+    returnAddress: walletAddress
+  })
+});
 
-### Backend Services
+const { success, order } = await response.json();
+```
 
-- Payment API integration with intelligent monitoring
-- Database integration for order tracking
-- Analytics and reporting services
-- Rate fetching and validation
-- Real-time status updates
+### Monitoring Transaction Status
 
-### Key Features
+```javascript
+// Check payment status
+const statusResponse = await fetch(`/api/paycrest/status/${orderId}`);
+const { order } = await statusResponse.json();
 
-1. **Intelligent Processing**: Smart payment monitoring with real-time updates
-2. **Settlement Detection**: Accurate payment completion detection
-3. **Error Handling**: Comprehensive error handling with user feedback
-4. **Progress Tracking**: Real-time progress updates during payment processing
-5. **Timeout Management**: Optimal timeout handling with graceful degradation
+// Status values: pending, validated, settled, refunded, expired
+console.log('Payment status:', order.status);
+```
 
-## 🎯 Best Practices
+## Database Schema
 
-### For Payment Integration
+### Core Tables
+- **payment_orders**: Complete order tracking with metadata
+- **order_analytics**: Daily summaries and success rates
+- **settlement_analytics**: Settlement timing and performance
+- **fee_analytics**: Fee breakdown by currency and type
+- **status_analytics**: Status transition monitoring
 
-1. **Real-time monitoring** - Implement proper status checking
-2. **User feedback** - Provide clear progress indicators
-3. **Error handling** - Handle all edge cases gracefully
-4. **Timeout management** - Don't process indefinitely
-5. **Security** - Validate all inputs and sanitize data
+### Analytics Views
+The platform provides comprehensive analytics through automated database views:
 
-### For Production Deployment
+```sql
+-- Daily performance metrics
+SELECT * FROM order_analytics
+WHERE date = CURRENT_DATE;
 
-1. **Environment Configuration**: Set up proper environment variables
-2. **Database Setup**: Configure database for order tracking
-3. **Monitoring**: Implement logging and monitoring
-4. **Security**: Validate all inputs and handle errors gracefully
-5. **Testing**: Test with small amounts before going live
+-- Settlement performance
+SELECT * FROM settlement_analytics
+WHERE currency = 'KES';
+```
 
-## 📊 Supported Networks
+## Deployment
 
-- **Base Network**: Primary network for USDC transactions
-- **Base Sepolia**: Testnet for development and testing
+### Production Checklist
 
-## 💰 Supported Currencies
+1. **Environment Variables**: Configure all required API keys and database URLs
+2. **Database Setup**: Run migration scripts and verify connectivity
+3. **Network Configuration**: Ensure Base Network RPC access
+4. **Monitoring Setup**: Configure logging and error tracking
+5. **Security Review**: Validate input sanitization and error handling
 
-- **KES (Kenyan Shillings)**: Via M-Pesa (Safaricom, Airtel)
-- **NGN (Nigerian Naira)**: Via bank transfer (multiple banks)
+### Recommended Architecture
 
-## 🔍 Monitoring and Analytics
+```
+Internet → Vercel/Netlify → Next.js App → Supabase Database
+                        ↘ PayCrest API
+                        ↘ Base Network RPC
+```
 
-The platform includes comprehensive monitoring:
+## Monitoring and Analytics
 
-- Order creation and status tracking
-- Payment completion analytics
-- Error tracking and reporting
-- Carrier detection for Kenyan numbers
-- Settlement time monitoring
-- User behavior analytics
+### Key Metrics Tracked
+- **Conversion Rates**: USDC-to-fiat conversion success rates
+- **Settlement Times**: Average time from order to fiat delivery
+- **Geographic Distribution**: Usage patterns by country/region
+- **User Behavior**: Flow completion rates and drop-off points
+- **Error Tracking**: Failed transactions with categorized error types
 
-## 🚨 Troubleshooting
+### Real-time Monitoring
+- Order creation and status progression
+- Payment completion analytics with settlement verification
+- Error rate monitoring with automatic alerting
+- Performance metrics for API response times
 
-### Common Issues
+## Support and Documentation
 
-1. **Payment Processing**: Ensure proper wallet connection and sufficient USDC balance
-2. **Network Issues**: Check Base Network connectivity and RPC endpoints
-3. **Rate Errors**: Verify exchange rate API availability
-4. **Order Status**: Check order ID validity and API credentials
+### Developer Resources
+- **API Documentation**: Comprehensive endpoint documentation
+- **Integration Guides**: Step-by-step integration tutorials
+- **Code Examples**: Ready-to-use code snippets
+- **Testing Tools**: Sandbox environment for safe testing
 
-### Debug Mode
+### Community Support
+- **GitHub Issues**: Bug reports and feature requests
+- **Developer Discord**: Real-time support and community discussion
+- **Documentation Site**: Comprehensive guides and tutorials
 
-Enable debug logging by setting `NODE_ENV=development` and check console logs for detailed information about payment processing and status changes.
+## Contributing
 
-## 💬 Support
-
-Need help? Click the floating WhatsApp icon in the app for instant support, or contact us through the following channels:
-
-- WhatsApp: Available via in-app floating icon
-- Email: support@minisend.xyz
-- Documentation: Check the in-app help section
-
-## 📝 License
-
-MIT License - see LICENSE file for details.
-
-## 🤝 Contributing
+We welcome contributions from the Farcaster and Base communities:
 
 1. Fork the repository
-2. Create a feature branch
-3. Implement your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+- Follow the existing code style and conventions
+- Include tests for new functionality
+- Update documentation for API changes
+- Ensure all tests pass before submitting
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Built with ❤️ on Base Network using OnchainKit**
+**Empowering the creator economy through seamless crypto-to-fiat infrastructure**
 
-*Empowering seamless crypto-to-fiat conversions across Africa*
+*Built on Base Network using OnchainKit • Designed for Farcaster creators and builders*
