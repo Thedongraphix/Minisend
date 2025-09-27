@@ -73,7 +73,40 @@ Minisend serves as a critical financial infrastructure component for the Farcast
 - **Analytics Engine**: Real-time reporting and conversion metrics
 - **Rate Management**: Live exchange rate fetching and validation
 
-### Key Technologies
+## Tech Stack
+
+<div align="center">
+
+### Frontend & Framework
+![Next.js](https://img.shields.io/badge/Next.js_15-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+
+### Blockchain & Web3
+![Base Network](https://img.shields.io/badge/Base_Network-0052FF?style=for-the-badge&logo=coinbase&logoColor=white)
+![OnchainKit](https://img.shields.io/badge/OnchainKit-1652F0?style=for-the-badge&logo=coinbase&logoColor=white)
+![Wagmi](https://img.shields.io/badge/Wagmi-1C1B1B?style=for-the-badge&logo=ethereum&logoColor=white)
+![Viem](https://img.shields.io/badge/Viem-000000?style=for-the-badge&logo=ethereum&logoColor=white)
+
+### Database & Backend
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+
+### APIs & Integrations
+![PayCrest](https://img.shields.io/badge/PayCrest_API-FF6B35?style=for-the-badge&logo=api&logoColor=white)
+![PostHog](https://img.shields.io/badge/PostHog-FF3A00?style=for-the-badge&logo=posthog&logoColor=white)
+![Farcaster](https://img.shields.io/badge/Farcaster-8A63D2?style=for-the-badge&logo=farcaster&logoColor=white)
+
+### Development & Tools
+![ESLint](https://img.shields.io/badge/ESLint-4B3263?style=for-the-badge&logo=eslint&logoColor=white)
+![Git](https://img.shields.io/badge/git-%23F05033.svg?style=for-the-badge&logo=git&logoColor=white)
+![npm](https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white)
+
+</div>
+
+### Architecture Overview
 - **Base Network**: Layer 2 solution for fast, low-cost USDC transactions
 - **OnchainKit**: Coinbase's toolkit for wallet connections and transactions
 - **PayCrest API**: Banking infrastructure for fiat settlements
