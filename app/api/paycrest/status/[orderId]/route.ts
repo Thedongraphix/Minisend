@@ -34,7 +34,7 @@ export async function GET(
     }
 
     // Helper function to fetch with timeout and retry
-    const fetchWithRetry = async (maxRetries = 2, timeoutMs = 10000) => {
+    const fetchWithRetry = async (maxRetries = 2, timeoutMs = 10000): Promise<Response> => {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           console.log(`📡 Attempt ${attempt}/${maxRetries} - Checking PayCrest order status`);
@@ -67,6 +67,9 @@ export async function GET(
           await new Promise(resolve => setTimeout(resolve, delayMs));
         }
       }
+
+      // This should never be reached due to the throw above, but TypeScript needs it
+      throw new Error('All retry attempts failed');
     };
 
     const response = await fetchWithRetry();

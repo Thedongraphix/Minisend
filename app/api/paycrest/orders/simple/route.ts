@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
     console.log('🚀 Creating PayCrest order at:', `${PAYCREST_API_URL}/sender/orders`);
 
     // Helper function to create order with retry logic for server errors
-    const createOrderWithRetry = async (maxRetries = 2) => {
+    const createOrderWithRetry = async (maxRetries = 2): Promise<Response> => {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           console.log(`📡 Attempt ${attempt}/${maxRetries} - Creating PayCrest order`);
@@ -219,6 +219,9 @@ export async function POST(request: NextRequest) {
           await new Promise(resolve => setTimeout(resolve, attempt * 2000));
         }
       }
+
+      // This should never be reached due to the throw above, but TypeScript needs it
+      throw new Error('All retry attempts failed');
     };
 
     const orderResponse = await createOrderWithRetry();
