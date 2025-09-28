@@ -1,10 +1,3 @@
--- PayCrest Production Database Schema
--- Official database schema with webhook support and correct status mappings
--- Version: 2.0 (Webhook-enabled)
--- Run this in your Supabase SQL Editor
-
--- ⚠️  WARNING: This will delete ALL existing data! ⚠️
--- Make sure you have backups if needed
 
 -- 1. Drop existing tables and views (in correct order to handle dependencies)
 DROP VIEW IF EXISTS order_analytics CASCADE;
