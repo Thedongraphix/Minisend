@@ -3,6 +3,11 @@ import { NextResponse } from 'next/server';
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 
+// Server-side cache with 5-minute TTL
+let cachedProof: any = null;
+let cacheTimestamp: number = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 // PayCrest order interface
 interface PayCrestOrder {
   id: string;
@@ -43,66 +48,51 @@ export async function GET() {
       );
     }
 
-    console.log('🚀 Generating onchain proof for Minisend...\n');
-    
-    // Fetch ALL orders with pagination (PayCrest uses pageSize=100 max)
-    let allOrders: PayCrestOrder[] = [];
-    let currentPage = 1;
-    let totalPages = 1;
-    
-    do {
-      const response = await fetch(`${PAYCREST_API_URL}/sender/orders?page=${currentPage}&pageSize=100`, {
-        headers: {
-          'API-Key': PAYCREST_API_KEY!,
-          'Content-Type': 'application/json',
-        }
+    const now = Date.now();
+
+    // Return cached data if fresh
+    if (cachedProof && (now - cacheTimestamp) < CACHE_TTL) {
+      const cacheAge = Math.floor((now - cacheTimestamp) / 1000);
+      console.log(`💨 Returning cached proof (${cacheAge}s old)`);
+
+      return NextResponse.json({
+        ...cachedProof,
+        cached: true,
+        cacheAge: `${cacheAge}s`,
+        cacheExpiresIn: `${Math.floor((CACHE_TTL - (now - cacheTimestamp)) / 1000)}s`
       });
+    }
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`PayCrest API error: ${response.status} - ${errorText}`);
-      }
+    console.log('🚀 Generating fresh onchain proof for Minisend...\n');
 
-      const result = await response.json();
-      if (result.status !== 'success') {
-        throw new Error(`PayCrest API failed: ${result.message}`);
-      }
+    // Fetch ALL orders with parallel pagination for speed
+    const allOrders = await fetchAllOrdersParallel();
 
-      const pageOrders = result.data?.orders || [];
-      allOrders = allOrders.concat(pageOrders);
-      
-      // Calculate total pages from first response
-      if (currentPage === 1) {
-        const totalOrders = result.data?.total || 0;
-        totalPages = Math.ceil(totalOrders / 100);
-        console.log(`📊 Found ${totalOrders} total orders across ${totalPages} pages`);
-      }
-      
-      console.log(`📄 Fetched page ${currentPage}/${totalPages} (${pageOrders.length} orders)`);
-      currentPage++;
-    } while (currentPage <= totalPages);
-
-    const orders = allOrders;
-    console.log(`✅ Successfully fetched ${orders.length} total orders`);
+    console.log(`✅ Successfully fetched ${allOrders.length} total orders`);
 
     // Filter orders instead of making additional API calls (more efficient and accurate)
-    const baseOrders = orders.filter(order => order.network === 'base');
-    const usdcOrders = orders.filter(order => order.token === 'USDC');
-    const completedOrders = orders.filter(order => order.status === 'settled');
+    const baseOrders = allOrders.filter(order => order.network === 'base');
+    const usdcOrders = allOrders.filter(order => order.token === 'USDC');
+    const completedOrders = allOrders.filter(order => order.status === 'settled');
 
     console.log(`🔵 Found ${baseOrders.length} Base network orders`);
     console.log(`💰 Found ${usdcOrders.length} USDC orders`);
     console.log(`✅ Found ${completedOrders.length} completed orders`);
 
     // Process the data
-    const proof = processOrdersForProof(orders, baseOrders, usdcOrders, completedOrders);
-    
-    return NextResponse.json({
+    const proof = processOrdersForProof(allOrders, baseOrders, usdcOrders, completedOrders);
+
+    // Cache the result
+    cachedProof = {
       success: true,
       proof,
       timestamp: new Date().toISOString(),
-      domain: 'minisend.xyz'
-    });
+      domain: 'minisend.xyz',
+      cached: false
+    };
+    cacheTimestamp = now;
+
+    return NextResponse.json(cachedProof);
 
   } catch (error) {
     console.error('❌ Error generating proof:', error);
@@ -111,6 +101,62 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+// Parallel pagination for faster data fetching
+async function fetchAllOrdersParallel(): Promise<PayCrestOrder[]> {
+  // Fetch first page to get total count
+  const firstPageResponse = await fetch(`${PAYCREST_API_URL}/sender/orders?page=1&pageSize=100`, {
+    headers: {
+      'API-Key': PAYCREST_API_KEY!,
+      'Content-Type': 'application/json',
+    }
+  });
+
+  if (!firstPageResponse.ok) {
+    const errorText = await firstPageResponse.text();
+    throw new Error(`PayCrest API error: ${firstPageResponse.status} - ${errorText}`);
+  }
+
+  const firstPageData = await firstPageResponse.json();
+
+  if (firstPageData.status !== 'success') {
+    throw new Error(`PayCrest API failed: ${firstPageData.message}`);
+  }
+
+  const totalOrders = firstPageData.data?.total || 0;
+  const totalPages = Math.ceil(totalOrders / 100);
+  const allOrders = firstPageData.data?.orders || [];
+
+  console.log(`📊 Found ${totalOrders} total orders across ${totalPages} pages`);
+
+  if (totalPages > 1) {
+    // Fetch remaining pages in parallel (max 5 concurrent requests for safety)
+    const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+    const batchSize = 5;
+
+    for (let i = 0; i < remainingPages.length; i += batchSize) {
+      const batch = remainingPages.slice(i, i + batchSize);
+      const batchPromises = batch.map(page =>
+        fetch(`${PAYCREST_API_URL}/sender/orders?page=${page}&pageSize=100`, {
+          headers: {
+            'API-Key': PAYCREST_API_KEY!,
+            'Content-Type': 'application/json',
+          }
+        })
+          .then(res => res.json())
+          .then(data => {
+            console.log(`📄 Fetched page ${page}/${totalPages} (${data.data?.orders?.length || 0} orders)`);
+            return data.data?.orders || [];
+          })
+      );
+
+      const batchOrders = await Promise.all(batchPromises);
+      allOrders.push(...batchOrders.flat());
+    }
+  }
+
+  return allOrders;
 }
 
 function processOrdersForProof(allOrders: PayCrestOrder[], baseOrders: PayCrestOrder[], usdcOrders: PayCrestOrder[], completedOrders: PayCrestOrder[]) {
