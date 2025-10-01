@@ -253,7 +253,6 @@ export function Home({ setActiveTab }: HomeProps) {
       <Card>
         <div className="space-y-4 text-center">
           <p className="text-gray-300 text-base leading-relaxed">
-            Convert USDC to mobile money.
             Send to M-Pesa and banks in Kenya & Nigeria.
           </p>
 
