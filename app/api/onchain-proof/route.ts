@@ -4,7 +4,15 @@ const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 
 // Server-side cache with 5-minute TTL
-let cachedProof: any = null;
+interface CachedProofData {
+  success: boolean;
+  proof: ReturnType<typeof processOrdersForProof>;
+  timestamp: string;
+  domain: string;
+  cached: boolean;
+}
+
+let cachedProof: CachedProofData | null = null;
 let cacheTimestamp: number = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 
