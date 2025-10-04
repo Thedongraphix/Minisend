@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
+const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL;
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 
 // Server-side cache with 5-minute TTL
