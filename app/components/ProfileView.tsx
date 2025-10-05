@@ -472,11 +472,12 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
               return (
                 <div key={order.id} className="rounded-lg overflow-hidden bg-white/5 border border-transparent hover:border-blue-500/20 transition-all duration-200">
                   {/* Compact Row - Always Visible */}
-                  <div
-                    onClick={() => toggleOrderExpansion(order.id)}
-                    className="flex items-center justify-between py-2.5 px-3 sm:py-3 sm:px-4 cursor-pointer hover:bg-white/5 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-3 py-2.5 px-3 sm:py-3 sm:px-4">
+                    {/* Left: Clickable Phone/Local Amount */}
+                    <div
+                      onClick={() => toggleOrderExpansion(order.id)}
+                      className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 cursor-pointer"
+                    >
                       <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
                         ['completed', 'fulfilled', 'settled'].includes(order.status)
                           ? 'bg-green-400'
@@ -485,25 +486,51 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                             : 'bg-red-400'
                       }`}></div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-white font-medium text-sm truncate">
-                            {getPaymentDestination(order)}
-                          </p>
-                        </div>
+                        <p className="text-white font-medium text-sm truncate">
+                          {getPaymentDestination(order)}
+                        </p>
+                        <p className="text-gray-400 text-xs">
+                          {order.local_currency} {order.amount_in_local.toFixed(0)}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <svg
+                        className={`w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+
+                    {/* Right: USDC Amount, Status, BaseScan */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="text-right">
                         <p className="text-white font-semibold text-sm">
                           ${order.amount_in_usdc.toFixed(2)}
                         </p>
-                        <svg
-                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
+                        <span className={`text-xs font-medium capitalize ${getStatusColor(order.status)}`}>
+                          {order.status}
+                        </span>
                       </div>
+                      {order.transaction_hash && (
+                        <button
+                          onClick={(e) => openBaseScan(order.transaction_hash!, e)}
+                          className="inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-md sm:rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 group"
+                        >
+                          <svg
+                            className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-400 group-hover:text-blue-300 transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          <span className="text-xs font-medium text-blue-400 group-hover:text-blue-300 transition-colors hidden sm:inline">
+                            BaseScan
+                          </span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -511,43 +538,24 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                   {isExpanded && (
                     <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-0 border-t border-white/10 bg-white/5">
                       <div className="space-y-2 pt-3">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="grid grid-cols-2 gap-3 text-xs">
                           <div>
-                            <p className="text-gray-400">Status</p>
-                            <p className={`font-medium capitalize ${getStatusColor(order.status)}`}>{order.status}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400">Amount</p>
-                            <p className="text-white font-medium">{order.local_currency} {order.amount_in_local.toFixed(0)}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-400">Date</p>
+                            <p className="text-gray-400 mb-1">Date</p>
                             <p className="text-white">{formatDate(order.created_at)}</p>
                           </div>
                           <div>
-                            <p className="text-gray-400">Network</p>
+                            <p className="text-gray-400 mb-1">Network</p>
                             <p className="text-white">Base</p>
                           </div>
+                          <div>
+                            <p className="text-gray-400 mb-1">Rate</p>
+                            <p className="text-white">1 USDC = {(order.amount_in_local / order.amount_in_usdc).toFixed(2)} {order.local_currency}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 mb-1">Order ID</p>
+                            <p className="text-white text-xs font-mono truncate">{order.paycrest_order_id.slice(0, 8)}...</p>
+                          </div>
                         </div>
-
-                        {order.transaction_hash && (
-                          <button
-                            onClick={(e) => openBaseScan(order.transaction_hash!, e)}
-                            className="w-full mt-2 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 group"
-                          >
-                            <svg
-                              className="w-3.5 h-3.5 text-blue-400 group-hover:text-blue-300 transition-colors"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                            <span className="text-xs font-medium text-blue-400 group-hover:text-blue-300 transition-colors">
-                              View on BaseScan
-                            </span>
-                          </button>
-                        )}
                       </div>
                     </div>
                   )}
