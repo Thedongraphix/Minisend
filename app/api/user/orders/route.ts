@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService, Order } from '@/lib/supabase/config';
+import { supabaseAdmin, Order } from '@/lib/supabase/config';
 import { fixPaycrestOrdersAccountNames } from '@/lib/utils/accountNameExtractor';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
@@ -49,6 +49,7 @@ async function fetchUserOrdersFromPayCrest(walletAddress: string, limit: number)
       carrier: recipient.currency === 'KES' ? 'MPESA' : 'BANK_TRANSFER',
       status: (order.status as Order['status']) || 'pending',
       paycrest_status: order.status as string,
+      transaction_hash: order.txHash as string,
       reference_id: order.id as string,
       rate: parseFloat((order.rate as string) || '0') || 0,
       network: 'base',
@@ -77,12 +78,19 @@ export async function GET(request: NextRequest) {
     }
     
     // Try to fetch orders from database first
-    let orders: Order[];
+    let orders: Order[] = [];
     try {
-      orders = await DatabaseService.getOrdersByWallet(walletAddress, limit);
-    } catch (dbError) {
-      console.warn('Database query failed, trying PayCrest fallback:', dbError);
-      orders = []; // Return empty array if database query fails
+      const { data, error } = await supabaseAdmin
+        .from('orders')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      orders = data || [];
+    } catch {
+      orders = [];
     }
 
     // If no orders in database, try to fetch from PayCrest for this specific wallet

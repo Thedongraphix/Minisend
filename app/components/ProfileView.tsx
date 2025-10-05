@@ -36,43 +36,35 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
 
     try {
       setLoading(true);
-      let allUserOrders: Order[] = [];
 
-      console.log('Starting to fetch ALL user transactions...');
-      console.log('Loading user transactions');
+      // Fetch user orders with reduced initial limit for faster loading
+      const response = await fetch(`/api/user/orders?wallet=${address}&limit=100`);
 
-      // Fetch user orders directly from secure database endpoint
-      const response = await fetch(`/api/user/orders?wallet=${address}&limit=1000`);
-      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (data.error) {
         throw new Error(data.error);
       }
-      
-      allUserOrders = data.orders || [];
-      console.log(`✅ Loaded ${allUserOrders.length} user transactions from database`);
-      
-      console.log(`✅ Loaded ALL user transactions: ${allUserOrders.length} total`);
-      
+
+      const allUserOrders = data.orders || [];
+
       // Sort by most recent first
       allUserOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      
+
       // Set all orders and initial display
       setAllOrders(allUserOrders);
       setDisplayedOrders(allUserOrders.slice(0, displayLimit));
-      
+
       // Calculate daily expenditure from ALL transactions
       const daily = calculateDailyExpenditure(allUserOrders);
       setDailyExpenditure(daily);
-      
+
     } catch (err) {
-      setError('Failed to load transaction history from PayCrest');
-      console.error('Error loading transactions from PayCrest:', err);
+      setError('Failed to load transaction history');
     } finally {
       setLoading(false);
     }
@@ -208,6 +200,12 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     }
   };
 
+  const openBaseScan = (txHash: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const baseScanUrl = `https://basescan.org/tx/${txHash}`;
+    window.open(baseScanUrl, '_blank', 'noopener,noreferrer');
+  };
+
   if (loading) {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -277,7 +275,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
       <div className="glass-effect rounded-3xl p-8">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-white font-bold text-lg">
-            {selectedDate ? `Transactions for ${formatDate(selectedDate)}` : 'Transaction History'}
+            {selectedDate ? `Transactions for ${formatDate(selectedDate)}` : 'Recent Activity'}
           </h3>
           {selectedDate && (
             <Button
@@ -345,31 +343,49 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
             {selectedDate && (
               <div className="space-y-3">
                 {displayedOrders.map((order) => (
-                  <div key={order.id} className="flex items-center justify-between py-4 border-b border-white/10 last:border-b-0">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  <div key={order.id} className="flex items-start justify-between py-4 border-b border-white/10 last:border-b-0">
+                    <div className="flex items-start space-x-3 flex-1 min-w-0">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
                         ['completed', 'fulfilled', 'settled'].includes(order.status)
-                          ? 'bg-green-500/20' 
+                          ? 'bg-green-500/20'
                           : ['pending', 'processing', 'validated'].includes(order.status)
-                            ? 'bg-yellow-500/20' 
+                            ? 'bg-yellow-500/20'
                             : 'bg-red-500/20'
                       }`}>
-                        <Icon 
-                          name={getStatusIcon(order.status)} 
-                          size="sm" 
+                        <Icon
+                          name={getStatusIcon(order.status)}
+                          size="sm"
                           className={getStatusColor(order.status)}
                         />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="text-white font-medium">
                           ${order.amount_in_usdc.toFixed(2)} → {getPaymentDestination(order)}
                         </p>
                         <p className="text-gray-400 text-sm">
                           {formatDate(order.created_at)} • {order.local_currency} {order.amount_in_local.toFixed(0)}
                         </p>
+                        {order.transaction_hash && (
+                          <button
+                            onClick={(e) => openBaseScan(order.transaction_hash!, e)}
+                            className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 group"
+                          >
+                            <svg
+                              className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-400 group-hover:text-blue-300 transition-colors"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            <span className="text-xs sm:text-xs font-medium text-blue-400 group-hover:text-blue-300 transition-colors">
+                              View on BaseScan
+                            </span>
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0 ml-3">
                       <span className={`text-sm font-medium capitalize ${getStatusColor(order.status)}`}>
                         {order.status}
                       </span>
@@ -388,6 +404,104 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
           </>
         )}
       </div>
+
+      {/* All Transactions with BaseScan Links */}
+      {allOrders.length > 0 && !selectedDate && (
+        <div className="glass-effect rounded-3xl p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-white font-bold text-lg">All Transactions</h3>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <svg
+                  className="w-3.5 h-3.5 text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-xs font-medium text-blue-400">Base Network</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2 sm:space-y-3">
+            {displayedOrders.map((order) => (
+              <div
+                key={order.id}
+                className="flex items-start justify-between py-3 px-3 sm:py-4 sm:px-4 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-200 border border-transparent hover:border-blue-500/20"
+              >
+                <div className="flex items-start space-x-2 sm:space-x-3 flex-1 min-w-0">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    ['completed', 'fulfilled', 'settled'].includes(order.status)
+                      ? 'bg-green-500/20'
+                      : ['pending', 'processing', 'validated'].includes(order.status)
+                        ? 'bg-yellow-500/20'
+                        : 'bg-red-500/20'
+                  }`}>
+                    <Icon
+                      name={getStatusIcon(order.status)}
+                      size="sm"
+                      className={getStatusColor(order.status)}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 sm:gap-3 mb-0.5 sm:mb-1">
+                      <p className="text-white font-semibold text-sm sm:text-base">
+                        ${order.amount_in_usdc.toFixed(2)} USDC
+                      </p>
+                      <span className={`text-xs sm:text-sm font-medium capitalize ${getStatusColor(order.status)} flex-shrink-0`}>
+                        {order.status}
+                      </span>
+                    </div>
+                    <p className="text-gray-300 text-xs sm:text-sm mb-0.5 sm:mb-1">
+                      {getPaymentDestination(order)}
+                    </p>
+                    <p className="text-gray-400 text-xs mb-2 sm:mb-3">
+                      {formatDate(order.created_at)} • {order.local_currency} {order.amount_in_local.toFixed(0)}
+                    </p>
+                    {order.transaction_hash && (
+                      <button
+                        onClick={(e) => openBaseScan(order.transaction_hash!, e)}
+                        className="inline-flex items-center gap-1 px-2 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 group"
+                      >
+                        <svg
+                          className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-400 group-hover:text-blue-300 transition-colors"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        <span className="text-xs sm:text-xs font-medium text-blue-400 group-hover:text-blue-300 transition-colors">
+                          View on BaseScan
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Load More Button */}
+            {displayLimit < allOrders.length && (
+              <div className="text-center pt-4">
+                <Button
+                  onClick={() => setDisplayLimit(prev => prev + 20)}
+                  variant="outlined"
+                  size="medium"
+                  className="text-sm"
+                >
+                  Load More Transactions
+                </Button>
+                <p className="text-gray-500 text-xs mt-2">
+                  Showing {displayedOrders.length} of {allOrders.length} transactions
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
