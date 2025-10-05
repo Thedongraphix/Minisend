@@ -30,8 +30,6 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState(20);
   const [dailyDisplayLimit, setDailyDisplayLimit] = useState(5);
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  const [loadingStatuses, setLoadingStatuses] = useState(false);
 
   const loadAllUserTransactions = useCallback(async () => {
     if (!address) return;
@@ -207,44 +205,6 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     const baseScanUrl = `https://basescan.org/tx/${txHash}`;
     window.open(baseScanUrl, '_blank', 'noopener,noreferrer');
   };
-
-  const toggleOrderExpansion = (orderId: string) => {
-    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
-  };
-
-  const fetchLatestStatuses = useCallback(async () => {
-    if (!address || allOrders.length === 0) return;
-
-    setLoadingStatuses(true);
-    try {
-      const updatedOrders = await Promise.all(
-        allOrders.slice(0, 20).map(async (order) => {
-          try {
-            const response = await fetch(`/api/paycrest/status/${order.paycrest_order_id}`);
-            if (response.ok) {
-              const data = await response.json();
-              return {
-                ...order,
-                status: data.order?.status || order.status,
-                paycrest_status: data.order?.status || order.paycrest_status,
-                transaction_hash: data.order?.txHash || order.transaction_hash,
-              };
-            }
-            return order;
-          } catch {
-            return order;
-          }
-        })
-      );
-
-      setAllOrders(updatedOrders);
-      setDisplayedOrders(updatedOrders.slice(0, displayLimit));
-    } catch {
-      // Silent fail - keep existing data
-    } finally {
-      setLoadingStatuses(false);
-    }
-  }, [address, allOrders, displayLimit]);
 
   if (loading) {
     return (
