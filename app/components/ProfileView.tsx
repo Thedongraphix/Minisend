@@ -563,8 +563,12 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+      */}
 
-            {/* Load More Button */}
+      {/* Commented out: Load More Button
             {displayLimit < allOrders.length && (
               <div className="text-center pt-4">
                 <Button
@@ -580,9 +584,6 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                 </p>
               </div>
             )}
-          </div>
-        </div>
-      )}
       */}
 
       {error && (
