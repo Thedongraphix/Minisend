@@ -446,6 +446,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
       </div>
 
       {/* All Transactions - Compact Design */}
+      {/* Temporarily commented out - using Recent Activity panel design instead
       {allOrders.length > 0 && !selectedDate && (
         <div className="glass-effect rounded-3xl p-6 sm:p-8">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -582,6 +583,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
           </div>
         </div>
       )}
+      */}
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
