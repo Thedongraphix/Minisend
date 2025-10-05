@@ -63,7 +63,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
       const daily = calculateDailyExpenditure(allUserOrders);
       setDailyExpenditure(daily);
 
-    } catch (err) {
+    } catch {
       setError('Failed to load transaction history');
     } finally {
       setLoading(false);
