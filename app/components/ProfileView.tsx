@@ -50,7 +50,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
         throw new Error(data.error);
       }
 
-      const allUserOrders = data.orders || [];
+      const allUserOrders: Order[] = data.orders || [];
 
       // Sort by most recent first
       allUserOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
