@@ -30,6 +30,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState(20);
   const [dailyDisplayLimit, setDailyDisplayLimit] = useState(5);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadAllUserTransactions = useCallback(async () => {
     if (!address) return;
@@ -77,7 +78,20 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     }
 
     loadAllUserTransactions();
+
+    // Auto-refresh every 30 seconds to get latest statuses
+    const interval = setInterval(() => {
+      loadAllUserTransactions();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [address, setActiveTab, loadAllUserTransactions]);
+
+  const refreshStatuses = async () => {
+    setRefreshing(true);
+    await loadAllUserTransactions();
+    setRefreshing(false);
+  };
 
   const filterOrdersByDate = (orders: Order[], dateStr: string) => {
     return orders.filter(order => {
@@ -103,10 +117,13 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
   const calculateDailyExpenditure = (orders: Order[]): DailyExpenditure[] => {
     const dailyMap = new Map<string, DailyExpenditure>();
 
+    // Only count successful transactions for daily expenditure
+    const successfulStatuses = ['completed', 'fulfilled', 'settled'];
+
     orders.forEach(order => {
-      if (order.status === 'completed' || order.status === 'fulfilled' || order.status === 'settled') {
+      if (successfulStatuses.includes(order.status)) {
         const date = new Date(order.created_at).toISOString().split('T')[0];
-        
+
         if (!dailyMap.has(date)) {
           dailyMap.set(date, {
             date,
@@ -118,8 +135,8 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
         }
 
         const daily = dailyMap.get(date)!;
-        daily.totalUSDC += order.amount_in_usdc;
-        daily.totalLocal += order.amount_in_local;
+        daily.totalUSDC += order.amount_in_usdc || 0;
+        daily.totalLocal += order.amount_in_local || 0;
         daily.count += 1;
       }
     });
@@ -253,18 +270,22 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
           <div className="bg-white/5 rounded-xl p-4">
             <p className="text-gray-400 text-sm">Successful Payments</p>
             <p className="text-green-400 text-2xl font-bold">
-              {allOrders.filter(o => o.status === 'completed' || o.status === 'fulfilled' || o.status === 'settled').length}
+              {allOrders.filter(o => ['completed', 'fulfilled', 'settled'].includes(o.status)).length}
             </p>
           </div>
           <div className="bg-white/5 rounded-xl p-4">
             <p className="text-gray-400 text-sm">This Month (USDC)</p>
             <p className="text-blue-400 text-2xl font-bold">
               ${allOrders
-                .filter(o => 
-                  (o.status === 'completed' || o.status === 'fulfilled' || o.status === 'settled') &&
-                  new Date(o.created_at).getMonth() === new Date().getMonth()
-                )
-                .reduce((sum, o) => sum + o.amount_in_usdc, 0)
+                .filter(o => {
+                  const isSuccessful = ['completed', 'fulfilled', 'settled'].includes(o.status);
+                  const orderDate = new Date(o.created_at);
+                  const now = new Date();
+                  const isSameMonth = orderDate.getMonth() === now.getMonth() &&
+                                     orderDate.getFullYear() === now.getFullYear();
+                  return isSuccessful && isSameMonth;
+                })
+                .reduce((sum, o) => sum + (o.amount_in_usdc || 0), 0)
                 .toFixed(2)}
             </p>
           </div>
@@ -277,16 +298,33 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
           <h3 className="text-white font-bold text-lg">
             {selectedDate ? `Transactions for ${formatDate(selectedDate)}` : 'Recent Activity'}
           </h3>
-          {selectedDate && (
-            <Button
-              onClick={() => handleDateClick(selectedDate)}
-              variant="ghost"
-              size="medium"
-              className="text-sm"
+          <div className="flex items-center gap-2">
+            {selectedDate && (
+              <Button
+                onClick={() => handleDateClick(selectedDate)}
+                variant="ghost"
+                size="medium"
+                className="text-sm"
+              >
+                Show All
+              </Button>
+            )}
+            <button
+              onClick={refreshStatuses}
+              disabled={refreshing}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 disabled:opacity-50"
+              title="Refresh transaction statuses"
             >
-              Show All
-            </Button>
-          )}
+              {refreshing ? (
+                <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
+              <span className="text-xs font-medium text-blue-400 hidden sm:inline">Refresh</span>
+            </button>
+          </div>
         </div>
 
         {allOrders.length === 0 ? (
