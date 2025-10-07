@@ -29,6 +29,7 @@ export default function App() {
   const [frameAdded, setFrameAdded] = useState(false);
   const [activeTab, setActiveTab] = useState("home");
   const [mounted, setMounted] = useState(false);
+  const [showWhatsAppTooltip, setShowWhatsAppTooltip] = useState(false);
 
   const addFrame = useAddFrame();
 
@@ -41,6 +42,15 @@ export default function App() {
       setFrameReady();
     }
   }, [setFrameReady, isFrameReady]);
+
+  useEffect(() => {
+    if (mounted) {
+      const timer = setTimeout(() => {
+        setShowWhatsAppTooltip(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, mounted]);
 
   const handleAddFrame = useCallback(async () => {
     try {
@@ -182,7 +192,7 @@ export default function App() {
 
       <DebugPanel />
       <TelegramButton />
-      <WhatsAppButton />
+      <WhatsAppButton showTooltip={showWhatsAppTooltip} />
       </div>
     </AppProvider>
   );
