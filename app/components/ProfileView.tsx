@@ -121,7 +121,8 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     const successfulStatuses = ['completed', 'fulfilled', 'settled'];
 
     orders.forEach(order => {
-      if (successfulStatuses.includes(order.status)) {
+      const normalizedStatus = order.status?.toLowerCase() || '';
+      if (successfulStatuses.includes(normalizedStatus)) {
         const date = new Date(order.created_at).toISOString().split('T')[0];
 
         if (!dailyMap.has(date)) {
@@ -180,41 +181,25 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-      case 'fulfilled':
-      case 'settled':
-        return 'text-green-400';
-      case 'pending':
-      case 'processing':
-      case 'validated':
-        return 'text-yellow-400';
-      case 'failed':
-      case 'cancelled':
-      case 'expired':
-        return 'text-red-400';
-      default:
-        return 'text-gray-400';
+    const normalizedStatus = status?.toLowerCase() || '';
+    if (['completed', 'fulfilled', 'settled'].includes(normalizedStatus)) {
+      return 'text-green-400';
+    } else if (['pending', 'processing', 'validated', 'initiated'].includes(normalizedStatus)) {
+      return 'text-yellow-400';
+    } else if (['failed', 'cancelled', 'expired', 'refunded'].includes(normalizedStatus)) {
+      return 'text-red-400';
     }
+    return 'text-gray-400';
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-      case 'fulfilled':
-      case 'settled':
-        return 'check';
-      case 'pending':
-      case 'processing':
-      case 'validated':
-        return 'sparkles';
-      case 'failed':
-      case 'cancelled':
-      case 'expired':
-        return 'star'; // Using star as placeholder
-      default:
-        return 'star';
+    const normalizedStatus = status?.toLowerCase() || '';
+    if (['completed', 'fulfilled', 'settled'].includes(normalizedStatus)) {
+      return 'check';
+    } else if (['pending', 'processing', 'validated', 'initiated'].includes(normalizedStatus)) {
+      return 'sparkles';
     }
+    return 'star';
   };
 
   const openBaseScan = (txHash: string, e: React.MouseEvent) => {
@@ -270,7 +255,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
           <div className="bg-white/5 rounded-xl p-4">
             <p className="text-gray-400 text-sm">Successful Payments</p>
             <p className="text-green-400 text-2xl font-bold">
-              {allOrders.filter(o => ['completed', 'fulfilled', 'settled'].includes(o.status)).length}
+              {allOrders.filter(o => ['completed', 'fulfilled', 'settled'].includes(o.status?.toLowerCase() || '')).length}
             </p>
           </div>
           <div className="bg-white/5 rounded-xl p-4">
@@ -278,7 +263,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
             <p className="text-blue-400 text-2xl font-bold">
               ${allOrders
                 .filter(o => {
-                  const isSuccessful = ['completed', 'fulfilled', 'settled'].includes(o.status);
+                  const isSuccessful = ['completed', 'fulfilled', 'settled'].includes(o.status?.toLowerCase() || '');
                   const orderDate = new Date(o.created_at);
                   const now = new Date();
                   const isSameMonth = orderDate.getMonth() === now.getMonth() &&
@@ -380,57 +365,59 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
             {/* Detailed Transaction List (when a specific date is selected) */}
             {selectedDate && (
               <div className="space-y-3">
-                {displayedOrders.map((order) => (
-                  <div key={order.id} className="flex items-start justify-between py-4 border-b border-white/10 last:border-b-0">
-                    <div className="flex items-start space-x-3 flex-1 min-w-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
-                        ['completed', 'fulfilled', 'settled'].includes(order.status)
-                          ? 'bg-green-500/20'
-                          : ['pending', 'processing', 'validated'].includes(order.status)
-                            ? 'bg-yellow-500/20'
-                            : 'bg-red-500/20'
-                      }`}>
-                        <Icon
-                          name={getStatusIcon(order.status)}
-                          size="sm"
-                          className={getStatusColor(order.status)}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium">
-                          ${order.amount_in_usdc.toFixed(2)} → {getPaymentDestination(order)}
-                        </p>
-                        <p className="text-gray-400 text-sm">
-                          {formatDate(order.created_at)} • {order.local_currency} {order.amount_in_local.toFixed(0)}
-                        </p>
-                        {order.transaction_hash && (
-                          <button
-                            onClick={(e) => openBaseScan(order.transaction_hash!, e)}
-                            className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 group"
-                          >
-                            <svg
-                              className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-400 group-hover:text-blue-300 transition-colors"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
+                {displayedOrders.map((order) => {
+                  const normalizedStatus = order.status?.toLowerCase() || '';
+                  const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
+                  const isPending = ['pending', 'processing', 'validated', 'initiated'].includes(normalizedStatus);
+
+                  return (
+                    <div key={order.id} className="flex items-start justify-between py-4 border-b border-white/10 last:border-b-0">
+                      <div className="flex items-start space-x-3 flex-1 min-w-0">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
+                          isSuccess ? 'bg-green-500/20' : isPending ? 'bg-yellow-500/20' : 'bg-red-500/20'
+                        }`}>
+                          <Icon
+                            name={getStatusIcon(order.status)}
+                            size="sm"
+                            className={getStatusColor(order.status)}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium">
+                            ${order.amount_in_usdc.toFixed(2)} → {getPaymentDestination(order)}
+                          </p>
+                          <p className="text-gray-400 text-sm">
+                            {formatDate(order.created_at)} • {order.local_currency} {order.amount_in_local.toFixed(0)}
+                          </p>
+                          {order.transaction_hash && (
+                            <button
+                              onClick={(e) => openBaseScan(order.transaction_hash!, e)}
+                              className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 group"
                             >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                            <span className="text-xs sm:text-xs font-medium text-blue-400 group-hover:text-blue-300 transition-colors">
-                              View on BaseScan
-                            </span>
-                          </button>
-                        )}
+                              <svg
+                                className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-400 group-hover:text-blue-300 transition-colors"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              <span className="text-xs sm:text-xs font-medium text-blue-400 group-hover:text-blue-300 transition-colors">
+                                View on BaseScan
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-3">
+                        <span className={`text-sm font-medium capitalize ${getStatusColor(order.status)}`}>
+                          {order.status}
+                        </span>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0 ml-3">
-                      <span className={`text-sm font-medium capitalize ${getStatusColor(order.status)}`}>
-                        {order.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                
+                  );
+                })}
+
                 {/* Total count for filtered transactions */}
                 <div className="text-center pt-4">
                   <p className="text-gray-400 text-sm">
