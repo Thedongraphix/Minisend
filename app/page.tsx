@@ -22,7 +22,6 @@ import Image from 'next/image';
 import "./theme.css";
 import { ConnectWidget } from "./components/ConnectWidget";
 import { WhatsAppButton } from "./components/WhatsAppButton";
-import { TelegramButton } from "./components/TelegramButton";
 
 export default function App() {
   const { setFrameReady, isFrameReady, context } = useMiniKit();
@@ -191,7 +190,6 @@ export default function App() {
       </div>
 
       <DebugPanel />
-      <TelegramButton />
       <WhatsAppButton showTooltip={showWhatsAppTooltip} />
       </div>
     </AppProvider>
