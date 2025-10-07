@@ -15,7 +15,7 @@ import { ExchangeFlow } from "./components/ExchangeFlow";
 import { SpendFlow } from "./components/SpendFlow";
 import { SwapInterface } from "./components/SwapInterface";
 import { ProfileView } from "./components/ProfileView";
-import { LeaderboardView } from "./components/LeaderboardView";
+
 import { DebugPanel } from "./components/DebugPanel";
 import { AppProvider } from "./components/AppProvider";
 // Analytics imports removed - not used in current implementation
@@ -182,7 +182,7 @@ export default function App() {
           {activeTab === "spend" && <SpendFlow setActiveTab={setActiveTab} />}
           {activeTab === "swap" && <SwapInterface setActiveTab={setActiveTab} />}
           {activeTab === "profile" && <ProfileView setActiveTab={setActiveTab} />}
-          {activeTab === "leaderboard" && <LeaderboardView setActiveTab={setActiveTab} />}
+         
         </main>
 
       </div>
