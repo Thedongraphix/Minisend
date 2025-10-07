@@ -687,7 +687,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                 step: 2,
                 success: true,
               }, context || undefined);
-              
+
               setStep('success');
             }}
             onError={(error) => {
