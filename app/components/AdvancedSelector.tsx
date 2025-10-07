@@ -66,7 +66,7 @@ export function AdvancedSelector({
             type="text"
             value={paymentInput}
             onChange={(e) => setPaymentInput(e.target.value)}
-            placeholder="Enter phone number (+254...) or till number (12345)"
+            placeholder="Enter till number (12345)"
             className={`w-full px-4 py-3 pr-12 bg-gray-800/80 border rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:border-transparent transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm ${
               paymentInput && getInputStatus(paymentInput) === 'valid' 
                 ? 'border-green-500 focus:ring-green-500' 
