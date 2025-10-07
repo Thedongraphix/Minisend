@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { Button, Icon } from './BaseComponents';
+import Image from 'next/image';
 
 interface LeaderboardViewProps {
   setActiveTab: (tab: string) => void;
@@ -24,20 +25,12 @@ interface LeaderboardEntry {
   last_transaction: string;
 }
 
-interface FarcasterUser {
-  fid: number;
-  username?: string;
-  displayName?: string;
-  pfpUrl?: string;
-}
-
 export function LeaderboardView({ setActiveTab }: LeaderboardViewProps) {
   const { address } = useAccount();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'all'>('today');
-  const [currentUser, setCurrentUser] = useState<FarcasterUser | null>(null);
   const [isInMiniApp, setIsInMiniApp] = useState(false);
   const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null);
 
@@ -49,7 +42,6 @@ export function LeaderboardView({ setActiveTab }: LeaderboardViewProps) {
 
         if (miniAppStatus) {
           const context = await sdk.context;
-          setCurrentUser(context.user);
 
           if (address && context.user.fid) {
             await fetch('/api/user/farcaster', {
@@ -62,10 +54,12 @@ export function LeaderboardView({ setActiveTab }: LeaderboardViewProps) {
                 display_name: context.user.displayName,
                 pfp_url: context.user.pfpUrl,
               }),
+            }).catch(() => {
+              // Silently handle profile storage errors
             });
           }
         }
-      } catch (error) {
+      } catch {
         setIsInMiniApp(false);
       }
     };
@@ -99,7 +93,7 @@ export function LeaderboardView({ setActiveTab }: LeaderboardViewProps) {
         setUserRank(userEntry || null);
       }
 
-    } catch (error) {
+    } catch {
       setLeaderboard([]);
     } finally {
       setLoading(false);
@@ -276,9 +270,11 @@ export function LeaderboardView({ setActiveTab }: LeaderboardViewProps) {
 
                 <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                   {entry.pfp_url ? (
-                    <img
+                    <Image
                       src={entry.pfp_url}
                       alt={getDisplayName(entry)}
+                      width={40}
+                      height={40}
                       className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0 border border-white/20"
                     />
                   ) : (
