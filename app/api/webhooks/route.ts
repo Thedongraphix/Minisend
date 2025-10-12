@@ -151,7 +151,7 @@ async function validateWebhookSignature(
     // In production, you should verify the signature using Farcaster's verification library
     // Reference: https://docs.farcaster.xyz/developers/frames/v2/spec#signature-verification
 
-    return payload as FarcasterWebhookPayload;
+    return payload as unknown as FarcasterWebhookPayload;
 
   } catch {
     return null;
