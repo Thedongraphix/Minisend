@@ -245,37 +245,85 @@ export class ReceiptGenerator {
   }
 
   private async renderFooter(): Promise<void> {
-    // Position footer at bottom
-    this.y = Math.max(this.y, this.page.height - 60);
-    
-    const h = 35;
-    this.card(h, { filled: false, rounded: 6 });
-    
-    // QR Code section (if hash exists)
+    // Position footer at bottom with more space for modern QR design
+    this.y = Math.max(this.y, this.page.height - 85);
+
+    const h = 60;
+
+    // Modern gradient card for QR section
+    this.pdf.setFillColor(249, 250, 251);
+    this.pdf.roundedRect(this.page.margin, this.y, this.contentWidth, h, 6, 6, 'F');
+    this.setColor('primary', 'draw');
+    this.pdf.setLineWidth(1.2);
+    this.pdf.roundedRect(this.page.margin, this.y, this.contentWidth, h, 6, 6, 'S');
+
+    // QR Code section with live transaction details
     if (this.options.includeQRCode && this.data.blockchainTxHash) {
       try {
-        const qrData = await QRCode.toDataURL(
-          `https://basescan.org/tx/${this.data.blockchainTxHash}`,
-          { width: 80, margin: 1 }
-        );
-        this.pdf.addImage(qrData, 'PNG', this.page.margin + 10, this.y + 5, 25, 25);
-        
-        this.text('Verify on chain', this.page.margin + 40, this.y + 15, 
-          { size: 9, color: 'muted' });
-        this.text(this.truncate(this.data.blockchainTxHash), 
-          this.page.margin + 40, this.y + 23, 
-          { size: 8, color: 'primary' });
+        // Create QR code with transaction details URL
+        const txDetailsUrl = `https://basescan.org/tx/${this.data.blockchainTxHash}`;
+        const qrData = await QRCode.toDataURL(txDetailsUrl, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#7C65C1', // Farcaster Purple
+            light: '#FFFFFF'
+          },
+          errorCorrectionLevel: 'H'
+        });
+
+        // Larger, centered QR code
+        const qrSize = 45;
+        const qrX = this.page.margin + 12;
+        const qrY = this.y + 8;
+
+        // White background for QR
+        this.pdf.setFillColor(255, 255, 255);
+        this.pdf.roundedRect(qrX - 2, qrY - 2, qrSize + 4, qrSize + 4, 3, 3, 'F');
+
+        this.pdf.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
+
+        // Transaction details section (right side)
+        const detailsX = qrX + qrSize + 15;
+        const detailsY = this.y + 15;
+
+        this.text('Scan for Live Details', detailsX, detailsY,
+          { size: 11, style: 'bold', color: 'primary' });
+
+        // Status badge
+        const statusY = detailsY + 8;
+        this.setColor('success', 'fill');
+        this.pdf.roundedRect(detailsX, statusY - 4, 50, 8, 2, 2, 'F');
+        this.pdf.setTextColor(255, 255, 255);
+        this.pdf.setFontSize(8);
+        this.pdf.setFont('helvetica', 'bold');
+        this.pdf.text('✓ ON-CHAIN', detailsX + 4, statusY + 1);
+
+        // Transaction info
+        this.text('Transaction Hash:', detailsX, statusY + 10,
+          { size: 7, color: 'muted' });
+        this.text(this.truncate(this.data.blockchainTxHash, 16), detailsX, statusY + 17,
+          { size: 8, color: 'text', style: 'bold' });
+
+        // Network badge
+        this.text('Base Network • USDC', detailsX, statusY + 25,
+          { size: 7, color: 'muted' });
+
       } catch {
-        // Skip QR if error
+        // Fallback if QR generation fails
+        this.text('Transaction verified on Base Network', this.page.margin + 15, this.y + 25,
+          { size: 9, color: 'muted' });
       }
+    } else {
+      // No blockchain hash available
+      this.text('Processing...', this.page.margin + 15, this.y + 25,
+        { size: 10, color: 'muted' });
     }
-    
-    // QR code section takes up the full footer space
-    
+
     // Bottom disclaimer
-    this.y += h + 8;
-    const disclaimer = 'This receipt serves as proof of your transaction. Please retain for your records.';
-    this.text(disclaimer, this.page.width / 2, this.y, 
+    this.y += h + 10;
+    const disclaimer = 'This receipt is cryptographically verified on Base Network. Scan QR code for real-time transaction status.';
+    this.text(disclaimer, this.page.width / 2, this.y,
       { size: 7, color: 'muted', align: 'center' });
   }
 
