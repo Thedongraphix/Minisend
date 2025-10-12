@@ -160,7 +160,7 @@ export async function checkUserNotifications(fid: number): Promise<boolean> {
 // ============================================================================
 
 /**
- * Add this to your order creation API route
+ * Example: Add this pattern to your order creation API route
  * Location: app/api/paycrest/orders/simple/route.ts
  */
 export async function createOrderWithNotifications(orderData: {
@@ -169,17 +169,17 @@ export async function createOrderWithNotifications(orderData: {
   phoneNumber: string;
   fid?: number; // ← Include FID
 }) {
-  // Create order in database
-  const order = await createOrder({
-    ...orderData,
-    fid: orderData.fid, // Store FID
-  });
+  // Example pattern - replace with your actual database service
+  // const order = await DatabaseService.createOrder({
+  //   ...orderData,
+  //   fid: orderData.fid, // Store FID
+  // });
 
   // Order creation successful
   // Notifications will be sent automatically when status changes
   // via the status polling endpoint
 
-  return order;
+  return { success: true, orderId: 'example-order-id' };
 }
 
 // ============================================================================
