@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateReceiptPDF } from '@/lib/receipt-generator';
 import { OrderData } from '@/lib/types/order';
 
@@ -19,6 +19,20 @@ export function DownloadButton({
 }: DownloadButtonProps) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInMiniApp, setIsInMiniApp] = useState(false);
+
+  useEffect(() => {
+    const checkMiniAppEnvironment = async () => {
+      try {
+        const { sdk } = await import('@farcaster/miniapp-sdk');
+        const inMiniApp = await sdk.isInMiniApp();
+        setIsInMiniApp(inMiniApp);
+      } catch {
+        setIsInMiniApp(false);
+      }
+    };
+    checkMiniAppEnvironment();
+  }, []);
 
   const downloadReceipt = async () => {
     if (!orderData) {
@@ -28,31 +42,54 @@ export function DownloadButton({
 
     setGenerating(true);
     setError(null);
-    
+
     try {
-      // Generate the PDF receipt
       const pdfBlob = await generateReceiptPDF(orderData);
-      
-      // Create download link
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // Create filename with timestamp
       const date = new Date().toISOString().split('T')[0];
       const filename = `minisend-receipt-${orderData.id || 'transaction'}-${date}.pdf`;
-      link.download = filename;
-      
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Cleanup
-      URL.revokeObjectURL(url);
-      
-    } catch (err) {
-      console.error('Failed to generate receipt:', err);
+
+      // Farcaster Mini App: Use Web Share API or open in new window
+      if (isInMiniApp) {
+        // Try Web Share API first (works on mobile)
+        if (navigator.share && navigator.canShare) {
+          try {
+            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: 'Minisend Receipt',
+                text: 'Your transaction receipt from Minisend'
+              });
+              return;
+            }
+          } catch {
+            // Share API failed, fall through to alternative
+          }
+        }
+
+        // Fallback: Open PDF in new window/tab (works in Farcaster)
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+
+        // Cleanup after a delay
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 10000);
+
+      } else {
+        // Standard web browser: Use traditional download
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(url);
+      }
+
+    } catch {
       setError('Failed to generate receipt. Please try again.');
     } finally {
       setGenerating(false);
@@ -89,20 +126,20 @@ export function DownloadButton({
           </>
         ) : (
           <>
-            <svg 
-              className="w-4 h-4" 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <span>Download Receipt</span>
+            <span>{isInMiniApp ? 'View Receipt' : 'Download Receipt'}</span>
           </>
         )}
       </button>
@@ -115,30 +152,70 @@ export function DownloadButton({
 }
 
 // Compact version for smaller spaces
-export function CompactReceiptButton({ 
-  orderData, 
-  className = '' 
-}: { 
-  orderData: OrderData; 
-  className?: string; 
+export function CompactReceiptButton({
+  orderData,
+  className = ''
+}: {
+  orderData: OrderData;
+  className?: string;
 }) {
   const [generating, setGenerating] = useState(false);
+  const [isInMiniApp, setIsInMiniApp] = useState(false);
+
+  useEffect(() => {
+    const checkMiniAppEnvironment = async () => {
+      try {
+        const { sdk } = await import('@farcaster/miniapp-sdk');
+        const inMiniApp = await sdk.isInMiniApp();
+        setIsInMiniApp(inMiniApp);
+      } catch {
+        setIsInMiniApp(false);
+      }
+    };
+    checkMiniAppEnvironment();
+  }, []);
 
   const downloadReceipt = async () => {
     setGenerating(true);
-    
+
     try {
       const pdfBlob = await generateReceiptPDF(orderData);
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `receipt-${orderData.id || Date.now()}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Failed to generate receipt:', error);
+      const filename = `receipt-${orderData.id || Date.now()}.pdf`;
+
+      if (isInMiniApp) {
+        // Farcaster Mini App: Use Web Share API or open in new window
+        if (navigator.share && navigator.canShare) {
+          try {
+            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: 'Minisend Receipt',
+                text: 'Your transaction receipt'
+              });
+              return;
+            }
+          } catch {
+            // Fall through to window.open
+          }
+        }
+
+        // Fallback: Open in new window
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 10000);
+
+      } else {
+        // Standard browser download
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
     } finally {
       setGenerating(false);
     }
