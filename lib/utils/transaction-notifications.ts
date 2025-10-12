@@ -35,10 +35,9 @@ export async function sendTransactionNotification(
     // Send notification (non-blocking)
     await notificationService.sendNotification(fid, template);
 
-  } catch (error) {
-    // Log error but don't throw - notifications are non-critical
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    // Note: Removed console.log per project guidelines
+  } catch {
+    // Silently fail - notifications are non-critical
+    // Note: No console.log per project guidelines
   }
 }
 

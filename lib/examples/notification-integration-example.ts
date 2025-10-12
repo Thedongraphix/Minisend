@@ -3,7 +3,12 @@
  *
  * This file demonstrates how to integrate the notification system
  * into your existing Minisend components and API routes.
+ *
+ * Note: This is a documentation file with example code snippets.
+ * The code is for reference and demonstration purposes.
  */
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useFarcasterFid } from '@/app/hooks/useFarcasterUser';
 import { notifyTransactionCompleted } from '@/lib/utils/transaction-notifications';
@@ -12,11 +17,13 @@ import { notifyTransactionCompleted } from '@/lib/utils/transaction-notification
 // EXAMPLE 1: Capturing FID in a React Component
 // ============================================================================
 
+// Example component showing FID capture pattern
+// In your actual component, import React and use this pattern:
+/*
 export function ExamplePaymentComponent() {
-  const fid = useFarcasterFid(); // Get user's Farcaster ID
+  const fid = useFarcasterFid();
 
   const handlePayment = async () => {
-    // Include FID in your payment request
     const response = await fetch('/api/paycrest/orders/simple', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -34,6 +41,7 @@ export function ExamplePaymentComponent() {
 
   return <button onClick={handlePayment}>Send Payment</button>;
 }
+*/
 
 // ============================================================================
 // EXAMPLE 2: Sending Notifications in an API Route
