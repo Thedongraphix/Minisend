@@ -123,7 +123,7 @@ export default function App() {
           </div>
           
           {/* Wallet Island and Leaderboard in top right */}
-          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+          <div className="flex items-center gap-2 flex-shrink-0 ml-2"> 
             {/*<button
               onClick={() => setActiveTab("leaderboard")}
               className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all duration-200"
@@ -134,7 +134,7 @@ export default function App() {
               </svg>
             </button> 
             */}
-            <ConnectWidget
+            <ConnectWidget 
               className="scale-75 sm:scale-100"
             />
           </div>
