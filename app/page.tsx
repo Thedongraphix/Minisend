@@ -141,7 +141,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Service Notice Banner */}
+      {/* Service Notice Banner 
       <div className="w-full max-w-md mx-auto px-4 mb-4">
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-4 py-3 text-center">
           <p className="text-yellow-400 text-sm font-medium">
@@ -156,7 +156,7 @@ export default function App() {
             {saveFrameButton}
           </div>
         )}
-
+*/}
         {/* Tab Navigation */}
         {(activeTab === "features" || activeTab === "offramp") && (
           <nav className="mb-8">
