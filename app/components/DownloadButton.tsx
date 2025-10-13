@@ -43,6 +43,13 @@ export function DownloadButton({
     setGenerating(true);
     setError(null);
 
+    // Open window immediately to avoid popup blocker (only for Mini App)
+    let newWindow: Window | null = null;
+    if (isInMiniApp) {
+      // Open blank window immediately while in user action context
+      newWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
+    }
+
     try {
       const pdfBlob = await generateReceiptPDF(orderData);
       const date = new Date().toISOString().split('T')[0];
@@ -56,6 +63,11 @@ export function DownloadButton({
             const file = new File([pdfBlob], filename, { type: 'application/pdf' });
 
             if (navigator.canShare({ files: [file] })) {
+              // Close the blank window we opened earlier
+              if (newWindow) {
+                newWindow.close();
+              }
+
               await navigator.share({
                 files: [file],
                 title: 'Minisend Receipt',
@@ -68,12 +80,17 @@ export function DownloadButton({
           }
         }
 
-        // Fallback: Open PDF in new window/tab (works in Farcaster)
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+        // Fallback: Use the window we already opened
+        if (newWindow && !newWindow.closed) {
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          newWindow.location.href = pdfUrl;
 
-        // Cleanup after a delay
-        setTimeout(() => URL.revokeObjectURL(pdfUrl), 10000);
+          // Cleanup after a delay
+          setTimeout(() => URL.revokeObjectURL(pdfUrl), 10000);
+        } else {
+          // Window was blocked or closed, show error
+          setError('Please allow popups for this site to view receipts.');
+        }
 
       } else {
         // Standard web browser: Use traditional download
@@ -90,6 +107,10 @@ export function DownloadButton({
       }
 
     } catch {
+      // Close window on error
+      if (newWindow && !newWindow.closed) {
+        newWindow.close();
+      }
       setError('Failed to generate receipt. Please try again.');
     } finally {
       setGenerating(false);
@@ -178,6 +199,12 @@ export function CompactReceiptButton({
   const downloadReceipt = async () => {
     setGenerating(true);
 
+    // Open window immediately to avoid popup blocker (only for Mini App)
+    let newWindow: Window | null = null;
+    if (isInMiniApp) {
+      newWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
+    }
+
     try {
       const pdfBlob = await generateReceiptPDF(orderData);
       const filename = `receipt-${orderData.id || Date.now()}.pdf`;
@@ -188,6 +215,10 @@ export function CompactReceiptButton({
           try {
             const file = new File([pdfBlob], filename, { type: 'application/pdf' });
             if (navigator.canShare({ files: [file] })) {
+              // Close the blank window
+              if (newWindow) {
+                newWindow.close();
+              }
               await navigator.share({
                 files: [file],
                 title: 'Minisend Receipt',
@@ -200,10 +231,12 @@ export function CompactReceiptButton({
           }
         }
 
-        // Fallback: Open in new window
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        window.open(pdfUrl, '_blank', 'noopener,noreferrer');
-        setTimeout(() => URL.revokeObjectURL(pdfUrl), 10000);
+        // Fallback: Use the window we already opened
+        if (newWindow && !newWindow.closed) {
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          newWindow.location.href = pdfUrl;
+          setTimeout(() => URL.revokeObjectURL(pdfUrl), 10000);
+        }
 
       } else {
         // Standard browser download
@@ -215,6 +248,11 @@ export function CompactReceiptButton({
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+      }
+    } catch {
+      // Close window on error
+      if (newWindow && !newWindow.closed) {
+        newWindow.close();
       }
     } finally {
       setGenerating(false);
