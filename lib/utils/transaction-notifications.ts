@@ -30,7 +30,7 @@ export async function sendTransactionNotification(
 
   try {
     const notificationService = getNotificationService();
-    const template = notificationService.getNotificationTemplate(event, data);
+    const template = notificationService.getNotificationTemplate(event, data as Record<string, unknown>);
 
     // Send notification (non-blocking)
     await notificationService.sendNotification(fid, template);
