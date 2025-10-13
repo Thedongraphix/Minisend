@@ -400,3 +400,13 @@ For issues or questions:
 - Review notification_history table for error details
 - Check server logs for webhook processing errors
 - Contact support@minisend.xyz
+
+
+{/* Service Notice Banner */}
+      <div className="w-full max-w-md mx-auto px-4 mb-4">
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-4 py-3 text-center">
+          <p className="text-yellow-400 text-sm font-medium">
+            Temporarily out of service. Resuming at 8PM EAT.
+          </p>
+        </div>
+      </div>
