@@ -50,7 +50,6 @@ export function PaymentProcessor({
     requiredAmount?: number;
     insufficientBy?: number;
   } | null>(null);
-  const [fallbackMonitoringStarted, setFallbackMonitoringStarted] = useState(false);
   const pollingStartedRef = useRef(false);
 
   // USDC contract on Base (using config constant)
@@ -286,19 +285,6 @@ export function PaymentProcessor({
       case 'transactionPending':
         setStatus('processing');
         setStatusMessage('Transaction pending on Base network...');
-
-        // Start fallback success after 30 seconds if transaction doesn't complete normally
-        if (!fallbackMonitoringStarted && paycrestOrder?.id) {
-          setFallbackMonitoringStarted(true);
-          setTimeout(() => {
-            console.log('🔄 Fallback: Assuming transaction completed after 30s delay');
-
-            // Start background polling
-            startPolling(paycrestOrder.id);
-
-            onSuccess();
-          }, 30000); // 30 seconds fallback
-        }
         break;
       case 'success':
         console.log('✅ onStatus SUCCESS - payment sent to PayCrest');
@@ -317,7 +303,7 @@ export function PaymentProcessor({
         onError('Transaction failed');
         break;
     }
-  }, [paycrestOrder?.id, startPolling, onError, fallbackMonitoringStarted, onSuccess]);
+  }, [paycrestOrder?.id, startPolling, onError, onSuccess]);
 
   return (
     <div className="space-y-6">
