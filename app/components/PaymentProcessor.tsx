@@ -4,7 +4,6 @@ import { useState, useCallback, useRef } from 'react';
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
-import { ReceiptSection } from './DownloadButton';
 import { LoadingSpinner } from './LoadingSpinner';
 import { TransactionHandler } from './TransactionHandler';
 import { USDC_CONTRACTS } from '@/lib/paymaster-config';
@@ -293,38 +292,32 @@ export function PaymentProcessor({
           setFallbackMonitoringStarted(true);
           setTimeout(() => {
             console.log('🔄 Fallback: Assuming transaction completed after 30s delay');
-            setStatus('success');
-            const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-            setStatusMessage(`Payment sent to ${deliveryMethod}`);
 
             // Start background polling
             startPolling(paycrestOrder.id);
 
-            setTimeout(() => onSuccess(), 2000);
+            onSuccess();
           }, 30000); // 30 seconds fallback
         }
         break;
       case 'success':
         console.log('✅ onStatus SUCCESS - payment sent to PayCrest');
-        setStatus('success');
-        const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-        setStatusMessage(`Payment sent to ${deliveryMethod}`);
-        
+
         // Start background polling to track delivery and handle failures
         if (paycrestOrder?.id) {
           console.log('🔄 onStatus: Starting polling for order', paycrestOrder.id);
           startPolling(paycrestOrder.id);
         }
-        
+
         // Call onSuccess immediately - user has successfully sent funds to PayCrest
-        setTimeout(() => onSuccess(), 2000);
+        onSuccess();
         break;
       case 'error':
         setStatus('error');
         onError('Transaction failed');
         break;
     }
-  }, [paycrestOrder?.id, startPolling, onError, currency, fallbackMonitoringStarted, onSuccess]);
+  }, [paycrestOrder?.id, startPolling, onError, fallbackMonitoringStarted, onSuccess]);
 
   return (
     <div className="space-y-6">
@@ -378,16 +371,12 @@ export function PaymentProcessor({
             buttonText="Approve & Send"
             onStatus={handleTransactionStatus}
             onSuccess={() => {
-              setStatus('success');
-              const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-              setStatusMessage(`Payment sent to ${deliveryMethod}`);
-
               // Start polling only if not already started by onStatus
               if (paycrestOrder?.id && !pollingStartedRef.current) {
                 startPolling(paycrestOrder.id);
               }
 
-              setTimeout(() => onSuccess(), 2000);
+              onSuccess();
             }}
             onError={() => {
               setStatus('error');
@@ -467,46 +456,6 @@ export function PaymentProcessor({
         </div>
       )}
 
-      {/* Success */}
-      {status === 'success' && (
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 mx-auto bg-green-500 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <h3 className="text-white font-bold text-xl">Payment Sent</h3>
-          <p className="text-gray-300 text-sm">
-            Your {currency} has been sent to {currency === 'KES' ? phoneNumber : accountName}
-          </p>
-
-          {/* Receipt Download Section */}
-          {paycrestOrder && (
-            <ReceiptSection
-              orderData={{
-                id: paycrestOrder.id,
-                amount_in_usdc: parseFloat(amount),
-                amount_in_local: rate ? parseFloat(amount) * rate : 0,
-                local_currency: currency,
-                account_name: accountName,
-                phone_number: phoneNumber,
-                account_number: accountNumber,
-                bank_code: bankCode,
-                wallet_address: returnAddress,
-                rate: rate ?? 0,
-                sender_fee: parseFloat(paycrestOrder.senderFee || '0'),
-                transaction_fee: parseFloat(paycrestOrder.transactionFee || '0'),
-                status: 'completed',
-                created_at: new Date().toISOString(),
-                paycrest_order_id: paycrestOrder.id,
-                receive_address: paycrestOrder.receiveAddress,
-                valid_until: paycrestOrder.validUntil,
-              }}
-              className="mt-4"
-            />
-          )}
-        </div>
-      )}
     </div>
   );
 }
