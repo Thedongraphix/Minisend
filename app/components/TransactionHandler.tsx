@@ -32,13 +32,14 @@ export function TransactionHandler({
 
   return (
     <div>
-      {/* OnchainKit Transaction with CDP paymaster */}
+      {/* OnchainKit Transaction with CDP paymaster for gasless transactions */}
       <Transaction
         chainId={chainId}
         calls={calls}
         onStatus={onStatus}
         onSuccess={onSuccess}
         onError={onError}
+        isSponsored={true}
       >
         {children || (
           <>
