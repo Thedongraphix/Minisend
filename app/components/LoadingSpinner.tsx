@@ -2,71 +2,22 @@
 
 export function LoadingSpinner() {
   return (
-    <div className="payment-spinner">
-      <style jsx>{`
-        .payment-spinner {
-          --size: 30px;
-          --first-block-clr: #3b82f6; /* Blue */
-          --second-block-clr: #8b5cf6; /* Purple */
-          width: 100px;
-          height: 100px;
-          position: relative;
-          margin: 0 auto;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
+    <div className="flex items-center justify-center">
+      <div className="relative w-12 h-12">
+        {/* Outer ring with gradient */}
+        <div className="absolute inset-0 rounded-full border-4 border-blue-100/30" />
 
-        .payment-spinner::after,
-        .payment-spinner::before {
-          box-sizing: border-box;
-          position: absolute;
-          content: "";
-          width: var(--size);
-          height: var(--size);
-          top: 50%;
-          animation: up 2.4s cubic-bezier(0, 0, 0.24, 1.21) infinite;
-          left: 50%;
-          background: var(--first-block-clr);
-        }
+        {/* Animated spinner */}
+        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-blue-400 animate-spin"
+             style={{
+               animationDuration: '0.8s',
+               animationTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
+             }}
+        />
 
-        .payment-spinner::after {
-          background: var(--second-block-clr);
-          top: calc(50% - var(--size));
-          left: calc(50% - var(--size));
-          animation: down 2.4s cubic-bezier(0, 0, 0.24, 1.21) infinite;
-        }
-
-        @keyframes down {
-          0%, 100% {
-            transform: none;
-          }
-          25% {
-            transform: translateX(100%);
-          }
-          50% {
-            transform: translateX(100%) translateY(100%);
-          }
-          75% {
-            transform: translateY(100%);
-          }
-        }
-
-        @keyframes up {
-          0%, 100% {
-            transform: none;
-          }
-          25% {
-            transform: translateX(-100%);
-          }
-          50% {
-            transform: translateX(-100%) translateY(-100%);
-          }
-          75% {
-            transform: translateY(-100%);
-          }
-        }
-      `}</style>
+        {/* Inner glow effect */}
+        <div className="absolute inset-2 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 blur-sm" />
+      </div>
     </div>
   );
 }
