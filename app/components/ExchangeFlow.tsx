@@ -31,18 +31,9 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
     setMounted(true);
   }, []);
 
-  // Log environment information for debugging and track component mount
+  // Track component mount
   useEffect(() => {
     if (mounted && context) {
-      console.log('MiniKit Environment:', {
-        clientFid: context.user?.fid,
-        location: context.location,
-        address,
-        isConnected,
-        hasWallet,
-        isMiniKitEnvironment
-      });
-
       // Track offramp flow start
       trackOffRampEvent('flow_started', {
         step: 1,
@@ -77,14 +68,6 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const [institutions, setInstitutions] = useState<{code: string, name: string, type: string}[]>([]);
   const [loadingInstitutions, setLoadingInstitutions] = useState(false);
   const { balanceNum: usdcBalance } = useUSDCBalance();
-
-  console.log('Wallet connection state:', {
-    address,
-    isConnected,
-    hasWallet,
-    isMiniKitEnvironment,
-    context: context?.user ? 'MiniKit user detected' : 'No MiniKit user'
-  });
 
   // Fetch exchange rates (using 1 USDC to get the base rate)
   const fetchRate = useCallback(async (fiatAmount: string, currency: string) => {
@@ -133,7 +116,6 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
       }
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      console.error('Rate fetch error:', error);
       setRateError(error instanceof Error ? error.message : 'Failed to fetch rate');
       
       // Track rate fetch error
@@ -176,11 +158,9 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
       
       if (data.success) {
         setInstitutions(data.institutions || []);
-      } else {
-        console.error('Failed to fetch institutions:', data.error);
       }
-    } catch (error) {
-      console.error('Error fetching institutions:', error);
+    } catch {
+      // Error fetching institutions - will show empty list
     } finally {
       setLoadingInstitutions(false);
     }
@@ -215,10 +195,8 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
         setAccountVerified(false);
         throw new Error(data.error || 'Account verification failed');
       }
-    } catch (error) {
-      console.error('Account verification error:', error);
+    } catch {
       setAccountVerified(false);
-      // Could show error message to user here
     } finally {
       setVerifyingAccount(false);
     }
@@ -691,8 +669,6 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
               setStep('success');
             }}
             onError={(error) => {
-              console.error('Payment error:', error);
-              
               // Track payment error
               trackOffRampEvent('payment_error', {
                 currency: formData.currency,

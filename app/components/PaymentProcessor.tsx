@@ -70,9 +70,8 @@ export function PaymentProcessor({
     const poll = async () => {
       try {
         const response = await fetch(`/api/paycrest/status/${orderId}`);
-        
+
         if (!response.ok) {
-          console.log('❌ API response not OK:', response.status);
           attempts++;
           if (attempts < maxAttempts) {
             setTimeout(poll, 5000);
@@ -106,14 +105,12 @@ export function PaymentProcessor({
         
         // Handle failure states per PayCrest docs (only official statuses)
         if (order?.status === 'refunded') {
-          console.log('Order was refunded to the sender');
           setStatus('error');
           onError('Payment was refunded. Please try again.');
           return;
         }
-        
+
         if (order?.status === 'expired') {
-          console.log('Order expired without completion');
           setStatus('error');
           onError('Payment expired. Please try again.');
           return;
@@ -125,13 +122,9 @@ export function PaymentProcessor({
           // Exponential backoff: faster polls initially, slower later since webhooks handle real-time updates
           const pollInterval = attempts < 20 ? 3000 : 10000; // 3s for first 20 attempts, then 10s
           setTimeout(poll, pollInterval);
-        } else {
-          console.log('⏰ Polling timeout - webhook will handle any remaining updates');
-          // Don't change UI - webhook system will provide final updates
         }
-        
-      } catch (error) {
-        console.error('📡 Polling error:', error);
+
+      } catch {
         attempts++;
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000);
@@ -146,8 +139,9 @@ export function PaymentProcessor({
   // Create PayCrest order
   const createPaycrestOrder = useCallback(async () => {
     setStatus('creating-order');
-    // Reset polling state for new order
+    // Reset polling state and success trigger for new order
     pollingStartedRef.current = false;
+    successTriggeredRef.current = false;
     
     try {
       const response = await fetch('/api/paycrest/orders/simple', {
@@ -182,10 +176,10 @@ export function PaymentProcessor({
       }
 
       const data = await response.json();
-      
+
       if (data.success && data.order) {
         let orderData;
-        
+
         // Handle different response structures
         if (data.order.data) {
           // Structure: { success: true, order: { data: { ... } } }
@@ -194,12 +188,9 @@ export function PaymentProcessor({
           // Structure: { success: true, order: { id, receiveAddress, ... } }
           orderData = data.order;
         } else {
-          console.error('Unexpected PayCrest response structure:', data);
           throw new Error('Unexpected PayCrest response structure');
         }
 
-        console.log('🎯 Extracted order data:', orderData);
-        
         const paycrestOrderObj = {
           id: orderData.id,
           receiveAddress: orderData.receiveAddress,
@@ -208,16 +199,13 @@ export function PaymentProcessor({
           transactionFee: orderData.transactionFee || '0',
           validUntil: orderData.validUntil
         };
-        
-        console.log('📦 Setting PayCrest order object:', paycrestOrderObj);
+
         setPaycrestOrder(paycrestOrderObj);
         setStatus('ready-to-pay');
       } else {
-        console.error('Invalid PayCrest response:', data);
         throw new Error('Invalid response from PayCrest API');
       }
     } catch (error) {
-      console.error('Order creation failed:', error);
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
@@ -232,15 +220,6 @@ export function PaymentProcessor({
     // PayCrest docs: "The amount you send to the receive address should be the sum of amount, senderFee, and transactionFee"
     const totalAmountToSend = baseAmount + senderFee + transactionFee;
     const totalAmountWei = parseUnits(totalAmountToSend.toString(), 6);
-    
-    console.log('💰 USDC Transfer Calculation:', {
-      baseAmount,
-      senderFee,
-      transactionFee,
-      totalAmountToSend,
-      totalAmountWei: totalAmountWei.toString(),
-      receiveAddress: paycrestOrder.receiveAddress
-    });
     
     // Use standard ContractFunctionParameters format for OnchainKit
     return [{
@@ -262,55 +241,28 @@ export function PaymentProcessor({
     }];
   })() : [];
 
-  console.log('🎯 Transaction call prepared for PayCrest:', {
-    receiveAddress: paycrestOrder?.receiveAddress,
-    baseAmount: paycrestOrder?.amount,
-    senderFee: paycrestOrder?.senderFee,
-    transactionFee: paycrestOrder?.transactionFee,
-    totalAmountToSend: paycrestOrder && paycrestOrder.amount 
-      ? ((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toString()
-      : '0',
-    usdcContract: USDC_CONTRACT,
-    callsLength: calls.length
-  });
-
 
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
-    console.log('📱 onStatus callback - Transaction status:', status.statusName, status);
-    
     switch (status.statusName) {
-      case 'buildingTransaction':
-        setStatusMessage('Preparing transaction...');
-        // Don't show processing spinner yet - wait for wallet confirmation
-        break;
       case 'transactionPending':
         setStatus('processing');
         setStatusMessage('Transaction pending on Base network...');
         break;
       case 'success':
-        console.log('✅ onStatus SUCCESS - payment sent to PayCrest');
-
-        // Prevent duplicate success triggers
-        if (successTriggeredRef.current) {
-          console.log('⚠️ Success already triggered, skipping duplicate');
-          return;
-        }
+        if (successTriggeredRef.current) return;
         successTriggeredRef.current = true;
 
+        // Show success UI immediately
         setStatus('success');
+        setStatusMessage('Transaction confirmed successfully!');
 
-        // Start background polling to track delivery and handle failures
+        // Start polling in background
         if (paycrestOrder?.id) {
-          console.log('🔄 onStatus: Starting polling for order', paycrestOrder.id);
           startPolling(paycrestOrder.id);
         }
 
-        // Show brief success feedback before transitioning to full success page
-        console.log('⏱️ Showing success screen for 2 seconds before transition');
-        setTimeout(() => {
-          console.log('✅ Transitioning to full success page');
-          onSuccess();
-        }, 2000);
+        // Transition to full success page after 2 seconds
+        setTimeout(() => onSuccess(), 2000);
         break;
       case 'error':
         setStatus('error');
