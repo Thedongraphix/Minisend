@@ -157,7 +157,6 @@ export function PaymentProcessor({
         if (response.status === 400 && errorData?.error === 'Insufficient funds') {
           setStatus('insufficient-funds');
           setErrorDetails(errorData.balanceInfo);
-          setStatusMessage(errorData.details || 'Insufficient USDC balance');
           return;
         }
 
