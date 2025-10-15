@@ -288,6 +288,7 @@ export function PaymentProcessor({
         break;
       case 'success':
         console.log('✅ onStatus SUCCESS - payment sent to PayCrest');
+        setStatus('success');
 
         // Start background polling to track delivery and handle failures
         if (paycrestOrder?.id) {
@@ -295,8 +296,8 @@ export function PaymentProcessor({
           startPolling(paycrestOrder.id);
         }
 
-        // Call onSuccess immediately - user has successfully sent funds to PayCrest
-        onSuccess();
+        // Show brief success feedback before transitioning
+        setTimeout(() => onSuccess(), 1500);
         break;
       case 'error':
         setStatus('error');
@@ -357,12 +358,15 @@ export function PaymentProcessor({
             buttonText="Approve & Send"
             onStatus={handleTransactionStatus}
             onSuccess={() => {
+              setStatus('success');
+
               // Start polling only if not already started by onStatus
               if (paycrestOrder?.id && !pollingStartedRef.current) {
                 startPolling(paycrestOrder.id);
               }
 
-              onSuccess();
+              // Show brief success feedback before transitioning
+              setTimeout(() => onSuccess(), 1500);
             }}
             onError={() => {
               setStatus('error');
@@ -385,10 +389,24 @@ export function PaymentProcessor({
               {statusMessage || 'Processing your payment...'}
             </p>
           </div>
-          
+
         </div>
       )}
 
+      {/* Success - Brief confirmation before transitioning */}
+      {status === 'success' && (
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 mx-auto bg-green-500 rounded-full flex items-center justify-center mb-4 animate-bounce">
+            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <h3 className="text-white font-bold text-xl">Transaction Confirmed!</h3>
+          <p className="text-gray-300 text-sm">
+            Your payment has been sent successfully
+          </p>
+        </div>
+      )}
 
       {/* Insufficient Funds */}
       {status === 'insufficient-funds' && (
