@@ -4,7 +4,6 @@ import { useState, useCallback, useRef } from 'react';
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
-import { LoadingSpinner } from './LoadingSpinner';
 import { TransactionHandler } from './TransactionHandler';
 import { USDC_CONTRACTS } from '@/lib/paymaster-config';
 
@@ -44,7 +43,6 @@ export function PaymentProcessor({
     validUntil: string;
   } | null>(null);
   const [status, setStatus] = useState<'idle' | 'creating-order' | 'ready-to-pay' | 'processing' | 'success' | 'error' | 'insufficient-funds'>('idle');
-  const [statusMessage, setStatusMessage] = useState<string>('');
   const [errorDetails, setErrorDetails] = useState<{
     currentBalance?: number;
     requiredAmount?: number;
@@ -87,19 +85,10 @@ export function PaymentProcessor({
         switch (order?.status) {
           case 'pending':
             break;
-            
+
           case 'validated':
-            // Show delivery confirmation - this is when M-Pesa actually gets the money
-            setStatus('success');
-            const deliveryMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-            setStatusMessage(`${currency} validated and delivered to your ${deliveryMethod}`);
-            return;
-            
           case 'settled':
-            // Show delivery confirmation for settled status as well
-            setStatus('success');
-            const settlementMethod = currency === 'NGN' ? 'bank account' : 'mobile number';
-            setStatusMessage(`${currency} settled and delivered to your ${settlementMethod}`);
+            // Payment delivered successfully - no UI update needed as user already saw success
             return;
         }
         
@@ -134,7 +123,7 @@ export function PaymentProcessor({
     
     // Start polling after 5 seconds (reduced since webhooks provide real-time updates)
     setTimeout(poll, 5000);
-  }, [onError, currency]);
+  }, [onError]);
 
   // Create PayCrest order
   const createPaycrestOrder = useCallback(async () => {
@@ -246,7 +235,6 @@ export function PaymentProcessor({
     switch (status.statusName) {
       case 'transactionPending':
         setStatus('processing');
-        setStatusMessage('Transaction pending on Base network...');
         break;
       case 'success':
         if (successTriggeredRef.current) return;
@@ -254,7 +242,6 @@ export function PaymentProcessor({
 
         // Show success UI immediately
         setStatus('success');
-        setStatusMessage('Transaction confirmed successfully!');
 
         // Start polling in background
         if (paycrestOrder?.id) {
@@ -292,7 +279,7 @@ export function PaymentProcessor({
       )}
 
       {/* Ready to Pay - Transaction Component */}
-      {status === 'ready-to-pay' && paycrestOrder && (
+      {(status === 'ready-to-pay' || status === 'processing') && paycrestOrder && (
         <div className="space-y-4">
           <div className="text-center space-y-3">
             <div className="space-y-2 text-sm">
@@ -316,7 +303,7 @@ export function PaymentProcessor({
               </div>
             </div>
           </div>
-          
+
           <TransactionHandler
             chainId={base.id}
             calls={calls}
@@ -330,22 +317,6 @@ export function PaymentProcessor({
         </div>
       )}
 
-      {/* Processing */}
-      {status === 'processing' && (
-        <div className="text-center space-y-4">
-          <div className="flex justify-center items-center">
-            <LoadingSpinner />
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="text-white font-semibold text-lg">Processing Payment</h3>
-            <p className="text-gray-300">
-              {statusMessage || 'Processing your payment...'}
-            </p>
-          </div>
-
-        </div>
-      )}
 
       {/* Success - Brief confirmation before transitioning */}
       {status === 'success' && (
