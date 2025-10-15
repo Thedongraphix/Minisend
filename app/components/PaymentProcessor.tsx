@@ -51,6 +51,7 @@ export function PaymentProcessor({
     insufficientBy?: number;
   } | null>(null);
   const pollingStartedRef = useRef(false);
+  const successTriggeredRef = useRef(false);
 
   // USDC contract on Base (using config constant)
   const USDC_CONTRACT = USDC_CONTRACTS.mainnet;
@@ -288,6 +289,14 @@ export function PaymentProcessor({
         break;
       case 'success':
         console.log('✅ onStatus SUCCESS - payment sent to PayCrest');
+
+        // Prevent duplicate success triggers
+        if (successTriggeredRef.current) {
+          console.log('⚠️ Success already triggered, skipping duplicate');
+          return;
+        }
+        successTriggeredRef.current = true;
+
         setStatus('success');
 
         // Start background polling to track delivery and handle failures
@@ -296,8 +305,12 @@ export function PaymentProcessor({
           startPolling(paycrestOrder.id);
         }
 
-        // Show brief success feedback before transitioning
-        setTimeout(() => onSuccess(), 1500);
+        // Show brief success feedback before transitioning to full success page
+        console.log('⏱️ Showing success screen for 2 seconds before transition');
+        setTimeout(() => {
+          console.log('✅ Transitioning to full success page');
+          onSuccess();
+        }, 2000);
         break;
       case 'error':
         setStatus('error');
@@ -357,17 +370,6 @@ export function PaymentProcessor({
             calls={calls}
             buttonText="Approve & Send"
             onStatus={handleTransactionStatus}
-            onSuccess={() => {
-              setStatus('success');
-
-              // Start polling only if not already started by onStatus
-              if (paycrestOrder?.id && !pollingStartedRef.current) {
-                startPolling(paycrestOrder.id);
-              }
-
-              // Show brief success feedback before transitioning
-              setTimeout(() => onSuccess(), 1500);
-            }}
             onError={() => {
               setStatus('error');
               onError('Transaction failed');
@@ -395,16 +397,35 @@ export function PaymentProcessor({
 
       {/* Success - Brief confirmation before transitioning */}
       {status === 'success' && (
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 mx-auto bg-green-500 rounded-full flex items-center justify-center mb-4 animate-bounce">
-            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
+        <div className="text-center space-y-6 py-8">
+          {/* Animated checkmark */}
+          <div className="relative">
+            <div className="w-24 h-24 mx-auto bg-green-500 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-green-500/50">
+              <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            {/* Pulsing ring effect */}
+            <div className="absolute inset-0 w-24 h-24 mx-auto bg-green-500 rounded-full animate-ping opacity-20"></div>
           </div>
-          <h3 className="text-white font-bold text-xl">Transaction Confirmed!</h3>
-          <p className="text-gray-300 text-sm">
-            Your payment has been sent successfully
-          </p>
+
+          {/* Success message */}
+          <div className="space-y-2">
+            <h3 className="text-white font-bold text-2xl">Transaction Confirmed!</h3>
+            <p className="text-green-300 text-base font-medium">
+              Your USDC payment was sent successfully
+            </p>
+            <p className="text-gray-400 text-sm">
+              Processing your {currency} transfer...
+            </p>
+          </div>
+
+          {/* Loading indicator for next page */}
+          <div className="flex items-center justify-center space-x-2 text-gray-400 text-sm">
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+          </div>
         </div>
       )}
 
