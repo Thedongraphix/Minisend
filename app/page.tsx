@@ -140,7 +140,14 @@ export default function App() {
           </div>
         </div>
       </div>
-
+{/* Service Notice Banner */}
+<div className="w-full max-w-md mx-auto px-4 mb-4">
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-4 py-3 text-center">
+          <p className="text-yellow-400 text-sm font-medium">
+            Temporarily out of service. Resuming at 8PM EAT.
+          </p>
+        </div>
+      </div>
 
       <div className="w-full max-w-md mx-auto px-4 pb-6">
         {saveFrameButton && (
