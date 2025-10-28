@@ -8,9 +8,9 @@ import { BalanceView } from './BalanceView';
 import { ConnectionHandler } from './ConnectionHandler';
 import { Button } from './BaseComponents';
 import Image from 'next/image';
-import { trackOffRampEvent, trackAPIEvent, trackWalletEvent } from '@/lib/analytics';
+import { trackOffRampEvent, trackWalletEvent } from '@/lib/analytics';
 import { ReceiptSection } from './DownloadButton';
-import { useUSDCBalance } from '@/hooks/useUSDCBalance';
+import { CurrencySwapInterface } from './CurrencySwapInterface';
 
 interface ExchangeFlowProps {
   setActiveTab: (tab: string) => void;
@@ -50,104 +50,24 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
     }
   }, [mounted, context, address, isConnected, hasWallet, walletAddress, isMiniKitEnvironment]);
 
-  // Form state
-  const [step, setStep] = useState<'form' | 'payment' | 'success'>('form');
+  // Form state with new swap step
+  const [step, setStep] = useState<'swap' | 'details' | 'payment' | 'success'>('swap');
+  const [swapData, setSwapData] = useState<{
+    usdcAmount: string;
+    localAmount: string;
+    currency: 'KES' | 'NGN';
+    rate: number;
+  } | null>(null);
   const [formData, setFormData] = useState({
-    amount: '',
     phoneNumber: '',
     accountNumber: '',
     bankCode: '',
     accountName: '',
-    currency: 'KES' as 'KES' | 'NGN'
   });
-  const [currentRate, setCurrentRate] = useState<number | null>(null);
-  const [rateLoading, setRateLoading] = useState(false);
-  const [rateError, setRateError] = useState<string | null>(null);
   const [verifyingAccount, setVerifyingAccount] = useState(false);
   const [accountVerified, setAccountVerified] = useState(false);
   const [institutions, setInstitutions] = useState<{code: string, name: string, type: string}[]>([]);
   const [loadingInstitutions, setLoadingInstitutions] = useState(false);
-  const { balanceNum: usdcBalance } = useUSDCBalance();
-
-  // Fetch exchange rates (using 1 USDC to get the base rate)
-  const fetchRate = useCallback(async (fiatAmount: string, currency: string) => {
-    if (!fiatAmount || parseFloat(fiatAmount) <= 0) {
-      setCurrentRate(null);
-      return;
-    }
-    
-    setRateLoading(true);
-    setRateError(null);
-    const startTime = Date.now();
-    
-    // Track rate fetch attempt
-    trackAPIEvent('rate_fetch_attempt', {
-      endpoint: '/api/paycrest/rates',
-      method: 'GET',
-    }, context || undefined);
-    
-    try {
-      // Use 1 USDC to get the base exchange rate
-      const response = await fetch(`/api/paycrest/rates/USDC/1/${currency}`);
-      const data = await response.json();
-      const responseTime = Date.now() - startTime;
-      
-      if (data.success) {
-        setCurrentRate(data.rate);
-        
-        // Track successful rate fetch
-        trackAPIEvent('rate_fetch_success', {
-          endpoint: '/api/paycrest/rates',
-          method: 'GET',
-          responseTime,
-          statusCode: response.status,
-          success: true,
-        }, context || undefined);
-        
-        trackOffRampEvent('rate_fetched', {
-          currency,
-          rate: data.rate,
-          amount: parseFloat(fiatAmount),
-          usdcAmount: parseFloat(fiatAmount) / data.rate,
-          success: true,
-        }, context || undefined);
-      } else {
-        throw new Error(data.error || 'Failed to fetch rate');
-      }
-    } catch (error) {
-      const responseTime = Date.now() - startTime;
-      setRateError(error instanceof Error ? error.message : 'Failed to fetch rate');
-      
-      // Track rate fetch error
-      trackAPIEvent('rate_fetch_error', {
-        endpoint: '/api/paycrest/rates',
-        method: 'GET',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        responseTime,
-        success: false,
-      }, context || undefined);
-      
-      trackOffRampEvent('rate_fetch_error', {
-        currency,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        success: false,
-      }, context || undefined);
-      
-      // Set fallback rates
-      const fallbackRate = currency === 'KES' ? 150.5 : 1650.0;
-      setCurrentRate(fallbackRate);
-      
-      trackOffRampEvent('fallback_rate_used', {
-        currency,
-        rate: fallbackRate,
-        amount: parseFloat(fiatAmount),
-        usdcAmount: parseFloat(fiatAmount) / fallbackRate,
-        success: true,
-      }, context || undefined);
-    } finally {
-      setRateLoading(false);
-    }
-  }, [context]);
 
   // Fetch institutions for NGN
   const fetchInstitutions = async (currency: string) => {
@@ -210,81 +130,36 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
 
   // Auto-verify account when account number and bank code are provided and format is valid
   useEffect(() => {
-    if (formData.currency === 'NGN' && formData.bankCode && isAccountNumberValid && !accountVerified) {
+    if (swapData && swapData.currency === 'NGN' && formData.bankCode && isAccountNumberValid && !accountVerified) {
       const debounceTimer = setTimeout(() => {
         verifyAccount(formData.accountNumber, formData.bankCode);
       }, 1000); // Debounce for 1 second
-      
+
       return () => clearTimeout(debounceTimer);
-    } else if (formData.currency === 'NGN' && formData.accountNumber && !isAccountNumberValid) {
+    } else if (swapData && swapData.currency === 'NGN' && formData.accountNumber && !isAccountNumberValid) {
       // Reset verification state if account number becomes invalid
       setAccountVerified(false);
       setFormData(prev => ({ ...prev, accountName: '' }));
     }
-  }, [formData.accountNumber, formData.bankCode, formData.currency, isAccountNumberValid, accountVerified, verifyAccount]);
+  }, [formData.accountNumber, formData.bankCode, swapData, isAccountNumberValid, accountVerified, verifyAccount]);
 
-  // Handle "Send All" USDC functionality
-  const handleSendAll = useCallback(async () => {
-    if (!currentRate || usdcBalance <= 0) return;
-
-    // Calculate max fiat amount using current rate
-    const maxFiatAmount = (usdcBalance * currentRate).toFixed(2);
-    setFormData(prev => ({ ...prev, amount: maxFiatAmount }));
-
-    // Track max amount selection
-    trackOffRampEvent('max_amount_selected', {
-      currency: formData.currency,
-      amount: parseFloat(maxFiatAmount),
-      usdcAmount: usdcBalance,
-      success: true,
-    }, context || undefined);
-  }, [currentRate, usdcBalance, formData.currency, context]);
-
-  // Auto-fetch rates when amount or currency changes
+  // Fetch institutions when step changes to details with NGN
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (formData.amount && formData.currency) {
-        fetchRate(formData.amount, formData.currency);
-      }
-    }, 500); // Debounce for 500ms
-
-    return () => clearTimeout(debounceTimer);
-  }, [formData.amount, formData.currency, fetchRate]); // Fixed dependency
-
-  // Fetch institutions when currency changes
-  useEffect(() => {
-    if (formData.currency === 'NGN') {
+    if (step === 'details' && swapData && swapData.currency === 'NGN') {
       fetchInstitutions('NGN');
     }
-  }, [formData.currency]);
-
-
-  // Reset form fields when currency changes
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      phoneNumber: '',
-      accountNumber: '',
-      bankCode: '',
-      accountName: ''
-    }));
-    setAccountVerified(false);
-    
-    // Track currency selection
-    trackOffRampEvent('currency_selected', {
-      currency: formData.currency,
-      step: 1,
-    }, context || undefined);
-  }, [formData.currency, context]);
+  }, [step, swapData]);
 
   // Track step changes
   useEffect(() => {
+    if (!swapData) return;
+
     trackOffRampEvent('step_changed', {
-      step: step === 'form' ? 1 : step === 'payment' ? 2 : 3,
-      currency: formData.currency,
-      amount: parseFloat(formData.amount) || 0,
+      step: step === 'swap' ? 1 : step === 'details' ? 2 : step === 'payment' ? 3 : 4,
+      currency: swapData.currency,
+      amount: parseFloat(swapData.localAmount) || 0,
     }, context || undefined);
-  }, [step, formData.currency, formData.amount, context]);
+  }, [step, swapData, context]);
 
   // Show wallet connection if not connected or not mounted
   // For MiniKit users, auto-detect wallet from context
@@ -307,7 +182,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   }
 
   return (
-    <div className="max-w-md mx-auto p-6 space-y-6">
+    <div className="max-w-md mx-auto p-6 space-y-6 overflow-visible">
       {/* Profile Button - Top Right */}
       <div className="flex justify-between items-center mb-4">
         <button
@@ -338,114 +213,82 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
         
         {/* Step Progress Indicator */}
         <div className="flex items-center justify-center space-x-2 mt-4">
-          <div className={`w-2 h-2 rounded-full ${step === 'form' ? 'bg-blue-500' : 'bg-blue-500'}`}></div>
-          <div className={`w-8 h-0.5 ${step === 'payment' || step === 'success' ? 'bg-blue-500' : 'bg-gray-600'}`}></div>
-          <div className={`w-2 h-2 rounded-full ${step === 'payment' ? 'bg-blue-500' : step === 'success' ? 'bg-blue-500' : 'bg-gray-600'}`}></div>
-          <div className={`w-8 h-0.5 ${step === 'success' ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-          <div className={`w-2 h-2 rounded-full ${step === 'success' ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step === 'swap' ? 'bg-blue-500 scale-125' : 'bg-blue-500'}`}></div>
+          <div className={`w-6 h-0.5 transition-all duration-300 ${step === 'details' || step === 'payment' || step === 'success' ? 'bg-blue-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step === 'details' ? 'bg-blue-500 scale-125' : step === 'payment' || step === 'success' ? 'bg-blue-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-6 h-0.5 transition-all duration-300 ${step === 'payment' || step === 'success' ? 'bg-blue-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step === 'payment' ? 'bg-blue-500 scale-125' : step === 'success' ? 'bg-blue-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-6 h-0.5 transition-all duration-300 ${step === 'success' ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step === 'success' ? 'bg-green-500 scale-125' : 'bg-gray-600'}`}></div>
         </div>
-        <div className="flex justify-between text-xs text-gray-400 mt-2 px-2">
-          <span>Details</span>
+        <div className="flex justify-between text-xs text-gray-400 mt-2 px-1">
+          <span>Amount</span>
+          <span>Recipient</span>
           <span>Payment</span>
-          <span>Complete</span>
+          <span>Done</span>
         </div>
       </div>
 
       {/* USDC Balance */}
       <BalanceView />
 
-      {/* Form Step */}
-      {step === 'form' && (
+      {/* Swap Step - New Premium Interface */}
+      {step === 'swap' && (
+        <div className="overflow-visible">
+          <CurrencySwapInterface
+            onContinue={(data) => {
+              setSwapData(data);
+
+              trackOffRampEvent('swap_completed', {
+                currency: data.currency,
+                amount: parseFloat(data.localAmount),
+                usdcAmount: parseFloat(data.usdcAmount),
+                rate: data.rate,
+                step: 1,
+                success: true,
+              }, context || undefined);
+
+              setStep('details');
+            }}
+            className="mb-6"
+          />
+        </div>
+      )}
+
+      {/* Details Step - Recipient Information */}
+      {step === 'details' && swapData && (
         <>
-          {/* Fiat Amount Banner */}
-          {formData.amount && parseFloat(formData.amount) > 0 && (
-            <div className="bg-black/95 backdrop-blur-sm border border-gray-600 rounded-2xl p-5 shadow-xl shadow-black/60">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-blue-600/30 border border-blue-500/50 rounded-xl flex items-center justify-center">
-                    <span className="text-blue-300 font-bold text-xl">{formData.currency === 'KES' ? 'KSh' : '₦'}</span>
+          {/* Amount Summary Banner */}
+          <div className="bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-blue-600/10 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-5 shadow-xl mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-xl">{swapData.currency === 'KES' ? 'KSh' : '₦'}</span>
+                </div>
+                <div>
+                  <div className="text-white font-bold text-2xl">
+                    {parseFloat(swapData.localAmount).toLocaleString()} {swapData.currency}
                   </div>
-                  <div>
-                    <div className="text-white font-bold text-xl">
-                      {parseFloat(formData.amount).toLocaleString()} {formData.currency}
-                    </div>
-                    <div className="text-gray-300 text-sm font-medium">
-                      {rateLoading ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                          <span>Calculating USDC...</span>
-                        </div>
-                      ) : currentRate ? (
-                        <span className="text-blue-300">≈ ${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC</span>
-                      ) : rateError ? (
-                        <span className="text-amber-300">Using fallback rate</span>
-                      ) : (
-                        <span className="text-gray-400">Rate unavailable</span>
-                      )}
-                    </div>
+                  <div className="text-blue-300 text-sm font-semibold">
+                    ≈ ${parseFloat(swapData.usdcAmount).toFixed(4)} USDC
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">Currency</label>
-            <select
-              value={formData.currency}
-              onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value as 'KES' | 'NGN' }))}
-              className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:bg-gray-800 backdrop-blur-sm"
-              style={{
-                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 12px center',
-                backgroundSize: '16px'
-              }}
-            >
-              <option value="KES" className="bg-gray-800 text-white">🇰🇪 Kenyan Shilling (KES)</option>
-              <option value="NGN" className="bg-gray-800 text-white">🇳🇬 Nigerian Naira (NGN)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Amount ({formData.currency})
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                value={formData.amount}
-                onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                placeholder="0.00"
-                className="w-full px-4 py-3 pr-20 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
-                min="50"
-                max={formData.currency === 'KES' ? "1000000" : "10000000"}
-                step="1"
-              />
               <button
-                onClick={handleSendAll}
-                disabled={!currentRate || usdcBalance <= 0 || rateLoading}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-xs font-medium rounded-lg transition-colors"
-                title={
-                  !currentRate ? "Waiting for exchange rate..." :
-                  usdcBalance <= 0 ? "No USDC balance available" :
-                  `Send all ${usdcBalance.toFixed(4)} USDC`
-                }
+                onClick={() => setStep('swap')}
+                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+                title="Edit amount"
               >
-                MAX
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
               </button>
             </div>
-            {currentRate && usdcBalance > 0 && (
-              <div className="mt-2 text-xs text-gray-400">
-                Available: {usdcBalance.toFixed(4)} USDC (≈ {(usdcBalance * currentRate).toLocaleString()} {formData.currency})
-              </div>
-            )}
           </div>
 
-
+        <div className="space-y-4">
           {/* Conditional input fields based on currency */}
-          {formData.currency === 'KES' ? (
+          {swapData.currency === 'KES' ? (
             <>
               <div>
                 <label className="block text-white text-sm font-medium mb-2">Phone Number</label>
@@ -587,25 +430,24 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
 
           <button
             onClick={() => {
-              // Track form completion
-              trackOffRampEvent('form_completed', {
-                currency: formData.currency,
-                amount: parseFloat(formData.amount),
-                usdcAmount: currentRate ? parseFloat(formData.amount) / currentRate : undefined,
-                rate: currentRate || undefined,
-                step: 1,
+              // Track details completion
+              trackOffRampEvent('details_completed', {
+                currency: swapData.currency,
+                amount: parseFloat(swapData.localAmount),
+                usdcAmount: parseFloat(swapData.usdcAmount),
+                rate: swapData.rate,
+                step: 2,
                 success: true,
               }, context || undefined);
-              
+
               setStep('payment');
             }}
             disabled={
-              !formData.amount || 
               !formData.accountName ||
-              (formData.currency === 'KES' && !formData.phoneNumber) ||
-              (formData.currency === 'NGN' && (!formData.accountNumber || !formData.bankCode || !accountVerified))
+              (swapData.currency === 'KES' && !formData.phoneNumber) ||
+              (swapData.currency === 'NGN' && (!formData.accountNumber || !formData.bankCode || !accountVerified))
             }
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-xl transition-colors"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg disabled:shadow-none"
           >
             Continue to Payment
           </button>
@@ -614,106 +456,107 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
       )}
 
       {/* Payment Step */}
-      {step === 'payment' && (
+      {step === 'payment' && swapData && (
         <div>
-          <div className="mb-6 p-6 bg-black/95 backdrop-blur-sm rounded-2xl border border-gray-600 shadow-xl shadow-black/60">
+          <div className="mb-6 p-6 bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl rounded-2xl border border-gray-700/50 shadow-2xl">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-white font-semibold text-lg">Payment Summary</h3>
+              <h3 className="text-white font-bold text-lg">Payment Summary</h3>
             </div>
             <div className="space-y-3">
-              <div className="flex justify-between items-center py-2 border-b border-gray-600/30">
+              <div className="flex justify-between items-center py-3 border-b border-gray-700/40">
                 <span className="text-gray-300 font-medium">You&apos;ll receive</span>
-                <span className="text-white font-semibold text-lg">{parseFloat(formData.amount).toLocaleString()} {formData.currency}</span>
+                <span className="text-white font-bold text-lg">{parseFloat(swapData.localAmount).toLocaleString()} {swapData.currency}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-600/30">
+              <div className="flex justify-between items-center py-3 border-b border-gray-700/40">
                 <span className="text-gray-300 font-medium">USDC cost</span>
-                <span className="text-blue-300 font-semibold">${currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : '...'} USDC</span>
+                <span className="text-blue-300 font-bold text-lg">${parseFloat(swapData.usdcAmount).toFixed(4)} USDC</span>
               </div>
-              <div className="flex justify-between items-center py-2">
+              <div className="flex justify-between items-center py-3">
                 <span className="text-gray-300 font-medium">To</span>
-                <span className="text-white font-medium">
-                  {formData.currency === 'KES' ? formData.phoneNumber : formData.accountName}
+                <span className="text-white font-semibold">
+                  {swapData.currency === 'KES' ? formData.phoneNumber : formData.accountName}
                 </span>
               </div>
             </div>
           </div>
 
           <PaymentProcessor
-            amount={currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : formData.amount}
+            amount={swapData.usdcAmount}
             phoneNumber={formData.phoneNumber}
             accountNumber={formData.accountNumber}
             bankCode={formData.bankCode}
             accountName={formData.accountName}
-            currency={formData.currency}
+            currency={swapData.currency}
             returnAddress={walletAddress || ''}
-            rate={currentRate} // Pass the fetched rate
+            rate={swapData.rate}
             onSuccess={() => {
-              // Track payment success
               trackOffRampEvent('payment_completed', {
-                currency: formData.currency,
-                amount: parseFloat(formData.amount),
-                usdcAmount: currentRate ? parseFloat(formData.amount) / currentRate : undefined,
-                rate: currentRate || undefined,
+                currency: swapData.currency,
+                amount: parseFloat(swapData.localAmount),
+                usdcAmount: parseFloat(swapData.usdcAmount),
+                rate: swapData.rate,
                 phoneNumber: formData.phoneNumber,
                 accountNumber: formData.accountNumber,
                 bankCode: formData.bankCode,
-                step: 2,
+                step: 3,
                 success: true,
               }, context || undefined);
 
               setStep('success');
             }}
             onError={(error) => {
-              // Track payment error
               trackOffRampEvent('payment_error', {
-                currency: formData.currency,
-                amount: parseFloat(formData.amount),
-                usdcAmount: currentRate ? parseFloat(formData.amount) / currentRate : undefined,
-                rate: currentRate || undefined,
+                currency: swapData.currency,
+                amount: parseFloat(swapData.localAmount),
+                usdcAmount: parseFloat(swapData.usdcAmount),
+                rate: swapData.rate,
                 error: error,
-                step: 2,
+                step: 3,
                 success: false,
               }, context || undefined);
             }}
           />
 
           <button
-            onClick={() => setStep('form')}
-            className="w-full mt-4 text-gray-400 hover:text-white py-2 transition-colors"
+            onClick={() => setStep('details')}
+            className="w-full mt-4 text-gray-400 hover:text-white py-2 transition-colors flex items-center justify-center gap-2 group"
           >
-            ← Back to Form
+            <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Details
           </button>
         </div>
       )}
 
       {/* Success Step */}
-      {step === 'success' && (
+      {step === 'success' && swapData && (
         <div className="text-center space-y-6">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
-          
+
           <p className="text-gray-300 text-sm">
-            Your {formData.currency} has been sent to {formData.currency === 'KES' ? formData.phoneNumber : formData.accountName}
+            Your {swapData.currency} has been sent to {swapData.currency === 'KES' ? formData.phoneNumber : formData.accountName}
           </p>
-          
+
           {/* Receipt Download Section */}
-          <ReceiptSection 
+          <ReceiptSection
             orderData={{
               id: `order_${Date.now()}`,
-              amount_in_usdc: currentRate ? parseFloat(formData.amount) / currentRate : parseFloat(formData.amount),
-              amount_in_local: parseFloat(formData.amount),
-              local_currency: formData.currency,
+              amount_in_usdc: parseFloat(swapData.usdcAmount),
+              amount_in_local: parseFloat(swapData.localAmount),
+              local_currency: swapData.currency,
               account_name: formData.accountName,
               phone_number: formData.phoneNumber,
               account_number: formData.accountNumber,
               bank_code: formData.bankCode,
               wallet_address: walletAddress || '',
-              rate: currentRate || 0,
+              rate: swapData.rate,
               sender_fee: 0,
               transaction_fee: 0,
               status: 'completed',

@@ -46,21 +46,33 @@ export async function GET(
       );
     }
 
+    // Check if API key is configured
+    if (!PAYCREST_API_KEY) {
+      return NextResponse.json(
+        { error: 'PayCrest API key not configured' },
+        { status: 500 }
+      );
+    }
+
     // Fetch rate from PayCrest API
-    const response = await fetch(`${PAYCREST_API_URL}/rates/${token}/${amount}/${currency}?network=base`, {
+    // According to PayCrest API docs: GET /rates/{token}/{amount}/{fiat}
+    const response = await fetch(`${PAYCREST_API_URL}/rates/${token.toUpperCase()}/${amount}/${currency.toUpperCase()}`, {
+      method: 'GET',
       headers: {
-        'API-Key': PAYCREST_API_KEY!,
+        'API-Key': PAYCREST_API_KEY,
+        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      console.error('PayCrest rates API error:', response.status, errorData);
-      
+
       return NextResponse.json(
-        { 
+        {
+          success: false,
           error: 'Failed to fetch exchange rate',
           details: errorData?.message || `HTTP ${response.status}`,
+          statusCode: response.status,
         },
         { status: response.status }
       );
@@ -69,31 +81,52 @@ export async function GET(
     const rateData = await response.json();
 
     // PayCrest API returns: { "status": "success", "message": "Rate fetched successfully", "data": "1250.50" }
+    // According to API docs, the response format is consistent
     if (rateData.status === 'success' && rateData.data) {
       const rate = parseFloat(rateData.data);
+
+      // Validate the rate is a valid number
+      if (isNaN(rate) || rate <= 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Invalid rate received from PayCrest API',
+            details: `Received rate: ${rateData.data}`,
+          },
+          { status: 500 }
+        );
+      }
+
       const localAmount = amountNum * rate;
 
       return NextResponse.json({
         success: true,
         rate: rate,
-        token,
+        token: token.toUpperCase(),
         amount: amountNum,
-        currency,
+        currency: currency.toUpperCase(),
         localAmount: parseFloat(localAmount.toFixed(2)),
         timestamp: new Date().toISOString(),
         validUntil: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // Rate valid for 5 minutes
       });
     } else {
       return NextResponse.json(
-        { error: 'Invalid response from PayCrest rates API' },
+        {
+          success: false,
+          error: 'Invalid response from PayCrest rates API',
+          details: `Status: ${rateData.status}, Data: ${JSON.stringify(rateData.data)}`,
+        },
         { status: 500 }
       );
     }
 
   } catch (error) {
-    console.error('Rates API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error while fetching rates' },
+      {
+        success: false,
+        error: 'Internal server error while fetching rates',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

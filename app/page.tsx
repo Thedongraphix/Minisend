@@ -107,7 +107,7 @@ export default function App() {
 
   return (
     <AppProvider>
-      <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme">
+      <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme overflow-visible">
       {/* Main heading outside container */}
       <div className="w-full py-6 px-4">
         <div className="flex items-center justify-between mb-2">
@@ -141,7 +141,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="w-full max-w-md mx-auto px-4 pb-6">
+      <div className="w-full max-w-md mx-auto px-4 pb-6 overflow-visible">
         {saveFrameButton && (
           <div className="flex justify-end mb-4">
             {saveFrameButton}
@@ -176,14 +176,14 @@ export default function App() {
           </nav>
         )}
 
-        <main className="flex-1">
+        <main className="flex-1 overflow-visible relative">
           {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
           {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
           {activeTab === "offramp" && <ExchangeFlow setActiveTab={setActiveTab} />}
           {activeTab === "spend" && <SpendFlow setActiveTab={setActiveTab} />}
           {activeTab === "swap" && <SwapInterface setActiveTab={setActiveTab} />}
           {activeTab === "profile" && <ProfileView setActiveTab={setActiveTab} />}
-         
+
         </main>
 
       </div>
