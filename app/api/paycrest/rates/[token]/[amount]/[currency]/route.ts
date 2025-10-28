@@ -3,8 +3,25 @@ import { NextRequest, NextResponse } from 'next/server';
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
 
+// Cache for currencies data to avoid repeated API calls
+interface CurrenciesData {
+  status: string;
+  message: string;
+  data: Array<{
+    code: string;
+    name: string;
+    marketRate: string;
+    decimals: number;
+    symbol: string;
+    shortName: string;
+  }>;
+}
+
+let currenciesCache: { data: CurrenciesData; timestamp: number } | null = null;
+const CACHE_DURATION = 60000; // 1 minute cache
+
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: { params: Promise<{ token: string; amount: string; currency: string }> }
 ) {
   try {
@@ -78,26 +95,40 @@ export async function GET(
       }
     } catch {
       // Fallback to currencies endpoint which provides market rates
-      const currenciesResponse = await fetch(`${PAYCREST_API_URL}/currencies`, {
-        method: 'GET',
-        headers: {
-          'API-Key': PAYCREST_API_KEY,
-          'Content-Type': 'application/json',
-        },
-      });
+      let currenciesData;
 
-      if (!currenciesResponse.ok) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Failed to fetch exchange rate',
-            details: `Both rates and currencies endpoints failed`,
+      // Check cache first
+      if (currenciesCache && (Date.now() - currenciesCache.timestamp) < CACHE_DURATION) {
+        currenciesData = currenciesCache.data;
+      } else {
+        // Fetch fresh data
+        const currenciesResponse = await fetch(`${PAYCREST_API_URL}/currencies`, {
+          method: 'GET',
+          headers: {
+            'API-Key': PAYCREST_API_KEY,
+            'Content-Type': 'application/json',
           },
-          { status: 500 }
-        );
-      }
+        });
 
-      const currenciesData = await currenciesResponse.json();
+        if (!currenciesResponse.ok) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Failed to fetch exchange rate',
+              details: `Both rates and currencies endpoints failed`,
+            },
+            { status: 500 }
+          );
+        }
+
+        currenciesData = await currenciesResponse.json();
+
+        // Update cache
+        currenciesCache = {
+          data: currenciesData,
+          timestamp: Date.now(),
+        };
+      }
 
       if (currenciesData.status === 'success' && currenciesData.data) {
         const currencyInfo = currenciesData.data.find(

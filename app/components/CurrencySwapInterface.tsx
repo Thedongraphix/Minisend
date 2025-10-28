@@ -30,7 +30,8 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
   const [focusedInput, setFocusedInput] = useState<"send" | "receive" | null>(null)
   const [showCurrencyMenu, setShowCurrencyMenu] = useState(false)
 
-  const debounceTimerRef = useRef<NodeJS.Timeout>()
+  const sendDebounceTimerRef = useRef<NodeJS.Timeout>()
+  const receiveDebounceTimerRef = useRef<NodeJS.Timeout>()
 
   const selectedCurrency = receiveCurrency ? CURRENCIES.find((c) => c.code === receiveCurrency) : null
 
@@ -67,39 +68,39 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
   }, [])
 
   useEffect(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current)
+    if (sendDebounceTimerRef.current) {
+      clearTimeout(sendDebounceTimerRef.current)
     }
 
-    debounceTimerRef.current = setTimeout(() => {
+    sendDebounceTimerRef.current = setTimeout(() => {
       if (sendAmount && rate && focusedInput === "send") {
         const localAmount = Number.parseFloat(sendAmount) * rate
         setReceiveAmount(localAmount.toFixed(2))
       }
-    }, 300)
+    }, 100) // Reduced debounce for faster response
 
     return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
+      if (sendDebounceTimerRef.current) {
+        clearTimeout(sendDebounceTimerRef.current)
       }
     }
   }, [sendAmount, rate, focusedInput])
 
   useEffect(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current)
+    if (receiveDebounceTimerRef.current) {
+      clearTimeout(receiveDebounceTimerRef.current)
     }
 
-    debounceTimerRef.current = setTimeout(() => {
+    receiveDebounceTimerRef.current = setTimeout(() => {
       if (receiveAmount && rate && focusedInput === "receive") {
         const usdcAmount = Number.parseFloat(receiveAmount) / rate
         setSendAmount(usdcAmount.toFixed(6))
       }
-    }, 300)
+    }, 100) // Reduced debounce for faster response
 
     return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
+      if (receiveDebounceTimerRef.current) {
+        clearTimeout(receiveDebounceTimerRef.current)
       }
     }
   }, [receiveAmount, rate, focusedInput])
