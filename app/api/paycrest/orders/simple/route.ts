@@ -69,36 +69,59 @@ export async function POST(request: NextRequest) {
 
     // Get rate - use provided rate or fetch from PayCrest
     let exchangeRate: number;
-    
+
     if (rate && !isNaN(parseFloat(rate))) {
       exchangeRate = parseFloat(rate);
-      console.log('💹 Using provided rate:', exchangeRate);
     } else {
-      console.log('📊 Fetching rate from PayCrest:', `${PAYCREST_API_URL}/rates/USDC/${amountNum}/${currency}`);
-      
-      const rateResponse = await fetch(`${PAYCREST_API_URL}/rates/USDC/${amountNum}/${currency}`, {
-        headers: {
-          'API-Key': PAYCREST_API_KEY!,
-        },
-      });
+      // Try rates endpoint first, fallback to currencies endpoint (same as rates API)
+      try {
+        const rateResponse = await fetch(`${PAYCREST_API_URL}/rates/USDC/${amountNum}/${currency}?network=base`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (!rateResponse.ok) {
-        const errorText = await rateResponse.text();
-        console.error('Rate fetch failed:', rateResponse.status, errorText);
-        throw new Error(`Failed to fetch rate: ${rateResponse.status} ${errorText}`);
-      }
+        if (rateResponse.ok) {
+          const rateData = await rateResponse.json();
 
-      const rateData = await rateResponse.json();
-      console.log('💹 Rate data received:', rateData);
-      
-      // Handle different response formats
-      if (rateData.status === 'success' && rateData.data) {
-        exchangeRate = parseFloat(rateData.data);
-      } else if (typeof rateData === 'number') {
-        exchangeRate = rateData;
-      } else {
-        console.error('Invalid rate data format:', rateData);
-        throw new Error('Invalid rate data format from PayCrest API');
+          if (rateData.status === 'success' && rateData.data) {
+            exchangeRate = parseFloat(rateData.data);
+          } else if (typeof rateData === 'number') {
+            exchangeRate = rateData;
+          } else {
+            throw new Error('Rates endpoint returned invalid format');
+          }
+        } else {
+          throw new Error('Rates endpoint failed');
+        }
+      } catch {
+        // Fallback to currencies endpoint
+        const currenciesResponse = await fetch(`${PAYCREST_API_URL}/currencies`, {
+          headers: {
+            'API-Key': PAYCREST_API_KEY!,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!currenciesResponse.ok) {
+          throw new Error(`Failed to fetch rate from both endpoints: ${currenciesResponse.status}`);
+        }
+
+        const currenciesData = await currenciesResponse.json();
+
+        if (currenciesData.status === 'success' && currenciesData.data) {
+          const currencyInfo = currenciesData.data.find(
+            (c: { code: string; marketRate: string }) => c.code === currency.toUpperCase()
+          );
+
+          if (currencyInfo && currencyInfo.marketRate) {
+            exchangeRate = parseFloat(currencyInfo.marketRate);
+          } else {
+            throw new Error(`Currency ${currency} not found in currencies endpoint`);
+          }
+        } else {
+          throw new Error('Invalid response from currencies endpoint');
+        }
       }
     }
     
