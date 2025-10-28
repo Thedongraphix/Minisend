@@ -55,30 +55,81 @@ export async function GET(
     }
 
     // Fetch rate from PayCrest API
-    // According to PayCrest API docs: GET /rates/{token}/{amount}/{fiat}
-    const response = await fetch(`${PAYCREST_API_URL}/rates/${token.toUpperCase()}/${amount}/${currency.toUpperCase()}`, {
-      method: 'GET',
-      headers: {
-        'API-Key': PAYCREST_API_KEY,
-        'Content-Type': 'application/json',
-      },
-    });
+    // According to PayCrest API docs: GET /rates/{token}/{amount}/{fiat}?network=base
+    // Note: The /rates endpoint is currently experiencing issues, so we use /currencies as fallback
+    let rateData;
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-
-      return NextResponse.json(
+    try {
+      // Try the rates endpoint first
+      const ratesResponse = await fetch(
+        `${PAYCREST_API_URL}/rates/${token.toUpperCase()}/${amount}/${currency.toUpperCase()}?network=base`,
         {
-          success: false,
-          error: 'Failed to fetch exchange rate',
-          details: errorData?.message || `HTTP ${response.status}`,
-          statusCode: response.status,
-        },
-        { status: response.status }
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
       );
-    }
 
-    const rateData = await response.json();
+      if (ratesResponse.ok) {
+        rateData = await ratesResponse.json();
+      } else {
+        throw new Error('Rates endpoint failed');
+      }
+    } catch {
+      // Fallback to currencies endpoint which provides market rates
+      const currenciesResponse = await fetch(`${PAYCREST_API_URL}/currencies`, {
+        method: 'GET',
+        headers: {
+          'API-Key': PAYCREST_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!currenciesResponse.ok) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Failed to fetch exchange rate',
+            details: `Both rates and currencies endpoints failed`,
+          },
+          { status: 500 }
+        );
+      }
+
+      const currenciesData = await currenciesResponse.json();
+
+      if (currenciesData.status === 'success' && currenciesData.data) {
+        const currencyInfo = currenciesData.data.find(
+          (c: { code: string; marketRate: string }) => c.code === currency.toUpperCase()
+        );
+
+        if (currencyInfo && currencyInfo.marketRate) {
+          // Transform to expected format
+          rateData = {
+            status: 'success',
+            message: 'Rate fetched from currencies endpoint',
+            data: currencyInfo.marketRate,
+          };
+        } else {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Currency not found in currencies endpoint',
+            },
+            { status: 404 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Invalid response from currencies endpoint',
+          },
+          { status: 500 }
+        );
+      }
+    }
 
     // PayCrest API returns: { "status": "success", "message": "Rate fetched successfully", "data": "1250.50" }
     // According to API docs, the response format is consistent
