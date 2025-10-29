@@ -121,14 +121,14 @@ export function SwipeButton({
       ref={containerRef}
       className={`
         relative w-full h-16 rounded-2xl overflow-hidden
-        ${disabled ? 'bg-gray-700 cursor-not-allowed' : 'bg-purple-600/20'}
-        border-2 ${disabled ? 'border-gray-600' : 'border-purple-500/40'}
+        ${disabled ? 'bg-gray-700 cursor-not-allowed' : 'bg-blue-600/20'}
+        border-2 ${disabled ? 'border-gray-600' : 'border-blue-500'}
         transition-all duration-300
       `}
     >
       {/* Progress background */}
       <div
-        className="absolute inset-0 bg-gradient-to-r from-purple-600 to-purple-700 transition-all duration-200"
+        className="absolute inset-0 bg-blue-600 transition-all duration-200"
         style={{
           width: `${Math.max(sliderWidth, position + sliderWidth)}px`,
           opacity: isComplete ? 1 : 0.3 + (progressPercentage / 100) * 0.7
@@ -140,7 +140,7 @@ export function SwipeButton({
         <span
           className={`
             font-semibold text-base transition-all duration-300
-            ${isComplete ? 'text-white' : disabled ? 'text-gray-400' : 'text-purple-200'}
+            ${isComplete ? 'text-white' : disabled ? 'text-gray-400' : 'text-blue-200'}
           `}
         >
           {isComplete ? 'Sending...' : text}
@@ -166,12 +166,12 @@ export function SwipeButton({
         onTouchStart={handleTouchStart}
       >
         {isComplete ? (
-          <svg className="w-6 h-6 text-purple-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 text-blue-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         ) : (
           <svg
-            className={`w-6 h-6 transition-all duration-200 ${disabled ? 'text-gray-400' : 'text-purple-600'}`}
+            className={`w-6 h-6 transition-all duration-200 ${disabled ? 'text-gray-400' : 'text-blue-600'}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -188,7 +188,7 @@ export function SwipeButton({
             className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none"
             style={{ opacity: Math.max(0, 1 - progressPercentage / 50) }}
           >
-            <svg className="w-5 h-5 text-purple-300 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-blue-300 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>
@@ -196,7 +196,7 @@ export function SwipeButton({
             className="absolute right-12 top-1/2 -translate-y-1/2 pointer-events-none"
             style={{ opacity: Math.max(0, 0.6 - progressPercentage / 50) }}
           >
-            <svg className="w-4 h-4 text-purple-300/60 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-blue-300/60 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>

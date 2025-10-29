@@ -38,7 +38,7 @@ export function Button({
   ];
 
   const variantClasses = {
-    primary: "!bg-gradient-to-r !from-blue-600 !to-blue-700 !text-white !border !border-blue-500/20 hover:!from-blue-700 hover:!to-blue-800 !shadow-lg hover:!shadow-xl",
+    primary: "!bg-blue-600 hover:!bg-blue-700 !text-white !border !border-blue-500 hover:!border-blue-400",
     secondary: "bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 hover:border-white/30",
     outlined: "bg-transparent text-white border border-white/30 hover:bg-white/10 hover:border-white/50 backdrop-blur-sm",
     ghost: "hover:bg-white/10 text-gray-300 hover:text-white backdrop-blur-sm",
@@ -203,7 +203,9 @@ export function Features({ setActiveTab }: FeaturesProps) {
           <div className="pt-4 border-t border-gray-700">
             <Button
               onClick={() => setActiveTab("offramp")}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 mb-3"
+              variant="primary"
+              fullWidth
+              size="large"
             >
               Try It Now
             </Button>

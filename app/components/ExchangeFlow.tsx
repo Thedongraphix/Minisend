@@ -167,7 +167,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
     return (
       <div className="max-w-md mx-auto p-6">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-4">
+          <div className="w-16 h-16 mx-auto bg-blue-600 border border-blue-500 rounded-2xl flex items-center justify-center mb-4">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
@@ -259,10 +259,10 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
       {step === 'details' && swapData && (
         <>
           {/* Amount Summary Banner */}
-          <div className="bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-blue-600/10 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-5 shadow-xl mb-6">
+          <div className="bg-blue-600/10 backdrop-blur-sm border border-blue-500/30 rounded-2xl p-5 shadow-xl mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="w-14 h-14 bg-blue-600 border border-blue-500 rounded-xl flex items-center justify-center shadow-lg">
                   <span className="text-white font-bold text-xl">{swapData.currency === 'KES' ? 'KSh' : '₦'}</span>
                 </div>
                 <div>
@@ -447,7 +447,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
               (swapData.currency === 'KES' && !formData.phoneNumber) ||
               (swapData.currency === 'NGN' && (!formData.accountNumber || !formData.bankCode || !accountVerified))
             }
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-gray-700 disabled:to-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg disabled:shadow-none"
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 border border-blue-500 hover:border-blue-400 disabled:border-gray-600"
           >
             Continue to Payment
           </button>
@@ -458,9 +458,9 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
       {/* Payment Step */}
       {step === 'payment' && swapData && (
         <div>
-          <div className="mb-6 p-6 bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl rounded-2xl border border-gray-700/50 shadow-2xl">
+          <div className="mb-6 p-6 bg-black/95 backdrop-blur-xl rounded-2xl border border-gray-700 shadow-2xl">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-8 h-8 bg-blue-600 border border-blue-500 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
