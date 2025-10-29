@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useUSDCBalance } from "@/hooks/useUSDCBalance"
+import Image from "next/image"
 
 interface CurrencySwapInterfaceProps {
   onContinue: (data: {
@@ -182,9 +183,13 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
               />
 
               <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#3a3a3c] hover:bg-[#48484a] transition-colors shrink-0">
-                <div className="w-6 h-6 rounded-full bg-[#2775ca] flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">$</span>
-                </div>
+                <Image
+                  src="/usdc.svg"
+                  alt="USDC"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6"
+                />
                 <span className="text-white font-medium">USDC</span>
                 <svg className="w-4 h-4 text-[#8e8e93]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
