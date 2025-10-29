@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
@@ -16,7 +16,7 @@ interface PaymentProcessorProps {
   accountName: string;
   currency: 'KES' | 'NGN';
   returnAddress: string;
-  rate?: number | null; // Optional rate - will be fetched dynamically if not provided
+  rate?: number | null;
   onSuccess: () => void;
   onError: (error: string) => void;
 }
@@ -51,20 +51,26 @@ export function PaymentProcessor({
   const pollingStartedRef = useRef(false);
   const successTriggeredRef = useRef(false);
 
-  // USDC contract on Base (using config constant)
+  // Swipe slider states
+  const [swipeProgress, setSwipeProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSwipeComplete, setIsSwipeComplete] = useState(false);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // USDC contract on Base
   const USDC_CONTRACT = USDC_CONTRACTS.mainnet;
 
   // Optimized polling that works alongside webhooks for maximum speed
   const startPolling = useCallback((orderId: string) => {
-    // Prevent multiple polling instances
     if (pollingStartedRef.current) {
       return;
     }
     pollingStartedRef.current = true;
-    
+
     let attempts = 0;
-    const maxAttempts = 60; // Reduced to 5 minutes since webhooks handle most updates
-    
+    const maxAttempts = 60;
+
     const poll = async () => {
       try {
         const response = await fetch(`/api/paycrest/status/${orderId}`);
@@ -76,23 +82,18 @@ export function PaymentProcessor({
           }
           return;
         }
-        
+
         const result = await response.json();
         const order = result.order;
-        
-        
-        // Handle specific status updates per PayCrest docs
+
         switch (order?.status) {
           case 'pending':
             break;
-
           case 'validated':
           case 'settled':
-            // Payment delivered successfully - no UI update needed as user already saw success
             return;
         }
-        
-        // Handle failure states per PayCrest docs (only official statuses)
+
         if (order?.status === 'refunded') {
           setStatus('error');
           onError('Payment was refunded. Please try again.');
@@ -104,15 +105,12 @@ export function PaymentProcessor({
           onError('Payment expired. Please try again.');
           return;
         }
-        
-        // Continue polling for in-progress states (reduced frequency since webhooks are primary)
+
         attempts++;
         if (attempts < maxAttempts) {
-          // Exponential backoff: faster polls initially, slower later since webhooks handle real-time updates
-          const pollInterval = attempts < 20 ? 3000 : 10000; // 3s for first 20 attempts, then 10s
+          const pollInterval = attempts < 20 ? 3000 : 10000;
           setTimeout(poll, pollInterval);
         }
-
       } catch {
         attempts++;
         if (attempts < maxAttempts) {
@@ -120,18 +118,16 @@ export function PaymentProcessor({
         }
       }
     };
-    
-    // Start polling after 5 seconds (reduced since webhooks provide real-time updates)
+
     setTimeout(poll, 5000);
   }, [onError]);
 
   // Create PayCrest order
   const createPaycrestOrder = useCallback(async () => {
     setStatus('creating-order');
-    // Reset polling state and success trigger for new order
     pollingStartedRef.current = false;
     successTriggeredRef.current = false;
-    
+
     try {
       const response = await fetch('/api/paycrest/orders/simple', {
         method: 'POST',
@@ -146,14 +142,13 @@ export function PaymentProcessor({
           currency,
           provider: currency === 'KES' ? 'M-Pesa' : 'Bank Transfer',
           returnAddress,
-          ...(rate && { rate }) // Include rate only if provided
+          ...(rate && { rate })
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
 
-        // Handle insufficient funds error specifically
         if (response.status === 400 && errorData?.error === 'Insufficient funds') {
           setStatus('insufficient-funds');
           setErrorDetails(errorData.balanceInfo);
@@ -168,12 +163,9 @@ export function PaymentProcessor({
       if (data.success && data.order) {
         let orderData;
 
-        // Handle different response structures
         if (data.order.data) {
-          // Structure: { success: true, order: { data: { ... } } }
           orderData = data.order.data;
         } else if (data.order.id || data.order.receiveAddress) {
-          // Structure: { success: true, order: { id, receiveAddress, ... } }
           orderData = data.order;
         } else {
           throw new Error('Unexpected PayCrest response structure');
@@ -199,17 +191,15 @@ export function PaymentProcessor({
     }
   }, [amount, phoneNumber, tillNumber, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError]);
 
-  // USDC transfer using OnchainKit standard format for proper gas estimation
+  // USDC transfer using OnchainKit standard format
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
     const baseAmount = parseFloat(paycrestOrder.amount) || 0;
     const senderFee = parseFloat(paycrestOrder.senderFee) || 0;
     const transactionFee = parseFloat(paycrestOrder.transactionFee) || 0;
-    
-    // PayCrest docs: "The amount you send to the receive address should be the sum of amount, senderFee, and transactionFee"
+
     const totalAmountToSend = baseAmount + senderFee + transactionFee;
     const totalAmountWei = parseUnits(totalAmountToSend.toString(), 6);
-    
-    // Use standard ContractFunctionParameters format for OnchainKit
+
     return [{
       address: USDC_CONTRACT as `0x${string}`,
       abi: [
@@ -229,7 +219,6 @@ export function PaymentProcessor({
     }];
   })() : [];
 
-
   const handleTransactionStatus = useCallback((status: LifecycleStatus) => {
     switch (status.statusName) {
       case 'transactionPending':
@@ -239,15 +228,12 @@ export function PaymentProcessor({
         if (successTriggeredRef.current) return;
         successTriggeredRef.current = true;
 
-        // Show success UI immediately
         setStatus('success');
 
-        // Start polling in background
         if (paycrestOrder?.id) {
           startPolling(paycrestOrder.id);
         }
 
-        // Transition to full success page after 2 seconds
         setTimeout(() => onSuccess(), 2000);
         break;
       case 'error':
@@ -257,23 +243,147 @@ export function PaymentProcessor({
     }
   }, [paycrestOrder?.id, startPolling, onError, onSuccess]);
 
+  // Swipe slider handlers
+  const handleSwipeStart = useCallback(() => {
+    if (isSwipeComplete || status === 'creating-order') return;
+    setIsDragging(true);
+  }, [isSwipeComplete, status]);
+
+  const handleSwipeMove = useCallback((clientX: number) => {
+    if (!isDragging || isSwipeComplete || status === 'creating-order') return;
+
+    const container = containerRef.current;
+    const slider = sliderRef.current;
+
+    if (!container || !slider) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const sliderWidth = slider.offsetWidth;
+    const maxDistance = containerRect.width - sliderWidth;
+
+    let newX = clientX - containerRect.left - sliderWidth / 2;
+    newX = Math.max(0, Math.min(newX, maxDistance));
+
+    const progress = (newX / maxDistance) * 100;
+    setSwipeProgress(progress);
+
+    if (progress > 90) {
+      setSwipeProgress(100);
+      setIsSwipeComplete(true);
+      setIsDragging(false);
+      createPaycrestOrder();
+    }
+  }, [isDragging, isSwipeComplete, status, createPaycrestOrder]);
+
+  const handleSwipeEnd = useCallback(() => {
+    if (isSwipeComplete || status === 'creating-order') return;
+
+    setIsDragging(false);
+
+    if (swipeProgress < 90) {
+      setSwipeProgress(0);
+    }
+  }, [isSwipeComplete, status, swipeProgress]);
+
+  // Mouse events
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    handleSwipeStart();
+  };
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    handleSwipeMove(e.clientX);
+  }, [handleSwipeMove]);
+
+  const handleMouseUp = useCallback(() => {
+    handleSwipeEnd();
+  }, [handleSwipeEnd]);
+
+  // Touch events
+  const handleTouchStart = () => {
+    handleSwipeStart();
+  };
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    e.preventDefault();
+    handleSwipeMove(e.touches[0].clientX);
+  }, [handleSwipeMove]);
+
+  const handleTouchEnd = useCallback(() => {
+    handleSwipeEnd();
+  }, [handleSwipeEnd]);
+
+  // Effect for swipe event listeners
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+
   return (
     <div className="space-y-6">
-      {/* Create Order Button */}
+      {/* Swipe to Pay Slider */}
       {status === 'idle' && (
-        <button
-          onClick={createPaycrestOrder}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
-        >
-          Send ${amount} → {phoneNumber || (tillNumber ? `Till ${tillNumber}` : accountNumber)}
-        </button>
+        <div className="space-y-3">
+          <div
+            ref={containerRef}
+            className="relative h-16 bg-black border border-gray-700 rounded-xl overflow-hidden"
+            style={{ touchAction: 'none' }}
+          >
+            {/* Progress background */}
+            <div
+              className="absolute inset-0 bg-blue-600 transition-all duration-200"
+              style={{
+                width: `${swipeProgress}%`
+              }}
+            />
+
+            {/* Text */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="font-medium text-white">
+                {isSwipeComplete ? 'Creating order...' : `Swipe to send $${amount}`}
+              </span>
+            </div>
+
+            {/* Slider button */}
+            <div
+              ref={sliderRef}
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
+              className="absolute left-1 top-1 bottom-1 w-14 bg-white rounded-lg flex items-center justify-center cursor-grab active:cursor-grabbing"
+              style={{
+                transform: `translateX(${(swipeProgress / 100) * (containerRef.current ? containerRef.current.offsetWidth - 60 : 0)}px)`,
+                transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+              }}
+            >
+              <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+
+          <p className="text-center text-gray-500 text-xs">
+            Drag slider to confirm
+          </p>
+        </div>
       )}
 
       {/* Creating Order */}
       {status === 'creating-order' && (
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-4 border-white/20 border-t-blue-400 mx-auto mb-4"></div>
-          <p className="text-white">Creating order...</p>
+        <div className="text-center py-6">
+          <div className="animate-spin rounded-full h-10 w-10 border-4 border-white/20 border-t-blue-400 mx-auto mb-4"></div>
+          <p className="text-white font-medium">Creating order...</p>
+          <p className="text-gray-400 text-sm mt-2">Please wait</p>
         </div>
       )}
 
@@ -316,22 +426,18 @@ export function PaymentProcessor({
         </div>
       )}
 
-
-      {/* Success - Brief confirmation before transitioning */}
+      {/* Success */}
       {status === 'success' && (
         <div className="text-center space-y-6 py-8">
-          {/* Animated checkmark */}
           <div className="relative">
             <div className="w-24 h-24 mx-auto bg-green-500 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-green-500/50">
               <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             </div>
-            {/* Pulsing ring effect */}
             <div className="absolute inset-0 w-24 h-24 mx-auto bg-green-500 rounded-full animate-ping opacity-20"></div>
           </div>
 
-          {/* Success message */}
           <div className="space-y-2">
             <h3 className="text-white font-bold text-2xl">Transaction Confirmed!</h3>
             <p className="text-green-300 text-base font-medium">
@@ -342,7 +448,6 @@ export function PaymentProcessor({
             </p>
           </div>
 
-          {/* Loading indicator for next page */}
           <div className="flex items-center justify-center space-x-2 text-gray-400 text-sm">
             <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
             <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
@@ -401,7 +506,6 @@ export function PaymentProcessor({
           </button>
         </div>
       )}
-
     </div>
   );
 }
