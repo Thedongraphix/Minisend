@@ -178,7 +178,7 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
                   }
                 }}
                 onFocus={() => setFocusedInput("send")}
-                placeholder="0"
+                placeholder="0.00"
                 className="flex-1 min-w-0 bg-transparent text-white text-3xl font-medium outline-none placeholder-[#48484a]"
               />
 
@@ -245,8 +245,8 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
                   }
                 }}
                 onFocus={() => setFocusedInput("receive")}
-                placeholder="0"
-                className="flex-1 min-w-0 bg-transparent text-white text-3xl font-medium outline-none placeholder-[#48484a]"
+                placeholder={selectedCurrency ? "0.00" : "0"}
+                className="flex-1 min-w-0 bg-transparent text-white text-3xl font-medium outline-none placeholder-[#48484a] placeholder:text-2xl"
               />
 
               <div className="relative shrink-0">
@@ -312,6 +312,16 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
             {isLoadingRate && <div className="mt-2 text-[#8e8e93] text-xs">Fetching rate...</div>}
           </div>
         </div>
+
+        {/* Helper Text */}
+        {selectedCurrency && (
+          <div className="flex items-center justify-center gap-2 mt-3 text-[#8e8e93] text-xs">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Tip: You can enter amount in either USDC or {selectedCurrency.code}</span>
+          </div>
+        )}
 
         {/* Action Button */}
         <button
