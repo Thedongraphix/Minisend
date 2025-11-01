@@ -159,9 +159,15 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
             <div className="flex items-start justify-between mb-3">
               <span className="text-[#8e8e93] text-sm">Send</span>
               {!balanceLoading && usdcBalance > 0 && (
-                <button onClick={handleMaxClick} className="text-[#8e8e93] hover:text-white text-xs transition-colors shrink-0">
-                  Balance: {usdcBalance.toFixed(4)}
-                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#8e8e93] text-xs">Balance: {usdcBalance.toFixed(4)}</span>
+                  <button
+                    onClick={handleMaxClick}
+                    className="px-2 py-1 bg-[#5e5ce6] hover:bg-[#7d7aff] text-white text-xs font-medium rounded-md transition-colors"
+                  >
+                    MAX
+                  </button>
+                </div>
               )}
             </div>
 
