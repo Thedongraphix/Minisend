@@ -211,3 +211,4 @@ Database testing is critical due to real-money transactions:
 - Run `npm run test-db-full` before deploying payment changes
 - Test wallet connections across different environments
 - Verify paymaster configuration before production
+- Verify every single change with me before pushing to github

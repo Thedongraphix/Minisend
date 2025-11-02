@@ -129,10 +129,15 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
 
   const handleMaxClick = () => {
     if (usdcBalance > 0) {
-      setSendAmount(usdcBalance.toFixed(6))
+      // Calculate max sendable amount accounting for 1% transaction fee
+      // Formula: maxAmount = balance / 1.01
+      // This ensures that (maxAmount * 1.01) <= balance
+      const maxSendableAmount = usdcBalance / 1.01
+
+      setSendAmount(maxSendableAmount.toFixed(6))
       setFocusedInput("send")
       if (rate) {
-        setReceiveAmount((usdcBalance * rate).toFixed(2))
+        setReceiveAmount((maxSendableAmount * rate).toFixed(2))
       }
     }
   }
