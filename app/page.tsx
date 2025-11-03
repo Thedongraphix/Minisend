@@ -2,8 +2,8 @@
 
 import {
   useMiniKit,
-  useAddFrame,
 } from "@coinbase/onchainkit/minikit";
+import { sdk } from "@farcaster/miniapp-sdk";
 // Wallet components removed since we don't show wallet connection in main page anymore
 // Wallet components removed - now handled in Home component
 import { useEffect, useMemo, useState, useCallback } from "react";
@@ -30,8 +30,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [mounted, setMounted] = useState(false);
   const [showWhatsAppTooltip, setShowWhatsAppTooltip] = useState(false);
-
-  const addFrame = useAddFrame();
+  const [addFrameError, setAddFrameError] = useState<string>("");
 
   useEffect(() => {
     setMounted(true);
@@ -54,26 +53,40 @@ export default function App() {
 
   const handleAddFrame = useCallback(async () => {
     try {
-      const frameAdded = await addFrame();
-      setFrameAdded(Boolean(frameAdded));
+      setAddFrameError("");
+      const response = await sdk.actions.addMiniApp();
+
+      if (response.notificationDetails) {
+        setFrameAdded(true);
+      } else {
+        setFrameAdded(true);
+      }
     } catch (error) {
-      console.error('Frame add error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add mini app';
+      setAddFrameError(errorMessage);
     }
-  }, [addFrame]);
+  }, []);
 
   const saveFrameButton = useMemo(() => {
     if (!mounted) return null;
     if (context && !context.client.added) {
       return (
-        <Button
-          variant="ghost"
-          size="medium"
-          onClick={handleAddFrame}
-          className="text-[var(--app-accent)] p-4"
-          iconName="plus"
-        >
-          Save Frame
-        </Button>
+        <div className="flex flex-col items-end">
+          <Button
+            variant="ghost"
+            size="medium"
+            onClick={handleAddFrame}
+            className="text-[var(--app-accent)] p-4"
+            iconName="plus"
+          >
+            Save Frame
+          </Button>
+          {addFrameError && (
+            <div className="text-xs text-red-400 mt-1 px-4">
+              {addFrameError}
+            </div>
+          )}
+        </div>
       );
     }
 
@@ -87,7 +100,7 @@ export default function App() {
     }
 
     return null;
-  }, [mounted, context, frameAdded, handleAddFrame]);
+  }, [mounted, context, frameAdded, addFrameError, handleAddFrame]);
 
   if (!mounted) {
     return (

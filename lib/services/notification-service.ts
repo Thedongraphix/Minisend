@@ -30,15 +30,21 @@ export class NotificationService {
   }
 
   /**
-   * Store or update notification details for a user
+   * Store or update notification details for a user-client combination
+   * @param fid - User's FID
+   * @param appFid - Client's FID (e.g., Base app is 309857)
+   * @param notificationDetails - Notification URL and token
+   * @param miniappAdded - Whether this is a miniapp_added event
    */
   async saveNotificationDetails(
     fid: number,
+    appFid: number,
     notificationDetails: NotificationDetails,
     miniappAdded: boolean = false
   ): Promise<void> {
     const data: Record<string, unknown> = {
       fid,
+      app_fid: appFid,
       notification_url: notificationDetails.url,
       notification_token: notificationDetails.token,
       enabled: true,
@@ -52,7 +58,7 @@ export class NotificationService {
     const { error } = await this.supabase
       .from('user_notifications')
       .upsert(data, {
-        onConflict: 'fid',
+        onConflict: 'fid,app_fid',
       });
 
     if (error) {
@@ -61,13 +67,16 @@ export class NotificationService {
   }
 
   /**
-   * Get notification details for a user
+   * Get notification details for a user-client combination
+   * @param fid - User's FID
+   * @param appFid - Client's FID
    */
-  async getNotificationDetails(fid: number): Promise<UserNotification | null> {
+  async getNotificationDetails(fid: number, appFid: number): Promise<UserNotification | null> {
     const { data, error } = await this.supabase
       .from('user_notifications')
       .select('*')
       .eq('fid', fid)
+      .eq('app_fid', appFid)
       .eq('enabled', true)
       .single();
 
@@ -79,13 +88,16 @@ export class NotificationService {
   }
 
   /**
-   * Disable notifications for a user
+   * Disable notifications for a user-client combination
+   * @param fid - User's FID
+   * @param appFid - Client's FID
    */
-  async disableNotifications(fid: number): Promise<void> {
+  async disableNotifications(fid: number, appFid: number): Promise<void> {
     const { error } = await this.supabase
       .from('user_notifications')
       .update({ enabled: false, updated_at: new Date().toISOString() })
-      .eq('fid', fid);
+      .eq('fid', fid)
+      .eq('app_fid', appFid);
 
     if (error) {
       throw new Error(`Failed to disable notifications: ${error.message}`);
@@ -93,13 +105,16 @@ export class NotificationService {
   }
 
   /**
-   * Delete all notification data for a user
+   * Delete all notification data for a user-client combination
+   * @param fid - User's FID
+   * @param appFid - Client's FID
    */
-  async deleteNotificationDetails(fid: number): Promise<void> {
+  async deleteNotificationDetails(fid: number, appFid: number): Promise<void> {
     const { error } = await this.supabase
       .from('user_notifications')
       .delete()
-      .eq('fid', fid);
+      .eq('fid', fid)
+      .eq('app_fid', appFid);
 
     if (error) {
       throw new Error(`Failed to delete notification details: ${error.message}`);
@@ -107,13 +122,17 @@ export class NotificationService {
   }
 
   /**
-   * Send a notification to a specific user
+   * Send a notification to a specific user-client combination
+   * @param fid - User's FID
+   * @param appFid - Client's FID
+   * @param template - Notification content
    */
   async sendNotification(
     fid: number,
+    appFid: number,
     template: NotificationTemplate
   ): Promise<{ success: boolean; status: NotificationStatus; error?: string }> {
-    const userNotification = await this.getNotificationDetails(fid);
+    const userNotification = await this.getNotificationDetails(fid, appFid);
 
     if (!userNotification) {
       return { success: false, status: 'invalid_token', error: 'No notification token found' };
@@ -157,8 +176,8 @@ export class NotificationService {
       if (result.result.invalidTokens.length > 0) {
         status = 'invalid_token';
         errorMessage = 'Token is invalid';
-        // Disable notifications for this user
-        await this.disableNotifications(fid);
+        // Disable notifications for this user-client combination
+        await this.disableNotifications(fid, appFid);
       } else if (result.result.rateLimitedTokens.length > 0) {
         status = 'rate_limited';
         errorMessage = 'Rate limit exceeded';
@@ -170,6 +189,7 @@ export class NotificationService {
       // Log notification to history
       await this.logNotificationHistory({
         fid,
+        app_fid: appFid,
         notification_id: notificationId,
         title,
         body,
@@ -182,7 +202,8 @@ export class NotificationService {
       await this.supabase
         .from('user_notifications')
         .update({ last_notification_sent_at: new Date().toISOString() })
-        .eq('fid', fid);
+        .eq('fid', fid)
+        .eq('app_fid', appFid);
 
       return {
         success: status === 'success',
@@ -196,6 +217,7 @@ export class NotificationService {
       // Log failed notification
       await this.logNotificationHistory({
         fid,
+        app_fid: appFid,
         notification_id: notificationId,
         title,
         body,
@@ -213,23 +235,26 @@ export class NotificationService {
   }
 
   /**
-   * Send notifications to multiple users
+   * Send notifications to multiple user-client combinations
+   * @param recipients - Array of {fid, appFid} objects
+   * @param template - Notification content
    */
   async sendBulkNotifications(
-    fids: number[],
+    recipients: Array<{ fid: number; appFid: number }>,
     template: NotificationTemplate
-  ): Promise<{ successful: number; failed: number; results: Record<number, NotificationStatus> }> {
-    const results: Record<number, NotificationStatus> = {};
+  ): Promise<{ successful: number; failed: number; results: Record<string, NotificationStatus> }> {
+    const results: Record<string, NotificationStatus> = {};
     let successful = 0;
     let failed = 0;
 
     // Send notifications concurrently with a limit
     const batchSize = 10;
-    for (let i = 0; i < fids.length; i += batchSize) {
-      const batch = fids.slice(i, i + batchSize);
-      const promises = batch.map(async (fid) => {
-        const result = await this.sendNotification(fid, template);
-        results[fid] = result.status;
+    for (let i = 0; i < recipients.length; i += batchSize) {
+      const batch = recipients.slice(i, i + batchSize);
+      const promises = batch.map(async ({ fid, appFid }) => {
+        const result = await this.sendNotification(fid, appFid, template);
+        const key = `${fid}-${appFid}`;
+        results[key] = result.status;
         if (result.success) {
           successful++;
         } else {
@@ -248,6 +273,7 @@ export class NotificationService {
    */
   private async logNotificationHistory(data: {
     fid: number;
+    app_fid: number;
     notification_id: string;
     title: string;
     body: string;

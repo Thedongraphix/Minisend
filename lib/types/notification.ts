@@ -9,6 +9,7 @@ export interface NotificationDetails {
 export interface UserNotification {
   id: string;
   fid: number;
+  app_fid: number; // The FID of the client app (e.g., Base app is 309857)
   notification_url: string;
   notification_token: string;
   enabled: boolean;
@@ -32,6 +33,7 @@ export interface FarcasterWebhookEvent {
 
 export interface FarcasterWebhookPayload {
   fid: number;
+  appFid: number; // The FID of the client app
   event: FarcasterWebhookEvent;
 }
 
@@ -57,6 +59,7 @@ export type NotificationStatus = 'success' | 'failed' | 'rate_limited' | 'invali
 export interface NotificationHistory {
   id: string;
   fid: number;
+  app_fid: number; // The FID of the client app
   notification_id: string;
   title: string;
   body: string;
@@ -83,6 +86,7 @@ export type NotificationEvent =
 
 export interface NotificationContext {
   fid: number;
+  appFid: number; // The FID of the client app
   event: NotificationEvent;
   data?: Record<string, unknown>;
 }
