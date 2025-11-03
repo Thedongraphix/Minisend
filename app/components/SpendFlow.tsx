@@ -9,6 +9,7 @@ import { ConnectionHandler } from './ConnectionHandler';
 import { AdvancedSelector } from './AdvancedSelector';
 import { Button } from './BaseComponents';
 import Image from 'next/image';
+import { CurrencySwapInterface } from './CurrencySwapInterface';
 
 interface SpendFlowProps {
   setActiveTab: (tab: string) => void;
@@ -36,68 +37,28 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
     }
   }, [mounted, context, address, isConnected]);
 
-  // Form state
-  const [step, setStep] = useState<'form' | 'payment' | 'success'>('form');
+  // Form state with new swap step
+  const [step, setStep] = useState<'swap' | 'details' | 'payment' | 'success'>('swap');
+  const [swapData, setSwapData] = useState<{
+    usdcAmount: string;
+    localAmount: string;
+    currency: 'KES' | 'NGN';
+    rate: number;
+  } | null>(null);
   const [formData, setFormData] = useState({
-    amount: '',
     accountName: '',
-    currency: 'KES' as 'KES' | 'NGN'
   });
   const [paymentMethod, setPaymentMethod] = useState<{
     type: 'phone' | 'till';
     value: string;
     formatted: string;
   } | null>(null);
-  const [currentRate, setCurrentRate] = useState<number | null>(null);
-  const [rateLoading, setRateLoading] = useState(false);
-  const [rateError, setRateError] = useState<string | null>(null);
 
-  console.log('Spend USDC wallet connection state:', { 
+  console.log('Spend USDC wallet connection state:', {
     address,
     isConnected,
     paymentMethod
   });
-
-  // Fetch exchange rates (using 1 USDC to get the base rate)
-  const fetchRate = async (fiatAmount: string, currency: string) => {
-    if (!fiatAmount || parseFloat(fiatAmount) <= 0) {
-      setCurrentRate(null);
-      return;
-    }
-    
-    setRateLoading(true);
-    setRateError(null);
-    
-    try {
-      // Use 1 USDC to get the base exchange rate
-      const response = await fetch(`/api/paycrest/rates/USDC/1/${currency}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setCurrentRate(data.rate);
-      } else {
-        throw new Error(data.error || 'Failed to fetch rate');
-      }
-    } catch (error) {
-      console.error('Rate fetch error:', error);
-      setRateError(error instanceof Error ? error.message : 'Failed to fetch rate');
-      // Set fallback rate for KES
-      setCurrentRate(150.5);
-    } finally {
-      setRateLoading(false);
-    }
-  };
-
-  // Auto-fetch rates when amount changes
-  useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      if (formData.amount && formData.currency) {
-        fetchRate(formData.amount, formData.currency);
-      }
-    }, 500); // Debounce for 500ms
-
-    return () => clearTimeout(debounceTimer);
-  }, [formData.amount, formData.currency]);
 
   // Show wallet connection if not connected or not mounted
   if (!mounted || !isConnected) {
@@ -152,134 +113,123 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
         
         {/* Step Progress Indicator */}
         <div className="flex items-center justify-center space-x-2 mt-4">
-          <div className={`w-2 h-2 rounded-full ${step === 'form' ? 'bg-purple-500' : 'bg-purple-500'}`}></div>
-          <div className={`w-8 h-0.5 ${step === 'payment' || step === 'success' ? 'bg-purple-500' : 'bg-gray-600'}`}></div>
-          <div className={`w-2 h-2 rounded-full ${step === 'payment' ? 'bg-purple-500' : step === 'success' ? 'bg-purple-500' : 'bg-gray-600'}`}></div>
-          <div className={`w-8 h-0.5 ${step === 'success' ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-          <div className={`w-2 h-2 rounded-full ${step === 'success' ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step === 'swap' ? 'bg-purple-500 scale-125' : 'bg-purple-500'}`}></div>
+          <div className={`w-6 h-0.5 transition-all duration-300 ${step === 'details' || step === 'payment' || step === 'success' ? 'bg-purple-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step === 'details' ? 'bg-purple-500 scale-125' : step === 'payment' || step === 'success' ? 'bg-purple-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-6 h-0.5 transition-all duration-300 ${step === 'payment' || step === 'success' ? 'bg-purple-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step === 'payment' ? 'bg-purple-500 scale-125' : step === 'success' ? 'bg-purple-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-6 h-0.5 transition-all duration-300 ${step === 'success' ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+          <div className={`w-2 h-2 rounded-full transition-all duration-300 ${step === 'success' ? 'bg-green-500 scale-125' : 'bg-gray-600'}`}></div>
         </div>
-        <div className="flex justify-between text-xs text-gray-400 mt-2 px-2">
-          <span>Details</span>
+        <div className="flex justify-between text-xs text-gray-400 mt-2 px-1">
+          <span>Amount</span>
+          <span>Recipient</span>
           <span>Payment</span>
-          <span>Complete</span>
+          <span>Done</span>
         </div>
       </div>
 
       {/* USDC Balance */}
       <BalanceView />
 
-      {/* Form Step */}
-      {step === 'form' && (
+      {/* Swap Step - New Premium Interface */}
+      {step === 'swap' && (
+        <div className="overflow-visible">
+          <CurrencySwapInterface
+            onContinue={(data) => {
+              setSwapData(data);
+              setStep('details');
+            }}
+            className="mb-6"
+          />
+        </div>
+      )}
+
+      {/* Details Step - Recipient Information */}
+      {step === 'details' && swapData && (
         <>
-          {/* Fiat Amount Banner */}
-          {formData.amount && parseFloat(formData.amount) > 0 && (
-            <div className="bg-black/95 backdrop-blur-sm border border-gray-600 rounded-2xl p-5 shadow-xl shadow-black/60">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-purple-600/30 border border-purple-500/50 rounded-xl flex items-center justify-center">
-                    <span className="text-purple-300 font-bold text-xl">{formData.currency === 'KES' ? 'KSh' : '₦'}</span>
+          {/* Amount Summary Banner */}
+          <div className="bg-purple-600/10 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-5 shadow-xl mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 bg-purple-600 border border-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-xl">{swapData.currency === 'KES' ? 'KSh' : '₦'}</span>
+                </div>
+                <div>
+                  <div className="text-white font-bold text-2xl">
+                    {parseFloat(swapData.localAmount).toLocaleString()} {swapData.currency}
                   </div>
-                  <div>
-                    <div className="text-white font-bold text-xl">
-                      {parseFloat(formData.amount).toLocaleString()} {formData.currency}
-                    </div>
-                    <div className="text-gray-300 text-sm font-medium">
-                      {rateLoading ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-                          <span>Calculating USDC...</span>
-                        </div>
-                      ) : currentRate ? (
-                        <span className="text-purple-300">≈ ${(parseFloat(formData.amount) / currentRate).toFixed(4)} USDC</span>
-                      ) : rateError ? (
-                        <span className="text-amber-300">Using fallback rate</span>
-                      ) : (
-                        <span className="text-gray-400">Rate unavailable</span>
-                      )}
-                    </div>
+                  <div className="text-purple-300 text-sm font-semibold">
+                    ≈ ${parseFloat(swapData.usdcAmount).toFixed(4)} USDC
                   </div>
                 </div>
               </div>
+              <button
+                onClick={() => setStep('swap')}
+                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+                title="Edit amount"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
             </div>
-          )}
+          </div>
 
           <div className="space-y-4">
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">
-              Amount ({formData.currency})
-            </label>
-            <input
-              type="number"
-              value={formData.amount}
-              onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-              placeholder="0.00"
-              className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
-              min="50"
-              max="1000000"
-              step="1"
+            {/* Enhanced Payment Method Selector - Phone, Till, and Paybill numbers */}
+            <AdvancedSelector
+              currency={swapData.currency}
+              onPaymentMethodChange={setPaymentMethod}
+              className="mb-4"
             />
-            
-          </div>
 
+            <div>
+              <label className="block text-white text-sm font-medium mb-2">Recipient Name</label>
+              <input
+                type="text"
+                value={formData.accountName}
+                onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
+                placeholder="Business or person name"
+                className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
+              />
+            </div>
 
-          {/* Enhanced Payment Method Selector - Phone, Till, and Paybill numbers */}
-          <AdvancedSelector
-            currency={formData.currency}
-            onPaymentMethodChange={setPaymentMethod}
-            className="mb-4"
-          />
-
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">Recipient Name</label>
-            <input
-              type="text"
-              value={formData.accountName}
-              onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
-              placeholder="Business or person name"
-              className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
-            />
-          </div>
-
-          <button
-            onClick={() => setStep('payment')}
-            disabled={
-              !formData.amount || 
-              !formData.accountName ||
-              !paymentMethod ||
-              !paymentMethod.formatted
-            }
-            className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-xl transition-colors"
-          >
-            Continue to Payment
-          </button>
+            <button
+              onClick={() => setStep('payment')}
+              disabled={!formData.accountName || !paymentMethod || !paymentMethod.formatted}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 border border-purple-500 hover:border-purple-400 disabled:border-gray-600"
+            >
+              Continue to Payment
+            </button>
           </div>
         </>
       )}
 
       {/* Payment Step */}
-      {step === 'payment' && paymentMethod && (
+      {step === 'payment' && paymentMethod && swapData && (
         <div>
-          <div className="mb-6 p-6 bg-black/95 backdrop-blur-sm rounded-2xl border border-gray-600 shadow-xl shadow-black/60">
+          <div className="mb-6 p-6 bg-black/95 backdrop-blur-xl rounded-2xl border border-gray-700 shadow-2xl">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-6 h-6 bg-purple-600 rounded-lg flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <div className="w-8 h-8 bg-purple-600 border border-purple-500 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-white font-semibold text-lg">Payment Summary</h3>
+              <h3 className="text-white font-bold text-lg">Payment Summary</h3>
             </div>
             <div className="space-y-3">
-              <div className="flex justify-between items-center py-2 border-b border-gray-600/30">
-                <span className="text-gray-300 font-medium">Paying</span>
-                <span className="text-white font-semibold text-lg">{parseFloat(formData.amount).toLocaleString()} {formData.currency}</span>
+              <div className="flex justify-between items-center py-3 border-b border-gray-700/40">
+                <span className="text-gray-300 font-medium">You&apos;ll pay</span>
+                <span className="text-white font-bold text-lg">{parseFloat(swapData.localAmount).toLocaleString()} {swapData.currency}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-600/30">
+              <div className="flex justify-between items-center py-3 border-b border-gray-700/40">
                 <span className="text-gray-300 font-medium">USDC cost</span>
-                <span className="text-purple-300 font-semibold">${currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : '...'} USDC</span>
+                <span className="text-purple-300 font-bold text-lg">${parseFloat(swapData.usdcAmount).toFixed(4)} USDC</span>
               </div>
-              <div className="flex justify-between items-center py-2">
+              <div className="flex justify-between items-center py-3">
                 <span className="text-gray-300 font-medium">To</span>
-                <span className="text-white font-medium">
+                <span className="text-white font-semibold">
                   {paymentMethod.type === 'till' && `Till ${paymentMethod.formatted}`}
                   {paymentMethod.type === 'phone' && paymentMethod.formatted}
                 </span>
@@ -288,49 +238,48 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
           </div>
 
           <PaymentProcessor
-            amount={currentRate ? (parseFloat(formData.amount) / currentRate).toFixed(4) : formData.amount}
+            amount={swapData.usdcAmount}
             phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
             tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
             accountName={formData.accountName}
-            currency={formData.currency}
+            currency={swapData.currency}
             returnAddress={address || ''}
-            rate={currentRate}
+            rate={swapData.rate}
             onSuccess={() => setStep('success')}
             onError={(error) => {
               console.error('Payment error:', error);
-              // Could show error message here
             }}
           />
 
           <button
-            onClick={() => setStep('form')}
-            className="w-full mt-4 text-gray-400 hover:text-white py-2 transition-colors"
+            onClick={() => setStep('details')}
+            className="w-full mt-4 text-gray-400 hover:text-white py-2 transition-colors flex items-center justify-center gap-2 group"
           >
-            ← Back to Form
+            <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Details
           </button>
         </div>
       )}
 
       {/* Success Step */}
-      {step === 'success' && paymentMethod && (
+      {step === 'success' && paymentMethod && swapData && (
         <div className="text-center space-y-6">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
-          
-          <div className="space-y-4">
-            <p className="text-gray-300 text-sm">
-              Your {formData.currency} has been sent to {paymentMethod.type === 'till' ? `Till ${paymentMethod.formatted}` : paymentMethod.formatted}
-            </p>
-            
-          </div>
-          
+
+          <p className="text-gray-300 text-sm">
+            Your {swapData.currency} has been sent to {paymentMethod.type === 'till' ? `Till ${paymentMethod.formatted}` : paymentMethod.formatted}
+          </p>
+
           <div className="space-y-3">
             <button
               onClick={() => {
-                setStep('form');
-                setFormData({ amount: '', accountName: '', currency: 'KES' });
+                setStep('swap');
+                setSwapData(null);
+                setFormData({ accountName: '' });
                 setPaymentMethod(null);
-                setCurrentRate(null);
               }}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
             >

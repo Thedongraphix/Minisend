@@ -205,7 +205,7 @@ export function Features({ setActiveTab }: FeaturesProps) {
               onClick={() => setActiveTab("offramp")}
               variant="primary"
               fullWidth
-              size="large"
+              size="medium"
             >
               Try It Now
             </Button>
