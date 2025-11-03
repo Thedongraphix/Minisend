@@ -1,7 +1,6 @@
 "use client";
 
 import { type ReactNode, useEffect, useState } from "react";
-import { NotificationPrompt } from "./NotificationPrompt";
 
 type ButtonProps = {
   children: ReactNode;
@@ -301,9 +300,6 @@ USDC→NGN/KES withdrawals and transaction processing temporarily unavailable.We
           </div>
         </div>
       </Card>
-
-      {/* Notification Prompt */}
-      <NotificationPrompt />
     </div>
   );
 }
