@@ -44,6 +44,14 @@ export async function POST(request: NextRequest) {
         case 'miniapp_added': {
           // User added the Mini App - save notification details and send welcome notification
           if (event.notificationDetails) {
+            // Validate notification details before saving
+            if (!event.notificationDetails.url || !event.notificationDetails.token) {
+              return NextResponse.json({
+                success: false,
+                message: 'Invalid notification details: missing url or token'
+              }, { status: 400 });
+            }
+
             await notificationService.saveNotificationDetails(
               fid,
               appFid,
@@ -51,16 +59,21 @@ export async function POST(request: NextRequest) {
               true
             );
 
-            // Send welcome notification
-            await notificationService.sendNotification(
-              fid,
-              appFid,
-              {
-                title: '🎉 Welcome to Minisend!',
-                body: 'Mini app is now added to your client',
-                targetUrl: process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz',
-              }
-            );
+            // Send welcome notification (non-blocking, errors won't fail the webhook)
+            try {
+              await notificationService.sendNotification(
+                fid,
+                appFid,
+                {
+                  title: '🎉 Welcome to Minisend!',
+                  body: 'Mini app is now added to your client',
+                  targetUrl: process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz',
+                }
+              );
+            } catch {
+              // Notification failed but don't fail the webhook response
+              // Token is saved, notification can be retried later
+            }
           }
 
           return NextResponse.json({
@@ -82,22 +95,34 @@ export async function POST(request: NextRequest) {
         case 'notifications_enabled': {
           // User enabled notifications - save new notification details
           if (event.notificationDetails) {
+            // Validate notification details before saving
+            if (!event.notificationDetails.url || !event.notificationDetails.token) {
+              return NextResponse.json({
+                success: false,
+                message: 'Invalid notification details: missing url or token'
+              }, { status: 400 });
+            }
+
             await notificationService.saveNotificationDetails(
               fid,
               appFid,
               event.notificationDetails
             );
 
-            // Send confirmation notification
-            await notificationService.sendNotification(
-              fid,
-              appFid,
-              {
-                title: 'Ding ding ding',
-                body: 'Notifications are now enabled',
-                targetUrl: process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz',
-              }
-            );
+            // Send confirmation notification (non-blocking)
+            try {
+              await notificationService.sendNotification(
+                fid,
+                appFid,
+                {
+                  title: 'Ding ding ding',
+                  body: 'Notifications are now enabled',
+                  targetUrl: process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz',
+                }
+              );
+            } catch {
+              // Notification failed but don't fail the webhook response
+            }
           }
 
           return NextResponse.json({

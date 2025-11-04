@@ -154,10 +154,18 @@ export class NotificationService {
     };
 
     try {
+      // Get Neynar API key for authentication
+      const neynarApiKey = process.env.NEYNAR_API_KEY;
+
+      if (!neynarApiKey) {
+        throw new Error('NEYNAR_API_KEY not configured');
+      }
+
       const response = await fetch(userNotification.notification_url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'api_key': neynarApiKey,
         },
         body: JSON.stringify(request),
       });
