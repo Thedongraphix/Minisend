@@ -189,11 +189,12 @@ export async function GET(
             // Web users won't have FID, so this is safely skipped for them
             // Non-blocking: notification failures won't affect status updates
             if (dbOrder.fid) {
+              console.log('🔔 Attempting to send payment delivered notification to FID:', dbOrder.fid);
               try {
                 const { getNotificationService } = await import('@/lib/services/notification-service');
                 const notificationService = getNotificationService();
 
-                await notificationService.sendNotification(
+                const result = await notificationService.sendNotification(
                   dbOrder.fid,
                   309857, // Base app FID
                   {
@@ -202,9 +203,13 @@ export async function GET(
                     targetUrl: `${process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz'}`,
                   }
                 );
-              } catch {
+                console.log('✅ Notification sent successfully:', result);
+              } catch (notifError) {
                 // Notification failed, but don't fail the status check
+                console.error('❌ Failed to send notification:', notifError);
               }
+            } else {
+              console.log('ℹ️ No FID in order, skipping notification');
             }
           }
 
