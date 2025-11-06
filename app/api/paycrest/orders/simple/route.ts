@@ -363,25 +363,26 @@ export async function POST(request: NextRequest) {
 
       console.log('📊 Order saved to database successfully')
 
-      // 🔔 Send notification to Farcaster users (only if FID is provided)
+      // 🔔 Send notification to Farcaster users via Neynar (only if FID is provided)
       // Web users won't have FID, so this is safely skipped for them
+      // Neynar handles token lookup and delivery - we just pass the FID
       // Non-blocking: notification failures won't affect order creation
       if (fid) {
         console.log('🔔 Attempting to send order created notification to FID:', fid);
         try {
-          const { getNotificationService } = await import('@/lib/services/notification-service');
-          const notificationService = getNotificationService();
+          const { sendNotificationToUser } = await import('@/lib/services/neynar-notifications');
 
-          const result = await notificationService.sendNotification(
-            fid,
-            309857, // Base app FID
-            {
-              title: '🎯 Order Created',
-              body: `Your ${currency} ${localAmount.toFixed(2)} order is ready!`,
-              targetUrl: `${process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz'}`,
-            }
-          );
-          console.log('✅ Notification sent successfully:', result);
+          const result = await sendNotificationToUser(fid, {
+            title: '🎯 Order Created',
+            body: `Your ${currency} ${localAmount.toFixed(2)} order is ready!`,
+            targetUrl: `${process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz'}`,
+          });
+
+          if (result.success) {
+            console.log('✅ Notification sent successfully via Neynar');
+          } else {
+            console.log('⚠️ Notification failed:', result.error);
+          }
         } catch (notifError) {
           // Notification failed, but don't fail the order
           console.error('❌ Failed to send notification:', notifError);
