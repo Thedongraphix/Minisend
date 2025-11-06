@@ -21,17 +21,18 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
     console.log('📝 Order creation request body:', body);
-    
-    const { 
-      amount, 
-      phoneNumber, 
+
+    const {
+      amount,
+      phoneNumber,
       tillNumber, // Add till number support
       accountNumber,
       bankCode,
-      accountName, 
+      accountName,
       currency,
       returnAddress,
-      rate // Accept rate from client if provided
+      rate, // Accept rate from client if provided
+      fid // Farcaster ID for notifications
     } = body;
 
     // Validate required fields
@@ -352,14 +353,35 @@ export async function POST(request: NextRequest) {
         currency,
         returnAddress,
         rate: exchangeRate,
-        provider: currency === 'KES' 
+        provider: currency === 'KES'
           ? (paymentType === 'till' ? 'MPESA_TILL' : (detectedCarrier === 'SAFARICOM' ? 'MPESA' : 'AIRTEL'))
           : 'BANK_TRANSFER',
         localAmount: localAmount.toString(),
-        institutionCode: institutionCode
+        institutionCode: institutionCode,
+        fid: fid // Save FID for notifications
       })
 
       console.log('📊 Order saved to database successfully')
+
+      // Send notification: Order created
+      if (fid) {
+        try {
+          const { getNotificationService } = await import('@/lib/services/notification-service');
+          const notificationService = getNotificationService();
+
+          await notificationService.sendNotification(
+            fid,
+            309857, // Base app FID
+            {
+              title: '🎯 Order Created',
+              body: `Your ${currency} ${localAmount.toFixed(2)} order is ready!`,
+              targetUrl: `${process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz'}`,
+            }
+          );
+        } catch {
+          // Notification failed, but don't fail the order
+        }
+      }
 
       // Log analytics event
       await DatabaseService.logAnalyticsEvent(

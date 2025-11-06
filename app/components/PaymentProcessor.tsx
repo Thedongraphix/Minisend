@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { TransactionHandler } from './TransactionHandler';
 import { USDC_CONTRACTS } from '@/lib/paymaster-config';
 
@@ -34,6 +35,7 @@ export function PaymentProcessor({
   onSuccess,
   onError
 }: PaymentProcessorProps) {
+  const { context } = useMiniKit();
   const [paycrestOrder, setPaycrestOrder] = useState<{
     id: string;
     receiveAddress: string;
@@ -142,7 +144,8 @@ export function PaymentProcessor({
           currency,
           provider: currency === 'KES' ? 'M-Pesa' : 'Bank Transfer',
           returnAddress,
-          ...(rate && { rate })
+          ...(rate && { rate }),
+          ...(context?.user?.fid && { fid: context.user.fid })
         }),
       });
 

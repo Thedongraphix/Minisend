@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLabel } from '@coinbase/onchainkit/transaction';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { base } from 'wagmi/chains';
 import { parseUnits } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
@@ -28,6 +29,7 @@ export function SimplePayment({
   onSuccess,
   onError
 }: SimplePaymentProps) {
+  const { context } = useMiniKit();
   const [currentStep, setCurrentStep] = useState<'quote' | 'send' | 'processing' | 'success' | 'error' | 'insufficient-funds'>('quote');
   const [orderData, setOrderData] = useState<{
     id: string;
@@ -139,6 +141,7 @@ export function SimplePayment({
           currency,
           returnAddress,
           rate: rateData.rate, // Use live rate
+          ...(context?.user?.fid && { fid: context.user.fid })
         }),
       });
 

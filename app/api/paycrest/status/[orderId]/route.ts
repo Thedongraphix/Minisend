@@ -170,7 +170,7 @@ export async function GET(
           // Create settlement record if order is completed (validated = funds delivered, settled = blockchain complete)
           if (['validated', 'settled'].includes(order.status)) {
             console.log(`💰 Creating settlement record for completed order`)
-            
+
             try {
               await DatabaseService.createSettlement({
                 order_id: dbOrder.id,
@@ -183,6 +183,26 @@ export async function GET(
               console.log(`✅ Settlement record created`)
             } catch (settlementError) {
               console.error(`❌ Failed to create settlement for ${orderId}:`, settlementError)
+            }
+
+            // Send notification for payment validated/delivered
+            if (dbOrder.fid) {
+              try {
+                const { getNotificationService } = await import('@/lib/services/notification-service');
+                const notificationService = getNotificationService();
+
+                await notificationService.sendNotification(
+                  dbOrder.fid,
+                  309857, // Base app FID
+                  {
+                    title: '✅ Payment Delivered',
+                    body: `Your ${dbOrder.local_currency} ${dbOrder.amount_in_local.toFixed(2)} payment has been delivered!`,
+                    targetUrl: `${process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz'}`,
+                  }
+                );
+              } catch {
+                // Notification failed, but don't fail the status check
+              }
             }
           }
 

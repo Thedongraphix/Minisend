@@ -53,6 +53,7 @@ export interface Order {
   recipient_data?: Record<string, unknown>
   account_name?: string
   memo?: string
+  fid?: number
   created_at: string
   updated_at: string
   completed_at?: string
@@ -205,6 +206,7 @@ interface RequestData {
   provider?: string
   localAmount?: string
   institutionCode?: string
+  fid?: number
 }
 
 // Database operations
@@ -270,7 +272,8 @@ export class DatabaseService {
       total_amount: parseFloat(String(order.totalAmount || order.amount)),
       institution_code: requestData.institutionCode || order.recipient?.institution || (requestData.currency === 'KES' ? 'SAFAKEPC' : 'GTBINGLA'),
       recipient_data: order.recipient,
-      memo: order.recipient?.memo
+      memo: order.recipient?.memo,
+      fid: requestData.fid
     }
 
     const { data, error } = await supabaseAdmin
