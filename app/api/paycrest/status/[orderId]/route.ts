@@ -185,7 +185,9 @@ export async function GET(
               console.error(`❌ Failed to create settlement for ${orderId}:`, settlementError)
             }
 
-            // Send notification for payment validated/delivered
+            // 🔔 Send notification to Farcaster users (only if FID was saved during order creation)
+            // Web users won't have FID, so this is safely skipped for them
+            // Non-blocking: notification failures won't affect status updates
             if (dbOrder.fid) {
               try {
                 const { getNotificationService } = await import('@/lib/services/notification-service');
