@@ -61,7 +61,8 @@ export async function GET() {
       
       // Technical URLs
       homeUrl: URL || "https://minisend.xyz",
-      webhookUrl: `${URL || "https://minisend.xyz"}/api/webhooks`,
+      // Neynar webhook URL for Farcaster miniapp events
+      webhookUrl: "https://api.neynar.com/f/app/6169a7fa-658f-4d01-b6a5-ec7fb4bd802e/event",
       
       // Cast sharing
       castShareUrl: process.env.NEXT_PUBLIC_CAST_SHARE_URL || `${URL || "https://minisend.xyz"}/share`,
