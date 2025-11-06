@@ -363,7 +363,9 @@ export async function POST(request: NextRequest) {
 
       console.log('📊 Order saved to database successfully')
 
-      // Send notification: Order created
+      // 🔔 Send notification to Farcaster users (only if FID is provided)
+      // Web users won't have FID, so this is safely skipped for them
+      // Non-blocking: notification failures won't affect order creation
       if (fid) {
         try {
           const { getNotificationService } = await import('@/lib/services/notification-service');
