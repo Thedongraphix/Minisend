@@ -29,6 +29,7 @@ export function SimplePayment({
   onSuccess,
   onError
 }: SimplePaymentProps) {
+  // Get Farcaster context for notifications (undefined on web, safe to use)
   const { context } = useMiniKit();
   const [currentStep, setCurrentStep] = useState<'quote' | 'send' | 'processing' | 'success' | 'error' | 'insufficient-funds'>('quote');
   const [orderData, setOrderData] = useState<{
@@ -141,6 +142,8 @@ export function SimplePayment({
           currency,
           returnAddress,
           rate: rateData.rate, // Use live rate
+          // Include FID only if user is on Farcaster (for notifications)
+          // Web users won't have this field, ensuring backward compatibility
           ...(context?.user?.fid && { fid: context.user.fid })
         }),
       });
