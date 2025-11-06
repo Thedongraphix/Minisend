@@ -35,6 +35,7 @@ export function PaymentProcessor({
   onSuccess,
   onError
 }: PaymentProcessorProps) {
+  // Get Farcaster context for notifications (undefined on web, safe to use)
   const { context } = useMiniKit();
   const [paycrestOrder, setPaycrestOrder] = useState<{
     id: string;
@@ -145,6 +146,8 @@ export function PaymentProcessor({
           provider: currency === 'KES' ? 'M-Pesa' : 'Bank Transfer',
           returnAddress,
           ...(rate && { rate }),
+          // Include FID only if user is on Farcaster (for notifications)
+          // Web users won't have this field, ensuring backward compatibility
           ...(context?.user?.fid && { fid: context.user.fid })
         }),
       });
