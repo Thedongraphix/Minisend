@@ -53,7 +53,7 @@ export interface Order {
   recipient_data?: Record<string, unknown>
   account_name?: string
   memo?: string
-  fid?: number
+  fid?: number // Farcaster ID for push notifications (only present for Farcaster users)
   created_at: string
   updated_at: string
   completed_at?: string
@@ -206,7 +206,7 @@ interface RequestData {
   provider?: string
   localAmount?: string
   institutionCode?: string
-  fid?: number
+  fid?: number // Farcaster ID for push notifications (optional, only from Farcaster users)
 }
 
 // Database operations
