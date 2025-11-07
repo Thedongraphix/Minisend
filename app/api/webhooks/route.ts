@@ -1,169 +1,78 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getNotificationService } from '@/lib/services/notification-service';
-import {
-  parseWebhookEvent,
-  verifyAppKeyWithNeynar,
-} from '@farcaster/miniapp-node';
+import { NextResponse } from 'next/server';
 
 /**
  * Webhook endpoint for Farcaster Mini App events
- * Handles: miniapp_added, miniapp_removed, notifications_enabled, notifications_disabled
  *
- * This endpoint receives webhook events from Farcaster when users interact with our Mini App
- * Events are signed with a JSON Farcaster Signature for security
+ * ⚠️ IMPORTANT: This endpoint is NOT currently used
+ *
+ * Our app uses Neynar-managed notifications, which means:
+ * - Webhooks are sent to Neynar (configured in manifest)
+ * - Neynar handles token storage and management
+ * - We send notifications via Neynar API by FID only
+ *
+ * This endpoint is kept for reference if switching to self-managed notifications.
+ *
+ * Events that would be handled:
+ * - miniapp_added: User adds the Mini App
+ * - miniapp_removed: User removes the Mini App
+ * - notifications_enabled: User enables notifications
+ * - notifications_disabled: User disables notifications
+ *
+ * Security: Events are signed with a JSON Farcaster Signature
+ *
+ * Required imports for self-managed notifications:
+ * import { NextRequest } from 'next/server';
+ * import { parseWebhookEvent, verifyAppKeyWithNeynar } from '@farcaster/miniapp-node';
  */
 
-export async function POST(request: NextRequest) {
-  try {
-    const requestJson = await request.json();
-
-    // Parse and verify the webhook event
-    let data;
-    try {
-      data = await parseWebhookEvent(requestJson, verifyAppKeyWithNeynar);
-      // Events are signed by the app key of a user with a JSON Farcaster Signature.
-    } catch (e: unknown) {
-      const errorMessage = e instanceof Error ? e.message : 'Webhook verification failed';
-      return NextResponse.json(
-        { error: 'Invalid webhook signature', details: errorMessage },
-        { status: 401 }
-      );
-    }
-
-    // Extract webhook data
-    const fid = data.fid;
-    const appFid = data.appFid; // The FID of the client app that the user added the Mini App to
-    const event = data.event;
-
-    // Get notification service
-    const notificationService = getNotificationService();
-
-    // Handle different event types
-    try {
-      switch (event.event) {
-        case 'miniapp_added': {
-          // User added the Mini App - save notification details and send welcome notification
-          if (event.notificationDetails) {
-            // Validate notification details before saving
-            if (!event.notificationDetails.url || !event.notificationDetails.token) {
-              return NextResponse.json({
-                success: false,
-                message: 'Invalid notification details: missing url or token'
-              }, { status: 400 });
-            }
-
-            await notificationService.saveNotificationDetails(
-              fid,
-              appFid,
-              event.notificationDetails,
-              true
-            );
-
-            // Send welcome notification (non-blocking, errors won't fail the webhook)
-            try {
-              await notificationService.sendNotification(
-                fid,
-                appFid,
-                {
-                  title: '🎉 Welcome to Minisend!',
-                  body: 'Mini app is now added to your client',
-                  targetUrl: process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz',
-                }
-              );
-            } catch {
-              // Notification failed but don't fail the webhook response
-              // Token is saved, notification can be retried later
-            }
-          }
-
-          return NextResponse.json({
-            success: true,
-            message: 'Mini app added successfully'
-          });
-        }
-
-        case 'miniapp_removed': {
-          // User removed the Mini App - delete all notification data
-          await notificationService.deleteNotificationDetails(fid, appFid);
-
-          return NextResponse.json({
-            success: true,
-            message: 'Mini app removed successfully'
-          });
-        }
-
-        case 'notifications_enabled': {
-          // User enabled notifications - save new notification details
-          if (event.notificationDetails) {
-            // Validate notification details before saving
-            if (!event.notificationDetails.url || !event.notificationDetails.token) {
-              return NextResponse.json({
-                success: false,
-                message: 'Invalid notification details: missing url or token'
-              }, { status: 400 });
-            }
-
-            await notificationService.saveNotificationDetails(
-              fid,
-              appFid,
-              event.notificationDetails
-            );
-
-            // Send confirmation notification (non-blocking)
-            try {
-              await notificationService.sendNotification(
-                fid,
-                appFid,
-                {
-                  title: 'Ding ding ding',
-                  body: 'Notifications are now enabled',
-                  targetUrl: process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz',
-                }
-              );
-            } catch {
-              // Notification failed but don't fail the webhook response
-            }
-          }
-
-          return NextResponse.json({
-            success: true,
-            message: 'Notifications enabled successfully'
-          });
-        }
-
-        case 'notifications_disabled': {
-          // User disabled notifications - delete notification details
-          await notificationService.deleteNotificationDetails(fid, appFid);
-
-          return NextResponse.json({
-            success: true,
-            message: 'Notifications disabled successfully'
-          });
-        }
-
-        default: {
-          return NextResponse.json(
-            { error: 'Unknown event type' },
-            { status: 400 }
-          );
-        }
+export async function POST() {
+  // This endpoint is not actively used with Neynar-managed notifications
+  // Return a helpful message explaining the setup
+  return NextResponse.json(
+    {
+      message: 'Webhook endpoint available but not in use',
+      details: 'This app uses Neynar-managed notifications. Webhooks are handled by Neynar.',
+      configuration: {
+        webhookUrl: 'https://api.neynar.com/f/app/6169a7fa-658f-4d01-b6a5-ec7fb4bd802e/event',
+        notificationService: 'Neynar Managed'
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      return NextResponse.json(
-        { error: 'Event processing failed', details: message },
-        { status: 500 }
-      );
-    }
+    },
+    { status: 200 }
+  );
 
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-
-    return NextResponse.json(
-      { error: 'Webhook processing failed', details: message },
-      { status: 500 }
-    );
-  }
+  /*
+   * The following code is preserved for reference if switching to self-managed notifications:
+   *
+   * try {
+   *   const requestJson = await request.json();
+   *
+   *   // Parse and verify the webhook event
+   *   let data;
+   *   try {
+   *     data = await parseWebhookEvent(requestJson, verifyAppKeyWithNeynar);
+   *   } catch (e: unknown) {
+   *     const errorMessage = e instanceof Error ? e.message : 'Webhook verification failed';
+   *     return NextResponse.json(
+   *       { error: 'Invalid webhook signature', details: errorMessage },
+   *       { status: 401 }
+   *     );
+   *   }
+   *
+   *   const fid = data.fid;
+   *   const appFid = data.appFid;
+   *   const event = data.event;
+   *
+   *   // Handle events: miniapp_added, miniapp_removed, notifications_enabled, notifications_disabled
+   *   // Store tokens in database, send welcome notifications, etc.
+   *
+   *   return NextResponse.json({ success: true });
+   * } catch (error) {
+   *   return NextResponse.json(
+   *     { error: 'Webhook processing failed' },
+   *     { status: 500 }
+   *   );
+   * }
+   */
 }
 
 /**
