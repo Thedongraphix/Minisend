@@ -1,3 +1,26 @@
+/**
+ * ⚠️ DEPRECATED - Self-Managed Notification Service
+ *
+ * This service is NO LONGER USED in the application.
+ *
+ * Current Setup: Neynar-Managed Notifications
+ * ============================================
+ * The app now uses Neynar's managed notification infrastructure:
+ * - Webhook URL: https://api.neynar.com/f/app/6169a7fa-658f-4d01-b6a5-ec7fb4bd802e/event
+ * - Neynar handles all token storage and management
+ * - Notifications are sent via Neynar API by FID only
+ * - Active service: lib/services/neynar-notifications.ts
+ *
+ * This file is preserved for reference if switching to self-managed notifications.
+ * To use this service, you would need to:
+ * 1. Change webhookUrl in manifest to point to your server
+ * 2. Run notification database migrations
+ * 3. Handle webhook events yourself
+ * 4. Store and manage tokens in your database
+ *
+ * @deprecated Use neynar-notifications.ts instead
+ */
+
 import { createClient } from '@supabase/supabase-js';
 import {
   NotificationDetails,
@@ -10,6 +33,7 @@ import {
 } from '../types/notification';
 
 /**
+ * @deprecated Use neynar-notifications.ts instead
  * NotificationService handles all notification operations for Farcaster Mini App
  * Implements the Farcaster Frame Notifications specification
  */
@@ -371,6 +395,9 @@ export class NotificationService {
 // Singleton instance
 let notificationServiceInstance: NotificationService | null = null;
 
+/**
+ * @deprecated Use neynar-notifications.ts instead
+ */
 export function getNotificationService(): NotificationService {
   if (!notificationServiceInstance) {
     notificationServiceInstance = new NotificationService();
