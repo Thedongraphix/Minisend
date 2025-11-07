@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useMiniApp } from "@neynar/react";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { Button, Icon } from "./BaseComponents";
 
@@ -12,21 +13,26 @@ interface NotificationPromptProps {
  * NotificationPrompt Component
  *
  * Allows users to add the Mini App and enable notifications.
- * Uses the addMiniApp() method from @farcaster/miniapp-sdk to trigger
- * the notification enrollment flow.
+ * Uses Neynar's MiniAppProvider for managed notification infrastructure.
  */
 export function NotificationPrompt({ className = "" }: NotificationPromptProps) {
+  const { isSDKLoaded } = useMiniApp();
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const handleAddMiniApp = useCallback(async () => {
+    if (!isSDKLoaded) {
+      setErrorMessage("SDK not loaded yet");
+      return;
+    }
+
     setStatus("loading");
     setErrorMessage("");
 
     try {
-      const response = await sdk.actions.addMiniApp();
+      const result = await sdk.actions.addMiniApp();
 
-      if (response.notificationDetails) {
+      if (result.notificationDetails) {
         setStatus("success");
       } else {
         setStatus("success");
@@ -35,7 +41,7 @@ export function NotificationPrompt({ className = "" }: NotificationPromptProps) 
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : "Failed to enable notifications");
     }
-  }, []);
+  }, [isSDKLoaded]);
 
   if (status === "success") {
     return (
