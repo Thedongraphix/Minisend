@@ -190,27 +190,23 @@ export async function GET(
             // Neynar handles token lookup and delivery - we just pass the FID
             // Non-blocking: notification failures won't affect status updates
             if (dbOrder.fid) {
-              console.log('🔔 Attempting to send payment delivered notification to FID:', dbOrder.fid);
               try {
-                const { sendNotificationToUser } = await import('@/lib/services/neynar-notifications');
+                const {
+                  sendNotificationToUser,
+                  createTransactionNotification
+                } = await import('@/lib/services/neynar-notifications');
 
-                const result = await sendNotificationToUser(dbOrder.fid, {
-                  title: '✅ Payment Delivered',
-                  body: `Your ${dbOrder.local_currency} ${dbOrder.amount_in_local.toFixed(2)} payment has been delivered!`,
-                  targetUrl: `${process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz'}`,
+                const notification = createTransactionNotification('validated', {
+                  currency: dbOrder.local_currency,
+                  amount: dbOrder.amount_in_local,
+                  orderId: dbOrder.id
                 });
 
-                if (result.success) {
-                  console.log('✅ Notification sent successfully via Neynar');
-                } else {
-                  console.log('⚠️ Notification failed:', result.error);
-                }
-              } catch (notifError) {
+                await sendNotificationToUser(dbOrder.fid, notification);
+              } catch {
                 // Notification failed, but don't fail the status check
-                console.error('❌ Failed to send notification:', notifError);
+                // Error is logged internally by neynar-notifications service
               }
-            } else {
-              console.log('ℹ️ No FID in order, skipping notification');
             }
           }
 
