@@ -141,19 +141,13 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     setSelectedDate(null);
   };
 
-  // Calculate statistics
+  // Calculate statistics - count all transactions
   const stats: TransactionStats = useMemo(() => {
-    const successfulStatuses = ['completed', 'fulfilled', 'settled'];
-
     let totalVolumeUSDC = 0;
 
     allOrders.forEach(order => {
-      const status = order.status?.toLowerCase() || '';
       const amount = order.amount_in_usdc || 0;
-
-      if (successfulStatuses.includes(status)) {
-        totalVolumeUSDC += amount;
-      }
+      totalVolumeUSDC += amount;
     });
 
     return {
@@ -272,13 +266,12 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     <div className="space-y-4 animate-fade-in">
       {/* Profile Header */}
       <div className="glass-effect rounded-3xl p-4 sm:p-5 border border-white/10">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div className="relative mb-4">
           <div className="flex items-center space-x-3">
             <div className="relative flex-shrink-0">
               <Avatar className="h-12 w-12 ring-2 ring-blue-500/30" />
-              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-blue-500 rounded-full border-2 border-gray-900"></div>
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h2 className="text-lg font-bold text-white mb-0.5 truncate leading-none">
                 Your Profile
               </h2>
@@ -288,15 +281,13 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                 className="text-gray-400 text-xs font-medium truncate"
               />
             </div>
+            <button
+              onClick={() => setActiveTab('home')}
+              className="absolute top-0 right-0 sm:static px-2 py-1 sm:px-4 sm:py-2 rounded-lg border border-white/10 hover:border-blue-500/30 text-white hover:text-blue-400 transition-colors text-[10px] sm:text-xs font-medium"
+            >
+              Back
+            </button>
           </div>
-          <Button
-            onClick={() => setActiveTab('home')}
-            variant="outlined"
-            size="medium"
-            className="w-full sm:w-auto text-xs py-1.5"
-          >
-            Back
-          </Button>
         </div>
 
         {/* Statistics Grid */}
