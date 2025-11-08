@@ -1,44 +1,65 @@
 "use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAccount } from 'wagmi';
 import { base } from 'viem/chains';
 import { Name, Avatar } from '@coinbase/onchainkit/identity';
 import { Button, Icon } from './BaseComponents';
 import { Order } from '../../lib/supabase/config';
+import { CompactReceiptButton } from './DownloadButton';
+import { OrderData } from '../../lib/types/order';
 
 
 interface ProfileViewProps {
   setActiveTab: (tab: string) => void;
 }
 
-interface DailyExpenditure {
-  date: string;
-  totalUSDC: number;
-  totalLocal: number;
-  currency: string;
-  count: number;
+interface TransactionStats {
+  totalTransactions: number;
+  totalVolumeUSDC: number;
+}
+
+// Helper function to convert Order to OrderData for receipt generation
+function convertOrderToOrderData(order: Order): OrderData {
+  return {
+    id: order.id,
+    paycrest_order_id: order.paycrest_order_id,
+    amount_in_usdc: order.amount_in_usdc,
+    amount_in_local: order.amount_in_local,
+    local_currency: order.local_currency,
+    account_name: order.account_name || 'Unknown',
+    phone_number: order.phone_number,
+    account_number: order.account_number,
+    wallet_address: order.wallet_address,
+    rate: order.rate || 0,
+    sender_fee: order.sender_fee || 0,
+    transaction_fee: order.transaction_fee || 0,
+    status: order.status as 'completed' | 'pending' | 'failed',
+    created_at: order.created_at,
+    transactionHash: order.transaction_hash,
+    blockchain_tx_hash: order.transaction_hash,
+  };
 }
 
 export function ProfileView({ setActiveTab }: ProfileViewProps) {
   const { address } = useAccount();
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [displayedOrders, setDisplayedOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dailyExpenditure, setDailyExpenditure] = useState<DailyExpenditure[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [displayLimit, setDisplayLimit] = useState(20);
-  const [dailyDisplayLimit, setDailyDisplayLimit] = useState(5);
   const [refreshing, setRefreshing] = useState(false);
+  const [viewAll, setViewAll] = useState(false);
 
-  const loadAllUserTransactions = useCallback(async () => {
+  const loadAllUserTransactions = useCallback(async (isBackgroundRefresh = false) => {
     if (!address) return;
 
     try {
-      setLoading(true);
+      if (!isBackgroundRefresh) {
+        setInitialLoading(true);
+      }
 
-      // Fetch user orders with reduced initial limit for faster loading
       const response = await fetch(`/api/user/orders?wallet=${address}&limit=100`);
 
       if (!response.ok) {
@@ -53,23 +74,27 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
 
       const allUserOrders: Order[] = data.orders || [];
 
-      // Sort by most recent first
       allUserOrders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-      // Set all orders and initial display
       setAllOrders(allUserOrders);
-      setDisplayedOrders(allUserOrders.slice(0, displayLimit));
 
-      // Calculate daily expenditure from ALL transactions
-      const daily = calculateDailyExpenditure(allUserOrders);
-      setDailyExpenditure(daily);
+      if (selectedDate) {
+        const filtered = filterOrdersByDate(allUserOrders, selectedDate);
+        setDisplayedOrders(filtered);
+      } else {
+        setDisplayedOrders(allUserOrders.slice(0, displayLimit));
+      }
 
     } catch {
-      setError('Failed to load transaction history');
+      if (!isBackgroundRefresh) {
+        setError('Failed to load transaction history');
+      }
     } finally {
-      setLoading(false);
+      if (!isBackgroundRefresh) {
+        setInitialLoading(false);
+      }
     }
-  }, [address, displayLimit]);
+  }, [address, displayLimit, selectedDate]);
 
   useEffect(() => {
     if (!address) {
@@ -77,19 +102,18 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
       return;
     }
 
-    loadAllUserTransactions();
+    loadAllUserTransactions(false);
 
-    // Auto-refresh every 30 seconds to get latest statuses
     const interval = setInterval(() => {
-      loadAllUserTransactions();
-    }, 30000);
+      loadAllUserTransactions(true);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [address, setActiveTab, loadAllUserTransactions]);
 
   const refreshStatuses = async () => {
     setRefreshing(true);
-    await loadAllUserTransactions();
+    await loadAllUserTransactions(true);
     setRefreshing(false);
   };
 
@@ -102,52 +126,60 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
 
   const handleDateClick = (dateStr: string) => {
     if (selectedDate === dateStr) {
-      // If clicking the same date, show all orders
       setSelectedDate(null);
       setDisplayedOrders(allOrders.slice(0, displayLimit));
     } else {
-      // Filter by selected date
       setSelectedDate(dateStr);
       const filtered = filterOrdersByDate(allOrders, dateStr);
       setDisplayedOrders(filtered);
-      setDisplayLimit(20); // Reset display limit when filtering
+      setDisplayLimit(20);
     }
   };
 
-  const calculateDailyExpenditure = (orders: Order[]): DailyExpenditure[] => {
-    const dailyMap = new Map<string, DailyExpenditure>();
+  const toggleViewAll = () => {
+    setViewAll(!viewAll);
+    setSelectedDate(null);
+  };
 
-    // Only count successful transactions for daily expenditure
+  // Calculate statistics
+  const stats: TransactionStats = useMemo(() => {
     const successfulStatuses = ['completed', 'fulfilled', 'settled'];
 
-    orders.forEach(order => {
-      const normalizedStatus = order.status?.toLowerCase() || '';
-      if (successfulStatuses.includes(normalizedStatus)) {
-        const date = new Date(order.created_at).toISOString().split('T')[0];
+    let totalVolumeUSDC = 0;
 
-        if (!dailyMap.has(date)) {
-          dailyMap.set(date, {
-            date,
-            totalUSDC: 0,
-            totalLocal: 0,
-            currency: order.local_currency,
-            count: 0
-          });
-        }
+    allOrders.forEach(order => {
+      const status = order.status?.toLowerCase() || '';
+      const amount = order.amount_in_usdc || 0;
 
-        const daily = dailyMap.get(date)!;
-        daily.totalUSDC += order.amount_in_usdc || 0;
-        daily.totalLocal += order.amount_in_local || 0;
-        daily.count += 1;
+      if (successfulStatuses.includes(status)) {
+        totalVolumeUSDC += amount;
       }
     });
 
-    return Array.from(dailyMap.values())
+    return {
+      totalTransactions: allOrders.length,
+      totalVolumeUSDC,
+    };
+  }, [allOrders]);
+
+  // Group transactions by date
+  const transactionsByDate = useMemo(() => {
+    const grouped = new Map<string, Order[]>();
+
+    allOrders.forEach(order => {
+      const date = new Date(order.created_at).toISOString().split('T')[0];
+      if (!grouped.has(date)) {
+        grouped.set(date, []);
+      }
+      grouped.get(date)!.push(order);
+    });
+
+    return Array.from(grouped.entries())
+      .map(([date, orders]) => ({ date, orders }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  };
+  }, [allOrders]);
 
   const getPaymentDestination = (order: Order) => {
-    // Check memo for paybill information
     if (order.memo && order.memo.includes('Account:')) {
       const paybillMatch = order.phone_number?.match(/\d+/);
       const accountMatch = order.memo.match(/Account:\s*(\d+)/);
@@ -155,13 +187,11 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
         return `Paybill ${paybillMatch[0]} (${accountMatch[1]})`;
       }
     }
-    
-    // Check if it's a till number (phone number that's actually a till)
+
     if (order.phone_number && order.phone_number.length <= 8 && /^\d+$/.test(order.phone_number)) {
       return `Till ${order.phone_number}`;
     }
-    
-    // Regular phone or account
+
     return order.phone_number || order.account_number || 'Unknown';
   };
 
@@ -176,20 +206,37 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     } else if (date.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
   const getStatusColor = (status: string) => {
     const normalizedStatus = status?.toLowerCase() || '';
     if (['completed', 'fulfilled', 'settled'].includes(normalizedStatus)) {
-      return 'text-green-400';
+      return 'text-blue-400';
     } else if (['pending', 'processing', 'validated', 'initiated'].includes(normalizedStatus)) {
-      return 'text-yellow-400';
+      return 'text-gray-400';
     } else if (['failed', 'cancelled', 'expired', 'refunded'].includes(normalizedStatus)) {
-      return 'text-red-400';
+      return 'text-gray-500';
     }
     return 'text-gray-400';
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    const normalizedStatus = status?.toLowerCase() || '';
+    if (['completed', 'fulfilled', 'settled'].includes(normalizedStatus)) {
+      return 'bg-blue-500/20 border-blue-500/30 text-blue-400';
+    } else if (['pending', 'processing', 'validated', 'initiated'].includes(normalizedStatus)) {
+      return 'bg-gray-500/20 border-gray-500/30 text-gray-400';
+    } else if (['failed', 'cancelled', 'expired', 'refunded'].includes(normalizedStatus)) {
+      return 'bg-gray-600/20 border-gray-600/30 text-gray-500';
+    }
+    return 'bg-gray-500/20 border-gray-500/30 text-gray-400';
   };
 
   const getStatusIcon = (status: string) => {
@@ -208,7 +255,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     window.open(baseScanUrl, '_blank', 'noopener,noreferrer');
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="glass-effect rounded-3xl p-8">
@@ -222,18 +269,23 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
       {/* Profile Header */}
-      <div className="glass-effect rounded-3xl p-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="glass-effect rounded-3xl p-4 sm:p-5 border border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="flex items-center space-x-3">
-            <Avatar className="h-12 w-12" />
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-1">Your Profile</h2>
-              <Name 
-                address={address} 
-                chain={base} 
-                className="text-gray-300 text-sm font-medium"
+            <div className="relative flex-shrink-0">
+              <Avatar className="h-12 w-12 ring-2 ring-blue-500/30" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-blue-500 rounded-full border-2 border-gray-900"></div>
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-white mb-0.5 truncate leading-none">
+                Your Profile
+              </h2>
+              <Name
+                address={address}
+                chain={base}
+                className="text-gray-400 text-xs font-medium truncate"
               />
             </div>
           </div>
@@ -241,199 +293,297 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
             onClick={() => setActiveTab('home')}
             variant="outlined"
             size="medium"
+            className="w-full sm:w-auto text-xs py-1.5"
           >
-            Back to Home
+            Back
           </Button>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white/5 rounded-xl p-4">
-            <p className="text-gray-400 text-sm">Total Transactions</p>
-            <p className="text-white text-2xl font-bold">{allOrders.length}</p>
+        {/* Statistics Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Total Transactions */}
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center">
+                <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <span className="text-gray-400 text-[10px] sm:text-xs font-medium uppercase tracking-wide">Transactions</span>
+            </div>
+            <p className="text-white text-2xl sm:text-3xl font-bold leading-none">{stats.totalTransactions}</p>
           </div>
-          <div className="bg-white/5 rounded-xl p-4">
-            <p className="text-gray-400 text-sm">Successful Payments</p>
-            <p className="text-green-400 text-2xl font-bold">
-              {allOrders.filter(o => ['completed', 'fulfilled', 'settled'].includes(o.status?.toLowerCase() || '')).length}
-            </p>
-          </div>
-          <div className="bg-white/5 rounded-xl p-4">
-            <p className="text-gray-400 text-sm">This Month (USDC)</p>
-            <p className="text-blue-400 text-2xl font-bold">
-              ${allOrders
-                .filter(o => {
-                  const isSuccessful = ['completed', 'fulfilled', 'settled'].includes(o.status?.toLowerCase() || '');
-                  const orderDate = new Date(o.created_at);
-                  const now = new Date();
-                  const isSameMonth = orderDate.getMonth() === now.getMonth() &&
-                                     orderDate.getFullYear() === now.getFullYear();
-                  return isSuccessful && isSameMonth;
-                })
-                .reduce((sum, o) => sum + (o.amount_in_usdc || 0), 0)
-                .toFixed(2)}
-            </p>
+
+          {/* Total Volume */}
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center">
+                <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <span className="text-gray-400 text-[10px] sm:text-xs font-medium uppercase tracking-wide">Volume</span>
+            </div>
+            <p className="text-white text-2xl sm:text-3xl font-bold leading-none">${stats.totalVolumeUSDC.toFixed(2)}</p>
           </div>
         </div>
       </div>
 
-      {/* Combined Activity & Transaction History */}
-      <div className="glass-effect rounded-3xl p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-white font-bold text-lg">
-            {selectedDate ? `Transactions for ${formatDate(selectedDate)}` : 'Recent Activity'}
+      {/* Transaction History */}
+      <div className="glass-effect rounded-3xl p-4 sm:p-5 border border-white/10">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white font-semibold text-base sm:text-lg flex items-center gap-1.5">
+            <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="hidden sm:inline">Transaction History</span>
+            <span className="sm:hidden">History</span>
           </h3>
-          <div className="flex items-center gap-2">
-            {selectedDate && (
-              <Button
-                onClick={() => handleDateClick(selectedDate)}
-                variant="ghost"
-                size="medium"
-                className="text-sm"
-              >
-                Show All
-              </Button>
+          <button
+            onClick={refreshStatuses}
+            disabled={refreshing}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 transition-colors disabled:opacity-50"
+            title="Refresh"
+          >
+            {refreshing ? (
+              <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
             )}
-            <button
-              onClick={refreshStatuses}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 disabled:opacity-50"
-              title="Refresh transaction statuses"
-            >
-              {refreshing ? (
-                <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              )}
-              <span className="text-xs font-medium text-blue-400 hidden sm:inline">Refresh</span>
-            </button>
-          </div>
+            <span className="text-xs font-medium text-blue-400 hidden sm:inline">Refresh</span>
+          </button>
         </div>
 
         {allOrders.length === 0 ? (
-          <div className="text-center py-8">
-            <Icon name="star" size="lg" className="text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-400">No transactions yet</p>
-            <p className="text-gray-500 text-sm">Start by making your first payment</p>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
+              <Icon name="star" size="lg" className="text-blue-400" />
+            </div>
+            <p className="text-white text-lg font-medium mb-2">No transactions yet</p>
+            <p className="text-gray-400 text-sm">Start by making your first payment</p>
           </div>
-        ) : (
-          <>
-            {/* Daily Activity Overview (when no specific date is selected) */}
-            {!selectedDate && dailyExpenditure.length > 0 && (
-              <div>
-                <h4 className="text-gray-300 font-medium text-sm mb-3">Recent Activity (Click to view details)</h4>
-                <div className="space-y-2">
-                  {dailyExpenditure.slice(0, dailyDisplayLimit).map((day) => (
-                    <div 
-                      key={day.date} 
-                      onClick={() => handleDateClick(day.date)}
-                      className="flex items-center justify-between py-3 px-3 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors border border-transparent hover:border-blue-500/20"
-                    >
-                      <div>
-                        <p className="text-white font-medium">{formatDate(day.date)}</p>
-                        <p className="text-gray-400 text-sm">{day.count} transaction{day.count !== 1 ? 's' : ''}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-white font-bold">${day.totalUSDC.toFixed(2)}</p>
-                        <p className="text-gray-400 text-sm">{day.totalLocal.toFixed(0)} {day.currency}</p>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Show More Button for Daily Activity */}
-                  {dailyDisplayLimit < dailyExpenditure.length && (
-                    <div className="text-center pt-3">
-                      <Button
-                        onClick={() => setDailyDisplayLimit(prev => prev + 5)}
-                        variant="ghost"
-                        size="medium"
-                        className="text-sm text-blue-400 hover:text-blue-300"
-                      >
-                        Show More Days
-                      </Button>
-                      <p className="text-gray-500 text-xs mt-1">
-                        Showing {dailyDisplayLimit} of {dailyExpenditure.length} days
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+        ) : viewAll ? (
+          // View all transactions
+          <div className="space-y-2">
+            <button
+              onClick={toggleViewAll}
+              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors text-xs font-medium mb-3"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Groups
+            </button>
 
-            {/* Detailed Transaction List (when a specific date is selected) */}
-            {selectedDate && (
-              <div className="space-y-3">
-                {displayedOrders.map((order) => {
-                  const normalizedStatus = order.status?.toLowerCase() || '';
-                  const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
-                  const isPending = ['pending', 'processing', 'validated', 'initiated'].includes(normalizedStatus);
+            {allOrders.slice(0, displayLimit).map((order) => {
+              const normalizedStatus = order.status?.toLowerCase() || '';
+              const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
 
-                  return (
-                    <div key={order.id} className="flex items-start justify-between py-4 border-b border-white/10 last:border-b-0">
-                      <div className="flex items-start space-x-3 flex-1 min-w-0">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${
-                          isSuccess ? 'bg-green-500/20' : isPending ? 'bg-yellow-500/20' : 'bg-red-500/20'
-                        }`}>
-                          <Icon
-                            name={getStatusIcon(order.status)}
-                            size="sm"
-                            className={getStatusColor(order.status)}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium">
-                            ${order.amount_in_usdc.toFixed(2)} → {getPaymentDestination(order)}
+              return (
+                <div key={order.id} className="bg-white/5 hover:bg-white/[0.07] rounded-lg p-2.5 border border-white/10 hover:border-blue-500/30 transition-colors">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${
+                        isSuccess ? 'bg-blue-500/20' : 'bg-gray-500/20'
+                      }`}>
+                        <Icon
+                          name={getStatusIcon(order.status)}
+                          size="sm"
+                          className={`${getStatusColor(order.status)} w-3.5 h-3.5`}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <p className="text-white font-bold text-sm leading-none">
+                            ${order.amount_in_usdc.toFixed(2)}
                           </p>
-                          <p className="text-gray-400 text-sm">
-                            {formatDate(order.created_at)} • {order.local_currency} {order.amount_in_local.toFixed(0)}
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusBadgeColor(order.status)}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                        <p className="text-gray-400 text-xs truncate leading-none">
+                          {getPaymentDestination(order)}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-gray-500 text-[10px]">
+                            {formatDate(order.created_at)} • {formatTime(order.created_at)}
                           </p>
                           {order.transaction_hash && (
                             <button
                               onClick={(e) => openBaseScan(order.transaction_hash!, e)}
-                              className="mt-1.5 inline-flex items-center gap-1 px-2 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5 rounded-md sm:rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 group"
+                              className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-[10px]"
                             >
-                              <svg
-                                className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-400 group-hover:text-blue-300 transition-colors"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                               </svg>
-                              <span className="text-xs sm:text-xs font-medium text-blue-400 group-hover:text-blue-300 transition-colors">
-                                View on BaseScan
-                              </span>
+                              <span>BaseScan</span>
                             </button>
                           )}
                         </div>
                       </div>
-                      <div className="text-right flex-shrink-0 ml-3">
-                        <span className={`text-sm font-medium capitalize ${getStatusColor(order.status)}`}>
-                          {order.status}
-                        </span>
-                      </div>
                     </div>
-                  );
-                })}
-
-                {/* Total count for filtered transactions */}
-                <div className="text-center pt-4">
-                  <p className="text-gray-400 text-sm">
-                    {displayedOrders.length} transaction{displayedOrders.length !== 1 ? 's' : ''} on {formatDate(selectedDate)}
-                  </p>
+                    <CompactReceiptButton
+                      orderData={convertOrderToOrderData(order)}
+                      className="hover:bg-blue-500/10 rounded transition-colors"
+                    />
+                  </div>
                 </div>
+              );
+            })}
+
+            {allOrders.length > displayLimit && (
+              <div className="text-center pt-3">
+                <Button
+                  onClick={() => setDisplayLimit(prev => prev + 20)}
+                  variant="ghost"
+                  size="medium"
+                  className="text-xs text-blue-400 hover:text-blue-300"
+                >
+                  Load More
+                </Button>
+                <p className="text-gray-500 text-[10px] mt-1.5">
+                  Showing {displayLimit} of {allOrders.length} transactions
+                </p>
               </div>
             )}
-          </>
+          </div>
+        ) : selectedDate ? (
+          // Detailed view for specific date
+          <div className="space-y-2">
+            <button
+              onClick={() => handleDateClick(selectedDate)}
+              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors text-xs font-medium mb-3"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+
+            {displayedOrders.map((order) => {
+              const normalizedStatus = order.status?.toLowerCase() || '';
+              const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
+
+              return (
+                <div key={order.id} className="bg-white/5 hover:bg-white/[0.07] rounded-lg p-2.5 border border-white/10 hover:border-blue-500/30 transition-colors">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${
+                        isSuccess ? 'bg-blue-500/20' : 'bg-gray-500/20'
+                      }`}>
+                        <Icon
+                          name={getStatusIcon(order.status)}
+                          size="sm"
+                          className={`${getStatusColor(order.status)} w-3.5 h-3.5`}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <p className="text-white font-bold text-sm leading-none">
+                            ${order.amount_in_usdc.toFixed(2)}
+                          </p>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusBadgeColor(order.status)}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                        <p className="text-gray-400 text-xs truncate leading-none">
+                          {getPaymentDestination(order)}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-gray-500 text-[10px]">
+                            {formatTime(order.created_at)}
+                          </p>
+                          {order.transaction_hash && (
+                            <button
+                              onClick={(e) => openBaseScan(order.transaction_hash!, e)}
+                              className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-[10px]"
+                            >
+                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              <span>BaseScan</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <CompactReceiptButton
+                      orderData={convertOrderToOrderData(order)}
+                      className="hover:bg-blue-500/10 rounded transition-colors"
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          // Date grouped view
+          <div className="space-y-2">
+            {transactionsByDate.slice(0, displayLimit / 4).map(({ date, orders }) => {
+              const successfulOrders = orders.filter(o => ['completed', 'fulfilled', 'settled'].includes(o.status?.toLowerCase() || ''));
+              const totalUSDC = successfulOrders.reduce((sum, o) => sum + (o.amount_in_usdc || 0), 0);
+
+              return (
+                <div
+                  key={date}
+                  onClick={() => handleDateClick(date)}
+                  className="bg-white/5 hover:bg-white/[0.07] rounded-lg p-2.5 border border-white/10 hover:border-blue-500/30 cursor-pointer transition-colors group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-semibold text-sm mb-0.5 leading-none">{formatDate(date)}</p>
+                      <p className="text-gray-400 text-[10px]">
+                        {orders.length} tx • {successfulOrders.length} completed
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <p className="text-blue-400 font-bold text-sm leading-none">${totalUSDC.toFixed(2)}</p>
+                        <p className="text-gray-500 text-[10px]">volume</p>
+                      </div>
+                      <svg className="w-4 h-4 text-blue-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {transactionsByDate.length > displayLimit / 4 && (
+              <div className="text-center pt-3">
+                <Button
+                  onClick={() => setDisplayLimit(prev => prev + 20)}
+                  variant="ghost"
+                  size="medium"
+                  className="text-xs text-blue-400 hover:text-blue-300"
+                >
+                  Load More
+                </Button>
+                <p className="text-gray-500 text-[10px] mt-1.5">
+                  Showing {Math.min(displayLimit / 4, transactionsByDate.length)} of {transactionsByDate.length} days
+                </p>
+              </div>
+            )}
+
+            {/* View All Button */}
+            <div className="text-center pt-3 border-t border-white/10 mt-4">
+              <button
+                onClick={toggleViewAll}
+                className="text-blue-400 hover:text-blue-300 text-xs font-medium transition-colors"
+              >
+                View All Transactions
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
-
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-          <p className="text-red-300 text-sm">{error}</p>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+          <p className="text-gray-300 text-sm">{error}</p>
         </div>
       )}
     </div>
