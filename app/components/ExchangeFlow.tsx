@@ -11,6 +11,8 @@ import Image from 'next/image';
 import { trackOffRampEvent, trackWalletEvent } from '@/lib/analytics';
 import { ReceiptSection } from './DownloadButton';
 import { CurrencySwapInterface } from './CurrencySwapInterface';
+import { SavedRecipients } from './SavedRecipients';
+import { saveRecipient, SavedRecipient } from '@/lib/recipient-storage';
 
 interface ExchangeFlowProps {
   setActiveTab: (tab: string) => void;
@@ -287,6 +289,29 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
           </div>
 
         <div className="space-y-4">
+          {/* Saved Recipients Section */}
+          <SavedRecipients
+            currency={swapData.currency}
+            currentPhone={formData.phoneNumber}
+            currentAccount={formData.accountNumber}
+            onSelect={(recipient: SavedRecipient) => {
+              if (recipient.type === 'KES') {
+                setFormData(prev => ({
+                  ...prev,
+                  phoneNumber: recipient.phoneNumber || '',
+                  accountName: recipient.accountName,
+                }));
+              } else {
+                setFormData(prev => ({
+                  ...prev,
+                  accountNumber: recipient.accountNumber || '',
+                  bankCode: recipient.bankCode || '',
+                  accountName: recipient.accountName,
+                }));
+              }
+            }}
+          />
+
           {/* Conditional input fields based on currency */}
           {swapData.currency === 'KES' ? (
             <>
@@ -506,6 +531,19 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                 step: 3,
                 success: true,
               }, context || undefined);
+
+              // Auto-save recipient for future use
+              if (formData.accountName) {
+                const bankName = institutions.find(inst => inst.code === formData.bankCode)?.name;
+                saveRecipient({
+                  type: swapData.currency,
+                  phoneNumber: formData.phoneNumber,
+                  accountNumber: formData.accountNumber,
+                  accountName: formData.accountName,
+                  bankCode: formData.bankCode,
+                  bankName: bankName,
+                });
+              }
 
               setStep('success');
             }}
