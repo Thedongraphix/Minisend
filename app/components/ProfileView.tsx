@@ -263,65 +263,63 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* Profile Header */}
-      <div className="glass-effect rounded-3xl p-4 sm:p-5 border border-white/10">
-        <div className="relative mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="relative flex-shrink-0">
-              <Avatar className="h-12 w-12 ring-2 ring-blue-500/30" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-bold text-white mb-0.5 truncate leading-none">
-                Your Profile
-              </h2>
-              <Name
-                address={address}
-                chain={base}
-                className="text-gray-400 text-xs font-medium truncate"
-              />
-            </div>
-            <button
-              onClick={() => setActiveTab('home')}
-              className="absolute top-0 right-0 sm:static px-2 py-1 sm:px-4 sm:py-2 rounded-lg border border-white/10 hover:border-blue-500/30 text-white hover:text-blue-400 transition-colors text-[10px] sm:text-xs font-medium"
-            >
-              Back
-            </button>
+      <div className="relative mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="relative flex-shrink-0">
+            <Avatar className="h-12 w-12 ring-2 ring-blue-500/30" />
           </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-bold text-white mb-0.5 truncate leading-none">
+              Your Profile
+            </h2>
+            <Name
+              address={address}
+              chain={base}
+              className="text-gray-400 text-xs font-medium truncate"
+            />
+          </div>
+          <button
+            onClick={() => setActiveTab('home')}
+            className="absolute top-0 right-0 sm:static px-2 py-1 sm:px-4 sm:py-2 rounded-lg border border-white/10 hover:border-blue-500/30 text-white hover:text-blue-400 transition-colors text-[10px] sm:text-xs font-medium"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+
+      {/* Statistics Grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Total Transactions */}
+        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <div className="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center">
+              <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <span className="text-gray-400 text-[10px] sm:text-xs font-medium uppercase tracking-wide">Transactions</span>
+          </div>
+          <p className="text-white text-2xl sm:text-3xl font-bold leading-none">{stats.totalTransactions}</p>
         </div>
 
-        {/* Statistics Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Total Transactions */}
-          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center">
-                <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-              <span className="text-gray-400 text-[10px] sm:text-xs font-medium uppercase tracking-wide">Transactions</span>
+        {/* Total Volume */}
+        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <div className="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center">
+              <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
-            <p className="text-white text-2xl sm:text-3xl font-bold leading-none">{stats.totalTransactions}</p>
+            <span className="text-gray-400 text-[10px] sm:text-xs font-medium uppercase tracking-wide">Volume</span>
           </div>
-
-          {/* Total Volume */}
-          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <div className="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center">
-                <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span className="text-gray-400 text-[10px] sm:text-xs font-medium uppercase tracking-wide">Volume</span>
-            </div>
-            <p className="text-white text-2xl sm:text-3xl font-bold leading-none">${stats.totalVolumeUSDC.toFixed(2)}</p>
-          </div>
+          <p className="text-white text-2xl sm:text-3xl font-bold leading-none">${stats.totalVolumeUSDC.toFixed(2)}</p>
         </div>
       </div>
 
       {/* Transaction History */}
-      <div className="glass-effect rounded-3xl p-4 sm:p-5 border border-white/10">
+      <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-white font-semibold text-base sm:text-lg flex items-center gap-1.5">
             <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
