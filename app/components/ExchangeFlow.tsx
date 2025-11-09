@@ -229,8 +229,8 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
         </div>
       </div>
 
-      {/* USDC Balance */}
-      <BalanceView />
+      {/* USDC Balance - Hide on payment and success steps */}
+      {step !== 'payment' && step !== 'success' && <BalanceView />}
 
       {/* Swap Step - New Premium Interface */}
       {step === 'swap' && (
