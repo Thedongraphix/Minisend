@@ -60,7 +60,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
         setInitialLoading(true);
       }
 
-      const response = await fetch(`/api/user/orders?wallet=${address}&limit=100`);
+      const response = await fetch(`/api/user/orders?wallet=${address}&limit=1000`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -186,7 +186,16 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
       return `Till ${order.phone_number}`;
     }
 
-    return order.phone_number || order.account_number || 'Unknown';
+    // Add +254 prefix to phone numbers
+    if (order.phone_number) {
+      const cleanNumber = order.phone_number.replace(/\D/g, '');
+      if (cleanNumber.length === 9) {
+        return `+254${cleanNumber}`;
+      }
+      return order.phone_number;
+    }
+
+    return order.account_number || 'Unknown';
   };
 
   const formatDate = (dateString: string) => {
@@ -524,7 +533,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                     <div className="min-w-0 flex-1">
                       <p className="text-white font-semibold text-sm mb-0.5 leading-none">{formatDate(date)}</p>
                       <p className="text-gray-400 text-[10px]">
-                        {orders.length} tx • {successfulOrders.length} completed
+                        {orders.length} tx - {successfulOrders.length} completed
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
