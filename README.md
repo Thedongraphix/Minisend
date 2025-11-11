@@ -12,7 +12,7 @@ Minisend serves as a critical financial infrastructure component for the Farcast
 - **Direct monetization**: Convert Frame tips, token rewards, and creator earnings to local currency
 - **Seamless integration**: Native Farcaster miniapp with one-click access
 - **Creator-focused**: Designed for content creators, builders, and community managers
-- **Global reach**: Support for key African markets (Kenya, Nigeria) with expansion planned
+- **Global reach**: Support for key African markets (Kenya, Nigeria) with expansion planneds
 
 ### For Base Network Builders
 - **Developer tools**: API access for integrating offramp functionality into dApps
