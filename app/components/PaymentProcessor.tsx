@@ -342,13 +342,12 @@ export function PaymentProcessor({
       {status === 'idle' && (
         <div className="space-y-3 sm:space-y-4">
           <div className="space-y-1.5 sm:space-y-2">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[#8e8e93] text-[10px] sm:text-xs font-medium uppercase tracking-wider">Confirm Payment</span>
-              <span className="text-[#8e8e93] text-[10px] sm:text-xs">{Math.round(swipeProgress)}%</span>
+            <div className="flex items-center justify-end px-1">
+              <span className="text-[#8e8e93] text-xs sm:text-xs">{Math.round(swipeProgress)}%</span>
             </div>
             <div
               ref={containerRef}
-              className="relative h-12 sm:h-14 bg-[#1c1c1e] border-2 border-[#3a3a3c] rounded-xl sm:rounded-2xl overflow-hidden touch-none"
+              className="relative h-14 sm:h-14 bg-[#1c1c1e] border-2 border-[#3a3a3c] rounded-xl sm:rounded-2xl overflow-hidden touch-none"
               style={{ touchAction: 'none' }}
             >
               {/* Progress background */}
@@ -436,30 +435,7 @@ export function PaymentProcessor({
 
       {/* Ready to Pay - Transaction Component */}
       {(status === 'ready-to-pay' || status === 'processing') && paycrestOrder && (
-        <div className="space-y-4">
-          <div className="text-center space-y-3">
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Payment</span>
-                <span className="text-white">${paycrestOrder.amount}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Service Fee</span>
-                <span className="text-gray-100">${paycrestOrder.senderFee}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-green-300">Gas Fees</span>
-                <span className="text-green-400">Free (saves $0.015)</span>
-              </div>
-              <div className="border-t border-gray-600/40 pt-2 mt-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-semibold">Total to Send</span>
-                  <span className="text-white font-bold text-lg">${((parseFloat(paycrestOrder.amount) || 0) + (parseFloat(paycrestOrder.senderFee) || 0) + (parseFloat(paycrestOrder.transactionFee) || 0)).toFixed(2)} USDC</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div>
           <TransactionHandler
             chainId={base.id}
             calls={calls}
