@@ -13,6 +13,8 @@ import { ReceiptSection } from './DownloadButton';
 import { CurrencySwapInterface } from './CurrencySwapInterface';
 import { SavedRecipients } from './SavedRecipients';
 import { saveRecipient, SavedRecipient } from '@/lib/recipient-storage';
+import { BankSelector } from './BankSelector';
+import { FormInput } from './FormInput';
 
 interface ExchangeFlowProps {
   setActiveTab: (tab: string) => void;
@@ -315,141 +317,104 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
           {/* Conditional input fields based on currency */}
           {swapData.currency === 'KES' ? (
             <>
-              <div>
-                <label className="block text-white text-sm font-medium mb-2">Phone Number</label>
-                <input
-                  type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-                  placeholder="+254712345678"
-                  className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
-                />
-              </div>
+              <FormInput
+                label="Phone Number"
+                type="tel"
+                inputMode="tel"
+                value={formData.phoneNumber}
+                onChange={(value) => setFormData(prev => ({ ...prev, phoneNumber: value }))}
+                placeholder="+254712345678"
+                icon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                }
+                helperText="Enter M-Pesa mobile number"
+              />
 
-              <div>
-                <label className="block text-white text-sm font-medium mb-2">Account Name</label>
-                <input
-                  type="text"
-                  value={formData.accountName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
-                  placeholder="Your legal name"
-                  className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
-                />
-              </div>
+              <FormInput
+                label="Account Name"
+                type="text"
+                value={formData.accountName}
+                onChange={(value) => setFormData(prev => ({ ...prev, accountName: value }))}
+                placeholder="John Doe"
+                icon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                }
+                helperText="Full name as registered with M-Pesa"
+              />
             </>
           ) : (
             <>
               <div>
                 <label className="block text-white text-sm font-medium mb-2">Bank</label>
-                <div className="relative">
-                  <select
-                    value={formData.bankCode}
-                    onChange={(e) => setFormData(prev => ({ ...prev, bankCode: e.target.value }))}
-                    className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none cursor-pointer hover:bg-gray-800 backdrop-blur-sm"
-                    style={{
-                      backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                      backgroundRepeat: 'no-repeat',
-                      backgroundPosition: 'right 12px center',
-                      backgroundSize: '16px'
-                    }}
-                    disabled={loadingInstitutions}
-                  >
-                    <option value="" className="bg-gray-800 text-gray-300">
-                      {loadingInstitutions ? "Loading banks..." : "Select Bank"}
-                    </option>
-                    {institutions.map((institution) => (
-                      <option 
-                        key={institution.code} 
-                        value={institution.code}
-                        className="bg-gray-800 text-white hover:bg-gray-700 py-2 px-4"
-                      >
-                        {institution.name}
-                      </option>
-                    ))}
-                  </select>
-                  {loadingInstitutions && (
-                    <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                      <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  )}
-                </div>
-                {loadingInstitutions && (
-                  <div className="flex items-center space-x-2 mt-2">
-                    <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-xs text-gray-400">Loading Nigerian banks...</span>
-                  </div>
-                )}
+                <BankSelector
+                  institutions={institutions}
+                  value={formData.bankCode}
+                  onChange={(value) => setFormData(prev => ({ ...prev, bankCode: value }))}
+                  loading={loadingInstitutions}
+                />
               </div>
 
-              <div>
-                <label className="block text-white text-sm font-medium mb-2">Account Number</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={formData.accountNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
-                    placeholder="1234567890 (minimum 10 digits)"
-                    className={`w-full px-4 py-3 pr-12 bg-gray-800/80 border rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:border-blue-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm ${
-                      formData.accountNumber && isAccountNumberValid 
-                        ? 'border-green-500 focus:ring-green-500' 
-                        : formData.accountNumber && !isAccountNumberValid
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-600 focus:ring-blue-500'
-                    }`}
-                    disabled={verifyingAccount}
-                  />
-                  {/* Status indicators */}
-                  <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                    {verifyingAccount ? (
-                      <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                    ) : isAccountNumberValid && formData.accountNumber ? (
-                      <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    ) : formData.accountNumber && formData.accountNumber.length > 0 && !isAccountNumberValid ? (
-                      <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    ) : null}
+              <FormInput
+                label="Account Number"
+                type="text"
+                inputMode="numeric"
+                value={formData.accountNumber}
+                onChange={(value) => setFormData(prev => ({ ...prev, accountNumber: value }))}
+                placeholder="0123456789"
+                maxLength={11}
+                disabled={verifyingAccount}
+                error={
+                  formData.accountNumber && !isAccountNumberValid && formData.accountNumber.length > 0
+                    ? "Account number must be 10-11 digits"
+                    : undefined
+                }
+                success={isAccountNumberValid && formData.accountNumber.length > 0}
+                helperText={
+                  verifyingAccount
+                    ? "Verifying account with bank..."
+                    : !formData.accountNumber
+                      ? "Enter your 10-digit account number"
+                      : undefined
+                }
+                icon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                }
+                statusIcon={
+                  verifyingAccount ? (
+                    <div className="w-5 h-5 border-2 border-[#0066FF] border-t-transparent rounded-full animate-spin" />
+                  ) : isAccountNumberValid && formData.accountNumber ? (
+                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  ) : formData.accountNumber && !isAccountNumberValid ? (
+                    <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  ) : null
+                }
+              />
+
+              {accountVerified && formData.accountName && !verifyingAccount && (
+                <div className="p-4 bg-[#1c1c1e] border border-green-500/30 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-green-400 font-medium text-sm">Account Verified</div>
+                      <div className="text-white font-semibold truncate">{formData.accountName}</div>
+                    </div>
                   </div>
                 </div>
-                {/* Validation helper text */}
-                {formData.accountNumber && formData.accountNumber.length > 0 && formData.accountNumber.length < 10 && (
-                  <div className="flex items-center space-x-2 mt-2">
-                    <div className="w-3 h-3 bg-amber-500 rounded-full flex items-center justify-center">
-                      <span className="text-xs text-white font-bold">!</span>
-                    </div>
-                    <span className="text-xs text-amber-400">Account number must be at least 10 digits</span>
-                  </div>
-                )}
-                
-                {verifyingAccount && (
-                  <div className="flex items-center space-x-2 mt-2">
-                    <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-xs text-gray-400">Verifying account with bank...</span>
-                  </div>
-                )}
-                
-                {accountVerified && formData.accountName && !verifyingAccount && (
-                  <div className="mt-2 p-4 bg-black/95 border border-green-600/60 rounded-2xl backdrop-blur-sm">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <div>
-                        <div className="text-green-300 font-semibold text-sm">Account Verified</div>
-                        <div className="text-white font-medium text-sm">{formData.accountName}</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </>
           )}
 
