@@ -203,7 +203,7 @@ export function SimplePayment({
 
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, accountName, currency, returnAddress, onError, trackPayment]);
+  }, [amount, phoneNumber, accountName, currency, returnAddress, onError, trackPayment, context?.user?.fid]);
 
   // Step 2: Create transaction calls for Base Pay using proper ContractFunctionParameters
   const calls: ContractFunctionParameters[] = useMemo(() => {

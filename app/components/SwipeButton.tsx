@@ -110,7 +110,7 @@ export function SwipeButton({
         document.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [isDragging, position]);
+  }, [isDragging, position, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
   const progressPercentage = containerRef.current
     ? (position / (containerRef.current.offsetWidth - sliderWidth)) * 100
