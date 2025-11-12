@@ -195,7 +195,7 @@ export function PaymentProcessor({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, tillNumber, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError]);
+  }, [amount, phoneNumber, tillNumber, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError, context?.user?.fid]);
 
   // USDC transfer using OnchainKit standard format
   const calls = paycrestOrder && paycrestOrder.receiveAddress && paycrestOrder.amount ? (() => {
@@ -338,49 +338,90 @@ export function PaymentProcessor({
 
   return (
     <div className="space-y-6">
-      {/* Swipe to Pay Slider */}
+      {/* Swipe to Confirm - Mobile Optimized */}
       {status === 'idle' && (
-        <div className="space-y-3">
-          <div
-            ref={containerRef}
-            className="relative h-16 bg-black border border-gray-700 rounded-xl overflow-hidden"
-            style={{ touchAction: 'none' }}
-          >
-            {/* Progress background */}
-            <div
-              className="absolute inset-0 bg-blue-600 transition-all duration-200"
-              style={{
-                width: `${swipeProgress}%`
-              }}
-            />
-
-            {/* Text */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="font-medium text-white">
-                {isSwipeComplete ? 'Creating order...' : `Swipe to send $${amount}`}
-              </span>
+        <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-1.5 sm:space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[#8e8e93] text-[10px] sm:text-xs font-medium uppercase tracking-wider">Confirm Payment</span>
+              <span className="text-[#8e8e93] text-[10px] sm:text-xs">{Math.round(swipeProgress)}%</span>
             </div>
-
-            {/* Slider button */}
             <div
-              ref={sliderRef}
-              onMouseDown={handleMouseDown}
-              onTouchStart={handleTouchStart}
-              className="absolute left-1 top-1 bottom-1 w-14 bg-white rounded-lg flex items-center justify-center cursor-grab active:cursor-grabbing"
-              style={{
-                transform: `translateX(${(swipeProgress / 100) * (containerRef.current ? containerRef.current.offsetWidth - 60 : 0)}px)`,
-                transition: isDragging ? 'none' : 'transform 0.3s ease-out'
-              }}
+              ref={containerRef}
+              className="relative h-12 sm:h-14 bg-[#1c1c1e] border-2 border-[#3a3a3c] rounded-xl sm:rounded-2xl overflow-hidden touch-none"
+              style={{ touchAction: 'none' }}
             >
-              <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
+              {/* Progress background */}
+              <div
+                className="absolute inset-0 bg-[#0066FF] transition-all duration-200"
+                style={{
+                  width: `${swipeProgress}%`,
+                  opacity: swipeProgress > 0 ? 0.15 : 0
+                }}
+              />
+
+              {/* Text */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
+                <span className={`font-semibold text-xs sm:text-sm transition-all duration-200 text-white ${swipeProgress > 50 ? 'opacity-0' : 'opacity-100'}`}>
+                  {isSwipeComplete ? 'Confirming...' : 'Slide to confirm'}
+                </span>
+              </div>
+
+              {/* Slider button */}
+              <div
+                ref={sliderRef}
+                onMouseDown={handleMouseDown}
+                onTouchStart={handleTouchStart}
+                className={`absolute left-1 top-1 bottom-1 w-10 sm:w-12 bg-[#0066FF] rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-200 ${
+                  isDragging ? 'cursor-grabbing scale-105' : 'cursor-grab active:scale-105'
+                }`}
+                style={{
+                  transform: `translateX(${(swipeProgress / 100) * (containerRef.current ? containerRef.current.offsetWidth - (containerRef.current.offsetWidth >= 640 ? 56 : 48) : 0)}px)`,
+                  transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+                  WebkitTapHighlightColor: 'transparent'
+                }}
+              >
+                {isSwipeComplete ? (
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 5l7 7-7 7" />
+                  </svg>
+                )}
+              </div>
+
+              {/* Arrow hints - Hidden on mobile for cleaner look */}
+              {!isSwipeComplete && swipeProgress < 90 && (
+                <>
+                  <div
+                    className="absolute right-6 sm:right-8 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity duration-200"
+                    style={{ opacity: Math.max(0, 0.3 - swipeProgress / 100) }}
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-[#8e8e93]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                  <div
+                    className="hidden sm:block absolute right-12 sm:right-14 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity duration-200"
+                    style={{ opacity: Math.max(0, 0.2 - swipeProgress / 100) }}
+                  >
+                    <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#8e8e93]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          <p className="text-center text-gray-500 text-xs">
-            Drag slider to confirm
-          </p>
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#8e8e93] text-[10px] sm:text-xs px-2">
+            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span className="text-center">Slide to authorize transaction</span>
+          </div>
         </div>
       )}
 
