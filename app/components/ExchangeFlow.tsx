@@ -527,7 +527,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                     </div>
                     <span className="text-[#8e8e93] text-xs sm:text-sm truncate">Gas fee</span>
                   </div>
-                  <span className="text-green-500 font-semibold text-xs sm:text-sm flex-shrink-0">Free (saves ~$0.02)</span>
+                  <span className="text-green-500 font-semibold text-xs sm:text-sm flex-shrink-0">Free (saves ~$0.08)</span>
                 </div>
               </div>
             </div>
