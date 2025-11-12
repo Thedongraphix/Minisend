@@ -32,9 +32,10 @@ export function BankSelector({
 
   const selectedBank = institutions.find((inst) => inst.code === value);
 
-  // Filter institutions based on search query
+  // Filter institutions based on search query (search both name and code)
   const filteredInstitutions = institutions.filter((inst) =>
-    inst.name.toLowerCase().includes(searchQuery.toLowerCase())
+    inst.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    inst.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Popular Nigerian banks (shown first)
