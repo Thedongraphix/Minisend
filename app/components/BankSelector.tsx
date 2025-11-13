@@ -42,8 +42,6 @@ export function BankSelector({
   const popularBanks = [
     "GTBINGLA", // GTBank
     "ZEIBNGLA", // Zenith Bank
-    "ABNGNGLA", // Access Bank
-    "OPAYNGPC", // OPay
     "FCMBNGLA", // FCMB
     "UBNINGLA", // UBA
     "FIDTNGLA", // Fidelity Bank
