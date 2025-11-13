@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { useAccount } from 'wagmi';
 import { PaymentProcessor } from './PaymentProcessor';
 import { BalanceView } from './BalanceView';
@@ -10,32 +9,20 @@ import { AdvancedSelector } from './AdvancedSelector';
 import { Button } from './BaseComponents';
 import Image from 'next/image';
 import { CurrencySwapInterface } from './CurrencySwapInterface';
+import { FormInput } from './FormInput';
 
 interface SpendFlowProps {
   setActiveTab: (tab: string) => void;
 }
 
 export function SpendFlow({ setActiveTab }: SpendFlowProps) {
-  const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
   
   const [mounted, setMounted] = useState(false);
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Log environment information for debugging
-  useEffect(() => {
-    if (mounted && context) {
-      console.log('Spend USDC MiniKit Environment:', {
-        clientFid: context.user?.fid,
-        location: context.location,
-        address,
-        isConnected
-      });
-    }
-  }, [mounted, context, address, isConnected]);
 
   // Form state with new swap step
   const [step, setStep] = useState<'swap' | 'details' | 'payment' | 'success'>('swap');
@@ -53,12 +40,6 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
     value: string;
     formatted: string;
   } | null>(null);
-
-  console.log('Spend USDC wallet connection state:', {
-    address,
-    isConnected,
-    paymentMethod
-  });
 
   // Show wallet connection if not connected or not mounted
   if (!mounted || !isConnected) {
@@ -184,16 +165,14 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
               className="mb-4"
             />
 
-            <div>
-              <label className="block text-white text-sm font-medium mb-2">Recipient Name</label>
-              <input
-                type="text"
-                value={formData.accountName}
-                onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
-                placeholder="Business or person name"
-                className="w-full px-4 py-3 bg-gray-800/80 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm"
-              />
-            </div>
+            <FormInput
+              label="Recipient Name"
+              type="text"
+              value={formData.accountName}
+              onChange={(value) => setFormData(prev => ({ ...prev, accountName: value }))}
+              placeholder="Business or person name"
+              success={formData.accountName.length > 0}
+            />
 
             <button
               onClick={() => setStep('payment')}
@@ -209,30 +188,65 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
       {/* Payment Step */}
       {step === 'payment' && paymentMethod && swapData && (
         <div>
-          <div className="mb-6 p-6 bg-black/95 backdrop-blur-xl rounded-2xl border border-gray-700 shadow-2xl">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-purple-600 border border-purple-500 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+          {/* Payment Summary - Mobile Optimized */}
+          <div className="space-y-3 mb-6">
+            {/* Main Amount Card */}
+            <div className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-2xl p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[#8e8e93] text-[10px] sm:text-xs font-medium mb-1.5 sm:mb-2 uppercase tracking-wider">Recipient receives</div>
+                  <div className="text-white font-bold text-2xl sm:text-3xl tracking-tight break-words">
+                    {swapData.currency === 'KES' ? 'KSh' : '₦'}{parseFloat(swapData.localAmount).toLocaleString()}
+                  </div>
+                  <div className="text-[#8e8e93] text-xs sm:text-sm mt-1 sm:mt-1.5 font-medium truncate">
+                    {paymentMethod.type === 'till' ? `Till ${paymentMethod.formatted}` : paymentMethod.formatted}
+                  </div>
+                </div>
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2c2c2e] border border-[#3a3a3c] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg sm:text-xl">{swapData.currency === 'KES' ? '🇰🇪' : '🇳🇬'}</span>
+                </div>
               </div>
-              <h3 className="text-white font-bold text-lg">Payment Summary</h3>
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center py-3 border-b border-gray-700/40">
-                <span className="text-gray-300 font-medium">You&apos;ll pay</span>
-                <span className="text-white font-bold text-lg">{parseFloat(swapData.localAmount).toLocaleString()} {swapData.currency}</span>
-              </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-700/40">
-                <span className="text-gray-300 font-medium">USDC cost</span>
-                <span className="text-purple-300 font-bold text-lg">${parseFloat(swapData.usdcAmount).toFixed(4)} USDC</span>
-              </div>
-              <div className="flex justify-between items-center py-3">
-                <span className="text-gray-300 font-medium">To</span>
-                <span className="text-white font-semibold">
-                  {paymentMethod.type === 'till' && `Till ${paymentMethod.formatted}`}
-                  {paymentMethod.type === 'phone' && paymentMethod.formatted}
-                </span>
+
+            {/* Transaction Breakdown */}
+            <div className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-2xl p-3.5 sm:p-4">
+              <div className="space-y-2.5 sm:space-y-3">
+                {/* You send */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-[#2c2c2e] rounded-md flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#8e8e93]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                      </svg>
+                    </div>
+                    <span className="text-[#8e8e93] text-xs sm:text-sm truncate">You send</span>
+                  </div>
+                  <span className="text-white font-semibold text-xs sm:text-sm flex-shrink-0">${parseFloat(swapData.usdcAmount).toFixed(4)}</span>
+                </div>
+
+                <div className="h-px bg-[#3a3a3c]"></div>
+
+                {/* Rate */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[#8e8e93] text-xs sm:text-sm truncate">Rate</span>
+                  <span className="text-white font-semibold text-xs sm:text-sm flex-shrink-0">1 USDC = {swapData.rate.toFixed(2)}</span>
+                </div>
+
+                <div className="h-px bg-[#3a3a3c]"></div>
+
+                {/* Service fee - CALCULATED */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[#8e8e93] text-xs sm:text-sm truncate">Service fee</span>
+                  <span className="text-white font-semibold text-xs sm:text-sm flex-shrink-0">${(parseFloat(swapData.usdcAmount) * 0.01).toFixed(4)}</span>
+                </div>
+
+                <div className="h-px bg-[#3a3a3c]"></div>
+
+                {/* Gas fee */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[#8e8e93] text-xs sm:text-sm truncate">Gas fee</span>
+                  <span className="text-green-500 font-semibold text-xs sm:text-sm flex-shrink-0">Free (saves ~$0.08)</span>
+                </div>
               </div>
             </div>
           </div>
@@ -246,8 +260,8 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             returnAddress={address || ''}
             rate={swapData.rate}
             onSuccess={() => setStep('success')}
-            onError={(error) => {
-              console.error('Payment error:', error);
+            onError={() => {
+              // Error handled by PaymentProcessor
             }}
           />
 
