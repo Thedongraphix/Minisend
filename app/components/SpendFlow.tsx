@@ -129,31 +129,32 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
       {/* Details Step - Recipient Information */}
       {step === 'details' && swapData && (
         <>
-          {/* Amount Summary Banner */}
-          <div className="bg-purple-600/10 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-5 shadow-xl mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 bg-purple-600 border border-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold text-xl">{swapData.currency === 'KES' ? 'KSh' : '₦'}</span>
+          {/* Amount Summary Banner - Mobile Optimized */}
+          <div className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-2xl p-4 sm:p-5 mb-6">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="text-[#8e8e93] text-[10px] sm:text-xs font-medium mb-1.5 sm:mb-2 uppercase tracking-wider">You&apos;re spending</div>
+                <div className="text-white font-bold text-2xl sm:text-3xl tracking-tight break-words mb-1">
+                  {swapData.currency === 'KES' ? 'KSh' : '₦'}{parseFloat(swapData.localAmount).toLocaleString()}
                 </div>
-                <div>
-                  <div className="text-white font-bold text-2xl">
-                    {parseFloat(swapData.localAmount).toLocaleString()} {swapData.currency}
-                  </div>
-                  <div className="text-purple-300 text-sm font-semibold">
-                    ≈ ${parseFloat(swapData.usdcAmount).toFixed(4)} USDC
-                  </div>
+                <div className="text-[#8e8e93] text-xs sm:text-sm font-medium">
+                  ≈ ${parseFloat(swapData.usdcAmount).toFixed(4)} USDC
                 </div>
               </div>
-              <button
-                onClick={() => setStep('swap')}
-                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
-                title="Edit amount"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2c2c2e] border border-[#3a3a3c] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg sm:text-xl">{swapData.currency === 'KES' ? '🇰🇪' : '🇳🇬'}</span>
+                </div>
+                <button
+                  onClick={() => setStep('swap')}
+                  className="text-[#8e8e93] hover:text-white transition-colors p-1.5 hover:bg-[#2c2c2e] rounded-lg"
+                  title="Edit amount"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
