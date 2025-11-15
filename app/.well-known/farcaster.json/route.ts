@@ -25,7 +25,7 @@ export async function GET() {
   return Response.json({
     accountAssociation: {
       header: process.env.FARCASTER_HEADER,
-      payload: process.env.FARCASTER_PAYLOAD,
+      payload: process.env.FARCASTER_PAYLOAD, 
       signature: process.env.FARCASTER_SIGNATURE,
     },
     frame: withValidProperties({
