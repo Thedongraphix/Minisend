@@ -53,12 +53,12 @@ export function SavedRecipients({ currency, onSelect, currentPhone, currentAccou
     <div className="mb-5">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-white text-sm font-semibold">Recent</h3>
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-[#8e8e93]">
           {recipients.length} {recipients.length === 1 ? 'recipient' : 'saved'}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
         {recipients.map((recipient) => {
           const isSelected = currency === 'KES'
             ? recipient.phoneNumber === currentPhone
@@ -70,11 +70,11 @@ export function SavedRecipients({ currency, onSelect, currentPhone, currentAccou
               onClick={() => onSelect(recipient)}
               className={`
                 relative group
-                p-3.5 rounded-xl text-left
+                p-3 sm:p-3.5 rounded-xl text-left
                 transition-all duration-200
                 ${isSelected
-                  ? 'bg-blue-600/20 border-2 border-blue-500/60 shadow-lg shadow-blue-500/10'
-                  : 'bg-gray-800/60 border border-gray-700/50 hover:border-gray-600 hover:bg-gray-800/80'
+                  ? 'bg-[#0066FF]/15 border-2 border-[#0066FF]/60'
+                  : 'bg-[#1c1c1e] border border-[#3a3a3c] hover:border-[#48484a] hover:bg-[#2c2c2e]'
                 }
                 ${deletingId === recipient.id ? 'scale-95 opacity-50' : 'scale-100'}
               `}
@@ -82,10 +82,10 @@ export function SavedRecipients({ currency, onSelect, currentPhone, currentAccou
               {/* Delete button */}
               <button
                 onClick={(e) => handleDelete(e, recipient.id)}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-900 border border-gray-700 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 hover:border-red-500 z-10"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#1c1c1e] border border-[#3a3a3c] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 hover:border-red-500 z-10"
                 title="Remove"
               >
-                <svg className="w-2.5 h-2.5 text-gray-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-2.5 h-2.5 text-[#8e8e93] hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -96,13 +96,13 @@ export function SavedRecipients({ currency, onSelect, currentPhone, currentAccou
                   <div className="flex items-center space-x-2">
                     <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${
                       isSelected
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-700 text-gray-300'
+                        ? 'bg-[#0066FF] text-white'
+                        : 'bg-[#2c2c2e] text-[#8e8e93]'
                     }`}>
                       {recipient.accountName.charAt(0).toUpperCase()}
                     </div>
                     {recipient.useCount > 1 && (
-                      <div className="flex items-center space-x-1 text-[10px] text-gray-400">
+                      <div className="flex items-center space-x-1 text-[10px] text-[#8e8e93]">
                         <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                         </svg>
@@ -111,7 +111,7 @@ export function SavedRecipients({ currency, onSelect, currentPhone, currentAccou
                     )}
                   </div>
                   {isSelected && (
-                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                    <div className="w-4 h-4 bg-[#0066FF] rounded-full flex items-center justify-center">
                       <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
@@ -123,7 +123,7 @@ export function SavedRecipients({ currency, onSelect, currentPhone, currentAccou
                   {sanitizeDisplay(recipient.accountName)}
                 </div>
 
-                <div className="text-gray-400 text-xs font-mono truncate">
+                <div className="text-[#8e8e93] text-xs font-mono truncate">
                   {currency === 'KES'
                     ? sanitizeDisplay(recipient.phoneNumber)
                     : sanitizeDisplay(recipient.accountNumber)
@@ -131,7 +131,7 @@ export function SavedRecipients({ currency, onSelect, currentPhone, currentAccou
                 </div>
 
                 {currency === 'NGN' && recipient.bankName && (
-                  <div className="text-gray-500 text-[10px] truncate">
+                  <div className="text-[#636366] text-[10px] truncate">
                     {sanitizeDisplay(recipient.bankName)}
                   </div>
                 )}
@@ -139,7 +139,7 @@ export function SavedRecipients({ currency, onSelect, currentPhone, currentAccou
 
               {/* Selection indicator */}
               {isSelected && (
-                <div className="absolute inset-0 rounded-xl bg-blue-500/5 pointer-events-none"></div>
+                <div className="absolute inset-0 rounded-xl bg-[#0066FF]/5 pointer-events-none"></div>
               )}
             </button>
           );

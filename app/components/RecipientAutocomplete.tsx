@@ -99,15 +99,15 @@ export function RecipientAutocomplete({
   return (
     <div
       ref={dropdownRef}
-      className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
+      className="absolute top-full left-0 right-0 mt-2 bg-[#1c1c1e] border border-[#3a3a3c] rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl"
       style={{
         boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.5)'
       }}
     >
-      <div className="px-3 py-2 border-b border-gray-700/50">
+      <div className="px-3 py-2 border-b border-[#3a3a3c]/50">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-400 font-medium">Suggested recipients</span>
-          <span className="text-[10px] text-gray-500">↑↓ navigate • ⏎ select</span>
+          <span className="text-xs text-[#8e8e93] font-medium">Suggested recipients</span>
+          <span className="text-[10px] text-[#636366]">↑↓ navigate • ⏎ select</span>
         </div>
       </div>
 
@@ -119,10 +119,10 @@ export function RecipientAutocomplete({
             onMouseEnter={() => setSelectedIndex(index)}
             className={`
               w-full px-4 py-3 text-left transition-all duration-150
-              flex items-center space-x-3 border-b border-gray-800/50 last:border-0
+              flex items-center space-x-3 border-b border-[#2c2c2e]/50 last:border-0
               ${index === selectedIndex
-                ? 'bg-blue-600/20 border-l-2 border-l-blue-500'
-                : 'hover:bg-gray-800/50 border-l-2 border-l-transparent'
+                ? 'bg-[#0066FF]/20 border-l-2 border-l-[#0066FF]'
+                : 'hover:bg-[#2c2c2e]/50 border-l-2 border-l-transparent'
               }
             `}
           >
@@ -130,8 +130,8 @@ export function RecipientAutocomplete({
             <div className={`
               w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-sm font-bold
               ${index === selectedIndex
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-300'
+                ? 'bg-[#0066FF] text-white'
+                : 'bg-[#2c2c2e] text-[#8e8e93]'
               }
             `}>
               {recipient.accountName.charAt(0).toUpperCase()}
@@ -144,7 +144,7 @@ export function RecipientAutocomplete({
                   {recipient.accountName}
                 </div>
                 {recipient.useCount > 1 && (
-                  <div className="flex items-center space-x-1 text-[10px] text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded">
+                  <div className="flex items-center space-x-1 text-[10px] text-[#8e8e93] bg-[#2c2c2e] px-1.5 py-0.5 rounded">
                     <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                     </svg>
@@ -154,14 +154,14 @@ export function RecipientAutocomplete({
               </div>
 
               <div className="flex items-center space-x-2 mt-1">
-                <div className="text-gray-400 text-xs font-mono">
+                <div className="text-[#8e8e93] text-xs font-mono">
                   {searchField === 'phone'
                     ? recipient.phoneNumber
                     : recipient.accountNumber
                   }
                 </div>
                 {searchField === 'account' && recipient.bankName && (
-                  <div className="text-gray-500 text-[10px] truncate">
+                  <div className="text-[#636366] text-[10px] truncate">
                     • {recipient.bankName}
                   </div>
                 )}
@@ -171,7 +171,7 @@ export function RecipientAutocomplete({
             {/* Selection indicator */}
             {index === selectedIndex && (
               <div className="flex-shrink-0">
-                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-[#0066FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
