@@ -161,33 +161,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab Navigation */}
-        {(activeTab === "features" || activeTab === "offramp") && (
-          <nav className="mb-8">
-            <div className="flex bg-gray-900 rounded-lg p-1 space-x-1">
-              <button
-                onClick={() => setActiveTab("features")}
-                className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
-                  activeTab === "features"
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800"
-                }`}
-              >
-                Features
-              </button>
-              <button
-                onClick={() => setActiveTab("offramp")}
-                className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
-                  activeTab === "offramp"
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800"
-                }`}
-              >
-                Cash Out
-              </button>
-            </div>
-          </nav>
-        )}
 
         <main className="flex-1 overflow-visible relative">
           {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
