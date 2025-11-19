@@ -95,7 +95,7 @@ export async function GET() {
       success: true,
       proof,
       timestamp: new Date().toISOString(),
-      domain: 'minisend.xyz',
+      domain: 'app.minisend.xyz',
       cached: false
     };
     cacheTimestamp = now;
@@ -267,7 +267,7 @@ function processOrdersForProof(allOrders: PayCrestOrder[], baseOrders: PayCrestO
   const proof = {
     app: {
       name: 'Minisend',
-      domain: 'minisend.xyz',
+      domain: 'app.minisend.xyz',
       description: 'USDC to KES/NGN instant offramp'
     },
     summary: {
@@ -319,7 +319,7 @@ function generateDuneQueryCode(receiveAddresses: string[], transactionHashes: Pr
     return null;
   }
 
-  let query = `-- Minisend USDC Activity on Base Network\n-- Generated for minisend.xyz\n\n`;
+  let query = `-- Minisend USDC Activity on Base Network\n-- Generated for app.minisend.xyz\n\n`;
 
   if (transactionHashes.length > 0) {
     const hashes = transactionHashes.slice(0, 10).map(tx => `'${tx.txHash}'`).join(',\\n        ');

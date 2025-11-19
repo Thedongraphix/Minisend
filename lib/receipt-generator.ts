@@ -239,7 +239,7 @@ export class ReceiptGenerator {
       { size: 10, color: 'primary' });
     this.y += 8;
 
-    this.text('Visit: minisend.xyz/support', this.page.margin, this.y,
+    this.text('Visit: app.minisend.xyz/support', this.page.margin, this.y,
       { size: 10, color: 'primary' });
     this.y += 20;
   }
@@ -384,7 +384,7 @@ export function createReceiptFromOrder(orderData: OrderData): ReceiptData {
     
     receiptNumber,
     supportEmail: 'support@minisend.xyz',
-    supportUrl: 'https://minisend.xyz/support'
+    supportUrl: 'https://app.minisend.xyz/support'
   };
 }
 

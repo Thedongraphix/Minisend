@@ -35,7 +35,7 @@ The official database schema is located at: `paycrest-production-schema.sql`
 ### 🚀 Deployment:
 
 1. Run `paycrest-production-schema.sql` in your Supabase SQL Editor
-2. Webhook endpoint: `https://minisend.xyz/api/paycrest/webhook`
+2. Webhook endpoint: `https://app.minisend.xyz/api/paycrest/webhook`
 3. Configure webhook URL in PayCrest dashboard
 
 ### 💡 Key Benefits:

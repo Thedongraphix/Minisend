@@ -26,8 +26,8 @@ export function Providers(props: { children: ReactNode }) {
           },
           wallet: {
             display: 'modal',
-            termsUrl: 'https://minisend.xyz/terms',
-            privacyUrl: 'https://minisend.xyz/privacy',
+            termsUrl: 'https://app.minisend.xyz/terms',
+            privacyUrl: 'https://app.minisend.xyz/privacy',
           },
           // CDP Paymaster for gasless transactions (OnchainKit built-in support)
           paymaster: paymasterConfig.isEnabled ? paymasterConfig.rpcUrl : undefined,

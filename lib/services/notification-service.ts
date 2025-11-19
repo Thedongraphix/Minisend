@@ -50,7 +50,7 @@ export class NotificationService {
     }
 
     this.supabase = createClient(supabaseUrl, supabaseKey);
-    this.appUrl = process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz';
+    this.appUrl = process.env.NEXT_PUBLIC_URL || 'https://app.minisend.xyz';
   }
 
   /**

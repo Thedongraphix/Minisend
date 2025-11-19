@@ -13,7 +13,7 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const URL = process.env.NEXT_PUBLIC_URL || "https://minisend.xyz";
+  const URL = process.env.NEXT_PUBLIC_URL || "https://app.minisend.xyz";
   const ogImage = process.env.NEXT_PUBLIC_APP_OG_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || `${URL}/minisend-logo.png`;
   const appTitle = process.env.NEXT_PUBLIC_APP_OG_TITLE || "Minisend - USDC to KES/NGN";
   const appDescription = process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION || "Convert USDC to local currency instantly";
@@ -66,14 +66,14 @@ export async function generateMetadata(): Promise<Metadata> {
       // Farcaster Frame meta tag - correct format for Mini App embeds
       "fc:frame": JSON.stringify({
         version: "next",
-        imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || ogImage || `${URL || "https://minisend.xyz"}/minisend-logo.png`,
+        imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || ogImage || `${URL || "https://app.minisend.xyz"}/minisend-logo.png`,
         button: {
           title: process.env.NEXT_PUBLIC_BUTTON_TITLE || `Launch ${process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "Minisend"}`,
           action: {
             type: "launch_frame",
             name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "Minisend",
-            url: URL || "https://minisend.xyz",
-            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || ogImage || `${URL || "https://minisend.xyz"}/minisend-logo.png`,
+            url: URL || "https://app.minisend.xyz",
+            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || ogImage || `${URL || "https://app.minisend.xyz"}/minisend-logo.png",
             splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#FFFFFF",
           },
         },
@@ -91,15 +91,15 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Additional meta tags for better social sharing */}
-        <meta property="og:image" content={`${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/minisend-logo.png`} />
+        <meta property="og:image" content={`${process.env.NEXT_PUBLIC_URL || "https://app.minisend.xyz"}/minisend-logo.png`} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:type" content="image/png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/minisend-logo.png`} />
-        <meta name="twitter:domain" content="minisend.xyz" />
+        <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_URL || "https://app.minisend.xyz"}/minisend-logo.png`} />
+        <meta name="twitter:domain" content="app.minisend.xyz" />
         <meta name="theme-color" content="#0052ff" />
-        <link rel="canonical" href={process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"} />
+        <link rel="canonical" href={process.env.NEXT_PUBLIC_URL || "https://app.minisend.xyz"} />
         
         {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
@@ -127,14 +127,14 @@ export default function RootLayout({
         {/* Farcaster specific meta tag - correct format for Mini App embeds */}
         <meta name="fc:frame" content={JSON.stringify({
           version: "next",
-          imageUrl: `${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/minisend-logo.png`,
+          imageUrl: `${process.env.NEXT_PUBLIC_URL || "https://app.minisend.xyz"}/minisend-logo.png`,
           button: {
             title: "Launch Minisend",
             action: {
               type: "launch_frame",
               name: "Minisend",
-              url: process.env.NEXT_PUBLIC_URL || "https://minisend.xyz",
-              splashImageUrl: `${process.env.NEXT_PUBLIC_URL || "https://minisend.xyz"}/minisend-logo.png`,
+              url: process.env.NEXT_PUBLIC_URL || "https://app.minisend.xyz",
+              splashImageUrl: `${process.env.NEXT_PUBLIC_URL || "https://app.minisend.xyz"}/minisend-logo.png`,
               splashBackgroundColor: "#FFFFFF"
             }
           }

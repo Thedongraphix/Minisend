@@ -672,12 +672,12 @@ export default function ProofPage() {
             <div className="space-y-4">
               <div className="bg-[#0a0a0a] border border-gray-800/50 rounded-lg p-3">
                 <code className="text-gray-300 text-sm break-all font-mono">
-                  https://minisend.xyz/api/onchain-proof
+                  https://app.minisend.xyz/api/onchain-proof
                 </code>
               </div>
               <button
                 onClick={async () => {
-                  await navigator.clipboard.writeText('https://minisend.xyz/api/onchain-proof');
+                  await navigator.clipboard.writeText('https://app.minisend.xyz/api/onchain-proof');
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}

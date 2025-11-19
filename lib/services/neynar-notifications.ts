@@ -27,7 +27,7 @@ const MAX_BODY_LENGTH = 128;
 const MAX_URL_LENGTH = 1024;
 
 // Get app domain for URL validation
-const APP_DOMAIN = new URL(process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz').hostname;
+const APP_DOMAIN = new URL(process.env.NEXT_PUBLIC_URL || 'https://app.minisend.xyz').hostname;
 
 /**
  * Singleton Neynar client instance
@@ -302,7 +302,7 @@ export function createTransactionNotification(event: 'created' | 'validated' | '
   amount: number;
   orderId?: string;
 }): NotificationPayload {
-  const appUrl = process.env.NEXT_PUBLIC_URL || 'https://minisend.xyz';
+  const appUrl = process.env.NEXT_PUBLIC_URL || 'https://app.minisend.xyz';
 
   switch (event) {
     case 'created':
