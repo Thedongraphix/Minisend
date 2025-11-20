@@ -53,6 +53,7 @@ export async function GET() {
       primaryCategory: process.env.NEXT_PUBLIC_APP_PRIMARY_CATEGORY || "finance",
       tagline: process.env.NEXT_PUBLIC_APP_TAGLINE || "Cash out crypto instantly",
       tags: tags,
+      noindex: "default",
       
       // Social Sharing (Open Graph)
       ogTitle: process.env.NEXT_PUBLIC_APP_OG_TITLE || "Minisend - USDC to KES and NGN",
@@ -70,5 +71,6 @@ export async function GET() {
     baseBuilder: {
       allowedAddresses: ["0x7D6109a51781FB8dFCae01F5Cd5C70dF412a9CEc"]
     }
+    
   });
 }
