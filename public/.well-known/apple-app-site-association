@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "minisend.app",
+        "paths": ["/"]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["minisend.app"]
+  }
+}
