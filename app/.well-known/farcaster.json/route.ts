@@ -37,14 +37,14 @@ export async function GET() {
       description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Convert USDC to KES or NGN instantly",
       
       // Critical fields for Farcaster preview
-      imageUrl: process.env.NEXT_PUBLIC_IMAGE_URL || "https://app.minisend.xyz/minisend-logo.png",
+      imageUrl: process.env.NEXT_PUBLIC_IMAGE_URL || "https://app.minisend.xyz/hero-image.png",
       buttonTitle: process.env.NEXT_PUBLIC_BUTTON_TITLE || "Open Minisend",
 
       // Visual Assets
       iconUrl: process.env.NEXT_PUBLIC_ICON_URL || "https://app.minisend.xyz/minisend-logo.png",
       splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || "https://app.minisend.xyz/minisend-logo.png",
       splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#FFFFFF",
-      heroImageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || "https://app.minisend.xyz/minisend-logo.png",
+      heroImageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || "https://app.minisend.xyz/hero-image.png",
       
       // Screenshots (up to 3, portrait 1284x2778)
       screenshotUrls: screenshots,
@@ -58,7 +58,7 @@ export async function GET() {
       // Social Sharing (Open Graph)
       ogTitle: process.env.NEXT_PUBLIC_APP_OG_TITLE || "Minisend - USDC to KES and NGN",
       ogDescription: process.env.NEXT_PUBLIC_APP_OG_DESCRIPTION || "Convert USDC to local currency instantly",
-      ogImageUrl: process.env.NEXT_PUBLIC_APP_OG_IMAGE || "https://app.minisend.xyz/minisend-logo.png",
+      ogImageUrl: process.env.NEXT_PUBLIC_APP_OG_IMAGE || "https://app.minisend.xyz/hero-image.png",
 
       // Technical URLs
       homeUrl: URL || "https://app.minisend.xyz",
