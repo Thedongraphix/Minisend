@@ -63,8 +63,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
 
     other: {
-      // Farcaster Frame meta tag - correct format for Mini App embeds
-      "fc:frame": JSON.stringify({
+      // Farcaster Mini App embed metadata - enables preview cards when sharing links
+      "fc:miniapp": JSON.stringify({
         version: "next",
         imageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || ogImage || (URL || "https://app.minisend.xyz") + "/hero-image.png",
         button: {
