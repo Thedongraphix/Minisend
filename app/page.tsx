@@ -121,91 +121,81 @@ export default function App() {
   return (
     <AppProvider>
       <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme overflow-visible">
-      {/* Main heading outside container */}
-      <div className="w-full py-6 px-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <Image 
-              src="/minisend-logo.png" 
-              alt="Minisend" 
-              width={40}
-              height={40}
-              className="flex-shrink-0"
+        {/* Main heading outside container */}
+        <div className="w-full py-6 px-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-3 min-w-0 flex-1">
+              <Image
+                src="/minisend-logo.png"
+                alt="Minisend"
+                width={40}
+                height={40}
+                className="flex-shrink-0"
+              />
+              <h1 className="text-2xl font-bold text-white truncate">Minisend</h1>
+            </div>
+
+            {/* Wallet Island and Leaderboard in top right */}
+            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+              {/*<button
+                onClick={() => setActiveTab("leaderboard")}
+                className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all duration-200"
+                title="View Leaderboard"
+              >
+                <svg className="w-5 h-5 sm:w-5 sm:h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              </button>
+              */}
+              <ConnectWidget
+                className="scale-75 sm:scale-100"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Maintenance Notice */}
+        <div className="w-full max-w-md mx-auto px-4 mb-4">
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 flex items-center justify-center space-x-3">
+            <svg className="w-5 h-5 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm text-yellow-200 font-medium text-center">We are currently undergoing maintenance for NGN txs and will be back before 15th Nov 6pm EAT. MPesa is fully operational</p>
+          </div>
+        </div>
+
+        <div className="w-full max-w-md mx-auto px-4 pb-6 overflow-visible">
+          {saveFrameButton && (
+            <div className="flex justify-end mb-4">
+              {saveFrameButton}
+            </div>
+          )}
+
+          <main className="flex-1 overflow-visible relative">
+            {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
+            {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
+            {activeTab === "offramp" && <ExchangeFlow setActiveTab={setActiveTab} />}
+            {activeTab === "spend" && <SpendFlow setActiveTab={setActiveTab} />}
+            {activeTab === "swap" && <SwapInterface setActiveTab={setActiveTab} />}
+            {activeTab === "profile" && <ProfileView setActiveTab={setActiveTab} />}
+          </main>
+        </div>
+
+        {/* Footer outside container */}
+        <div className="w-full text-center px-4 py-4">
+          <div className="flex items-center justify-center">
+            <Image
+              src="/Base_lockup_2color.svg"
+              alt="Built on Base"
+              width={70}
+              height={18}
+              className="h-4 w-auto filter brightness-0 invert opacity-90"
             />
-            <h1 className="text-2xl font-bold text-white truncate">Minisend</h1>
-          </div>
-          
-{/* Maintenance Notice */}
-      <div className="w-full max-w-md mx-auto px-4 mb-4">
-        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 flex items-center justify-center space-x-3">
-          <svg className="w-5 h-5 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-          <p className="text-sm text-yellow-200 font-medium text-center">We are currently undergoing maintenance for NGN txs and will be back before 15th Nov 6pm EAT. MPesa is fully operational</p>
-        </div>
-      </div>
-
-      <div className="w-full max-w-md mx-auto px-4 pb-6 overflow-visible">
-        {saveFrameButton && (
-          <div className="flex justify-end mb-4">
-            {saveFrameButton}
-          </div>
-        )}
-        
-          {/* Wallet Island and Leaderboard in top right */}
-          <div className="flex items-center gap-2 flex-shrink-0 ml-2"> 
-            {/*<button
-              onClick={() => setActiveTab("leaderboard")}
-              className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all duration-200"
-              title="View Leaderboard"
-            >
-              <svg className="w-5 h-5 sm:w-5 sm:h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-            </button> 
-            */}
-            <ConnectWidget 
-              className="scale-75 sm:scale-100"
-            />
           </div>
         </div>
-      </div>
 
-      <div className="w-full max-w-md mx-auto px-4 pb-6 overflow-visible">
-        {saveFrameButton && (
-          <div className="flex justify-end mb-4">
-            {saveFrameButton}
-          </div>
-        )}
-
-
-        <main className="flex-1 overflow-visible relative">
-          {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
-          {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
-          {activeTab === "offramp" && <ExchangeFlow setActiveTab={setActiveTab} />}
-          {activeTab === "spend" && <SpendFlow setActiveTab={setActiveTab} />}
-          {activeTab === "swap" && <SwapInterface setActiveTab={setActiveTab} />}
-          {activeTab === "profile" && <ProfileView setActiveTab={setActiveTab} />}
-
-        </main>
-
-      </div>
-      
-      {/* Footer outside container */}
-      <div className="w-full text-center px-4 py-4">
-        <div className="flex items-center justify-center">
-          <Image 
-            src="/Base_lockup_2color.svg" 
-            alt="Built on Base" 
-            width={70}
-            height={18}
-            className="h-4 w-auto filter brightness-0 invert opacity-90"
-          />
-        </div>
-      </div>
-
-      <DebugPanel />
-      <WhatsAppButton showTooltip={showWhatsAppTooltip} />
+        <DebugPanel />
+        <WhatsAppButton showTooltip={showWhatsAppTooltip} />
       </div>
     </AppProvider>
   );
