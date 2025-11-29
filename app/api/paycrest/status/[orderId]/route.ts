@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/supabase/config';
 import { fixPaycrestAccountName } from '@/lib/utils/accountNameExtractor';
-import { trackDuneOrder } from '@/lib/dune-analytics';
 
 // Force dynamic rendering and Node.js runtime
 export const runtime = 'nodejs';
@@ -182,18 +181,6 @@ export async function GET(
                 settled_at: new Date().toISOString()
               })
               console.log(`✅ Settlement record created`)
-
-              // Track settlement success (P1)
-              trackDuneOrder('settled', {
-                orderId: orderId,
-                walletAddress: dbOrder.wallet_address,
-                usdcAmount: dbOrder.amount_in_usdc,
-                localCurrency: dbOrder.local_currency,
-                localAmount: dbOrder.amount_in_local,
-                status: order.status,
-                duration: new Date().getTime() - new Date(dbOrder.created_at).getTime(),
-                success: true,
-              });
 
             } catch (settlementError) {
               console.error(`❌ Failed to create settlement for ${orderId}:`, settlementError)
