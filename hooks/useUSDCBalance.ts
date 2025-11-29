@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { getUSDCContract } from '@/lib/contracts'
 import { base } from 'viem/chains'
+import { trackDuneBalance } from '@/lib/dune-analytics'
 // import { useMiniKit } from '@coinbase/onchainkit/minikit'
 
 interface UseUSDCBalanceReturn {
@@ -79,9 +80,27 @@ export function useUSDCBalance(): UseUSDCBalanceReturn {
       const balanceFormatted = Number(balanceBigInt) / 1000000 // 6 decimals
 
       setBalance(balanceFormatted.toFixed(2))
+
+      // Track balance fetch success (P1)
+      trackDuneBalance('fetched', {
+        walletAddress: currentAddress,
+        balance: balanceFormatted,
+        chainId: chainId,
+        success: true,
+      });
+
     } catch (err) {
-      console.error('Error fetching USDC balance:', err)
       setError('Failed to load balance')
+
+      // Track balance fetch error (P1)
+      if (currentAddress) {
+        trackDuneBalance('fetch_failed', {
+          walletAddress: currentAddress,
+          chainId: chainId,
+          success: false,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
     } finally {
       setIsLoading(false)
       setTimeout(() => setIsRefreshing(false), 500) // Keep pulse effect briefly
