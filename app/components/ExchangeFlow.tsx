@@ -15,6 +15,7 @@ import { SavedRecipients } from './SavedRecipients';
 import { saveRecipient, SavedRecipient } from '@/lib/recipient-storage';
 import { BankSelector } from './BankSelector';
 import { FormInput } from './FormInput';
+import { trackDuneWallet, trackDuneFlow } from '@/lib/dune-analytics';
 
 interface ExchangeFlowProps {
   setActiveTab: (tab: string) => void;
@@ -50,6 +51,14 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
           address: walletAddress,
           success: true,
         }, context || undefined);
+
+        // Track wallet connection in Dune (P2)
+        trackDuneWallet('connected', {
+          walletAddress: walletAddress,
+          chainId: 8453,
+          flow: 'offramp',
+          success: true,
+        });
       }
     }
   }, [mounted, context, address, isConnected, hasWallet, walletAddress, isMiniKitEnvironment]);
@@ -158,12 +167,27 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   useEffect(() => {
     if (!swapData) return;
 
+    const stepNumber = step === 'swap' ? 1 : step === 'details' ? 2 : step === 'payment' ? 3 : 4;
+
     trackOffRampEvent('step_changed', {
-      step: step === 'swap' ? 1 : step === 'details' ? 2 : step === 'payment' ? 3 : 4,
+      step: stepNumber,
       currency: swapData.currency,
       amount: parseFloat(swapData.localAmount) || 0,
     }, context || undefined);
-  }, [step, swapData, context]);
+
+    // Track flow progress in Dune (P2)
+    if (walletAddress) {
+      trackDuneFlow('step_progress', {
+        walletAddress: walletAddress,
+        flow: 'offramp',
+        step: stepNumber,
+        stepName: step,
+        currency: swapData.currency,
+        amount: parseFloat(swapData.localAmount) || 0,
+        success: true,
+      });
+    }
+  }, [step, swapData, context, walletAddress]);
 
   // Show wallet connection if not connected or not mounted
   // For MiniKit users, auto-detect wallet from context
