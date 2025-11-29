@@ -18,6 +18,17 @@ interface RevenueOrder {
   account_name?: string;
 }
 
+interface MonthlyRevenue {
+  month: string;
+  revenue: number;
+  txCount: number;
+  avgFee: number;
+  kesRevenue: number;
+  ngnRevenue: number;
+  kesCount: number;
+  ngnCount: number;
+}
+
 interface AnalyticsData {
   summary: {
     totalRevenue: number;
@@ -38,6 +49,7 @@ interface AnalyticsData {
     };
   };
   dailyRevenue: Array<{ date: string; revenue: number; txCount: number; avgFee: number }>;
+  monthlyRevenue: MonthlyRevenue[];
   orders: RevenueOrder[];
 }
 
@@ -151,6 +163,16 @@ export default function AnalyticsPage() {
       });
     } catch {
       return 'Invalid Date';
+    }
+  };
+
+  const formatMonthName = (monthStr: string) => {
+    try {
+      const [year, month] = monthStr.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return date.toLocaleString('en-US', { year: 'numeric', month: 'long' });
+    } catch {
+      return monthStr;
     }
   };
 
@@ -401,6 +423,75 @@ export default function AnalyticsPage() {
               <div className="flex justify-between">
                 <span className="text-xs sm:text-sm text-gray-400">Avg Fee</span>
                 <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByCurrency.NGN.avgFee.toFixed(4)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border border-gray-800/50 rounded-2xl p-4 sm:p-6 bg-[#111] mb-6 sm:mb-8">
+          <h3 className="text-base sm:text-lg font-medium text-white mb-4 sm:mb-6">Monthly Revenue Breakdown</h3>
+          <div className="overflow-x-auto">
+            <div className="min-w-full inline-block align-middle">
+              <div className="grid gap-3 sm:gap-4">
+                {analyticsData.monthlyRevenue.length > 0 ? (
+                  analyticsData.monthlyRevenue.slice().reverse().map((monthData) => (
+                    <div
+                      key={monthData.month}
+                      className="border border-gray-800/30 rounded-xl p-4 sm:p-5 hover:bg-[#0a0a0a] transition-colors"
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        <div className="flex-1">
+                          <h4 className="text-sm sm:text-base font-medium text-white mb-1">
+                            {formatMonthName(monthData.month)}
+                          </h4>
+                          <p className="text-xs sm:text-sm text-gray-400">
+                            {monthData.txCount} transaction{monthData.txCount !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 flex-1">
+                          <div>
+                            <p className="text-[10px] sm:text-xs text-gray-400 mb-1">Total Revenue</p>
+                            <p className="text-sm sm:text-base font-medium text-green-400">
+                              ${monthData.revenue.toFixed(4)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] sm:text-xs text-gray-400 mb-1">Avg Fee</p>
+                            <p className="text-sm sm:text-base font-medium text-white">
+                              ${monthData.avgFee.toFixed(4)}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] sm:text-xs text-gray-400 mb-1">KES Revenue</p>
+                            <p className="text-sm sm:text-base font-medium text-white">
+                              ${monthData.kesRevenue.toFixed(4)}
+                            </p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">
+                              {monthData.kesCount} tx
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-[10px] sm:text-xs text-gray-400 mb-1">NGN Revenue</p>
+                            <p className="text-sm sm:text-base font-medium text-white">
+                              ${monthData.ngnRevenue.toFixed(4)}
+                            </p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">
+                              {monthData.ngnCount} tx
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-gray-400">No monthly revenue data available</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

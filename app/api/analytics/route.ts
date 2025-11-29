@@ -246,6 +246,54 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
     });
   }
 
+  // Monthly revenue breakdown (all months with transactions)
+  const monthlyRevenueMap = new Map<string, { revenue: number; txCount: number; kesRevenue: number; ngnRevenue: number; kesCount: number; ngnCount: number }>();
+
+  completedOrders.forEach(order => {
+    if (!order.createdAt) return;
+
+    const orderDate = new Date(order.createdAt);
+    const monthKey = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}`;
+    const fee = typeof order.senderFee === 'number' ? order.senderFee : parseFloat(String(order.senderFee || 0));
+    const currency = order.recipient?.currency;
+
+    if (!monthlyRevenueMap.has(monthKey)) {
+      monthlyRevenueMap.set(monthKey, {
+        revenue: 0,
+        txCount: 0,
+        kesRevenue: 0,
+        ngnRevenue: 0,
+        kesCount: 0,
+        ngnCount: 0
+      });
+    }
+
+    const monthData = monthlyRevenueMap.get(monthKey)!;
+    monthData.revenue += fee;
+    monthData.txCount += 1;
+
+    if (currency === 'KES') {
+      monthData.kesRevenue += fee;
+      monthData.kesCount += 1;
+    } else if (currency === 'NGN') {
+      monthData.ngnRevenue += fee;
+      monthData.ngnCount += 1;
+    }
+  });
+
+  const monthlyRevenue = Array.from(monthlyRevenueMap.entries())
+    .map(([month, data]) => ({
+      month,
+      revenue: Number(data.revenue.toFixed(6)),
+      txCount: data.txCount,
+      avgFee: Number((data.txCount > 0 ? data.revenue / data.txCount : 0).toFixed(6)),
+      kesRevenue: Number(data.kesRevenue.toFixed(6)),
+      ngnRevenue: Number(data.ngnRevenue.toFixed(6)),
+      kesCount: data.kesCount,
+      ngnCount: data.ngnCount
+    }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+
   // Calculate growth (compare last 7 days vs previous 7 days)
   const previousWeekStart = new Date(weekAgo.getTime() - 7 * 24 * 60 * 60 * 1000);
   const previousWeekRevenue = completedOrders
@@ -291,6 +339,7 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
       }
     },
     dailyRevenue,
+    monthlyRevenue,
     orders: completedOrders.map(order => ({
       id: order.id,
       paycrest_order_id: order.id,
