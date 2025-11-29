@@ -4,6 +4,7 @@ import { detectKenyanCarrier } from '@/lib/utils/phoneCarrier';
 import { formatTillNumber, formatPhoneNumber } from '@/lib/utils/tillValidator';
 import { validateWalletBalance } from '@/lib/blockchain/balanceValidation';
 import { estimatePaycrestFees } from '@/lib/utils/feeEstimation';
+import { trackDuneOrder } from '@/lib/dune-analytics';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL || 'https://api.paycrest.io/v1';
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
@@ -280,6 +281,19 @@ export async function POST(request: NextRequest) {
 
     const order = await orderResponse.json();
     console.log('✅ PayCrest order created:', order);
+
+    // Track order creation success (P1)
+    trackDuneOrder('paycrest_created', {
+      orderId: order.data.id,
+      walletAddress: returnAddress,
+      usdcAmount: amountNum,
+      localCurrency: currency,
+      localAmount: amountNum * exchangeRate,
+      rate: exchangeRate,
+      receiveAddress: order.data.receiveAddress,
+      paymentMethod: phoneNumber ? 'mpesa' : tillNumber ? 'till' : accountNumber ? 'bank' : undefined,
+      success: true,
+    });
 
     // 🔒 Final balance validation with actual fees from PayCrest
     try {
