@@ -7,6 +7,7 @@ import { base } from 'viem/chains'
 import { Name } from '@coinbase/onchainkit/identity'
 import Image from 'next/image'
 import { useUSDCBalance } from '@/hooks/useUSDCBalance'
+import { trackDuneInteraction } from '@/lib/dune-analytics'
 
 export function BalanceView() {
   // Use wagmi hooks for Coinbase Wallet connection
@@ -144,7 +145,17 @@ export function BalanceView() {
                 </h2>
                 <div className="flex items-center space-x-1">
                   <button
-                    onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+                    onClick={() => {
+                      setIsBalanceVisible(!isBalanceVisible);
+
+                      // Track balance visibility toggle (P3)
+                      trackDuneInteraction('balance_visibility_toggled', {
+                        walletAddress: address,
+                        action: 'toggle_balance_visibility',
+                        component: 'balance_view',
+                        value: !isBalanceVisible,
+                      });
+                    }}
                     className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200 group/btn"
                     title={isBalanceVisible ? "Hide balance" : "Show balance"}
                     aria-label={isBalanceVisible ? "Hide balance" : "Show balance"}
@@ -163,7 +174,17 @@ export function BalanceView() {
                     </div>
                   </button>
                   <button
-                    onClick={fetchBalance}
+                    onClick={() => {
+                      fetchBalance();
+
+                      // Track balance refresh (P3)
+                      trackDuneInteraction('balance_refreshed', {
+                        walletAddress: address,
+                        action: 'refresh_balance',
+                        component: 'balance_view',
+                        value: true,
+                      });
+                    }}
                     className={`text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200 group/btn ${isRefreshing ? 'animate-pulse' : ''}`}
                     title="Refresh balance"
                     aria-label="Refresh balance"
@@ -198,7 +219,17 @@ export function BalanceView() {
               </div>
               {address && (
                 <button
-                  onClick={() => copyToClipboard(address)}
+                  onClick={() => {
+                    copyToClipboard(address);
+
+                    // Track address copy (P3)
+                    trackDuneInteraction('address_copied', {
+                      walletAddress: address,
+                      action: 'copy_address',
+                      component: 'balance_view',
+                      value: true,
+                    });
+                  }}
                   className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-white/10 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200 group/copy"
                   title={copyFeedback ? "Copied!" : "Copy full address"}
                   aria-label="Copy wallet address"
