@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useUSDCBalance } from "@/hooks/useUSDCBalance"
+import { useAccount } from "wagmi"
 import Image from "next/image"
+import { trackDuneExchange, trackDuneInteraction } from "@/lib/dune-analytics"
 
 interface CurrencySwapInterfaceProps {
   onContinue: (data: {
@@ -21,6 +23,7 @@ const CURRENCIES = [
 
 export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySwapInterfaceProps) {
   const { balanceNum: usdcBalance, isLoading: balanceLoading } = useUSDCBalance()
+  const { address } = useAccount()
 
   const [receiveCurrency, setReceiveCurrency] = useState<"KES" | "NGN" | null>(null)
   const [sendAmount, setSendAmount] = useState("")
@@ -52,21 +55,54 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
       if (data.success && data.rate && typeof data.rate === 'number') {
         setRate(data.rate)
         setRateError(null)
+
+        // Track rate fetch success (P3)
+        trackDuneExchange('rate_fetched', {
+          fromCurrency: 'USDC',
+          toCurrency: toCurrency,
+          rate: data.rate,
+          walletAddress: address,
+          source: 'paycrest',
+          success: true,
+        });
+
       } else {
         // API responded but with invalid data - use fallback
         const fallbackRate = toCurrency === "KES" ? 150.5 : 1650.0
         setRate(fallbackRate)
         setRateError("Using estimated rate")
+
+        // Track rate fallback (P3)
+        trackDuneExchange('rate_fallback', {
+          fromCurrency: 'USDC',
+          toCurrency: toCurrency,
+          rate: fallbackRate,
+          walletAddress: address,
+          source: 'fallback',
+          success: false,
+          error: 'API returned invalid data',
+        });
       }
     } catch {
       // Network error or parsing error - use fallback
       const fallbackRate = toCurrency === "KES" ? 150.5 : 1650.0
       setRate(fallbackRate)
       setRateError("Using estimated rate")
+
+      // Track rate error (P3)
+      trackDuneExchange('rate_error', {
+        fromCurrency: 'USDC',
+        toCurrency: toCurrency,
+        rate: fallbackRate,
+        walletAddress: address,
+        source: 'fallback',
+        success: false,
+        error: 'Network or parsing error',
+      });
     } finally {
       setIsLoadingRate(false)
     }
-  }, [])
+  }, [address])
 
   useEffect(() => {
     if (sendDebounceTimerRef.current) {
@@ -139,6 +175,18 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
       if (rate) {
         setReceiveAmount((maxSendableAmount * rate).toFixed(2))
       }
+
+      // Track MAX button click (P3)
+      trackDuneInteraction('max_clicked', {
+        walletAddress: address,
+        action: 'max_amount_selected',
+        component: 'currency_swap',
+        value: maxSendableAmount,
+        metadata: {
+          balance: usdcBalance,
+          currency: receiveCurrency,
+        },
+      });
     }
   }
 
@@ -291,10 +339,32 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
                         <button
                           key={currency.code}
                           onClick={() => {
+                            const previousCurrency = receiveCurrency;
                             setReceiveCurrency(currency.code as "KES" | "NGN")
                             setShowCurrencyMenu(false)
                             setSendAmount("")
                             setReceiveAmount("")
+
+                            // Track currency selection (P3)
+                            trackDuneExchange('currency_selected', {
+                              fromCurrency: 'USDC',
+                              toCurrency: currency.code,
+                              walletAddress: address,
+                              success: true,
+                            });
+
+                            if (previousCurrency && previousCurrency !== currency.code) {
+                              trackDuneInteraction('currency_switched', {
+                                walletAddress: address,
+                                action: 'currency_changed',
+                                component: 'currency_swap',
+                                value: currency.code,
+                                metadata: {
+                                  from: previousCurrency,
+                                  to: currency.code,
+                                },
+                              });
+                            }
                           }}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#3a3a3c] transition-colors"
                         >
