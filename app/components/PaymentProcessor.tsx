@@ -7,7 +7,6 @@ import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { TransactionHandler } from './TransactionHandler';
 import { USDC_CONTRACTS } from '@/lib/paymaster-config';
-import { trackDuneTransaction, trackDuneOrder } from '@/lib/dune-analytics';
 
 interface PaymentProcessorProps {
   amount: string;
@@ -132,16 +131,6 @@ export function PaymentProcessor({
     pollingStartedRef.current = false;
     successTriggeredRef.current = false;
 
-    // Track order creation started (P1)
-    trackDuneOrder('creation_started', {
-      orderId: '', // Will be set after creation
-      walletAddress: returnAddress,
-      usdcAmount: amount,
-      localCurrency: currency,
-      localAmount: amount,
-      paymentMethod: phoneNumber ? 'mpesa' : tillNumber ? 'till' : accountNumber ? 'bank' : undefined,
-    });
-
     try {
       const response = await fetch('/api/paycrest/orders/simple', {
         method: 'POST',
@@ -169,17 +158,6 @@ export function PaymentProcessor({
         if (response.status === 400 && errorData?.error === 'Insufficient funds') {
           setStatus('insufficient-funds');
           setErrorDetails(errorData.balanceInfo);
-
-          // Track insufficient funds (P1)
-          trackDuneOrder('insufficient_funds', {
-            orderId: '',
-            walletAddress: returnAddress,
-            usdcAmount: errorData?.balanceInfo?.requiredAmount || amount,
-            localCurrency: currency,
-            localAmount: amount,
-            success: false,
-            error: 'Insufficient USDC balance',
-          });
 
           return;
         }
@@ -212,35 +190,12 @@ export function PaymentProcessor({
         setPaycrestOrder(paycrestOrderObj);
         setStatus('ready-to-pay');
 
-        // Track order creation success (P1)
-        trackDuneOrder('created', {
-          orderId: paycrestOrderObj.id,
-          walletAddress: returnAddress,
-          usdcAmount: paycrestOrderObj.amount,
-          localCurrency: currency,
-          localAmount: amount,
-          receiveAddress: paycrestOrderObj.receiveAddress,
-          paymentMethod: phoneNumber ? 'mpesa' : tillNumber ? 'till' : accountNumber ? 'bank' : undefined,
-          success: true,
-        });
-
       } else {
         throw new Error('Invalid response from PayCrest API');
       }
     } catch (error) {
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
-
-      // Track order creation error (P1)
-      trackDuneOrder('creation_failed', {
-        orderId: '',
-        walletAddress: returnAddress,
-        usdcAmount: amount,
-        localCurrency: currency,
-        localAmount: amount,
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
     }
   }, [amount, phoneNumber, tillNumber, accountNumber, bankCode, accountName, currency, returnAddress, rate, onError, context?.user?.fid]);
 
@@ -276,38 +231,12 @@ export function PaymentProcessor({
     switch (status.statusName) {
       case 'transactionPending':
         setStatus('processing');
-
-        // Track transaction pending (P1)
-        if (paycrestOrder) {
-          trackDuneTransaction('pending', {
-            walletAddress: returnAddress,
-            orderId: paycrestOrder.id,
-            amount: paycrestOrder.amount,
-            currency: currency,
-            receiveAddress: paycrestOrder.receiveAddress,
-            chainId: base.id,
-          });
-        }
         break;
       case 'success':
         if (successTriggeredRef.current) return;
         successTriggeredRef.current = true;
 
         setStatus('success');
-
-        // Track transaction success (P1)
-        if (paycrestOrder) {
-          trackDuneTransaction('confirmed', {
-            walletAddress: returnAddress,
-            orderId: paycrestOrder.id,
-            transactionHash: (status as { statusData?: { transactionReceipts?: Array<{ transactionHash: string }> } }).statusData?.transactionReceipts?.[0]?.transactionHash,
-            amount: paycrestOrder.amount,
-            currency: currency,
-            receiveAddress: paycrestOrder.receiveAddress,
-            chainId: base.id,
-            success: true,
-          });
-        }
 
         if (paycrestOrder?.id) {
           startPolling(paycrestOrder.id);
@@ -318,20 +247,6 @@ export function PaymentProcessor({
       case 'error':
         setStatus('error');
         onError('Transaction failed');
-
-        // Track transaction error (P1)
-        if (paycrestOrder) {
-          trackDuneTransaction('failed', {
-            walletAddress: returnAddress,
-            orderId: paycrestOrder.id,
-            amount: paycrestOrder.amount,
-            currency: currency,
-            receiveAddress: paycrestOrder.receiveAddress,
-            chainId: base.id,
-            success: false,
-            error: 'Transaction failed',
-          });
-        }
         break;
     }
   }, [paycrestOrder, returnAddress, currency, startPolling, onError, onSuccess]);
@@ -364,15 +279,6 @@ export function PaymentProcessor({
       setSwipeProgress(100);
       setIsSwipeComplete(true);
       setIsDragging(false);
-
-      // Track swipe confirmation (P3)
-      trackDuneOrder('swipe_confirmed', {
-        orderId: '',
-        walletAddress: returnAddress,
-        usdcAmount: amount,
-        localCurrency: currency,
-        localAmount: amount,
-      });
 
       createPaycrestOrder();
     }
