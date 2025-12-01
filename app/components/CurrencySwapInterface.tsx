@@ -43,7 +43,12 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
     setRateError(null)
 
     try {
-      const response = await fetch(`/api/paycrest/rates/USDC/1/${toCurrency}`)
+      // Use Pretium for KES, PayCrest for NGN
+      const endpoint = toCurrency === 'KES'
+        ? `/api/pretium/rates?currency=${toCurrency}`
+        : `/api/paycrest/rates/USDC/1/${toCurrency}`;
+
+      const response = await fetch(endpoint)
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
@@ -51,10 +56,20 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
 
       const data = await response.json()
 
-      if (data.success && data.rate && typeof data.rate === 'number') {
-        setRate(data.rate)
-        setRateError(null)
+      // Handle different response formats from Pretium vs PayCrest
+      let fetchedRate: number | null = null;
 
+      if (toCurrency === 'KES' && data.success && data.rates?.quoted_rate) {
+        // Pretium response format
+        fetchedRate = data.rates.quoted_rate;
+      } else if (data.success && data.rate && typeof data.rate === 'number') {
+        // PayCrest response format
+        fetchedRate = data.rate;
+      }
+
+      if (fetchedRate && typeof fetchedRate === 'number') {
+        setRate(fetchedRate)
+        setRateError(null)
       } else {
         // API responded but with invalid data - use fallback
         const fallbackRate = toCurrency === "KES" ? 150.5 : 1650.0
