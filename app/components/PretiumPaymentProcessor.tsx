@@ -234,6 +234,17 @@ export function PretiumPaymentProcessor({
     handleSwipeStart();
   };
 
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length > 0) {
+      handleSwipeMove(e.touches[0].clientX);
+    }
+  }, [handleSwipeMove]);
+
+  const handleTouchEnd = useCallback(() => {
+    handleSwipeEnd();
+  }, [handleSwipeEnd]);
+
   // Add mouse listeners
   useEffect(() => {
     if (isDragging) {
@@ -246,6 +257,19 @@ export function PretiumPaymentProcessor({
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
+
+  // Add touch listeners
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('touchmove', handleTouchMove as never, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+    }
+
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove as never);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDragging, handleTouchMove, handleTouchEnd]);
 
   return (
     <div className="space-y-4">
