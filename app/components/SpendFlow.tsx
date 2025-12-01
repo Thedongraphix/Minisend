@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { PaymentProcessor } from './PaymentProcessor';
+import { PretiumPaymentProcessor } from './PretiumPaymentProcessor';
 import { BalanceView } from './BalanceView';
 import { ConnectionHandler } from './ConnectionHandler';
 import { AdvancedSelector } from './AdvancedSelector';
@@ -34,11 +35,13 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
   } | null>(null);
   const [formData, setFormData] = useState({
     accountName: '',
+    paybillAccount: '', // For paybill account number
   });
   const [paymentMethod, setPaymentMethod] = useState<{
-    type: 'phone' | 'till';
+    type: 'phone' | 'till' | 'paybill';
     value: string;
     formatted: string;
+    paybillAccount?: string; // For paybill payments
   } | null>(null);
 
   // Show wallet connection if not connected or not mounted
@@ -52,7 +55,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Spend USDC</h1>
-          <p className="text-gray-300">Pay businesses with till numbers</p>
+          <p className="text-gray-300">Pay businesses with M-Pesa till & paybill</p>
         </div>
 
         <ConnectionHandler showBalance={false} />
@@ -200,7 +203,11 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
                     {swapData.currency === 'KES' ? 'KSh' : '₦'}{parseFloat(swapData.localAmount).toLocaleString()}
                   </div>
                   <div className="text-[#8e8e93] text-xs sm:text-sm mt-1 sm:mt-1.5 font-medium truncate">
-                    {paymentMethod.type === 'till' ? `Till ${paymentMethod.formatted}` : paymentMethod.formatted}
+                    {paymentMethod.type === 'till'
+                      ? `Till ${paymentMethod.formatted}`
+                      : paymentMethod.type === 'paybill'
+                        ? `Paybill ${paymentMethod.formatted}${formData.paybillAccount ? ` - ${formData.paybillAccount}` : ''}`
+                        : paymentMethod.formatted}
                   </div>
                 </div>
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2c2c2e] border border-[#3a3a3c] rounded-xl flex items-center justify-center flex-shrink-0">
@@ -252,19 +259,36 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             </div>
           </div>
 
-          <PaymentProcessor
-            amount={swapData.usdcAmount}
-            phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
-            tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
-            accountName={formData.accountName}
-            currency={swapData.currency}
-            returnAddress={address || ''}
-            rate={swapData.rate}
-            onSuccess={() => setStep('success')}
-            onError={() => {
-              // Error handled by PaymentProcessor
-            }}
-          />
+          {swapData.currency === 'KES' ? (
+            <PretiumPaymentProcessor
+              amount={swapData.usdcAmount}
+              phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
+              tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
+              paybillNumber={paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined}
+              paybillAccount={paymentMethod.type === 'paybill' ? formData.paybillAccount : undefined}
+              accountName={formData.accountName}
+              returnAddress={address || ''}
+              rate={swapData.rate}
+              onSuccess={() => setStep('success')}
+              onError={() => {
+                // Error handling managed by PretiumPaymentProcessor
+              }}
+            />
+          ) : (
+            <PaymentProcessor
+              amount={swapData.usdcAmount}
+              phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
+              tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
+              accountName={formData.accountName}
+              currency={swapData.currency}
+              returnAddress={address || ''}
+              rate={swapData.rate}
+              onSuccess={() => setStep('success')}
+              onError={() => {
+                // Error handled by PaymentProcessor
+              }}
+            />
+          )}
 
           <button
             onClick={() => setStep('details')}
@@ -285,7 +309,13 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
 
           <p className="text-gray-300 text-sm">
-            Your {swapData.currency} has been sent to {paymentMethod.type === 'till' ? `Till ${paymentMethod.formatted}` : paymentMethod.formatted}
+            Your {swapData.currency} has been sent to {
+              paymentMethod.type === 'till'
+                ? `Till ${paymentMethod.formatted}`
+                : paymentMethod.type === 'paybill'
+                  ? `Paybill ${paymentMethod.formatted}${formData.paybillAccount ? ` - ${formData.paybillAccount}` : ''}`
+                  : paymentMethod.formatted
+            }
           </p>
 
           <div className="space-y-3">
@@ -293,7 +323,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
               onClick={() => {
                 setStep('swap');
                 setSwapData(null);
-                setFormData({ accountName: '' });
+                setFormData({ accountName: '', paybillAccount: '' });
                 setPaymentMethod(null);
               }}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
