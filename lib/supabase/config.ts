@@ -36,6 +36,9 @@ export interface Order {
   local_currency: 'KES' | 'NGN'
   phone_number?: string
   account_number?: string
+  till_number?: string
+  paybill_number?: string
+  paybill_account?: string
   carrier?: string
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'fulfilled' | 'validated' | 'settled' | 'refunded' | 'expired'
   paycrest_status?: string
@@ -54,6 +57,9 @@ export interface Order {
   account_name?: string
   memo?: string
   fid?: number // Farcaster ID for push notifications (only present for Farcaster users)
+  payment_provider?: 'PAYCREST_KES' | 'PAYCREST_NGN' | 'PRETIUM_KES'
+  pretium_transaction_code?: string
+  pretium_receipt_number?: string
   created_at: string
   updated_at: string
   completed_at?: string
@@ -455,7 +461,7 @@ export class DatabaseService {
 
   // Polling
   static async logPollingAttempt(orderId: string, paycrestOrderId: string, attemptNumber: number, statusReturned?: string, responseData?: Record<string, unknown>): Promise<PollingAttempt> {
-    const { data, error } = await supabaseAdmin
+    const { data, error} = await supabaseAdmin
       .from('polling_attempts')
       .insert({
         order_id: orderId,
@@ -468,6 +474,110 @@ export class DatabaseService {
       .single()
 
     if (error) throw error
+    return data
+  }
+
+  // Pretium-specific methods
+  static async createPretiumOrder(orderData: {
+    transactionCode: string;
+    userId: string;
+    walletAddress: string;
+    amountInUsdc: number;
+    amountInLocal: number;
+    currency: 'KES';
+    phoneNumber?: string;
+    tillNumber?: string;
+    paybillNumber?: string;
+    paybillAccount?: string;
+    accountName: string;
+    rate: number;
+    transactionHash: string;
+    status: string;
+    pretiumStatus: string;
+    fee: number;
+    fid?: number;
+  }): Promise<Order> {
+    const { data, error } = await supabaseAdmin
+      .from('orders')
+      .insert({
+        paycrest_order_id: orderData.transactionCode,
+        pretium_transaction_code: orderData.transactionCode,
+        user_id: orderData.userId,
+        wallet_address: orderData.walletAddress,
+        amount_in_usdc: orderData.amountInUsdc,
+        amount_in_local: orderData.amountInLocal,
+        local_currency: orderData.currency,
+        phone_number: orderData.phoneNumber || '',
+        till_number: orderData.tillNumber || '',
+        paybill_number: orderData.paybillNumber || '',
+        paybill_account: orderData.paybillAccount || '',
+        account_name: orderData.accountName,
+        rate: orderData.rate,
+        transaction_hash: orderData.transactionHash,
+        status: orderData.status,
+        paycrest_status: orderData.pretiumStatus,
+        payment_provider: 'PRETIUM_KES',
+        sender_fee: orderData.fee,
+        fid: orderData.fid,
+        network: 'base',
+        token: 'USDC'
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async updatePretiumOrderStatus(
+    transactionCode: string,
+    status: string,
+    pretiumStatus: string,
+    receiptNumber?: string,
+    publicName?: string,
+    errorMessage?: string
+  ): Promise<Order> {
+    const updateData: Record<string, unknown> = {
+      status,
+      paycrest_status: pretiumStatus,
+      updated_at: new Date().toISOString()
+    };
+
+    if (receiptNumber) {
+      updateData.pretium_receipt_number = receiptNumber;
+    }
+
+    if (publicName) {
+      updateData.account_name = publicName;
+    }
+
+    if (status === 'completed') {
+      updateData.completed_at = new Date().toISOString();
+    }
+
+    if (errorMessage) {
+      updateData.memo = errorMessage;
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('orders')
+      .update(updateData)
+      .eq('pretium_transaction_code', transactionCode)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  static async getOrderByPretiumTransactionCode(transactionCode: string): Promise<Order | null> {
+    const { data, error } = await supabaseAdmin
+      .from('orders')
+      .select('*')
+      .eq('pretium_transaction_code', transactionCode)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error
     return data
   }
 }
