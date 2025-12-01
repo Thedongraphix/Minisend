@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { useAccount } from 'wagmi';
 import { PaymentProcessor } from './PaymentProcessor';
+import { PretiumPaymentProcessor } from './PretiumPaymentProcessor';
 import { BalanceView } from './BalanceView';
 import { ConnectionHandler } from './ConnectionHandler';
 import { Button } from './BaseComponents';
@@ -90,10 +91,47 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
     }
   };
 
+  // Verify M-Pesa phone number for KES
+  const verifyPhoneNumber = useCallback(async (phoneNumber: string) => {
+    if (!phoneNumber) return;
+
+    setVerifyingAccount(true);
+    try {
+      const response = await fetch('/api/pretium/verify-phone', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber,
+          type: 'MOBILE'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.isValid) {
+        // Set the account name from Pretium's response if we got one
+        if (data.accountName && data.verified) {
+          setFormData(prev => ({ ...prev, accountName: data.accountName }));
+        }
+        // Mark as verified if phone format is valid (even if we don't get name from Pretium)
+        setAccountVerified(true);
+      } else {
+        setAccountVerified(false);
+        throw new Error(data.error || 'Phone number validation failed');
+      }
+    } catch {
+      setAccountVerified(false);
+    } finally {
+      setVerifyingAccount(false);
+    }
+  }, [formData.accountName]);
+
   // Verify account for NGN
   const verifyAccount = useCallback(async (accountNumber: string, bankCode: string) => {
     if (!accountNumber || !bankCode) return;
-    
+
     setVerifyingAccount(true);
     try {
       const response = await fetch('/api/paycrest/verify-account', {
@@ -108,7 +146,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Set the account name from PayCrest's response if user hasn't entered one
         if (!formData.accountName && data.accountName && data.accountName !== 'OK') {
@@ -127,10 +165,28 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   }, [formData.accountName]);
 
   // Check if account number format is valid (10+ digits for Nigerian banks)
-  const isAccountNumberValid = formData.accountNumber.length >= 10 && 
-    formData.accountNumber.length <= 12 && 
+  const isAccountNumberValid = formData.accountNumber.length >= 10 &&
+    formData.accountNumber.length <= 12 &&
     /^\d+$/.test(formData.accountNumber);
-  
+
+  // Check if phone number format is valid (Kenyan mobile numbers)
+  const isPhoneNumberValid = formData.phoneNumber.length >= 9 &&
+    formData.phoneNumber.length <= 12 &&
+    /^(\+?254|0)?[17]\d{8}$/.test(formData.phoneNumber);
+
+  // Auto-verify phone number for KES
+  useEffect(() => {
+    if (swapData && swapData.currency === 'KES' && isPhoneNumberValid && !accountVerified) {
+      const debounceTimer = setTimeout(() => {
+        verifyPhoneNumber(formData.phoneNumber);
+      }, 1000); // Debounce for 1 second
+
+      return () => clearTimeout(debounceTimer);
+    } else if (swapData && swapData.currency === 'KES' && formData.phoneNumber && !isPhoneNumberValid) {
+      // Reset verification state if phone number becomes invalid
+      setAccountVerified(false);
+    }
+  }, [formData.phoneNumber, swapData, isPhoneNumberValid, accountVerified, verifyPhoneNumber]);
 
   // Auto-verify account when account number and bank code are provided and format is valid
   useEffect(() => {
@@ -339,6 +395,22 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                 }
                 helperText="Full name as registered with M-Pesa"
               />
+
+              {accountVerified && formData.accountName && !verifyingAccount && (
+                <div className="p-4 bg-[#1c1c1e] border border-green-500/30 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-green-400 font-medium text-sm">Phone Number Verified</div>
+                      <div className="text-white font-semibold truncate">{formData.accountName}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -535,55 +607,105 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             </div>
           </div>
 
-          <PaymentProcessor
-            amount={swapData.usdcAmount}
-            phoneNumber={formData.phoneNumber}
-            accountNumber={formData.accountNumber}
-            bankCode={formData.bankCode}
-            accountName={formData.accountName}
-            currency={swapData.currency}
-            returnAddress={walletAddress || ''}
-            rate={swapData.rate}
-            onSuccess={() => {
-              trackOffRampEvent('payment_completed', {
-                currency: swapData.currency,
-                amount: parseFloat(swapData.localAmount),
-                usdcAmount: parseFloat(swapData.usdcAmount),
-                rate: swapData.rate,
-                phoneNumber: formData.phoneNumber,
-                accountNumber: formData.accountNumber,
-                bankCode: formData.bankCode,
-                step: 3,
-                success: true,
-              }, context || undefined);
+          {swapData.currency === 'KES' ? (
+            <PretiumPaymentProcessor
+              amount={swapData.usdcAmount}
+              phoneNumber={formData.phoneNumber}
+              accountName={formData.accountName}
+              returnAddress={walletAddress || ''}
+              rate={swapData.rate}
+              onSuccess={() => {
+                trackOffRampEvent('payment_completed', {
+                  currency: swapData.currency,
+                  amount: parseFloat(swapData.localAmount),
+                  usdcAmount: parseFloat(swapData.usdcAmount),
+                  rate: swapData.rate,
+                  phoneNumber: formData.phoneNumber,
+                  provider: 'PRETIUM',
+                  step: 3,
+                  success: true,
+                }, context || undefined);
 
-              // Auto-save recipient for future use
-              if (formData.accountName) {
-                const bankName = institutions.find(inst => inst.code === formData.bankCode)?.name;
-                saveRecipient({
-                  type: swapData.currency,
+                // Auto-save recipient for future use
+                if (formData.accountName) {
+                  saveRecipient({
+                    type: swapData.currency,
+                    phoneNumber: formData.phoneNumber,
+                    accountNumber: formData.accountNumber,
+                    accountName: formData.accountName,
+                    bankCode: formData.bankCode,
+                    bankName: undefined,
+                  });
+                }
+
+                setStep('success');
+              }}
+              onError={(error) => {
+                trackOffRampEvent('payment_error', {
+                  currency: swapData.currency,
+                  amount: parseFloat(swapData.localAmount),
+                  usdcAmount: parseFloat(swapData.usdcAmount),
+                  rate: swapData.rate,
+                  provider: 'PRETIUM',
+                  error: error,
+                  step: 3,
+                  success: false,
+                }, context || undefined);
+              }}
+            />
+          ) : (
+            <PaymentProcessor
+              amount={swapData.usdcAmount}
+              phoneNumber={formData.phoneNumber}
+              accountNumber={formData.accountNumber}
+              bankCode={formData.bankCode}
+              accountName={formData.accountName}
+              currency={swapData.currency}
+              returnAddress={walletAddress || ''}
+              rate={swapData.rate}
+              onSuccess={() => {
+                trackOffRampEvent('payment_completed', {
+                  currency: swapData.currency,
+                  amount: parseFloat(swapData.localAmount),
+                  usdcAmount: parseFloat(swapData.usdcAmount),
+                  rate: swapData.rate,
                   phoneNumber: formData.phoneNumber,
                   accountNumber: formData.accountNumber,
-                  accountName: formData.accountName,
                   bankCode: formData.bankCode,
-                  bankName: bankName,
-                });
-              }
+                  provider: 'PAYCREST',
+                  step: 3,
+                  success: true,
+                }, context || undefined);
 
-              setStep('success');
-            }}
-            onError={(error) => {
-              trackOffRampEvent('payment_error', {
-                currency: swapData.currency,
-                amount: parseFloat(swapData.localAmount),
-                usdcAmount: parseFloat(swapData.usdcAmount),
-                rate: swapData.rate,
-                error: error,
-                step: 3,
-                success: false,
-              }, context || undefined);
-            }}
-          />
+                // Auto-save recipient for future use
+                if (formData.accountName) {
+                  const bankName = institutions.find(inst => inst.code === formData.bankCode)?.name;
+                  saveRecipient({
+                    type: swapData.currency,
+                    phoneNumber: formData.phoneNumber,
+                    accountNumber: formData.accountNumber,
+                    accountName: formData.accountName,
+                    bankCode: formData.bankCode,
+                    bankName: bankName,
+                  });
+                }
+
+                setStep('success');
+              }}
+              onError={(error) => {
+                trackOffRampEvent('payment_error', {
+                  currency: swapData.currency,
+                  amount: parseFloat(swapData.localAmount),
+                  usdcAmount: parseFloat(swapData.usdcAmount),
+                  rate: swapData.rate,
+                  provider: 'PAYCREST',
+                  error: error,
+                  step: 3,
+                  success: false,
+                }, context || undefined);
+              }}
+            />
+          )}
 
           <button
             onClick={() => setStep('details')}
