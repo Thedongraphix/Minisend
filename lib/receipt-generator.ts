@@ -200,32 +200,44 @@ export class ReceiptGenerator {
 
   private renderDetails(): void {
     // Title
-    this.text('Transaction Details', this.page.margin, this.y, 
+    this.text('Transaction Details', this.page.margin, this.y,
       { size: 12, style: 'bold' });
     this.y += 12;
-    
-    // Details grid
-    const details = [
+
+    // Build details array
+    const details: [string, string][] = [
       ['Exchange Rate', `1 USDC = ${this.data.exchangeRate.toFixed(2)} ${this.data.localCurrency}`],
       ['Network', 'Base Network'],
       ['Token', 'USD Coin (USDC)'],
       ['From', this.truncate(this.data.senderWallet)],
       ['Transaction Fee', `$${this.data.totalFees.toFixed(4)} USDC`]
     ];
-    
+
+    // Add M-Pesa receipt number if available (for KES transactions)
+    if (this.data.mpesaReceiptNumber && this.data.localCurrency === 'KES') {
+      details.push(['M-Pesa Code', this.data.mpesaReceiptNumber]);
+    }
+
     const h = details.length * 8 + 10;
     this.card(h);
-    
+
     const leftX = this.page.margin + 12;
     const rightX = this.page.width - this.page.margin - 12;
     let detailY = this.y + 12;
-    
+
     details.forEach(([label, value]) => {
       this.text(label, leftX, detailY, { size: 9, color: 'muted' });
-      this.text(value, rightX, detailY, { size: 9, style: 'bold', align: 'right' });
+      // Highlight M-Pesa code in green
+      const isReceiptNumber = label === 'M-Pesa Code';
+      this.text(value, rightX, detailY, {
+        size: 9,
+        style: 'bold',
+        align: 'right',
+        color: isReceiptNumber ? 'success' : 'text'
+      });
       detailY += 8;
     });
-    
+
     this.y += h + 15;
   }
 
@@ -383,6 +395,7 @@ export function createReceiptFromOrder(orderData: OrderData): ReceiptData {
     blockchainTxHash: orderData.blockchain_tx_hash || orderData.transactionHash,
     
     receiptNumber,
+    mpesaReceiptNumber: orderData.pretium_receipt_number, // M-Pesa transaction code
     supportEmail: 'support@minisend.xyz',
     supportUrl: 'https://app.minisend.xyz/support'
   };
