@@ -33,6 +33,7 @@ export interface ReceiptData {
   
   // Branding & Support
   receiptNumber: string; // Generated unique receipt number
+  mpesaReceiptNumber?: string; // M-Pesa transaction code (TKT...) for KES transactions
   supportEmail: string;
   supportUrl: string;
 }

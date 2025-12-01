@@ -27,4 +27,6 @@ export interface OrderData {
   accountNumber?: string;
   bankCode?: string;
   returnAddress?: string;
+  pretium_receipt_number?: string; // M-Pesa transaction code
+  pretium_transaction_code?: string; // Pretium internal code
 }
