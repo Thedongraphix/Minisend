@@ -113,16 +113,22 @@ export function PretiumPaymentProcessor({
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to initiate disbursement');
+        const errorData = await response.json();
+        const errorMsg = errorData.error || 'Failed to initiate disbursement';
+        throw new Error(errorMsg);
       }
 
       const result = await response.json();
 
-      startPolling(result.transactionCode);
+      if (result.transactionCode) {
+        startPolling(result.transactionCode);
+      }
     } catch (error) {
-      setStatus('error');
-      onError(error instanceof Error ? error.message : 'Failed to initiate disbursement');
+      // Don't set error status - user already sent USDC successfully
+      // Just log the error for debugging
+      if (error instanceof Error) {
+        onError(error.message);
+      }
     }
   }, [amount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountName, returnAddress, context, startPolling, onError]);
 

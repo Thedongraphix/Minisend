@@ -173,8 +173,12 @@ export async function POST(request: NextRequest) {
         fee_amount: feeAmount,
         payment_type: paymentType,
       });
-    } catch {
-      // Don't fail the request if database operations fail
+    } catch (dbError) {
+      console.error('Failed to save order to database:', {
+        transaction_code,
+        error: dbError instanceof Error ? dbError.message : dbError,
+        stack: dbError instanceof Error ? dbError.stack : undefined
+      });
     }
 
     return NextResponse.json({
