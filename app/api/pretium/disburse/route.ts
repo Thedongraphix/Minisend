@@ -77,25 +77,24 @@ export async function POST(request: NextRequest) {
     // Use buying_rate for offramp (we're buying KES from Pretium)
     const exchangeRate = rateResponse.data.buying_rate;
 
-    // Calculate what recipient wants to receive in KES
-    // Use Math.round instead of Math.floor to avoid recipient receiving less than quoted
-    const recipientAmount = Math.round(amountNum * exchangeRate);
+    // Calculate total KES amount from the USDC user is sending
+    // The USDC amount already includes everything (recipient amount + fee)
+    const totalKESFromUSdc = Math.round(amountNum * exchangeRate);
 
-    // Calculate 1% platform fee on the recipient amount
-    // According to Pretium docs: if user wants to RECEIVE KES 1,000 with 1% fee
-    // We send: amount=1010 (total), fee=10
-    // Pretium sends KES 1,000 to recipient and credits KES 10 to our fiat wallet
-    const feeAmount = Math.ceil(recipientAmount * PRETIUM_CONFIG.FEE_PERCENTAGE);
-
-    // Total amount to send to Pretium (recipient amount + fee)
-    const totalLocalAmount = recipientAmount + feeAmount;
+    // According to Pretium docs: if user sends equivalent of KES 1,010
+    // We should send: { amount: 1010, fee: 10 }
+    // Pretium will send KES 1,000 to recipient and credit KES 10 to our fiat wallet
+    // So we need to calculate backwards: if total is 1010, recipient gets 1000, fee is 10
+    // Formula: recipient = total / 1.01, fee = total - recipient
+    const recipientAmount = Math.floor(totalKESFromUSdc / 1.01);
+    const feeAmount = totalKESFromUSdc - recipientAmount;
 
     // Prepare Pretium disbursement request
     const disburseRequest: PretiumDisburseRequest = {
       type: paymentType,
       shortcode,
       account_number: accountNumber,
-      amount: totalLocalAmount.toString(), // Total amount (recipient + fee)
+      amount: totalKESFromUSdc.toString(), // Total KES from USDC (includes recipient + fee)
       fee: feeAmount.toString(), // Platform fee (credited to our fiat wallet)
       mobile_network: PRETIUM_CONFIG.MOBILE_NETWORK,
       chain: PRETIUM_CONFIG.CHAIN,
@@ -150,7 +149,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         walletAddress: returnAddress,
         amountInUsdc: amountNum,
-        amountInLocal: totalLocalAmount, // Total including fee
+        amountInLocal: recipientAmount, // What recipient actually receives (not including fee)
         currency: 'KES',
         phoneNumber: paymentType === 'MOBILE' ? shortcode : '',
         tillNumber: paymentType === 'BUY_GOODS' ? shortcode : '',
@@ -169,7 +168,7 @@ export async function POST(request: NextRequest) {
       await DatabaseService.logAnalyticsEvent('pretium_disburse_initiated', returnAddress, {
         transaction_code,
         amount_usdc: amountNum,
-        amount_kes: totalLocalAmount,
+        amount_kes_total: totalKESFromUSdc,
         recipient_amount: recipientAmount,
         fee_amount: feeAmount,
         payment_type: paymentType,
@@ -183,7 +182,7 @@ export async function POST(request: NextRequest) {
       transactionCode: transaction_code,
       status,
       message,
-      totalAmount: totalLocalAmount,
+      totalAmount: totalKESFromUSdc,
       recipientAmount,
       feeAmount,
       exchangeRate,
