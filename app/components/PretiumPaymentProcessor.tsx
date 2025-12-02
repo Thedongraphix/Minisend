@@ -92,12 +92,15 @@ export function PretiumPaymentProcessor({
 
   // Create Pretium order (called after blockchain transaction succeeds)
   const createPretiumOrder = useCallback(async (txHash: string) => {
+    // Normalize amount to 2 decimal places to match blockchain transaction
+    const normalizedAmount = (Math.round(parseFloat(amount) * 100) / 100).toFixed(2);
+
     try {
       const response = await fetch('/api/pretium/disburse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount,
+          amount: normalizedAmount,
           phoneNumber,
           tillNumber,
           paybillNumber,
@@ -124,6 +127,9 @@ export function PretiumPaymentProcessor({
   }, [amount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountName, returnAddress, context, startPolling, onError]);
 
   // USDC transfer using OnchainKit standard format
+  // Normalize amount to 2 decimal places to match what Pretium API expects
+  const normalizedAmount = (Math.round(parseFloat(amount) * 100) / 100).toFixed(2);
+
   const calls = [{
     address: USDC_CONTRACT as `0x${string}`,
     abi: [
@@ -141,7 +147,7 @@ export function PretiumPaymentProcessor({
     functionName: 'transfer',
     args: [
       PRETIUM_CONFIG.SETTLEMENT_ADDRESS as `0x${string}`,
-      parseUnits(amount, 6)
+      parseUnits(normalizedAmount, 6)
     ]
   }];
 
