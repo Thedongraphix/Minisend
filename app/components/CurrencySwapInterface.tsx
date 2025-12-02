@@ -137,8 +137,11 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
   const handleContinue = () => {
     if (!sendAmount || !receiveAmount || !rate || !receiveCurrency) return
 
+    // Round USDC to 2 decimal places to avoid rate mismatch with Pretium
+    const normalizedUSDC = (Math.round(parseFloat(sendAmount) * 100) / 100).toFixed(2)
+
     onContinue({
-      usdcAmount: sendAmount,
+      usdcAmount: normalizedUSDC,
       localAmount: receiveAmount,
       currency: receiveCurrency,
       rate,
@@ -152,10 +155,13 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
       // This ensures that (maxAmount * 1.01) <= balance
       const maxSendableAmount = usdcBalance / 1.01
 
-      setSendAmount(maxSendableAmount.toFixed(6))
+      // Round to 2 decimal places for consistency
+      const roundedMax = Math.round(maxSendableAmount * 100) / 100
+
+      setSendAmount(roundedMax.toFixed(2))
       setFocusedInput("send")
       if (rate) {
-        setReceiveAmount((maxSendableAmount * rate).toFixed(2))
+        setReceiveAmount((roundedMax * rate).toFixed(2))
       }
     }
   }
