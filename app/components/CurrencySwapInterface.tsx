@@ -93,8 +93,11 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
 
     sendDebounceTimerRef.current = setTimeout(() => {
       if (sendAmount && rate && focusedInput === "send") {
-        const localAmount = Number.parseFloat(sendAmount) * rate
-        setReceiveAmount(localAmount.toFixed(2))
+        // User entered USDC amount
+        // Calculate total KES, then what recipient gets after 1% fee
+        const totalKES = Number.parseFloat(sendAmount) * rate
+        const recipientAmount = Math.floor(totalKES / 1.01)
+        setReceiveAmount(recipientAmount.toFixed(2))
       }
     }, 100) // Reduced debounce for faster response
 
@@ -112,8 +115,13 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
 
     receiveDebounceTimerRef.current = setTimeout(() => {
       if (receiveAmount && rate && focusedInput === "receive") {
-        const usdcAmount = Number.parseFloat(receiveAmount) / rate
-        setSendAmount(usdcAmount.toFixed(6))
+        // User entered amount they want to RECEIVE
+        // We need to send enough that after 1% fee, they get this amount
+        // Formula: totalKES = recipientAmount * 1.01
+        const recipientAmount = Number.parseFloat(receiveAmount)
+        const totalKESNeeded = recipientAmount * 1.01
+        const usdcAmount = totalKESNeeded / rate
+        setSendAmount(usdcAmount.toFixed(2))
       }
     }, 100) // Reduced debounce for faster response
 
@@ -150,18 +158,16 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
 
   const handleMaxClick = () => {
     if (usdcBalance > 0) {
-      // Calculate max sendable amount accounting for 1% transaction fee
-      // Formula: maxAmount = balance / 1.01
-      // This ensures that (maxAmount * 1.01) <= balance
-      const maxSendableAmount = usdcBalance / 1.01
-
-      // Round to 2 decimal places for consistency
-      const roundedMax = Math.round(maxSendableAmount * 100) / 100
+      // User can send entire balance
+      const roundedMax = Math.round(usdcBalance * 100) / 100
 
       setSendAmount(roundedMax.toFixed(2))
       setFocusedInput("send")
       if (rate) {
-        setReceiveAmount((roundedMax * rate).toFixed(2))
+        // Calculate what they'll receive after 1% fee
+        const totalKES = roundedMax * rate
+        const recipientAmount = Math.floor(totalKES / 1.01)
+        setReceiveAmount(recipientAmount.toFixed(2))
       }
     }
   }
