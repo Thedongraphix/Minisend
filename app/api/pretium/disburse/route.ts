@@ -31,8 +31,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate amount
-    const amountNum = parseFloat(amount);
+    // Validate and normalize amount to 2 decimal places to avoid rate mismatch
+    // This ensures consistency between what user sees and what Pretium calculates
+    const amountNum = Math.round(parseFloat(amount) * 100) / 100;
     if (isNaN(amountNum) || amountNum <= 0) {
       return NextResponse.json(
         { error: 'Invalid amount: must be a positive number' },
