@@ -143,25 +143,32 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Create order record for Pretium transaction
-      await DatabaseService.createPretiumOrder({
-        transactionCode: transaction_code,
-        userId: user.id,
-        walletAddress: returnAddress,
-        amountInUsdc: amountNum,
-        amountInLocal: recipientAmount, // What recipient actually receives (not including fee)
-        currency: 'KES',
-        phoneNumber: paymentType === 'MOBILE' ? shortcode : '',
-        tillNumber: paymentType === 'BUY_GOODS' ? shortcode : '',
-        paybillNumber: paymentType === 'PAYBILL' ? shortcode : '',
-        paybillAccount: accountNumber || '',
-        accountName,
+      // Create order record using generic createOrder (createPretiumOrder not in production yet)
+      await DatabaseService.createOrder({
+        paycrest_order_id: transaction_code,
+        pretium_transaction_code: transaction_code,
+        user_id: user.id,
+        wallet_address: returnAddress,
+        amount_in_usdc: amountNum,
+        amount_in_local: recipientAmount,
+        local_currency: 'KES',
+        phone_number: paymentType === 'MOBILE' ? shortcode : '',
+        till_number: paymentType === 'BUY_GOODS' ? shortcode : '',
+        paybill_number: paymentType === 'PAYBILL' ? shortcode : '',
+        paybill_account: accountNumber || '',
+        account_name: accountName,
         rate: exchangeRate,
-        transactionHash,
-        status: status.toLowerCase(),
-        pretiumStatus: status,
-        fee: feeAmount,
+        transaction_hash: transactionHash,
+        status: 'pending',
+        paycrest_status: status,
+        payment_provider: 'PRETIUM_KES',
+        sender_fee: feeAmount,
         fid,
+        network: 'base',
+        token: 'USDC',
+        carrier: 'MPESA',
+        reference_id: transaction_code,
+        receive_address: PRETIUM_CONFIG.SETTLEMENT_ADDRESS,
       });
 
       // Log analytics event
