@@ -51,7 +51,21 @@ export function DownloadButton({
     }
 
     try {
-      const pdfBlob = await generateReceiptPDF(orderData);
+      let pdfBlob: Blob;
+
+      // For Pretium transactions, use API endpoint to get fresh data with M-Pesa code
+      if (orderData.pretium_transaction_code) {
+        const response = await fetch(`/api/pretium/receipt/${orderData.pretium_transaction_code}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch receipt from server');
+        }
+
+        pdfBlob = await response.blob();
+      } else {
+        // For other transactions, generate locally
+        pdfBlob = await generateReceiptPDF(orderData);
+      }
       const date = new Date().toISOString().split('T')[0];
       const filename = `minisend-receipt-${orderData.id || 'transaction'}-${date}.pdf`;
 
@@ -206,7 +220,20 @@ export function CompactReceiptButton({
     }
 
     try {
-      const pdfBlob = await generateReceiptPDF(orderData);
+      let pdfBlob: Blob;
+
+      // For Pretium transactions, use API endpoint to get fresh data with M-Pesa code
+      if (orderData.pretium_transaction_code) {
+        const response = await fetch(`/api/pretium/receipt/${orderData.pretium_transaction_code}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch receipt from server');
+        }
+        pdfBlob = await response.blob();
+      } else {
+        // For other transactions, generate locally
+        pdfBlob = await generateReceiptPDF(orderData);
+      }
+
       const filename = `receipt-${orderData.id || Date.now()}.pdf`;
 
       if (isInMiniApp) {
