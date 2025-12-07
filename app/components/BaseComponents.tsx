@@ -295,7 +295,7 @@ USDC→NGN/KES withdrawals and transaction processing temporarily unavailable.We
               fullWidth
               roundedFull
             >
-              Spend USDC
+              Pay with USDC
             </Button>
           </div>
         </div>
