@@ -18,7 +18,7 @@ interface PretiumPaymentProcessorProps {
   accountName: string;
   returnAddress: string;
   rate: number;
-  onSuccess: () => void;
+  onSuccess: (transactionCode?: string, txHash?: string) => void;
   onError: (error: string) => void;
 }
 
@@ -37,6 +37,7 @@ export function PretiumPaymentProcessor({
   const [status, setStatus] = useState<'idle' | 'ready-to-pay' | 'processing' | 'success' | 'error'>('idle');
   const pollingStartedRef = useRef(false);
   const successTriggeredRef = useRef(false);
+  const transactionDataRef = useRef<{ transactionCode?: string; txHash?: string }>({});
 
   // Swipe slider states
   const [swipeProgress, setSwipeProgress] = useState(0);
@@ -121,6 +122,7 @@ export function PretiumPaymentProcessor({
       const result = await response.json();
 
       if (result.transactionCode) {
+        transactionDataRef.current.transactionCode = result.transactionCode;
         startPolling(result.transactionCode);
       }
     } catch (error) {
@@ -171,10 +173,13 @@ export function PretiumPaymentProcessor({
         // Get transaction hash and create Pretium order
         const txHash = lifecycleStatus.statusData?.transactionReceipts?.[0]?.transactionHash;
         if (txHash) {
+          transactionDataRef.current.txHash = txHash;
           createPretiumOrder(txHash);
         }
 
-        setTimeout(() => onSuccess(), 2000);
+        setTimeout(() => {
+          onSuccess(transactionDataRef.current.transactionCode, transactionDataRef.current.txHash);
+        }, 2000);
         break;
       case 'error':
         setStatus('error');

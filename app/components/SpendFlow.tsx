@@ -11,6 +11,7 @@ import { Button } from './BaseComponents';
 import Image from 'next/image';
 import { CurrencySwapInterface } from './CurrencySwapInterface';
 import { FormInput } from './FormInput';
+import { DownloadButton } from './DownloadButton';
 
 interface SpendFlowProps {
   setActiveTab: (tab: string) => void;
@@ -43,6 +44,10 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
     formatted: string;
     paybillAccount?: string; // For paybill payments
   } | null>(null);
+  const [transactionData, setTransactionData] = useState<{
+    transactionCode?: string;
+    txHash?: string;
+  }>({});
 
   // Show wallet connection if not connected or not mounted
   if (!mounted || !isConnected) {
@@ -269,7 +274,10 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
               accountName={formData.accountName}
               returnAddress={address || ''}
               rate={swapData.rate}
-              onSuccess={() => setStep('success')}
+              onSuccess={(transactionCode, txHash) => {
+                setTransactionData({ transactionCode, txHash });
+                setStep('success');
+              }}
               onError={() => {
                 // Error handling managed by PretiumPaymentProcessor
               }}
@@ -318,6 +326,50 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             }
           </p>
 
+          {/* Download Receipt Button */}
+          {swapData.currency === 'KES' && transactionData.txHash && (
+            <div className="space-y-3 pt-4">
+              <div className="bg-purple-500/10 border border-purple-400/20 rounded-xl p-4">
+                <div className="flex items-start gap-3 text-left">
+                  <svg className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-xs text-purple-300 font-medium">Receipt Available</p>
+                    <p className="text-xs text-gray-400">
+                      Your receipt includes the M-Pesa code and blockchain transaction details
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <DownloadButton
+                orderData={{
+                  id: transactionData.transactionCode || `order_${Date.now()}`,
+                  amount_in_usdc: parseFloat(swapData.usdcAmount),
+                  amount_in_local: parseFloat(swapData.localAmount),
+                  local_currency: swapData.currency,
+                  account_name: formData.accountName,
+                  phone_number: paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined,
+                  till_number: paymentMethod.type === 'till' ? paymentMethod.formatted : undefined,
+                  paybill_number: paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined,
+                  paybill_account: paymentMethod.type === 'paybill' ? formData.paybillAccount : undefined,
+                  wallet_address: address || '',
+                  rate: swapData.rate,
+                  sender_fee: 0,
+                  transaction_fee: 0,
+                  status: 'completed',
+                  created_at: new Date().toISOString(),
+                  blockchain_tx_hash: transactionData.txHash,
+                  pretium_transaction_code: transactionData.transactionCode,
+                }}
+                variant="primary"
+                size="lg"
+                className="w-full"
+              />
+            </div>
+          )}
+
           <div className="space-y-3">
             <button
               onClick={() => {
@@ -325,6 +377,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
                 setSwapData(null);
                 setFormData({ accountName: '', paybillAccount: '' });
                 setPaymentMethod(null);
+                setTransactionData({});
               }}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
             >
