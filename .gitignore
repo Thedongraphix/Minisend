@@ -36,6 +36,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Compiled JavaScript from TypeScript (prevent stale artifacts)
+/lib/**/*.js
+/app/**/*.js
+!*.config.js
+!**/node_modules/**/*.js
+
 # IDE
 .vscode/
 .idea/
