@@ -143,10 +143,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Create order record using generic createOrder (createPretiumOrder not in production yet)
+      // Create order record
+      // Note: paycrest_order_id is reused for Pretium to maintain schema compatibility
+      // The pretium_transaction_code field holds the actual Pretium transaction ID
       await DatabaseService.createOrder({
-        paycrest_order_id: transaction_code,
-        pretium_transaction_code: transaction_code,
+        paycrest_order_id: transaction_code, // Required field, reused for compatibility
+        pretium_transaction_code: transaction_code, // Actual Pretium transaction code
         user_id: user.id,
         wallet_address: returnAddress,
         amount_in_usdc: amountNum,
@@ -163,6 +165,7 @@ export async function POST(request: NextRequest) {
         paycrest_status: status,
         payment_provider: 'PRETIUM_KES',
         sender_fee: feeAmount,
+        transaction_fee: 0, // Pretium transactions use gasless/sponsored transactions
         fid,
         network: 'base',
         token: 'USDC',
