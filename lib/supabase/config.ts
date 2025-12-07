@@ -36,6 +36,8 @@ export interface Order {
   local_currency: 'KES' | 'NGN'
   phone_number?: string
   account_number?: string
+  bank_code?: string
+  bank_name?: string
   till_number?: string
   paybill_number?: string
   paybill_account?: string

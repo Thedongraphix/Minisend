@@ -10,6 +10,9 @@ export interface OrderData {
   account_number?: string;
   bank_code?: string;
   bank_name?: string;
+  till_number?: string;
+  paybill_number?: string;
+  paybill_account?: string;
   wallet_address: string;
   rate: number;
   sender_fee: number;
