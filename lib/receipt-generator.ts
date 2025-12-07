@@ -90,46 +90,20 @@ export class ReceiptGenerator {
   }
 
   private async renderHeader(): Promise<void> {
-    // Add Minisend logo
-    try {
-      const logoSize = 20;
-      const logoX = (this.page.width - logoSize) / 2;
-      const logoY = this.y;
+    // Server-side logo (simple text-based logo for server environment)
+    const logoSize = 20;
+    const logoX = (this.page.width - logoSize) / 2;
+    const logoY = this.y;
 
-      // Try to load and add logo
-      const logoImg = new Image();
-      logoImg.crossOrigin = 'anonymous';
+    // Use text logo (works in both browser and server)
+    this.setColor('primary', 'fill');
+    this.pdf.roundedRect(logoX, logoY, logoSize, logoSize, 3, 3, 'F');
+    this.pdf.setTextColor(255, 255, 255);
+    this.pdf.setFontSize(14);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.text('M', logoX + 7, logoY + 14);
 
-      await new Promise<void>((resolve) => {
-        logoImg.onload = () => {
-          try {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              canvas.width = logoImg.width;
-              canvas.height = logoImg.height;
-              ctx.drawImage(logoImg, 0, 0);
-              const logoDataUrl = canvas.toDataURL('image/png');
-              this.pdf.addImage(logoDataUrl, 'PNG', logoX, logoY, logoSize, logoSize);
-            }
-          } catch {
-            // Fallback to text logo
-            this.renderTextLogo(logoX, logoY, logoSize);
-          }
-          resolve();
-        };
-        logoImg.onerror = () => {
-          this.renderTextLogo(logoX, logoY, logoSize);
-          resolve();
-        };
-        logoImg.src = '/minisend-logo.png';
-      });
-
-      this.y += logoSize + 8;
-    } catch {
-      // If logo fails, use text logo
-      this.y += 5;
-    }
+    this.y += logoSize + 8;
 
     // Company name with larger, bolder font
     this.text('MINISEND', this.page.width / 2, this.y,
@@ -151,16 +125,6 @@ export class ReceiptGenerator {
     }
 
     this.y += 20;
-  }
-
-  private renderTextLogo(x: number, y: number, size: number): void {
-    // Fallback text logo if image fails to load
-    this.setColor('primary', 'fill');
-    this.pdf.roundedRect(x, y, size, size, 3, 3, 'F');
-    this.pdf.setTextColor(255, 255, 255);
-    this.pdf.setFontSize(14);
-    this.pdf.setFont('helvetica', 'bold');
-    this.pdf.text('M', x + 7, y + 14);
   }
 
   private renderTransactionInfo(): void {
