@@ -93,7 +93,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
       {/* Header with Step Indicator */}
       <div className="text-center">
         <h2 className="text-2xl font-bold text-white mb-2">Spend USDC</h2>
-        <p className="text-gray-300 text-sm mb-4">Pay till numbers with USDC</p>
+        <p className="text-gray-300 text-sm mb-4">Pay till numbers and paybills with USDC</p>
         
         <div className="inline-flex items-center space-x-2 text-xs text-purple-300 bg-purple-500/10 px-3 py-1 rounded-xl mt-2 border border-purple-400/20">
           <Image src="/Base_Network_Logo.svg" alt="Base Network" width={12} height={12} />

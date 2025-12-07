@@ -60,7 +60,7 @@ export function MethodSelector({
     <div className={`space-y-3 ${className}`}>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
-          Phone Number or Till Number
+          Paybill Number or M-Pesa Till 
         </label>
         <div className="relative">
           <input
