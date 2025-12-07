@@ -62,11 +62,37 @@ export async function POST(request: NextRequest) {
 
             await sendNotificationToUser(order.fid, notification);
           }
-        } catch {
-          // Notification failed - continue processing webhook
+
+          // Generate and log receipt data for completed transactions
+          if (order) {
+            console.log('Receipt data available:', {
+              transaction_code,
+              receipt_number,
+              public_name,
+              order_id: order.id,
+              amount_local: order.amount_in_local,
+              currency: order.local_currency,
+            });
+
+            // Log analytics event for receipt generation readiness
+            await DatabaseService.logAnalyticsEvent('pretium_receipt_ready', order.wallet_address, {
+              transaction_code,
+              receipt_number,
+              public_name,
+              order_id: order.id,
+            });
+          }
+        } catch (notificationError) {
+          console.error('Notification failed:', notificationError);
+          // Continue processing webhook
         }
-      } catch {
-        // Log error but return success to Pretium to prevent retries
+      } catch (dbError) {
+        console.error('DATABASE UPDATE FAILED:', {
+          transaction_code,
+          error: dbError instanceof Error ? dbError.message : dbError,
+          stack: dbError instanceof Error ? dbError.stack : undefined
+        });
+        // Return success to Pretium to prevent retries, but log the error
       }
     }
 
@@ -86,8 +112,12 @@ export async function POST(request: NextRequest) {
           transaction_code,
           message,
         });
-      } catch {
-        // Log error but return success
+      } catch (failedError) {
+        console.error('Failed status update error:', {
+          transaction_code,
+          error: failedError instanceof Error ? failedError.message : failedError
+        });
+        // Return success to prevent retries
       }
     }
 
@@ -106,8 +136,12 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Webhook processed',
     });
-  } catch {
-    // Log the error but still return 200 to prevent retries
+  } catch (webhookError) {
+    console.error('WEBHOOK PROCESSING ERROR:', {
+      error: webhookError instanceof Error ? webhookError.message : webhookError,
+      stack: webhookError instanceof Error ? webhookError.stack : undefined
+    });
+    // Still return 200 to prevent retries
     return NextResponse.json({
       success: true,
       message: 'Webhook received',
