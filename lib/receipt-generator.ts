@@ -345,16 +345,6 @@ export async function generateReceiptPDF(
   options?: ReceiptGenerationOptions
 ): Promise<Blob> {
   const receiptData = createReceiptFromOrder(orderData);
-
-  console.log('Receipt data created:', {
-    localAmount: receiptData.localAmount,
-    usdcAmount: receiptData.usdcAmount,
-    recipientName: receiptData.recipientName,
-    recipientContact: receiptData.recipientContact,
-    mpesaReceiptNumber: receiptData.mpesaReceiptNumber,
-    blockchainTxHash: receiptData.blockchainTxHash
-  });
-
   const generator = new ReceiptGenerator(receiptData, options);
   return await generator.generatePDF();
 }

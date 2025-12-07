@@ -65,14 +65,6 @@ export async function GET(
       paybill_account: order.paybill_account,
     };
 
-    console.log('Generating receipt for order:', {
-      id: orderData.id,
-      amount_in_local: orderData.amount_in_local,
-      account_name: orderData.account_name,
-      pretium_receipt_number: orderData.pretium_receipt_number,
-      blockchain_tx_hash: orderData.blockchain_tx_hash
-    });
-
     // Generate PDF receipt
     const pdfBlob = await generateReceiptPDF(orderData);
 
