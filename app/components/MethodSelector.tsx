@@ -67,7 +67,7 @@ export function MethodSelector({
             type="text"
             value={paymentInput}
             onChange={(e) => handleInputChange(e.target.value)}
-            placeholder="Enter Till Number (12345)"
+            placeholder="Enter Till Number or Paybill Number (12345)"
             className={`w-full px-4 py-3 pr-12 bg-gray-800/80 border rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:border-transparent transition-all duration-200 hover:bg-gray-800 backdrop-blur-sm ${
               inputStatus === 'valid' 
                 ? 'border-green-500 focus:ring-green-500' 
