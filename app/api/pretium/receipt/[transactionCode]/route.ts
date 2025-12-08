@@ -50,7 +50,6 @@ export async function GET(
 
     const transactionHash = order.transaction_hash || '';
     const exchangeRate = ('exchange_rate' in order ? order.exchange_rate : order.rate) || 0;
-    const transactionFee = ('transaction_fee' in order ? order.transaction_fee : undefined) || 0;
 
     // Check if webhook data has been received
     if (!receiptNumber) {

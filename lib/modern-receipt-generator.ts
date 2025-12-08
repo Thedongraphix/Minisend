@@ -27,11 +27,9 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   const pdf = new jsPDF('portrait', 'mm', 'a4');
   const pageWidth = 210;
   const margin = 25;
-  const contentWidth = pageWidth - (margin * 2);
   let y = margin;
 
   // Colors
-  const purple = [147, 51, 234]; // purple-600
   const gray900 = [17, 24, 39];
   const gray600 = [75, 85, 99];
   const gray200 = [229, 231, 235];
