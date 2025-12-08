@@ -5,7 +5,7 @@ import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
 import { MiniAppProvider } from "@neynar/react";
 import { base, baseSepolia } from "viem/chains";
 import { PostHogProvider } from "@/lib/posthog-provider";
-import { Logger } from "@/app/components/Logger";
+// import { Logger } from "@/app/components/Logger";
 import { paymasterConfig } from "@/lib/paymaster-config";
 
 export function Providers(props: { children: ReactNode }) {
