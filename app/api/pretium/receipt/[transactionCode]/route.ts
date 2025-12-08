@@ -27,13 +27,27 @@ export async function GET(
       );
     }
 
-    // Only generate receipts for completed orders
+    // Only generate receipts for completed orders with receipt data
     if (order.status !== 'completed') {
       return NextResponse.json(
         {
           error: 'Receipt not available',
           message: 'Receipt can only be generated for completed transactions',
-          status: order.status
+          status: order.status,
+          hint: 'Transaction is still being processed. Please wait a few moments.'
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check if webhook data has been received
+    if (!order.pretium_receipt_number) {
+      return NextResponse.json(
+        {
+          error: 'Receipt not ready',
+          message: 'Waiting for payment confirmation',
+          status: order.status,
+          hint: 'The M-Pesa confirmation is still being processed. Please wait a moment and try again.'
         },
         { status: 400 }
       );

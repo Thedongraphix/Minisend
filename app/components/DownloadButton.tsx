@@ -58,7 +58,8 @@ export function DownloadButton({
         const response = await fetch(`/api/pretium/receipt/${orderData.pretium_transaction_code}`);
 
         if (!response.ok) {
-          throw new Error('Failed to fetch receipt from server');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || errorData.hint || 'Failed to fetch receipt from server');
         }
 
         pdfBlob = await response.blob();
@@ -225,9 +226,12 @@ export function CompactReceiptButton({
       // For Pretium transactions, use API endpoint to get fresh data with M-Pesa code
       if (orderData.pretium_transaction_code) {
         const response = await fetch(`/api/pretium/receipt/${orderData.pretium_transaction_code}`);
+
         if (!response.ok) {
-          throw new Error('Failed to fetch receipt from server');
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || errorData.hint || 'Failed to fetch receipt');
         }
+
         pdfBlob = await response.blob();
       } else {
         // For other transactions, generate locally
