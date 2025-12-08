@@ -26,7 +26,6 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
 
   // Check receipt status (polls until webhook data is received)
@@ -49,7 +48,6 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
       return false; // Continue polling
     } catch (err) {
       console.error('[PretiumReceipt] Status check error:', err);
-      setError('Unable to check receipt status');
       return false;
     }
   }, [transactionCode]);
@@ -64,7 +62,6 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
     const poll = async () => {
       if (attempts >= maxAttempts) {
         setIsChecking(false);
-        setError('Receipt is taking longer than expected');
         return;
       }
 
@@ -89,7 +86,6 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
   // Download receipt PDF
   const downloadReceipt = async () => {
     setIsDownloading(true);
-    setError(null);
 
     try {
       const response = await fetch(`/api/pretium/receipt/${transactionCode}`);
@@ -112,7 +108,6 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('[PretiumReceipt] Download error:', err);
-      setError(err instanceof Error ? err.message : 'Download failed');
     } finally {
       setIsDownloading(false);
     }
@@ -187,7 +182,6 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
                 onClick={() => {
                   setIsChecking(true);
                   setAttempts(0);
-                  setError(null);
                 }}
                 className="mt-3 w-full text-sm text-purple-400 hover:text-purple-300"
               >
