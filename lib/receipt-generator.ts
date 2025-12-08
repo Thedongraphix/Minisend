@@ -267,40 +267,57 @@ export class ReceiptGenerator {
 export function createReceiptFromOrder(orderData: OrderData): ReceiptData {
   const receiptNumber = `MSR${Date.now().toString().slice(-8)}`;
   const fees = (orderData.sender_fee || 0) + (orderData.transaction_fee || 0);
-  
-  return {
+
+  // Debug logging for server
+  console.log('[Receipt Generator] Order data received:', {
+    blockchain_tx_hash: orderData.blockchain_tx_hash,
+    pretium_receipt_number: orderData.pretium_receipt_number,
+    account_name: orderData.account_name,
+    amount_in_local: orderData.amount_in_local
+  });
+
+  const result: ReceiptData = {
     transactionId: orderData.id || `TXN${Date.now()}`,
     paycrestOrderId: orderData.paycrest_order_id || orderData.id,
     date: orderData.created_at || new Date().toISOString(),
     status: orderData.status || 'completed',
-    
+
     usdcAmount: orderData.amount_in_usdc || parseFloat(orderData.amount || '0'),
     localAmount: orderData.amount_in_local || 0,
     localCurrency: orderData.local_currency || orderData.currency,
     exchangeRate: orderData.rate || 0,
-    
+
     senderFee: orderData.sender_fee || 0,
     transactionFee: orderData.transaction_fee || 0,
     totalFees: fees,
     netAmount: (orderData.amount_in_local || 0) - fees,
-    
+
     recipientName: orderData.account_name || orderData.accountName || 'Unknown',
-    recipientContact: orderData.local_currency === 'KES' 
+    recipientContact: orderData.local_currency === 'KES'
       ? (orderData.phone_number || orderData.phoneNumber || 'Unknown')
       : (orderData.account_number || orderData.accountNumber || 'Unknown'),
     recipientBank: orderData.bank_name,
-    
+
     senderWallet: orderData.wallet_address || orderData.returnAddress || '',
-    
+
     network: 'base',
     token: 'USDC',
     blockchainTxHash: orderData.blockchain_tx_hash || orderData.transactionHash,
-    
+
     receiptNumber,
     mpesaReceiptNumber: orderData.pretium_receipt_number, // M-Pesa transaction code
     supportEmail: 'support@minisend.xyz',
     supportUrl: 'https://app.minisend.xyz/support'
   };
+
+  console.log('[Receipt Generator] Receipt data created:', {
+    mpesaReceiptNumber: result.mpesaReceiptNumber,
+    blockchainTxHash: result.blockchainTxHash,
+    recipientName: result.recipientName,
+    localAmount: result.localAmount
+  });
+
+  return result;
 }
 
 // Main export function
