@@ -1,0 +1,4 @@
+# Force clean build - no cache
+BUILD_ID=$(date +%s)
+echo "Clean build triggered at: $(date)"
+echo "Build ID: $BUILD_ID"
