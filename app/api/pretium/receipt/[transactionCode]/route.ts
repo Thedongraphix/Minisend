@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/supabase/config';
-import { generateReceiptPDF } from '@/lib/receipt-generator';
-import type { OrderData } from '@/lib/types/order';
+import { generateModernReceipt } from '@/lib/modern-receipt-generator';
 
 export async function GET(
   _request: NextRequest,
@@ -67,46 +66,31 @@ export async function GET(
     }
 
     // Log the order data from database
-    console.log('[Receipt API] Order data from database:', {
-      receipt_number: receiptNumber,
-      account_name: order.account_name,
-      transaction_hash: transactionHash,
-      status: order.status
+    // Format date
+    const date = new Date(order.created_at).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
 
-    // Convert order to OrderData format (handle both table structures)
-    const orderData: OrderData = {
-      id: order.id,
-      paycrest_order_id: 'paycrest_order_id' in order ? order.paycrest_order_id : (txCode || transactionCode || ''),
-      amount_in_usdc: order.amount_in_usdc,
-      amount_in_local: order.amount_in_local,
-      local_currency: order.local_currency,
-      account_name: order.account_name || 'Unknown',
-      phone_number: order.phone_number,
-      account_number: 'account_number' in order ? order.account_number : undefined,
-      bank_code: 'bank_code' in order ? order.bank_code : undefined,
-      bank_name: 'bank_name' in order ? order.bank_name : undefined,
-      wallet_address: order.wallet_address,
-      rate: exchangeRate,
-      sender_fee: order.sender_fee || 0,
-      transaction_fee: transactionFee,
-      status: order.status as 'completed' | 'pending' | 'failed',
-      created_at: order.created_at,
-      blockchain_tx_hash: transactionHash,
-      pretium_receipt_number: receiptNumber,
-      pretium_transaction_code: txCode,
-      till_number: order.till_number,
-      paybill_number: order.paybill_number,
-      paybill_account: order.paybill_account,
-    };
-
-    console.log('[Receipt API] OrderData created with:', {
-      pretium_receipt_number: orderData.pretium_receipt_number,
-      account_name: orderData.account_name
+    // Generate modern receipt
+    const pdfBlob = await generateModernReceipt({
+      transactionCode: txCode || transactionCode,
+      receiptNumber: receiptNumber || '',
+      recipientName: order.account_name || 'Unknown',
+      phoneNumber: order.phone_number,
+      tillNumber: order.till_number,
+      paybillNumber: order.paybill_number,
+      paybillAccount: order.paybill_account,
+      amount: order.amount_in_local,
+      currency: order.local_currency,
+      usdcAmount: order.amount_in_usdc,
+      exchangeRate: exchangeRate,
+      fee: order.sender_fee || 0,
+      date,
+      walletAddress: order.wallet_address,
+      txHash: transactionHash
     });
-
-    // Generate PDF receipt
-    const pdfBlob = await generateReceiptPDF(orderData);
 
     // Convert blob to buffer for Next.js response
     const buffer = Buffer.from(await pdfBlob.arrayBuffer());
