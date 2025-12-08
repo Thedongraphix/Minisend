@@ -53,6 +53,14 @@ export async function GET(
       );
     }
 
+    // Log the order data from database
+    console.log('[Receipt API] Order data from database:', {
+      pretium_receipt_number: order.pretium_receipt_number,
+      account_name: order.account_name,
+      transaction_hash: order.transaction_hash,
+      status: order.status
+    });
+
     // Convert order to OrderData format
     const orderData: OrderData = {
       id: order.id,
@@ -78,6 +86,11 @@ export async function GET(
       paybill_number: order.paybill_number,
       paybill_account: order.paybill_account,
     };
+
+    console.log('[Receipt API] OrderData created with:', {
+      pretium_receipt_number: orderData.pretium_receipt_number,
+      account_name: orderData.account_name
+    });
 
     // Generate PDF receipt
     const pdfBlob = await generateReceiptPDF(orderData);

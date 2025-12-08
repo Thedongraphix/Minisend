@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Production Receipt</title>
+  <style>
+    body {
+      font-family: system-ui;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      background: #6366f1;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #4f46e5;
+    }
+    pre {
+      background: #f3f4f6;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    .success { color: #10b981; }
+    .error { color: #ef4444; }
+  </style>
+</head>
+<body>
+  <h1>Production Receipt Test</h1>
+  <p>Transaction: <code>2ccaaa97-377b-4637-be74-bf7e8f43a673</code></p>
+
+  <div>
+    <button onclick="checkStatus()">1. Check Receipt Status</button>
+    <button onclick="downloadReceipt()">2. Download Receipt</button>
+    <button onclick="testBoth()">3. Test Both</button>
+  </div>
+
+  <div id="output"></div>
+
+  <script>
+    const transactionCode = '2ccaaa97-377b-4637-be74-bf7e8f43a673';
+    const baseUrl = 'https://app.minisend.xyz';
+
+    function log(message, type = 'info') {
+      const output = document.getElementById('output');
+      const color = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+      output.innerHTML += `<div class="${color}">${message}</div>`;
+    }
+
+    function logJson(label, data) {
+      const output = document.getElementById('output');
+      output.innerHTML += `<h3>${label}</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+    }
+
+    async function checkStatus() {
+      document.getElementById('output').innerHTML = '<h2>Testing Status Endpoint...</h2>';
+
+      try {
+        const response = await fetch(`${baseUrl}/api/pretium/receipt-status/${transactionCode}`);
+        const data = await response.json();
+
+        log(`Status: ${response.status}`, response.ok ? 'success' : 'error');
+        logJson('Response', data);
+
+        if (data.ready && data.receiptNumber) {
+          log(`✅ Receipt IS ready with M-Pesa code: ${data.receiptNumber}`, 'success');
+        } else {
+          log(`❌ Receipt NOT ready`, 'error');
+        }
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function downloadReceipt() {
+      document.getElementById('output').innerHTML = '<h2>Testing Receipt Download...</h2>';
+
+      try {
+        log('Fetching receipt...');
+        const response = await fetch(`${baseUrl}/api/pretium/receipt/${transactionCode}`);
+
+        log(`Status: ${response.status}`, response.ok ? 'success' : 'error');
+        log(`Content-Type: ${response.headers.get('content-type')}`);
+
+        if (response.ok) {
+          const blob = await response.blob();
+          log(`✅ PDF Downloaded! Size: ${blob.size} bytes`, 'success');
+
+          // Open PDF in new tab
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          log('PDF opened in new tab. Check if M-Pesa code is visible!');
+        } else {
+          const errorData = await response.json();
+          log(`❌ Error Response:`, 'error');
+          logJson('Error', errorData);
+        }
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testBoth() {
+      await checkStatus();
+      log('\n---\n');
+      await downloadReceipt();
+    }
+  </script>
+</body>
+</html>
