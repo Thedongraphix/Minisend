@@ -30,9 +30,9 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   let y = margin;
 
   // Colors
-  const gray900 = [17, 24, 39];
-  const gray600 = [75, 85, 99];
-  const gray200 = [229, 231, 235];
+  const gray900: [number, number, number] = [17, 24, 39];
+  const gray600: [number, number, number] = [75, 85, 99];
+  const gray200: [number, number, number] = [229, 231, 235];
 
   // Background
   pdf.setFillColor(255, 255, 255);
