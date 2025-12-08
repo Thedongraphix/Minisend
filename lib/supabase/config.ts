@@ -582,4 +582,15 @@ export class DatabaseService {
     if (error && error.code !== 'PGRST116') throw error
     return data
   }
+
+  static async getOrdersByWalletAddress(walletAddress: string): Promise<Order[]> {
+    const { data, error } = await supabaseAdmin
+      .from('orders')
+      .select('*')
+      .eq('wallet_address', walletAddress)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  }
 }

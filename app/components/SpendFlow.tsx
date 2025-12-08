@@ -48,6 +48,8 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
     transactionCode?: string;
     txHash?: string;
   }>({});
+  const [mpesaCodeReady, setMpesaCodeReady] = useState(false);
+  const [waitingForMpesa, setWaitingForMpesa] = useState(false);
 
   // Show wallet connection if not connected or not mounted
   if (!mounted || !isConnected) {
@@ -277,6 +279,50 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
               onSuccess={(transactionCode, txHash) => {
                 setTransactionData({ transactionCode, txHash });
                 setStep('success');
+
+                // Wait for M-Pesa code from webhook (usually arrives within 5 seconds)
+                if (transactionCode) {
+                  setWaitingForMpesa(true);
+
+                  // Poll for M-Pesa code
+                  const checkMpesaCode = async () => {
+                    try {
+                      const response = await fetch(`/api/pretium/status/${transactionCode}`);
+                      const data = await response.json();
+
+                      if (data.pretium_receipt_number) {
+                        setMpesaCodeReady(true);
+                        setWaitingForMpesa(false);
+                        return true;
+                      }
+                      return false;
+                    } catch (error) {
+                      console.error('Error checking M-Pesa code:', error);
+                      return false;
+                    }
+                  };
+
+                  // Check immediately
+                  checkMpesaCode().then(ready => {
+                    if (!ready) {
+                      // If not ready, poll every 2 seconds for up to 10 seconds
+                      let attempts = 0;
+                      const pollInterval = setInterval(async () => {
+                        attempts++;
+                        const ready = await checkMpesaCode();
+
+                        if (ready || attempts >= 5) {
+                          clearInterval(pollInterval);
+                          if (!ready) {
+                            // After 10 seconds, enable download anyway
+                            setMpesaCodeReady(true);
+                            setWaitingForMpesa(false);
+                          }
+                        }
+                      }, 2000);
+                    }
+                  });
+                }
               }}
               onError={() => {
                 // Error handling managed by PretiumPaymentProcessor
@@ -331,19 +377,32 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             <div className="space-y-3 pt-4">
               <div className="bg-purple-500/10 border border-purple-400/20 rounded-xl p-4">
                 <div className="flex items-start gap-3 text-left">
-                  <svg className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  {waitingForMpesa ? (
+                    <svg className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
                   <div className="flex-1 space-y-1">
-                    <p className="text-xs text-purple-300 font-medium">Receipt Available</p>
+                    <p className="text-xs text-purple-300 font-medium">
+                      {waitingForMpesa ? 'Waiting for M-Pesa confirmation...' : 'Receipt Ready'}
+                    </p>
                     <p className="text-xs text-gray-400">
-                      Your receipt includes the M-Pesa code and blockchain transaction details
+                      {waitingForMpesa
+                        ? 'Getting M-Pesa code from Safaricom. This usually takes 2-5 seconds.'
+                        : 'Your receipt includes the M-Pesa code and blockchain transaction details'
+                      }
                     </p>
                   </div>
                 </div>
               </div>
 
-              <DownloadButton
+              {mpesaCodeReady && (
+                <DownloadButton
                 orderData={{
                   id: transactionData.transactionCode || `order_${Date.now()}`,
                   amount_in_usdc: parseFloat(swapData.usdcAmount),
@@ -367,6 +426,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
                 size="lg"
                 className="w-full"
               />
+              )}
             </div>
           )}
 
