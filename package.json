@@ -20,7 +20,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "next build && next start",
     "lint": "next lint",
     "setup-supabase": "node scripts/setup-supabase.js",
     "test-supabase": "node -e \"require('./lib/supabase/config').testConnection().then(console.log)\"",
@@ -45,6 +45,7 @@
     "@types/pg": "^8.15.4",
     "@types/qrcode": "^1.5.5",
     "@upstash/redis": "^1.34.4",
+    "framer-motion": "^12.23.25",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.2",
     "next": "^15.5.7",

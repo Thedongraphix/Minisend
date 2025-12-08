@@ -226,6 +226,7 @@ export function CompactReceiptButton({
       // For Pretium transactions, use API endpoint to get fresh data with M-Pesa code
       if (orderData.pretium_transaction_code) {
         const response = await fetch(`/api/pretium/receipt/${orderData.pretium_transaction_code}`);
+        
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));

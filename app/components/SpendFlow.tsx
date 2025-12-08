@@ -11,8 +11,7 @@ import { Button } from './BaseComponents';
 import Image from 'next/image';
 import { CurrencySwapInterface } from './CurrencySwapInterface';
 import { FormInput } from './FormInput';
-import { DownloadButton } from './DownloadButton';
-import { useReceiptReadiness } from '../hooks/useReceiptReadiness';
+import { PretiumReceipt } from './PretiumReceipt';
 
 interface SpendFlowProps {
   setActiveTab: (tab: string) => void;
@@ -50,17 +49,6 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
     txHash?: string;
   }>({});
 
-  // Use receipt readiness hook for Pretium transactions
-  const {
-    isReady: receiptIsReady,
-    isChecking: receiptIsChecking,
-    receiptNumber: mpesaCode
-  } = useReceiptReadiness({
-    transactionCode: transactionData.transactionCode,
-    enabled: step === 'success' && swapData?.currency === 'KES' && !!transactionData.transactionCode,
-    maxAttempts: 15, // 15 attempts = 30 seconds
-    pollInterval: 2000, // Check every 2 seconds
-  });
 
   // Show wallet connection if not connected or not mounted
   if (!mounted || !isConnected) {
@@ -325,7 +313,13 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
       )}
 
       {/* Success Step */}
-      {step === 'success' && paymentMethod && swapData && (
+      {step === 'success' && paymentMethod && swapData && (() => {
+        console.log('[SpendFlow] Rendering success screen:', {
+          transactionCode: transactionData.transactionCode,
+          currency: swapData.currency
+        });
+        return true;
+      })() && (
         <div className="text-center space-y-6">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
@@ -340,63 +334,10 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             }
           </p>
 
-          {/* Download Receipt Button */}
-          {swapData.currency === 'KES' && transactionData.txHash && (
-            <div className="space-y-3 pt-4">
-              <div className="bg-purple-500/10 border border-purple-400/20 rounded-xl p-4">
-                <div className="flex items-start gap-3 text-left">
-                  {receiptIsChecking ? (
-                    <svg className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  )}
-                  <div className="flex-1 space-y-1">
-                    <p className="text-xs text-purple-300 font-medium">
-                      {receiptIsChecking ? 'Waiting for M-Pesa confirmation...' : 'Receipt Ready'}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {receiptIsChecking
-                        ? 'Getting M-Pesa code from Safaricom. This usually takes 2-10 seconds.'
-                        : mpesaCode
-                          ? `M-Pesa Code: ${mpesaCode} • Receipt ready for download`
-                          : 'Your receipt includes the M-Pesa code and blockchain transaction details'
-                      }
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {receiptIsReady && (
-                <DownloadButton
-                orderData={{
-                  id: transactionData.transactionCode || `order_${Date.now()}`,
-                  amount_in_usdc: parseFloat(swapData.usdcAmount),
-                  amount_in_local: parseFloat(swapData.localAmount),
-                  local_currency: swapData.currency,
-                  account_name: formData.accountName,
-                  phone_number: paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined,
-                  till_number: paymentMethod.type === 'till' ? paymentMethod.formatted : undefined,
-                  paybill_number: paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined,
-                  paybill_account: paymentMethod.type === 'paybill' ? formData.paybillAccount : undefined,
-                  wallet_address: address || '',
-                  rate: swapData.rate,
-                  sender_fee: 0,
-                  transaction_fee: 0,
-                  status: 'completed',
-                  created_at: new Date().toISOString(),
-                  blockchain_tx_hash: transactionData.txHash,
-                  pretium_transaction_code: transactionData.transactionCode,
-                }}
-                variant="primary"
-                size="lg"
-                className="w-full"
-              />
-              )}
+          {/* Modern Receipt Component - Direct DB Integration */}
+          {swapData.currency === 'KES' && transactionData.transactionCode && (
+            <div className="pt-4">
+              <PretiumReceipt transactionCode={transactionData.transactionCode} />
             </div>
           )}
 

@@ -17,12 +17,20 @@ const config: Config = {
       },
       animation: {
         "fade-out": "1s fadeOut 3s ease-out forwards",
+        "gradient": "gradient 3s ease infinite",
       },
       keyframes: {
         fadeOut: {
           "0%": { opacity: "1" },
           "100%": { opacity: "0" },
         },
+        gradient: {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+      },
+      backgroundSize: {
+        '200': '200%',
       },
     },
   },

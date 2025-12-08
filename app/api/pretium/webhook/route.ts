@@ -24,13 +24,15 @@ export async function POST(request: NextRequest) {
       });
 
       try {
-        // Update order status in database
+        // Update order status in database (now using new pretium_orders table)
         await DatabaseService.updatePretiumOrderStatus(
           transaction_code,
           'completed',
           status,
           receipt_number,
-          public_name || undefined
+          public_name || undefined,
+          undefined, // no error message
+          payload as unknown as Record<string, unknown> // store raw webhook payload
         );
 
         console.log('Database updated successfully for:', transaction_code);
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
 
         // Send notification to user via Farcaster if FID exists
         try {
-          const order = await DatabaseService.getOrderByPretiumTransactionCode(
+          const order = await DatabaseService.getPretiumOrderByTransactionCode(
             transaction_code
           );
 
@@ -105,7 +107,8 @@ export async function POST(request: NextRequest) {
           status,
           undefined,
           undefined,
-          message
+          message,
+          payload as unknown as Record<string, unknown> // store raw webhook payload
         );
 
         await DatabaseService.logAnalyticsEvent('pretium_payment_failed', '', {

@@ -10,7 +10,7 @@ import { ConnectionHandler } from './ConnectionHandler';
 import { Button } from './BaseComponents';
 import Image from 'next/image';
 import { trackOffRampEvent, trackWalletEvent } from '@/lib/analytics';
-import { ReceiptSection } from './DownloadButton';
+import { PretiumReceipt } from './PretiumReceipt';
 import { CurrencySwapInterface } from './CurrencySwapInterface';
 import { SavedRecipients } from './SavedRecipients';
 import { saveRecipient, SavedRecipient } from '@/lib/recipient-storage';
@@ -73,6 +73,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const [accountVerified, setAccountVerified] = useState(false);
   const [institutions, setInstitutions] = useState<{code: string, name: string, type: string}[]>([]);
   const [loadingInstitutions, setLoadingInstitutions] = useState(false);
+  const [transactionCode, setTransactionCode] = useState<string>('');
 
   // Fetch institutions for NGN
   const fetchInstitutions = async (currency: string) => {
@@ -614,7 +615,12 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
               accountName={formData.accountName}
               returnAddress={walletAddress || ''}
               rate={swapData.rate}
-              onSuccess={() => {
+              onSuccess={(txCode) => {
+                // Store transaction code for receipt
+                if (txCode) {
+                  setTransactionCode(txCode);
+                }
+
                 trackOffRampEvent('payment_completed', {
                   currency: swapData.currency,
                   amount: parseFloat(swapData.localAmount),
@@ -720,7 +726,15 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
       )}
 
       {/* Success Step */}
-      {step === 'success' && swapData && (
+      {step === 'success' && swapData && (() => {
+        console.log('[ExchangeFlow] Success screen - Debug info:', {
+          currency: swapData.currency,
+          transactionCode,
+          hasTransactionCode: !!transactionCode,
+          shouldShowReceipt: swapData.currency === 'KES' && !!transactionCode
+        });
+        return true;
+      })() && (
         <div className="text-center space-y-6">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
@@ -729,26 +743,17 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             Your {swapData.currency} has been sent to {swapData.currency === 'KES' ? formData.phoneNumber : formData.accountName}
           </p>
 
-          {/* Receipt Download Section */}
-          <ReceiptSection
-            orderData={{
-              id: `order_${Date.now()}`,
-              amount_in_usdc: parseFloat(swapData.usdcAmount),
-              amount_in_local: parseFloat(swapData.localAmount),
-              local_currency: swapData.currency,
-              account_name: formData.accountName,
-              phone_number: formData.phoneNumber,
-              account_number: formData.accountNumber,
-              bank_code: formData.bankCode,
-              wallet_address: walletAddress || '',
-              rate: swapData.rate,
-              sender_fee: 0,
-              transaction_fee: 0,
-              status: 'completed',
-              created_at: new Date().toISOString(),
-            }}
-            className="mt-6"
-          />
+          {/* Modern Receipt Component - Direct DB Integration */}
+          {swapData.currency === 'KES' && transactionCode ? (
+            <div className="pt-4">
+              <PretiumReceipt transactionCode={transactionCode} />
+            </div>
+          ) : (
+            <div className="pt-4 text-sm text-gray-400">
+              {swapData.currency !== 'KES' && 'Receipt only available for KES transactions'}
+              {swapData.currency === 'KES' && !transactionCode && 'Waiting for transaction code...'}
+            </div>
+          )}
           
           <div className="space-y-4">
             

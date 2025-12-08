@@ -40,8 +40,21 @@ export async function GET(
       );
     }
 
+    // Handle both new pretium_orders and legacy orders table structures
+    const receiptNumber = 'receipt_number' in order
+      ? order.receipt_number
+      : ('pretium_receipt_number' in order ? order.pretium_receipt_number : undefined);
+
+    const txCode = 'transaction_code' in order
+      ? order.transaction_code
+      : ('pretium_transaction_code' in order ? order.pretium_transaction_code : undefined);
+
+    const transactionHash = order.transaction_hash || '';
+    const exchangeRate = ('exchange_rate' in order ? order.exchange_rate : order.rate) || 0;
+    const transactionFee = ('transaction_fee' in order ? order.transaction_fee : undefined) || 0;
+
     // Check if webhook data has been received
-    if (!order.pretium_receipt_number) {
+    if (!receiptNumber) {
       return NextResponse.json(
         {
           error: 'Receipt not ready',
@@ -55,33 +68,33 @@ export async function GET(
 
     // Log the order data from database
     console.log('[Receipt API] Order data from database:', {
-      pretium_receipt_number: order.pretium_receipt_number,
+      receipt_number: receiptNumber,
       account_name: order.account_name,
-      transaction_hash: order.transaction_hash,
+      transaction_hash: transactionHash,
       status: order.status
     });
 
-    // Convert order to OrderData format
+    // Convert order to OrderData format (handle both table structures)
     const orderData: OrderData = {
       id: order.id,
-      paycrest_order_id: order.paycrest_order_id,
+      paycrest_order_id: 'paycrest_order_id' in order ? order.paycrest_order_id : (txCode || transactionCode || ''),
       amount_in_usdc: order.amount_in_usdc,
       amount_in_local: order.amount_in_local,
       local_currency: order.local_currency,
       account_name: order.account_name || 'Unknown',
       phone_number: order.phone_number,
-      account_number: order.account_number,
-      bank_code: order.bank_code,
-      bank_name: order.bank_name,
+      account_number: 'account_number' in order ? order.account_number : undefined,
+      bank_code: 'bank_code' in order ? order.bank_code : undefined,
+      bank_name: 'bank_name' in order ? order.bank_name : undefined,
       wallet_address: order.wallet_address,
-      rate: order.rate || 0,
+      rate: exchangeRate,
       sender_fee: order.sender_fee || 0,
-      transaction_fee: order.transaction_fee || 0,
+      transaction_fee: transactionFee,
       status: order.status as 'completed' | 'pending' | 'failed',
       created_at: order.created_at,
-      blockchain_tx_hash: order.transaction_hash,
-      pretium_receipt_number: order.pretium_receipt_number,
-      pretium_transaction_code: order.pretium_transaction_code,
+      blockchain_tx_hash: transactionHash,
+      pretium_receipt_number: receiptNumber,
+      pretium_transaction_code: txCode,
       till_number: order.till_number,
       paybill_number: order.paybill_number,
       paybill_account: order.paybill_account,

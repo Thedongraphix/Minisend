@@ -1,7 +1,7 @@
 import { DatabaseService } from '@/lib/supabase/config';
 import { generateReceiptPDF } from '@/lib/receipt-generator';
 import type { OrderData } from '@/lib/types/order';
-import type { Order } from '@/lib/supabase/config';
+import type { Order, PretiumOrder } from '@/lib/supabase/config';
 
 /**
  * Receipt helper functions for Pretium transactions
@@ -13,7 +13,13 @@ import type { Order } from '@/lib/supabase/config';
 export async function isReceiptAvailable(transactionCode: string): Promise<boolean> {
   try {
     const order = await DatabaseService.getOrderByPretiumTransactionCode(transactionCode);
-    return order !== null && order.status === 'completed' && !!order.pretium_receipt_number;
+    if (!order) return false;
+
+    const receiptNumber = 'receipt_number' in order
+      ? order.receipt_number
+      : ('pretium_receipt_number' in order ? order.pretium_receipt_number : undefined);
+
+    return order.status === 'completed' && !!receiptNumber;
   } catch {
     return false;
   }
@@ -35,15 +41,19 @@ export async function getReceiptData(transactionCode: string): Promise<{
       return { available: false };
     }
 
+    const receiptNumber = 'receipt_number' in order
+      ? order.receipt_number
+      : ('pretium_receipt_number' in order ? order.pretium_receipt_number : undefined);
+
     const receiptUrl = order.status === 'completed'
       ? `/api/pretium/receipt/${transactionCode}`
       : undefined;
 
     return {
       available: order.status === 'completed',
-      order,
+      order: 'paycrest_order_id' in order ? order : undefined,
       receiptUrl,
-      mpesaCode: order.pretium_receipt_number,
+      mpesaCode: receiptNumber,
     };
   } catch {
     return { available: false };
@@ -51,9 +61,40 @@ export async function getReceiptData(transactionCode: string): Promise<{
 }
 
 /**
- * Convert Order to OrderData format for receipt generation
+ * Convert Order or PretiumOrder to OrderData format for receipt generation
  */
-export function orderToReceiptData(order: Order): OrderData {
+export function orderToReceiptData(order: Order | PretiumOrder): OrderData {
+  const isPretiumOrder = 'transaction_code' in order;
+
+  if (isPretiumOrder) {
+    // Handle PretiumOrder
+    return {
+      id: order.id,
+      paycrest_order_id: order.transaction_code,
+      amount_in_usdc: order.amount_in_usdc,
+      amount_in_local: order.amount_in_local,
+      local_currency: order.local_currency,
+      account_name: order.account_name || 'Unknown',
+      phone_number: order.phone_number,
+      account_number: undefined,
+      bank_code: undefined,
+      bank_name: undefined,
+      wallet_address: order.wallet_address,
+      rate: order.exchange_rate,
+      sender_fee: order.sender_fee || 0,
+      transaction_fee: 0,
+      status: (order.status as 'completed' | 'pending' | 'failed') || 'pending',
+      created_at: order.created_at,
+      blockchain_tx_hash: order.transaction_hash,
+      pretium_receipt_number: order.receipt_number,
+      pretium_transaction_code: order.transaction_code,
+    };
+  }
+
+  // Handle legacy Order
+  const receiptNumber = 'pretium_receipt_number' in order ? order.pretium_receipt_number : undefined;
+  const txCode = 'pretium_transaction_code' in order ? order.pretium_transaction_code : undefined;
+
   return {
     id: order.id,
     paycrest_order_id: order.paycrest_order_id,
@@ -72,8 +113,8 @@ export function orderToReceiptData(order: Order): OrderData {
     status: (order.status as 'completed' | 'pending' | 'failed') || 'pending',
     created_at: order.created_at,
     blockchain_tx_hash: order.transaction_hash,
-    pretium_receipt_number: order.pretium_receipt_number,
-    pretium_transaction_code: order.pretium_transaction_code,
+    pretium_receipt_number: receiptNumber,
+    pretium_transaction_code: txCode,
   };
 }
 
@@ -122,9 +163,13 @@ export async function getReceiptSummary(
       return null;
     }
 
+    const receiptNumber = 'receipt_number' in order
+      ? order.receipt_number
+      : ('pretium_receipt_number' in order ? order.pretium_receipt_number : undefined);
+
     return {
       transactionCode,
-      mpesaReceiptNumber: order.pretium_receipt_number,
+      mpesaReceiptNumber: receiptNumber,
       recipientName: order.account_name || undefined,
       amount: order.amount_in_local,
       currency: order.local_currency,

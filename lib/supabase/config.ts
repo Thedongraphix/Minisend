@@ -116,6 +116,41 @@ export interface CarrierDetection {
   created_at: string
 }
 
+export interface PretiumOrder {
+  id: string
+  transaction_code: string
+  user_id?: string
+  wallet_address: string
+  transaction_hash: string
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
+  pretium_status?: string
+  amount_in_usdc: number
+  amount_in_local: number
+  local_currency: 'KES'
+  exchange_rate: number
+  sender_fee: number
+  payment_type: 'MOBILE' | 'BUY_GOODS' | 'PAYBILL'
+  phone_number?: string
+  till_number?: string
+  paybill_number?: string
+  paybill_account?: string
+  account_name: string
+  receipt_number?: string
+  public_name?: string
+  mobile_network?: string
+  chain: string
+  error_message?: string
+  settlement_address?: string
+  callback_url?: string
+  fid?: number
+  raw_disburse_request?: Record<string, unknown>
+  raw_disburse_response?: Record<string, unknown>
+  raw_webhook_payloads?: Record<string, unknown>[]
+  created_at: string
+  updated_at: string
+  completed_at?: string
+}
+
 // Helper functions
 export async function testConnection() {
   try {
@@ -479,7 +514,7 @@ export class DatabaseService {
     return data
   }
 
-  // Pretium-specific methods
+  // Pretium-specific methods (using dedicated pretium_orders table)
   static async createPretiumOrder(orderData: {
     transactionCode: string;
     userId: string;
@@ -498,31 +533,46 @@ export class DatabaseService {
     pretiumStatus: string;
     fee: number;
     fid?: number;
-  }): Promise<Order> {
-    const { data, error } = await supabaseAdmin
-      .from('orders')
+    settlementAddress?: string;
+    callbackUrl?: string;
+    rawDisburseRequest?: Record<string, unknown>;
+    rawDisburseResponse?: Record<string, unknown>;
+  }): Promise<PretiumOrder> {
+    // Determine payment type
+    let paymentType: 'MOBILE' | 'BUY_GOODS' | 'PAYBILL' = 'MOBILE';
+    if (orderData.tillNumber) {
+      paymentType = 'BUY_GOODS';
+    } else if (orderData.paybillNumber) {
+      paymentType = 'PAYBILL';
+    }
+
+    const { data, error} = await supabaseAdmin
+      .from('pretium_orders')
       .insert({
-        paycrest_order_id: orderData.transactionCode,
-        pretium_transaction_code: orderData.transactionCode,
+        transaction_code: orderData.transactionCode,
         user_id: orderData.userId,
         wallet_address: orderData.walletAddress,
+        transaction_hash: orderData.transactionHash,
+        status: orderData.status,
+        pretium_status: orderData.pretiumStatus,
         amount_in_usdc: orderData.amountInUsdc,
         amount_in_local: orderData.amountInLocal,
         local_currency: orderData.currency,
-        phone_number: orderData.phoneNumber || '',
-        till_number: orderData.tillNumber || '',
-        paybill_number: orderData.paybillNumber || '',
-        paybill_account: orderData.paybillAccount || '',
-        account_name: orderData.accountName,
-        rate: orderData.rate,
-        transaction_hash: orderData.transactionHash,
-        status: orderData.status,
-        paycrest_status: orderData.pretiumStatus,
-        payment_provider: 'PRETIUM_KES',
+        exchange_rate: orderData.rate,
         sender_fee: orderData.fee,
+        payment_type: paymentType,
+        phone_number: orderData.phoneNumber,
+        till_number: orderData.tillNumber,
+        paybill_number: orderData.paybillNumber,
+        paybill_account: orderData.paybillAccount,
+        account_name: orderData.accountName,
+        mobile_network: 'SAFARICOM',
+        chain: 'BASE',
+        settlement_address: orderData.settlementAddress,
+        callback_url: orderData.callbackUrl,
         fid: orderData.fid,
-        network: 'base',
-        token: 'USDC'
+        raw_disburse_request: orderData.rawDisburseRequest,
+        raw_disburse_response: orderData.rawDisburseResponse
       })
       .select()
       .single()
@@ -537,20 +587,21 @@ export class DatabaseService {
     pretiumStatus: string,
     receiptNumber?: string,
     publicName?: string,
-    errorMessage?: string
-  ): Promise<Order> {
+    errorMessage?: string,
+    webhookPayload?: Record<string, unknown>
+  ): Promise<PretiumOrder> {
     const updateData: Record<string, unknown> = {
       status,
-      paycrest_status: pretiumStatus,
+      pretium_status: pretiumStatus,
       updated_at: new Date().toISOString()
     };
 
     if (receiptNumber) {
-      updateData.pretium_receipt_number = receiptNumber;
+      updateData.receipt_number = receiptNumber;
     }
 
     if (publicName) {
-      updateData.account_name = publicName;
+      updateData.public_name = publicName;
     }
 
     if (status === 'completed') {
@@ -558,13 +609,21 @@ export class DatabaseService {
     }
 
     if (errorMessage) {
-      updateData.memo = errorMessage;
+      updateData.error_message = errorMessage;
+    }
+
+    // Append webhook payload to raw_webhook_payloads array if provided
+    if (webhookPayload) {
+      // First get current order to append to existing payloads
+      const currentOrder = await this.getPretiumOrderByTransactionCode(transactionCode);
+      const existingPayloads = currentOrder?.raw_webhook_payloads || [];
+      updateData.raw_webhook_payloads = [...existingPayloads, webhookPayload];
     }
 
     const { data, error } = await supabaseAdmin
-      .from('orders')
+      .from('pretium_orders')
       .update(updateData)
-      .eq('pretium_transaction_code', transactionCode)
+      .eq('transaction_code', transactionCode)
       .select()
       .single()
 
@@ -572,7 +631,70 @@ export class DatabaseService {
     return data
   }
 
-  static async getOrderByPretiumTransactionCode(transactionCode: string): Promise<Order | null> {
+  static async getPretiumOrderByTransactionCode(transactionCode: string): Promise<PretiumOrder | null> {
+    const { data, error } = await supabaseAdmin
+      .from('pretium_orders')
+      .select('*')
+      .eq('transaction_code', transactionCode)
+      .single()
+
+    if (error && error.code !== 'PGRST116') throw error
+    return data
+  }
+
+  static async getPretiumOrdersByWalletAddress(walletAddress: string, limit = 50): Promise<PretiumOrder[]> {
+    const { data, error } = await supabaseAdmin
+      .from('pretium_orders')
+      .select('*')
+      .eq('wallet_address', walletAddress)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) throw error
+    return data || []
+  }
+
+  static async getRecentPretiumOrders(limit = 50): Promise<PretiumOrder[]> {
+    const { data, error } = await supabaseAdmin
+      .from('pretium_orders')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) throw error
+    return data || []
+  }
+
+  static async getPretiumOrdersByStatus(status: string, limit = 50): Promise<PretiumOrder[]> {
+    const { data, error } = await supabaseAdmin
+      .from('pretium_orders')
+      .select('*')
+      .eq('status', status)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) throw error
+    return data || []
+  }
+
+  // Unified method to get all orders (both Pretium and PayCrest) for a wallet
+  static async getOrdersByWalletAddress(walletAddress: string, limit = 100): Promise<(Order | PretiumOrder)[]> {
+    // Fetch both Pretium orders and PayCrest orders
+    const pretiumOrders = await this.getPretiumOrdersByWalletAddress(walletAddress, limit);
+    const paycrestOrders = await this.getOrdersByWallet(walletAddress, limit);
+
+    // Combine and return
+    const allOrders = [...pretiumOrders, ...paycrestOrders];
+    return allOrders;
+  }
+
+  // Legacy compatibility method - checks both old and new tables
+  static async getOrderByPretiumTransactionCode(transactionCode: string): Promise<Order | PretiumOrder | null> {
+    // First try new pretium_orders table
+    const pretiumOrder = await this.getPretiumOrderByTransactionCode(transactionCode);
+    if (pretiumOrder) return pretiumOrder;
+
+    // Fall back to old orders table for legacy data
     const { data, error } = await supabaseAdmin
       .from('orders')
       .select('*')
@@ -581,16 +703,5 @@ export class DatabaseService {
 
     if (error && error.code !== 'PGRST116') throw error
     return data
-  }
-
-  static async getOrdersByWalletAddress(walletAddress: string): Promise<Order[]> {
-    const { data, error } = await supabaseAdmin
-      .from('orders')
-      .select('*')
-      .eq('wallet_address', walletAddress)
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
-    return data || []
   }
 }

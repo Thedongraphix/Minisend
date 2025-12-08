@@ -19,7 +19,7 @@ export async function GET(
       );
     }
 
-    // Fetch order from database
+    // Fetch order from pretium_orders table (with legacy fallback)
     const order = await DatabaseService.getOrderByPretiumTransactionCode(transactionCode);
 
     if (!order) {
@@ -33,15 +33,35 @@ export async function GET(
       );
     }
 
-    // Check if receipt is ready
-    const isReady = order.status === 'completed' && !!order.pretium_receipt_number;
+    // Handle both PretiumOrder (new) and Order (legacy) structures
+    const isPretiumOrder = 'transaction_code' in order;
+
+    const receiptNumber = isPretiumOrder
+      ? order.receipt_number
+      : order.pretium_receipt_number;
+
+    const isReady = order.status === 'completed' && !!receiptNumber;
+
+    const txCode = isPretiumOrder
+      ? order.transaction_code
+      : order.pretium_transaction_code;
+
+    const recipientName = isPretiumOrder && order.public_name
+      ? order.public_name
+      : order.account_name;
+
+    const amount = order.amount_in_local;
+    const currency = order.local_currency;
 
     return NextResponse.json({
       ready: isReady,
       status: order.status,
-      hasReceiptNumber: !!order.pretium_receipt_number,
-      receiptNumber: order.pretium_receipt_number,
-      transactionCode: order.pretium_transaction_code,
+      hasReceiptNumber: !!receiptNumber,
+      receiptNumber: receiptNumber,
+      transactionCode: txCode,
+      recipientName,
+      amount,
+      currency,
     });
   } catch (error) {
     return NextResponse.json(

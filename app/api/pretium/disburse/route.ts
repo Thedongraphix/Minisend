@@ -143,36 +143,50 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Create order record
-      // Note: paycrest_order_id is reused for Pretium to maintain schema compatibility
-      // The pretium_transaction_code field holds the actual Pretium transaction ID
-      await DatabaseService.createOrder({
-        paycrest_order_id: transaction_code, // Required field, reused for compatibility
-        pretium_transaction_code: transaction_code, // Actual Pretium transaction code
-        user_id: user.id,
-        wallet_address: returnAddress,
-        amount_in_usdc: amountNum,
-        amount_in_local: recipientAmount,
-        local_currency: 'KES',
-        phone_number: paymentType === 'MOBILE' ? shortcode : '',
-        till_number: paymentType === 'BUY_GOODS' ? shortcode : '',
-        paybill_number: paymentType === 'PAYBILL' ? shortcode : '',
-        paybill_account: accountNumber || '',
-        account_name: accountName,
-        rate: exchangeRate,
-        transaction_hash: transactionHash,
-        status: 'pending',
-        paycrest_status: status,
-        payment_provider: 'PRETIUM_KES',
-        sender_fee: feeAmount,
-        transaction_fee: 0, // Pretium transactions use gasless/sponsored transactions
-        fid,
-        network: 'base',
-        token: 'USDC',
-        carrier: 'MPESA',
-        reference_id: transaction_code,
-        receive_address: PRETIUM_CONFIG.SETTLEMENT_ADDRESS,
+      // Create order record in the new pretium_orders table
+      console.log('[Disburse] Creating order in pretium_orders table:', {
+        transaction_code,
+        wallet: returnAddress,
+        amount: amountNum
       });
+
+      try {
+        const createdOrder = await DatabaseService.createPretiumOrder({
+          transactionCode: transaction_code,
+          userId: user.id,
+          walletAddress: returnAddress,
+          amountInUsdc: amountNum,
+          amountInLocal: recipientAmount,
+          currency: 'KES',
+          phoneNumber: paymentType === 'MOBILE' ? shortcode : undefined,
+          tillNumber: paymentType === 'BUY_GOODS' ? shortcode : undefined,
+          paybillNumber: paymentType === 'PAYBILL' ? shortcode : undefined,
+          paybillAccount: accountNumber,
+          accountName: accountName,
+          rate: exchangeRate,
+          transactionHash: transactionHash,
+          status: 'pending',
+          pretiumStatus: status,
+          fee: feeAmount,
+          fid,
+          settlementAddress: PRETIUM_CONFIG.SETTLEMENT_ADDRESS,
+          callbackUrl: PRETIUM_CONFIG.WEBHOOK_URL,
+          rawDisburseRequest: JSON.parse(JSON.stringify(disburseRequest)) as Record<string, unknown>,
+          rawDisburseResponse: JSON.parse(JSON.stringify(disburseResponse.data)) as Record<string, unknown>,
+        });
+
+        console.log('[Disburse] Order created successfully:', {
+          order_id: createdOrder.id,
+          transaction_code: createdOrder.transaction_code
+        });
+      } catch (dbError) {
+        console.error('[Disburse] FAILED to create order in pretium_orders:', {
+          transaction_code,
+          error: dbError,
+          errorMessage: dbError instanceof Error ? dbError.message : 'Unknown error'
+        });
+        throw dbError;
+      }
 
       // Log analytics event
       await DatabaseService.logAnalyticsEvent('pretium_disburse_initiated', returnAddress, {
