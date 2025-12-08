@@ -33,7 +33,7 @@ export function Providers(props: { children: ReactNode }) {
           paymaster: paymasterConfig.isEnabled ? paymasterConfig.rpcUrl : undefined,
         }}
       >
-        <Logger />
+        {/* <Logger /> */}
         <PostHogProvider>
           {props.children}
         </PostHogProvider>

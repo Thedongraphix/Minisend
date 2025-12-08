@@ -178,6 +178,10 @@ export function PretiumPaymentProcessor({
         }
 
         setTimeout(() => {
+          console.log('[PretiumPaymentProcessor] Calling onSuccess with:', {
+            transactionCode: transactionDataRef.current.transactionCode,
+            txHash: transactionDataRef.current.txHash
+          });
           onSuccess(transactionDataRef.current.transactionCode, transactionDataRef.current.txHash);
         }, 2000);
         break;

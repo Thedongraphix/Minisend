@@ -616,9 +616,14 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
               returnAddress={walletAddress || ''}
               rate={swapData.rate}
               onSuccess={(txCode) => {
+                console.log('[ExchangeFlow] onSuccess called with txCode:', txCode);
+
                 // Store transaction code for receipt
                 if (txCode) {
+                  console.log('[ExchangeFlow] Setting transaction code:', txCode);
                   setTransactionCode(txCode);
+                } else {
+                  console.warn('[ExchangeFlow] Transaction code is missing!');
                 }
 
                 trackOffRampEvent('payment_completed', {
