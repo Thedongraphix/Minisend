@@ -64,3 +64,16 @@ logs/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Documentation and guides
+/docs/
+*.md
+!README.md
+!CLAUDE.md
+
+# Claude Code configuration
+.claude/
+
+# Test files
+test-*.html
+test-*.js

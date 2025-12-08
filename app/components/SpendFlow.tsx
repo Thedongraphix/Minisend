@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { CurrencySwapInterface } from './CurrencySwapInterface';
 import { FormInput } from './FormInput';
 import { DownloadButton } from './DownloadButton';
+import { useReceiptReadiness } from '../hooks/useReceiptReadiness';
 
 interface SpendFlowProps {
   setActiveTab: (tab: string) => void;
@@ -48,8 +49,18 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
     transactionCode?: string;
     txHash?: string;
   }>({});
-  const [mpesaCodeReady, setMpesaCodeReady] = useState(false);
-  const [waitingForMpesa, setWaitingForMpesa] = useState(false);
+
+  // Use receipt readiness hook for Pretium transactions
+  const {
+    isReady: receiptIsReady,
+    isChecking: receiptIsChecking,
+    receiptNumber: mpesaCode
+  } = useReceiptReadiness({
+    transactionCode: transactionData.transactionCode,
+    enabled: step === 'success' && swapData?.currency === 'KES' && !!transactionData.transactionCode,
+    maxAttempts: 15, // 15 attempts = 30 seconds
+    pollInterval: 2000, // Check every 2 seconds
+  });
 
   // Show wallet connection if not connected or not mounted
   if (!mounted || !isConnected) {
@@ -279,50 +290,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
               onSuccess={(transactionCode, txHash) => {
                 setTransactionData({ transactionCode, txHash });
                 setStep('success');
-
-                // Wait for M-Pesa code from webhook (usually arrives within 5 seconds)
-                if (transactionCode) {
-                  setWaitingForMpesa(true);
-
-                  // Poll for M-Pesa code
-                  const checkMpesaCode = async () => {
-                    try {
-                      const response = await fetch(`/api/pretium/status/${transactionCode}`);
-                      const data = await response.json();
-
-                      if (data.pretium_receipt_number) {
-                        setMpesaCodeReady(true);
-                        setWaitingForMpesa(false);
-                        return true;
-                      }
-                      return false;
-                    } catch (error) {
-                      console.error('Error checking M-Pesa code:', error);
-                      return false;
-                    }
-                  };
-
-                  // Check immediately
-                  checkMpesaCode().then(ready => {
-                    if (!ready) {
-                      // If not ready, poll every 2 seconds for up to 10 seconds
-                      let attempts = 0;
-                      const pollInterval = setInterval(async () => {
-                        attempts++;
-                        const ready = await checkMpesaCode();
-
-                        if (ready || attempts >= 5) {
-                          clearInterval(pollInterval);
-                          if (!ready) {
-                            // After 10 seconds, enable download anyway
-                            setMpesaCodeReady(true);
-                            setWaitingForMpesa(false);
-                          }
-                        }
-                      }, 2000);
-                    }
-                  });
-                }
+                // Receipt readiness polling is now handled by useReceiptReadiness hook
               }}
               onError={() => {
                 // Error handling managed by PretiumPaymentProcessor
@@ -377,7 +345,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             <div className="space-y-3 pt-4">
               <div className="bg-purple-500/10 border border-purple-400/20 rounded-xl p-4">
                 <div className="flex items-start gap-3 text-left">
-                  {waitingForMpesa ? (
+                  {receiptIsChecking ? (
                     <svg className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -389,19 +357,21 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
                   )}
                   <div className="flex-1 space-y-1">
                     <p className="text-xs text-purple-300 font-medium">
-                      {waitingForMpesa ? 'Waiting for M-Pesa confirmation...' : 'Receipt Ready'}
+                      {receiptIsChecking ? 'Waiting for M-Pesa confirmation...' : 'Receipt Ready'}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {waitingForMpesa
-                        ? 'Getting M-Pesa code from Safaricom. This usually takes 2-5 seconds.'
-                        : 'Your receipt includes the M-Pesa code and blockchain transaction details'
+                      {receiptIsChecking
+                        ? 'Getting M-Pesa code from Safaricom. This usually takes 2-10 seconds.'
+                        : mpesaCode
+                          ? `M-Pesa Code: ${mpesaCode} • Receipt ready for download`
+                          : 'Your receipt includes the M-Pesa code and blockchain transaction details'
                       }
                     </p>
                   </div>
                 </div>
               </div>
 
-              {mpesaCodeReady && (
+              {receiptIsReady && (
                 <DownloadButton
                 orderData={{
                   id: transactionData.transactionCode || `order_${Date.now()}`,
