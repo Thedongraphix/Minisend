@@ -79,11 +79,19 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   y += 6;
 
   // Payment method
-  const paymentMethod = data.phoneNumber || data.tillNumber
-    ? (data.tillNumber ? `Till ${data.tillNumber}` : data.phoneNumber)
-    : `Paybill ${data.paybillNumber}${data.paybillAccount ? ` - ${data.paybillAccount}` : ''}`;
-  pdf.text(paymentMethod, pageWidth / 2, y, { align: 'center' });
-  y += 18;
+  let paymentMethod = '';
+  if (data.tillNumber) {
+    paymentMethod = `Till ${data.tillNumber}`;
+  } else if (data.phoneNumber) {
+    paymentMethod = data.phoneNumber;
+  } else if (data.paybillNumber) {
+    paymentMethod = `Paybill ${data.paybillNumber}${data.paybillAccount ? ` - ${data.paybillAccount}` : ''}`;
+  }
+
+  if (paymentMethod) {
+    pdf.text(paymentMethod, pageWidth / 2, y, { align: 'center' });
+    y += 18;
+  }
 
   // QR Code - Centered
   try {
