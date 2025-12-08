@@ -176,15 +176,9 @@ export function PretiumPaymentProcessor({
           transactionDataRef.current.txHash = txHash;
           // Wait for createPretiumOrder to complete before calling onSuccess
           createPretiumOrder(txHash).then(() => {
-            console.log('[PretiumPaymentProcessor] Order created, calling onSuccess with:', {
-              transactionCode: transactionDataRef.current.transactionCode,
-              txHash: transactionDataRef.current.txHash
-            });
             onSuccess(transactionDataRef.current.transactionCode, transactionDataRef.current.txHash);
-          }).catch((error) => {
-            console.error('[PretiumPaymentProcessor] Order creation failed, but calling onSuccess anyway:', error);
-            // Still call onSuccess even if order creation fails
-            // The transaction was successful on-chain
+          }).catch(() => {
+            // Still call onSuccess even if order creation fails - transaction was successful on-chain
             onSuccess(transactionDataRef.current.transactionCode, transactionDataRef.current.txHash);
           });
         } else {

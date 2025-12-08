@@ -616,14 +616,9 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
               returnAddress={walletAddress || ''}
               rate={swapData.rate}
               onSuccess={(txCode) => {
-                console.log('[ExchangeFlow] onSuccess called with txCode:', txCode);
-
                 // Store transaction code for receipt
                 if (txCode) {
-                  console.log('[ExchangeFlow] Setting transaction code:', txCode);
                   setTransactionCode(txCode);
-                } else {
-                  console.warn('[ExchangeFlow] Transaction code is missing!');
                 }
 
                 trackOffRampEvent('payment_completed', {
@@ -731,15 +726,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
       )}
 
       {/* Success Step */}
-      {step === 'success' && swapData && (() => {
-        console.log('[ExchangeFlow] Success screen - Debug info:', {
-          currency: swapData.currency,
-          transactionCode,
-          hasTransactionCode: !!transactionCode,
-          shouldShowReceipt: swapData.currency === 'KES' && !!transactionCode
-        });
-        return true;
-      })() && (
+      {step === 'success' && swapData && (
         <div className="text-center space-y-6">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>

@@ -313,13 +313,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
       )}
 
       {/* Success Step */}
-      {step === 'success' && paymentMethod && swapData && (() => {
-        console.log('[SpendFlow] Rendering success screen:', {
-          transactionCode: transactionData.transactionCode,
-          currency: swapData.currency
-        });
-        return true;
-      })() && (
+      {step === 'success' && paymentMethod && swapData && (
         <div className="text-center space-y-6">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
