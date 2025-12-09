@@ -6,7 +6,7 @@ import { base } from 'viem/chains';
 import { Name, Avatar } from '@coinbase/onchainkit/identity';
 import { Button, Icon } from './BaseComponents';
 import { Order } from '../../lib/supabase/config';
-import { CompactReceiptButton } from './DownloadButton';
+import { DownloadButton } from './DownloadButton';
 import { OrderData } from '../../lib/types/order';
 
 
@@ -38,6 +38,11 @@ function convertOrderToOrderData(order: Order): OrderData {
     created_at: order.created_at,
     transactionHash: order.transaction_hash,
     blockchain_tx_hash: order.transaction_hash,
+    pretium_transaction_code: order.pretium_transaction_code,
+    pretium_receipt_number: order.pretium_receipt_number,
+    till_number: order.till_number,
+    paybill_number: order.paybill_number,
+    paybill_account: order.paybill_account,
   };
 }
 
@@ -198,36 +203,49 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     return order.account_number || 'Unknown';
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string, currency?: string) => {
     const date = new Date(dateString);
+
+    // Use appropriate timezone based on currency
+    const timezone = currency === 'NGN' ? 'Africa/Lagos' : 'Africa/Nairobi'; // WAT for NGN, EAT for KES
+
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
+    // Convert both dates to same timezone for comparison
+    const dateInTimezone = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+    const todayInTimezone = new Date(today.toLocaleString('en-US', { timeZone: timezone }));
+    const yesterdayInTimezone = new Date(yesterday.toLocaleString('en-US', { timeZone: timezone }));
+
+    if (dateInTimezone.toDateString() === todayInTimezone.toDateString()) {
       return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
+    } else if (dateInTimezone.toDateString() === yesterdayInTimezone.toDateString()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: timezone
+      });
     }
   };
 
-  const formatTime = (dateString: string) => {
+  const formatTime = (dateString: string, currency?: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  };
+    // Use appropriate timezone based on currency
+    const timezone = currency === 'NGN' ? 'Africa/Lagos' : 'Africa/Nairobi'; // WAT for NGN, EAT for KES
+    const timezoneAbbr = currency === 'NGN' ? 'WAT' : 'EAT';
 
-  const getStatusColor = (status: string) => {
-    const normalizedStatus = status?.toLowerCase() || '';
-    if (['completed', 'fulfilled', 'settled'].includes(normalizedStatus)) {
-      return 'text-blue-400';
-    } else if (['pending', 'processing', 'validated', 'initiated'].includes(normalizedStatus)) {
-      return 'text-gray-400';
-    } else if (['failed', 'cancelled', 'expired', 'refunded'].includes(normalizedStatus)) {
-      return 'text-gray-500';
-    }
-    return 'text-gray-400';
+    const timeStr = date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: timezone
+    });
+
+    return `${timeStr} ${timezoneAbbr}`;
   };
 
   const getStatusBadgeColor = (status: string) => {
@@ -240,22 +258,6 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
       return 'bg-gray-600/20 border-gray-600/30 text-gray-500';
     }
     return 'bg-gray-500/20 border-gray-500/30 text-gray-400';
-  };
-
-  const getStatusIcon = (status: string) => {
-    const normalizedStatus = status?.toLowerCase() || '';
-    if (['completed', 'fulfilled', 'settled'].includes(normalizedStatus)) {
-      return 'check';
-    } else if (['pending', 'processing', 'validated', 'initiated'].includes(normalizedStatus)) {
-      return 'sparkles';
-    }
-    return 'star';
-  };
-
-  const openBaseScan = (txHash: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const baseScanUrl = `https://basescan.org/tx/${txHash}`;
-    window.open(baseScanUrl, '_blank', 'noopener,noreferrer');
   };
 
   if (initialLoading) {
@@ -380,53 +382,46 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
               const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
 
               return (
-                <div key={order.id} className="bg-white/5 hover:bg-white/[0.07] rounded-lg p-2.5 border border-white/10 hover:border-blue-500/30 transition-colors">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${
-                        isSuccess ? 'bg-blue-500/20' : 'bg-gray-500/20'
-                      }`}>
-                        <Icon
-                          name={getStatusIcon(order.status)}
-                          size="sm"
-                          className={`${getStatusColor(order.status)} w-3.5 h-3.5`}
-                        />
+                <div key={order.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  {/* Amount and Status */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="text-white text-2xl font-bold mb-1">
+                        {order.local_currency} {order.amount_in_local.toLocaleString()}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <p className="text-white font-bold text-sm leading-none">
-                            ${order.amount_in_usdc.toFixed(2)}
-                          </p>
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusBadgeColor(order.status)}`}>
-                            {order.status}
-                          </span>
-                        </div>
-                        <p className="text-gray-400 text-xs truncate leading-none">
-                          {getPaymentDestination(order)}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-gray-500 text-[10px]">
-                            {formatDate(order.created_at)} • {formatTime(order.created_at)}
-                          </p>
-                          {order.transaction_hash && (
-                            <button
-                              onClick={(e) => openBaseScan(order.transaction_hash!, e)}
-                              className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-[10px]"
-                            >
-                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                              <span>BaseScan</span>
-                            </button>
-                          )}
-                        </div>
+                      <div className="text-gray-400 text-sm">
+                        ${order.amount_in_usdc.toFixed(2)} USDC
                       </div>
                     </div>
-                    <CompactReceiptButton
-                      orderData={convertOrderToOrderData(order)}
-                      className="hover:bg-blue-500/10 rounded transition-colors"
-                    />
+                    <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${getStatusBadgeColor(order.status)}`}>
+                      {order.status}
+                    </span>
                   </div>
+
+                  {/* Phone Number */}
+                  <div className="mb-3">
+                    <div className="text-gray-500 text-xs mb-1">Sent to</div>
+                    <div className="text-white text-base font-medium">
+                      {getPaymentDestination(order)}
+                    </div>
+                  </div>
+
+                  {/* Date and Time */}
+                  <div className="mb-4">
+                    <div className="text-gray-500 text-xs">
+                      {formatDate(order.created_at, order.local_currency)} • {formatTime(order.created_at, order.local_currency)}
+                    </div>
+                  </div>
+
+                  {/* Download Button */}
+                  {isSuccess && (
+                    <DownloadButton
+                      orderData={convertOrderToOrderData(order)}
+                      variant="secondary"
+                      size="md"
+                      className="w-full"
+                    />
+                  )}
                 </div>
               );
             })}
@@ -465,53 +460,46 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
               const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
 
               return (
-                <div key={order.id} className="bg-white/5 hover:bg-white/[0.07] rounded-lg p-2.5 border border-white/10 hover:border-blue-500/30 transition-colors">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${
-                        isSuccess ? 'bg-blue-500/20' : 'bg-gray-500/20'
-                      }`}>
-                        <Icon
-                          name={getStatusIcon(order.status)}
-                          size="sm"
-                          className={`${getStatusColor(order.status)} w-3.5 h-3.5`}
-                        />
+                <div key={order.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  {/* Amount and Status */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="text-white text-2xl font-bold mb-1">
+                        {order.local_currency} {order.amount_in_local.toLocaleString()}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <p className="text-white font-bold text-sm leading-none">
-                            ${order.amount_in_usdc.toFixed(2)}
-                          </p>
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${getStatusBadgeColor(order.status)}`}>
-                            {order.status}
-                          </span>
-                        </div>
-                        <p className="text-gray-400 text-xs truncate leading-none">
-                          {getPaymentDestination(order)}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-gray-500 text-[10px]">
-                            {formatTime(order.created_at)}
-                          </p>
-                          {order.transaction_hash && (
-                            <button
-                              onClick={(e) => openBaseScan(order.transaction_hash!, e)}
-                              className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-[10px]"
-                            >
-                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                              <span>BaseScan</span>
-                            </button>
-                          )}
-                        </div>
+                      <div className="text-gray-400 text-sm">
+                        ${order.amount_in_usdc.toFixed(2)} USDC
                       </div>
                     </div>
-                    <CompactReceiptButton
-                      orderData={convertOrderToOrderData(order)}
-                      className="hover:bg-blue-500/10 rounded transition-colors"
-                    />
+                    <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${getStatusBadgeColor(order.status)}`}>
+                      {order.status}
+                    </span>
                   </div>
+
+                  {/* Phone Number */}
+                  <div className="mb-3">
+                    <div className="text-gray-500 text-xs mb-1">Sent to</div>
+                    <div className="text-white text-base font-medium">
+                      {getPaymentDestination(order)}
+                    </div>
+                  </div>
+
+                  {/* Date and Time */}
+                  <div className="mb-4">
+                    <div className="text-gray-500 text-xs">
+                      {formatTime(order.created_at, order.local_currency)}
+                    </div>
+                  </div>
+
+                  {/* Download Button */}
+                  {isSuccess && (
+                    <DownloadButton
+                      orderData={convertOrderToOrderData(order)}
+                      variant="secondary"
+                      size="md"
+                      className="w-full"
+                    />
+                  )}
                 </div>
               );
             })}
