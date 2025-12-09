@@ -33,25 +33,27 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   const gray900: [number, number, number] = [17, 24, 39];
   const gray600: [number, number, number] = [75, 85, 99];
   const gray200: [number, number, number] = [229, 231, 235];
+  const purple: [number, number, number] = [147, 51, 234]; // Brand purple color
 
   // Background
   pdf.setFillColor(255, 255, 255);
   pdf.rect(0, 0, pageWidth, 297, 'F');
 
-  // Logo / Brand
+  // Logo / Brand - Purple and bold
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(24);
-  pdf.setTextColor(...gray900);
+  pdf.setTextColor(...purple);
   pdf.text('Minisend', pageWidth / 2, y, { align: 'center' });
   y += 8;
 
-  pdf.setFont('helvetica', 'normal');
+  pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(9);
   pdf.setTextColor(...gray600);
   pdf.text('USDC to M-Pesa Receipt', pageWidth / 2, y, { align: 'center' });
   y += 15;
 
-  // Receipt number and date
+  // Receipt number and date - Bold
+  pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
   pdf.setTextColor(...gray600);
   pdf.text(`Receipt: ${data.receiptNumber}`, margin, y);
@@ -64,21 +66,21 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   pdf.line(margin, y, pageWidth - margin, y);
   y += 12;
 
-  // Amount - Large and prominent
+  // Amount - Large and prominent with purple color
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(32);
-  pdf.setTextColor(...gray900);
+  pdf.setTextColor(...purple);
   pdf.text(`${data.currency} ${data.amount.toLocaleString()}`, pageWidth / 2, y, { align: 'center' });
   y += 12;
 
-  // Recipient
-  pdf.setFont('helvetica', 'normal');
+  // Recipient - Bold
+  pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(11);
-  pdf.setTextColor(...gray600);
+  pdf.setTextColor(...gray900);
   pdf.text(`To: ${data.recipientName}`, pageWidth / 2, y, { align: 'center' });
   y += 6;
 
-  // Payment method
+  // Payment method - Bold
   let paymentMethod = '';
   if (data.tillNumber) {
     paymentMethod = `Till ${data.tillNumber}`;
@@ -89,6 +91,7 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   }
 
   if (paymentMethod) {
+    pdf.setFont('helvetica', 'bold');
     pdf.text(paymentMethod, pageWidth / 2, y, { align: 'center' });
     y += 18;
   }
@@ -110,7 +113,8 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
     pdf.addImage(qrCodeDataUrl, 'PNG', qrX, y, qrSize, qrSize);
     y += qrSize + 8;
 
-    // QR label
+    // QR label - Bold
+    pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(8);
     pdf.setTextColor(...gray600);
     pdf.text('Scan to view on Base', pageWidth / 2, y, { align: 'center' });
@@ -129,14 +133,19 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   const rightX = pageWidth - margin;
   const lineHeight = 6;
 
-  pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(9);
 
-  // Row helper
-  const row = (label: string, value: string) => {
+  // Row helper - All text bold for visibility
+  const row = (label: string, value: string, highlightValue = false) => {
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(...gray600);
     pdf.text(label, leftX, y);
-    pdf.setTextColor(...gray900);
+    pdf.setFont('helvetica', 'bold');
+    if (highlightValue) {
+      pdf.setTextColor(...purple);
+    } else {
+      pdf.setTextColor(...gray900);
+    }
     pdf.text(value, rightX, y, { align: 'right' });
     y += lineHeight;
   };
@@ -144,15 +153,16 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   row('Amount sent', `$${data.usdcAmount.toFixed(2)} USDC`);
   row('Exchange rate', `1 USDC = ${data.exchangeRate.toFixed(2)} ${data.currency}`);
   row('Fee', `${data.currency} ${data.fee.toFixed(2)}`);
-  row('Total received', `${data.currency} ${data.amount.toLocaleString()}`);
+  row('Total received', `${data.currency} ${data.amount.toLocaleString()}`, true); // Highlight total
 
   y += 6;
-  row('M-Pesa code', data.receiptNumber);
+  row('M-Pesa code', data.receiptNumber, true); // Highlight M-Pesa code
   row('Transaction ID', `${data.transactionCode.slice(0, 16)}...`);
 
   y += 12;
 
-  // Footer
+  // Footer - Bold
+  pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
   pdf.setTextColor(...gray600);
   pdf.text('Minisend - USDC to M-Pesa', pageWidth / 2, y, { align: 'center' });

@@ -56,6 +56,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
   const [displayLimit, setDisplayLimit] = useState(20);
   const [refreshing, setRefreshing] = useState(false);
   const [viewAll, setViewAll] = useState(false);
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   const loadAllUserTransactions = useCallback(async (isBackgroundRefresh = false) => {
     if (!address) return;
@@ -380,47 +381,70 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
             {allOrders.slice(0, displayLimit).map((order) => {
               const normalizedStatus = order.status?.toLowerCase() || '';
               const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
+              const isExpanded = expandedCard === order.id;
 
               return (
-                <div key={order.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  {/* Amount and Status */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="text-white text-2xl font-bold mb-1">
-                        {order.local_currency} {order.amount_in_local.toLocaleString()}
+                <div
+                  key={order.id}
+                  className="bg-white/5 rounded-lg border border-white/10 overflow-hidden transition-all"
+                >
+                  {/* Collapsed View - Always Visible */}
+                  <div
+                    onClick={() => setExpandedCard(isExpanded ? null : order.id)}
+                    className="p-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-white font-bold text-base">
+                            {order.local_currency} {order.amount_in_local.toLocaleString()}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusBadgeColor(order.status)}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                        <div className="text-gray-400 text-xs truncate">
+                          {getPaymentDestination(order)} • {formatTime(order.created_at, order.local_currency)}
+                        </div>
                       </div>
-                      <div className="text-gray-400 text-sm">
-                        ${order.amount_in_usdc.toFixed(2)} USDC
+                      <svg
+                        className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Expanded View */}
+                  {isExpanded && (
+                    <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3">
+                      <div>
+                        <div className="text-gray-500 text-xs mb-1">USDC Amount</div>
+                        <div className="text-white text-sm font-medium">
+                          ${order.amount_in_usdc.toFixed(2)} USDC
+                        </div>
                       </div>
-                    </div>
-                    <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${getStatusBadgeColor(order.status)}`}>
-                      {order.status}
-                    </span>
-                  </div>
 
-                  {/* Phone Number */}
-                  <div className="mb-3">
-                    <div className="text-gray-500 text-xs mb-1">Sent to</div>
-                    <div className="text-white text-base font-medium">
-                      {getPaymentDestination(order)}
-                    </div>
-                  </div>
+                      <div>
+                        <div className="text-gray-500 text-xs mb-1">Date</div>
+                        <div className="text-white text-sm">
+                          {formatDate(order.created_at, order.local_currency)}
+                        </div>
+                      </div>
 
-                  {/* Date and Time */}
-                  <div className="mb-4">
-                    <div className="text-gray-500 text-xs">
-                      {formatDate(order.created_at, order.local_currency)} • {formatTime(order.created_at, order.local_currency)}
+                      {/* Download Button */}
+                      {isSuccess && (
+                        <DownloadButton
+                          orderData={convertOrderToOrderData(order)}
+                          variant="secondary"
+                          size="sm"
+                          className="w-full"
+                        />
+                      )}
                     </div>
-                  </div>
-
-                  {/* Download Button */}
-                  {isSuccess && (
-                    <DownloadButton
-                      orderData={convertOrderToOrderData(order)}
-                      variant="secondary"
-                      size="md"
-                      className="w-full"
-                    />
                   )}
                 </div>
               );
@@ -458,47 +482,63 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
             {displayedOrders.map((order) => {
               const normalizedStatus = order.status?.toLowerCase() || '';
               const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
+              const isExpanded = expandedCard === order.id;
 
               return (
-                <div key={order.id} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  {/* Amount and Status */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="text-white text-2xl font-bold mb-1">
-                        {order.local_currency} {order.amount_in_local.toLocaleString()}
+                <div
+                  key={order.id}
+                  className="bg-white/5 rounded-lg border border-white/10 overflow-hidden transition-all"
+                >
+                  {/* Collapsed View - Always Visible */}
+                  <div
+                    onClick={() => setExpandedCard(isExpanded ? null : order.id)}
+                    className="p-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-white font-bold text-base">
+                            {order.local_currency} {order.amount_in_local.toLocaleString()}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusBadgeColor(order.status)}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                        <div className="text-gray-400 text-xs truncate">
+                          {getPaymentDestination(order)} • {formatTime(order.created_at, order.local_currency)}
+                        </div>
                       </div>
-                      <div className="text-gray-400 text-sm">
-                        ${order.amount_in_usdc.toFixed(2)} USDC
+                      <svg
+                        className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Expanded View */}
+                  {isExpanded && (
+                    <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3">
+                      <div>
+                        <div className="text-gray-500 text-xs mb-1">USDC Amount</div>
+                        <div className="text-white text-sm font-medium">
+                          ${order.amount_in_usdc.toFixed(2)} USDC
+                        </div>
                       </div>
-                    </div>
-                    <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${getStatusBadgeColor(order.status)}`}>
-                      {order.status}
-                    </span>
-                  </div>
 
-                  {/* Phone Number */}
-                  <div className="mb-3">
-                    <div className="text-gray-500 text-xs mb-1">Sent to</div>
-                    <div className="text-white text-base font-medium">
-                      {getPaymentDestination(order)}
+                      {/* Download Button */}
+                      {isSuccess && (
+                        <DownloadButton
+                          orderData={convertOrderToOrderData(order)}
+                          variant="secondary"
+                          size="sm"
+                          className="w-full"
+                        />
+                      )}
                     </div>
-                  </div>
-
-                  {/* Date and Time */}
-                  <div className="mb-4">
-                    <div className="text-gray-500 text-xs">
-                      {formatTime(order.created_at, order.local_currency)}
-                    </div>
-                  </div>
-
-                  {/* Download Button */}
-                  {isSuccess && (
-                    <DownloadButton
-                      orderData={convertOrderToOrderData(order)}
-                      variant="secondary"
-                      size="md"
-                      className="w-full"
-                    />
                   )}
                 </div>
               );
