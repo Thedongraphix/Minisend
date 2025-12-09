@@ -135,17 +135,8 @@ export default function App() {
               <h1 className="text-2xl font-bold text-white truncate">Minisend</h1>
             </div>
 
-            {/* Wallet Island and Profile in top right */}
+            {/* Wallet Island in top right */}
             <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-              <button
-                onClick={() => setActiveTab("profile")}
-                className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all duration-200"
-                title="View Profile"
-              >
-                <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
               <ConnectWidget
                 className="scale-75 sm:scale-100"
               />

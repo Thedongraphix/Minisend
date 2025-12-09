@@ -105,15 +105,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let orders: Order[] = [];
-    let source: 'paycrest' | 'database' = 'paycrest';
+    let paycrestOrders: Order[] = [];
+    let pretiumOrders: Order[] = [];
+    let source: 'paycrest' | 'database' | 'both' = 'paycrest';
 
-    // Try to fetch from PayCrest first for real-time status updates
+    // Try to fetch PayCrest orders first for real-time status updates
     try {
-      orders = await fetchUserOrdersFromPayCrest(walletAddress, limit);
+      paycrestOrders = await fetchUserOrdersFromPayCrest(walletAddress, limit);
       source = 'paycrest';
     } catch (paycrestError) {
-      // Fallback to database if PayCrest fails
+      // Fallback to database for PayCrest orders if API fails
       try {
         const { data, error } = await supabaseAdmin
           .from('orders')
@@ -123,22 +124,65 @@ export async function GET(request: NextRequest) {
           .limit(limit);
 
         if (error) throw error;
-        orders = data || [];
+        paycrestOrders = data || [];
         source = 'database';
       } catch (dbError) {
         console.error('Both PayCrest and database fetch failed:', {
           paycrestError: paycrestError instanceof Error ? paycrestError.message : paycrestError,
           dbError: dbError instanceof Error ? dbError.message : dbError
         });
-        // Return empty array instead of error
-        orders = [];
+        paycrestOrders = [];
       }
     }
 
+    // Always fetch Pretium orders from database
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('pretium_orders')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (!error && data) {
+        pretiumOrders = data.map(order => ({
+          id: order.id,
+          wallet_address: order.wallet_address,
+          amount_in_usdc: order.amount_in_usdc,
+          amount_in_local: order.amount_in_local,
+          local_currency: order.local_currency,
+          phone_number: order.phone_number || undefined,
+          till_number: order.till_number || undefined,
+          paybill_number: order.paybill_number || undefined,
+          paybill_account: order.paybill_account || undefined,
+          account_name: order.account_name || undefined,
+          status: order.status,
+          transaction_hash: order.transaction_hash || undefined,
+          created_at: order.created_at,
+          updated_at: order.updated_at,
+          pretium_transaction_code: order.transaction_code,
+          pretium_receipt_number: order.receipt_number || undefined,
+          exchange_rate: order.exchange_rate || 0,
+          sender_fee: order.sender_fee || 0,
+        })) as Order[];
+        source = source === 'paycrest' ? 'both' : 'database';
+      }
+    } catch (pretiumError) {
+      console.error('Failed to fetch Pretium orders:', pretiumError);
+      // Continue even if Pretium fetch fails
+    }
+
+    // Combine and sort all orders by created_at
+    const allOrders = [...paycrestOrders, ...pretiumOrders].sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
     return NextResponse.json({
-      orders,
+      orders: allOrders.slice(0, limit),
       source,
-      count: orders.length
+      count: allOrders.length,
+      paycrestCount: paycrestOrders.length,
+      pretiumCount: pretiumOrders.length,
     });
   } catch (error) {
     console.error('Detailed error fetching user orders:', {
