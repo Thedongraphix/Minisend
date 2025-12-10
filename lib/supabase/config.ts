@@ -705,4 +705,133 @@ export class DatabaseService {
     if (error && error.code !== 'PGRST116') throw error
     return data
   }
+
+  // Dashboard query methods
+  static async getDashboardStats() {
+    const { data, error } = await supabaseAdmin
+      .from('pretium_orders')
+      .select('*')
+
+    if (error) throw error
+
+    const orders = data || [];
+    const totalOrders = orders.length;
+    const completedOrders = orders.filter(o => o.status === 'completed').length;
+    const failedOrders = orders.filter(o => o.status === 'failed').length;
+    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
+
+    const now = new Date();
+    const thirtyMinsAgo = new Date(now.getTime() - 30 * 60 * 1000);
+    const stuckOrders = orders.filter(o =>
+      (o.status === 'pending' || o.status === 'processing') &&
+      new Date(o.created_at) < thirtyMinsAgo
+    ).length;
+
+    const totalUSDCVolume = orders.reduce((sum, o) => sum + (Number(o.amount_in_usdc) || 0), 0);
+    const totalKESVolume = orders.reduce((sum, o) => sum + (Number(o.amount_in_local) || 0), 0);
+    const avgFee = orders.length > 0
+      ? orders.reduce((sum, o) => sum + (Number(o.sender_fee) || 0), 0) / orders.length
+      : 0;
+
+    const completedWithTime = orders.filter(o => o.status === 'completed' && o.created_at && o.completed_at);
+    const avgCompletionTime = completedWithTime.length > 0
+      ? completedWithTime.reduce((sum, o) => {
+          const created = new Date(o.created_at).getTime();
+          const completed = new Date(o.completed_at!).getTime();
+          return sum + (completed - created);
+        }, 0) / completedWithTime.length / 1000
+      : 0;
+
+    const successRate = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
+
+    const failureReasons = orders
+      .filter(o => o.status === 'failed' && o.error_message)
+      .reduce((acc: Record<string, number>, o) => {
+        const reason = o.error_message || 'Unknown error';
+        acc[reason] = (acc[reason] || 0) + 1;
+        return acc;
+      }, {});
+
+    const failureReasonsArray = Object.entries(failureReasons)
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return {
+      totalOrders,
+      successRate: Math.round(successRate * 10) / 10,
+      failedOrders,
+      pendingOrders,
+      totalUSDCVolume: Math.round(totalUSDCVolume * 100) / 100,
+      totalKESVolume: Math.round(totalKESVolume),
+      avgFee: Math.round(avgFee * 100) / 100,
+      avgCompletionTime: Math.round(avgCompletionTime),
+      stuckOrders,
+      failureReasons: failureReasonsArray,
+    };
+  }
+
+  static async getFilteredPretiumOrders(filters: {
+    search?: string;
+    status?: string[];
+    paymentType?: string[];
+    startDate?: string;
+    endDate?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      search,
+      status,
+      paymentType,
+      startDate,
+      endDate,
+      sortBy = 'created_at',
+      sortOrder = 'desc',
+      page = 1,
+      limit = 50,
+    } = filters;
+
+    let query = supabaseAdmin
+      .from('pretium_orders')
+      .select('*', { count: 'exact' });
+
+    if (search) {
+      query = query.or(`transaction_code.ilike.%${search}%,wallet_address.ilike.%${search}%,phone_number.eq.${search},till_number.eq.${search},paybill_number.eq.${search},account_name.ilike.%${search}%`);
+    }
+
+    if (status && status.length > 0) {
+      query = query.in('status', status);
+    }
+
+    if (paymentType && paymentType.length > 0) {
+      query = query.in('payment_type', paymentType);
+    }
+
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('created_at', endDate);
+    }
+
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+    const offset = (page - 1) * limit;
+    query = query.range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    return {
+      orders: data || [],
+      total: count || 0,
+      page,
+      hasMore: count ? offset + limit < count : false,
+    };
+  }
 }
