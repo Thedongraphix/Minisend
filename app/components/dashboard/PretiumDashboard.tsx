@@ -93,7 +93,18 @@ export function PretiumDashboard() {
             <h1 className="text-xl font-medium text-white">Pretium Orders Dashboard</h1>
             <p className="text-sm text-gray-400">Monitor and track all Pretium transactions</p>
           </div>
-          <ExportButton orders={ordersData?.orders || []} />
+          <div className="flex items-center gap-3">
+            <ExportButton orders={ordersData?.orders || []} />
+            <button
+              onClick={async () => {
+                await fetch('/api/auth/dashboard/logout', { method: 'POST' });
+                window.location.href = '/dashboard/pretium/login';
+              }}
+              className="px-4 py-2 bg-[#111] border border-gray-800/50 text-gray-400 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Metrics */}
