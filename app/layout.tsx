@@ -63,6 +63,9 @@ export async function generateMetadata(): Promise<Metadata> {
     },
 
     other: {
+      // Base App ID - Required for Base network integration
+      'base:app_id': '689cfc89d57862895f589c23',
+
       // Farcaster Mini App embed metadata - enables preview cards when sharing links
       "fc:miniapp": JSON.stringify({
         version: "next",
