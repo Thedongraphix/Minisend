@@ -631,6 +631,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
               accountName={formData.accountName}
               accountNumber={formData.accountNumber}
               bankCode={formData.bankCode}
+              bankName={swapData.currency === 'NGN' && formData.bankCode ? institutions.find(inst => inst.code === formData.bankCode)?.name : undefined}
               returnAddress={walletAddress || ''}
               rate={swapData.rate}
               currency={swapData.currency}

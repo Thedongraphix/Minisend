@@ -1,7 +1,7 @@
 // Pretium API Types
 // Based on official Pretium API documentation
 
-export type PretiumPaymentType = 'MOBILE' | 'BUY_GOODS' | 'PAYBILL';
+export type PretiumPaymentType = 'MOBILE' | 'BUY_GOODS' | 'PAYBILL' | 'BANK_TRANSFER';
 
 export type PretiumChain = 'CELO' | 'BASE' | 'STELLAR' | 'TRON' | 'SCROLL';
 
@@ -28,16 +28,17 @@ export interface PretiumExchangeRate {
 
 export interface PretiumDisburseRequest {
   type: PretiumPaymentType;
-  shortcode: string;
+  shortcode?: string; // Required for mobile money, optional for bank transfers
   account_number?: string; // Required for PAYBILL and NGN bank transfers
   account_name: string; // Required: Recipient account name
   amount: string;
   fee?: string; // Optional fee for collection
-  mobile_network: string; // e.g., "Safaricom", "MTN", or bank code for NGN
+  mobile_network?: string; // Required for mobile money (e.g., "Safaricom", "MTN")
   chain: PretiumChain;
   transaction_hash: string;
   callback_url?: string;
   bank_code?: string; // Required for NGN bank transfers
+  bank_name?: string; // Required for NGN bank transfers
 }
 
 export interface PretiumDisburseResponse {

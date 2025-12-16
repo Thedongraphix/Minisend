@@ -18,6 +18,7 @@ interface PretiumPaymentProcessorProps {
   accountName: string;
   accountNumber?: string; // For NGN bank transfers
   bankCode?: string; // For NGN bank transfers
+  bankName?: string; // For NGN bank transfers
   returnAddress: string;
   rate: number;
   currency: 'KES' | 'GHS' | 'NGN';
@@ -34,6 +35,7 @@ export function PretiumPaymentProcessor({
   accountName,
   accountNumber,
   bankCode,
+  bankName,
   returnAddress,
   currency,
   onSuccess,
@@ -115,6 +117,7 @@ export function PretiumPaymentProcessor({
           accountName,
           accountNumber, // For NGN
           bankCode, // For NGN
+          bankName, // For NGN
           transactionHash: txHash,
           returnAddress,
           fid: context?.user?.fid,

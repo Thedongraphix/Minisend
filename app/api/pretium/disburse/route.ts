@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
       currency = 'KES', // Default to KES for backwards compatibility
       accountNumber: ngnAccountNumber, // For NGN bank transfers
       bankCode, // For NGN bank transfers
+      bankName, // For NGN bank transfers
     } = body;
 
     // Validate currency is supported
@@ -57,26 +58,26 @@ export async function POST(request: NextRequest) {
 
     // Determine payment type and format shortcode
     let paymentType: PretiumPaymentType;
-    let shortcode: string;
+    let shortcode: string | undefined;
     let accountNumber: string | undefined;
-    let mobileNetwork: string;
+    let mobileNetwork: string | undefined;
 
     // Handle NGN bank transfers first
     if (currency === 'NGN') {
-      if (!ngnAccountNumber || !bankCode) {
+      if (!ngnAccountNumber || !bankCode || !bankName) {
         return NextResponse.json(
-          { error: 'NGN requires both account number and bank code' },
+          { error: 'NGN requires account number, bank code, and bank name' },
           { status: 400 }
         );
       }
 
-      paymentType = 'MOBILE'; // Pretium uses MOBILE type for bank transfers
-      shortcode = ngnAccountNumber.replace(/\D/g, ''); // Clean account number
-      accountNumber = shortcode; // For NGN, account_number field is used
-      mobileNetwork = bankCode; // Bank code is used as mobile_network for NGN
+      paymentType = 'BANK_TRANSFER'; // Use BANK_TRANSFER type for NGN
+      const cleanedAccountNumber = ngnAccountNumber.replace(/\D/g, ''); // Clean account number
+      accountNumber = cleanedAccountNumber;
+      // Note: For bank transfers, shortcode and mobile_network are not required
 
       // Validate account number format
-      if (shortcode.length < 10 || shortcode.length > 11) {
+      if (cleanedAccountNumber.length < 10 || cleanedAccountNumber.length > 11) {
         return NextResponse.json(
           { error: 'Invalid NGN account number (must be 10-11 digits)' },
           { status: 400 }
@@ -163,16 +164,18 @@ export async function POST(request: NextRequest) {
     // Prepare Pretium disbursement request
     const disburseRequest: PretiumDisburseRequest = {
       type: paymentType,
-      shortcode,
-      account_number: accountNumber,
       account_name: accountName, // Required: Recipient account name
       amount: totalLocalFromUSdc.toString(), // Total local currency from USDC (includes recipient + fee)
       fee: feeAmount.toString(), // Platform fee (credited to our fiat wallet)
-      mobile_network: mobileNetwork,
       chain: PRETIUM_CONFIG.CHAIN,
       transaction_hash: transactionHash,
       callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
-      ...(currency === 'NGN' && bankCode ? { bank_code: bankCode } : {}), // Add bank_code for NGN
+      // Conditionally add fields based on payment type
+      ...(shortcode ? { shortcode } : {}),
+      ...(accountNumber ? { account_number: accountNumber } : {}),
+      ...(mobileNetwork ? { mobile_network: mobileNetwork } : {}),
+      ...(currency === 'NGN' && bankCode ? { bank_code: bankCode } : {}),
+      ...(currency === 'NGN' && bankName ? { bank_name: bankName } : {}),
     };
 
     // Initiate disbursement with Pretium
