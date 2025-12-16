@@ -9,7 +9,7 @@ interface CurrencySwapInterfaceProps {
   onContinue: (data: {
     usdcAmount: string
     localAmount: string
-    currency: "KES" | "NGN"
+    currency: "KES" | "NGN" | "GHS"
     rate: number
   }) => void
   className?: string
@@ -18,13 +18,14 @@ interface CurrencySwapInterfaceProps {
 const CURRENCIES = [
   { code: "KES", name: "Kenyan Shilling", flag: "🇰🇪", symbol: "KSh" },
   { code: "NGN", name: "Nigerian Naira", flag: "🇳🇬", symbol: "₦" },
+  { code: "GHS", name: "Ghanaian Cedi", flag: "🇬🇭", symbol: "₵" },
 ]
 
 export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySwapInterfaceProps) {
   const { balanceNum: usdcBalance, isLoading: balanceLoading } = useUSDCBalance()
   const { address } = useAccount()
 
-  const [receiveCurrency, setReceiveCurrency] = useState<"KES" | "NGN" | null>(null)
+  const [receiveCurrency, setReceiveCurrency] = useState<"KES" | "NGN" | "GHS" | null>(null)
   const [sendAmount, setSendAmount] = useState("")
   const [receiveAmount, setReceiveAmount] = useState("")
   const [rate, setRate] = useState<number | null>(null)
@@ -43,10 +44,8 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
     setRateError(null)
 
     try {
-      // Use Pretium for KES, PayCrest for NGN
-      const endpoint = toCurrency === 'KES'
-        ? `/api/pretium/rates?currency=${toCurrency}`
-        : `/api/paycrest/rates/USDC/1/${toCurrency}`;
+      // Use Pretium for all currencies (KES, GHS, NGN)
+      const endpoint = `/api/pretium/rates?currency=${toCurrency}`;
 
       const response = await fetch(endpoint)
 
@@ -56,15 +55,12 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
 
       const data = await response.json()
 
-      // Handle different response formats from Pretium vs PayCrest
+      // Handle Pretium response format
       let fetchedRate: number | null = null;
 
-      if (toCurrency === 'KES' && data.success && data.rates?.quoted_rate) {
+      if (data.success && data.rates?.quoted_rate) {
         // Pretium response format
         fetchedRate = data.rates.quoted_rate;
-      } else if (data.success && data.rate && typeof data.rate === 'number') {
-        // PayCrest response format
-        fetchedRate = data.rate;
       }
 
       if (fetchedRate && typeof fetchedRate === 'number') {
@@ -72,13 +68,13 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
         setRateError(null)
       } else {
         // API responded but with invalid data - use fallback
-        const fallbackRate = toCurrency === "KES" ? 150.5 : 1650.0
+        const fallbackRate = toCurrency === "KES" ? 150.5 : toCurrency === "GHS" ? 16.5 : 1650.0
         setRate(fallbackRate)
         setRateError("Using estimated rate")
       }
     } catch {
       // Network error or parsing error - use fallback
-      const fallbackRate = toCurrency === "KES" ? 150.5 : 1650.0
+      const fallbackRate = toCurrency === "KES" ? 150.5 : toCurrency === "GHS" ? 16.5 : 1650.0
       setRate(fallbackRate)
       setRateError("Using estimated rate")
     } finally {

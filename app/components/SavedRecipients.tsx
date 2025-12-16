@@ -13,7 +13,7 @@ function sanitizeDisplay(text: string | undefined): string {
 }
 
 interface SavedRecipientsProps {
-  currency: 'KES' | 'NGN';
+  currency: 'KES' | 'NGN' | 'GHS';
   onSelect: (recipient: SavedRecipient) => void;
   currentPhone?: string;
   currentAccount?: string;

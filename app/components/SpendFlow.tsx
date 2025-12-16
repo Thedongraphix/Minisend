@@ -31,7 +31,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
   const [swapData, setSwapData] = useState<{
     usdcAmount: string;
     localAmount: string;
-    currency: 'KES' | 'NGN';
+    currency: 'KES' | 'NGN' | 'GHS';
     rate: number;
   } | null>(null);
   const [formData, setFormData] = useState({
@@ -275,6 +275,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
               accountName={formData.accountName}
               returnAddress={address || ''}
               rate={swapData.rate}
+              currency={swapData.currency}
               onSuccess={(transactionCode, txHash) => {
                 setTransactionData({ transactionCode, txHash });
                 setStep('success');

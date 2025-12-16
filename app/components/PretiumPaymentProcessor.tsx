@@ -16,8 +16,11 @@ interface PretiumPaymentProcessorProps {
   paybillNumber?: string;
   paybillAccount?: string;
   accountName: string;
+  accountNumber?: string; // For NGN bank transfers
+  bankCode?: string; // For NGN bank transfers
   returnAddress: string;
   rate: number;
+  currency: 'KES' | 'GHS' | 'NGN';
   onSuccess: (transactionCode?: string, txHash?: string) => void;
   onError: (error: string) => void;
 }
@@ -29,7 +32,10 @@ export function PretiumPaymentProcessor({
   paybillNumber,
   paybillAccount,
   accountName,
+  accountNumber,
+  bankCode,
   returnAddress,
+  currency,
   onSuccess,
   onError
 }: PretiumPaymentProcessorProps) {
@@ -107,9 +113,12 @@ export function PretiumPaymentProcessor({
           paybillNumber,
           paybillAccount,
           accountName,
+          accountNumber, // For NGN
+          bankCode, // For NGN
           transactionHash: txHash,
           returnAddress,
           fid: context?.user?.fid,
+          currency,
         }),
       });
 
@@ -132,7 +141,7 @@ export function PretiumPaymentProcessor({
         onError(error.message);
       }
     }
-  }, [amount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountName, returnAddress, context, startPolling, onError]);
+  }, [amount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountName, accountNumber, bankCode, returnAddress, currency, context, startPolling, onError]);
 
   // USDC transfer using OnchainKit standard format
   // Normalize amount to 2 decimal places to match what Pretium API expects
