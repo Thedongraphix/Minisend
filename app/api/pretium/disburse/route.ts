@@ -60,7 +60,6 @@ export async function POST(request: NextRequest) {
     let shortcode: string;
     let accountNumber: string | undefined;
     let mobileNetwork: string;
-    let bankName: string | undefined;
 
     // Handle NGN bank transfers first
     if (currency === 'NGN') {
