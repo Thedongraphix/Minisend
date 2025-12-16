@@ -30,6 +30,7 @@ export interface PretiumDisburseRequest {
   type: PretiumPaymentType;
   shortcode: string;
   account_number?: string; // Required for PAYBILL and NGN bank transfers
+  account_name: string; // Required: Recipient account name
   amount: string;
   fee?: string; // Optional fee for collection
   mobile_network: string; // e.g., "Safaricom", "MTN", or bank code for NGN

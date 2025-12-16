@@ -165,6 +165,7 @@ export async function POST(request: NextRequest) {
       type: paymentType,
       shortcode,
       account_number: accountNumber,
+      account_name: accountName, // Required: Recipient account name
       amount: totalLocalFromUSdc.toString(), // Total local currency from USDC (includes recipient + fee)
       fee: feeAmount.toString(), // Platform fee (credited to our fiat wallet)
       mobile_network: mobileNetwork,
