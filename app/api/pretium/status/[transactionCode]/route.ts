@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pretiumClient } from '@/lib/pretium/client';
+import { DatabaseService } from '@/lib/supabase/config';
 
 export async function GET(
   request: NextRequest,
@@ -15,7 +16,27 @@ export async function GET(
       );
     }
 
-    const statusResponse = await pretiumClient.getTransactionStatus(transactionCode);
+    // Look up the order to get the currency
+    const order = await DatabaseService.getOrderByPretiumTransactionCode(transactionCode);
+
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Transaction not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get currency from the order (ensure it's a valid Pretium currency)
+    const currency = 'local_currency' in order ? order.local_currency : 'KES';
+
+    if (currency !== 'KES' && currency !== 'GHS' && currency !== 'NGN') {
+      return NextResponse.json(
+        { error: 'Invalid currency for Pretium transaction' },
+        { status: 400 }
+      );
+    }
+
+    const statusResponse = await pretiumClient.getTransactionStatus(transactionCode, currency);
 
     if (statusResponse.code !== 200) {
       return NextResponse.json(

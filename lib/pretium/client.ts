@@ -86,13 +86,14 @@ class PretiumApiClient {
   }
 
   /**
-   * Initiate a disbursement (offramp) to M-Pesa
+   * Initiate a disbursement (offramp) to mobile money or bank
    */
   async disburse(
-    request: PretiumDisburseRequest
+    request: PretiumDisburseRequest,
+    currency: 'KES' | 'GHS' | 'NGN'
   ): Promise<PretiumDisburseResponse> {
     return this.request<PretiumDisburseResponse>(
-      `/v1/pay/${PRETIUM_CONFIG.CURRENCY}`,
+      `/v1/pay/${currency}`,
       {
         method: 'POST',
         body: JSON.stringify(request),
@@ -104,14 +105,15 @@ class PretiumApiClient {
    * Check transaction status
    */
   async getTransactionStatus(
-    transactionCode: string
+    transactionCode: string,
+    currency: 'KES' | 'GHS' | 'NGN'
   ): Promise<PretiumStatusResponse> {
     const body: PretiumStatusRequest = {
       transaction_code: transactionCode,
     };
 
     return this.request<PretiumStatusResponse>(
-      `/v1/status/${PRETIUM_CONFIG.CURRENCY}`,
+      `/v1/status/${currency}`,
       {
         method: 'POST',
         body: JSON.stringify(body),

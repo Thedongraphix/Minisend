@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pretiumClient } from '@/lib/pretium/client';
+import { isCurrencySupported } from '@/lib/pretium/config';
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const currency = searchParams.get('currency') || 'KES';
+
+    // Validate currency is supported
+    if (!isCurrencySupported(currency)) {
+      return NextResponse.json(
+        { error: `Currency ${currency} is not supported. Supported currencies: KES, GHS, NGN` },
+        { status: 400 }
+      );
+    }
 
     const rateResponse = await pretiumClient.getExchangeRate(currency);
 
@@ -15,7 +24,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Use buying_rate for offramp (we're buying KES from Pretium)
+    // Use buying_rate for offramp (we're buying local currency from Pretium)
     const buyingRate = rateResponse.data.buying_rate;
 
     return NextResponse.json({
