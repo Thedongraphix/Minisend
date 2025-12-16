@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase/config';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL;
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
@@ -69,8 +70,14 @@ export async function GET(request: Request) {
       });
     }
 
-    // Fetch all orders from PayCrest API
-    const allOrders = await fetchAllOrdersParallel();
+    // Fetch all orders from both PayCrest API and Pretium (Supabase)
+    const [paycrestOrders, pretiumOrders] = await Promise.all([
+      fetchAllOrdersParallel().catch(() => []),
+      fetchAllPretiumOrders().catch(() => [])
+    ]);
+
+    // Combine all orders
+    const allOrders = [...paycrestOrders, ...pretiumOrders];
 
     // Process revenue analytics
     const analytics = processRevenueAnalytics(allOrders);
@@ -146,6 +153,45 @@ async function fetchAllOrdersParallel(): Promise<PayCrestOrder[]> {
   return allOrders;
 }
 
+// Fetch all Pretium orders from Supabase
+async function fetchAllPretiumOrders(): Promise<PayCrestOrder[]> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('orders')
+      .select('*')
+      .like('payment_provider', 'PRETIUM_%')
+      .in('status', ['completed', 'settled', 'fulfilled']);
+
+    if (error) {
+      console.error('Error fetching Pretium orders:', error);
+      return [];
+    }
+
+    // Transform Pretium orders to PayCrest format for analytics processing
+    return (data || []).map(order => ({
+      id: order.pretium_transaction_code || order.id,
+      amount: order.amount_in_usdc.toString(),
+      status: 'settled', // Only fetching completed orders
+      network: order.network || 'base',
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+      returnAddress: order.wallet_address,
+      senderFee: order.sender_fee || 0,
+      transactionFee: order.transaction_fee || 0,
+      recipient: {
+        currency: order.local_currency,
+        accountName: order.account_name,
+        accountIdentifier: order.phone_number || order.account_number,
+      },
+      // Add metadata to identify as Pretium
+      _provider: order.payment_provider, // Custom field to track provider
+    }));
+  } catch (error) {
+    console.error('Error in fetchAllPretiumOrders:', error);
+    return [];
+  }
+}
+
 function processRevenueAnalytics(orders: PayCrestOrder[]) {
   // Filter completed orders only (settled status in PayCrest)
   const completedOrders = orders.filter(order =>
@@ -199,16 +245,47 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
       total: 0,
       count: 0,
       avgFee: 0
+    },
+    GHS: {
+      total: 0,
+      count: 0,
+      avgFee: 0
+    }
+  };
+
+  // Revenue by provider
+  const revenueByProvider = {
+    PAYCREST: {
+      total: 0,
+      count: 0,
+      avgFee: 0
+    },
+    PRETIUM: {
+      total: 0,
+      count: 0,
+      avgFee: 0
     }
   };
 
   completedOrders.forEach(order => {
     const fee = typeof order.senderFee === 'number' ? order.senderFee : parseFloat(String(order.senderFee || 0));
     const currency = order.recipient?.currency;
+    const provider = (order as { _provider?: string })._provider;
 
-    if (currency === 'KES' || currency === 'NGN') {
+    // Track by currency
+    if (currency === 'KES' || currency === 'NGN' || currency === 'GHS') {
       revenueByCurrency[currency].total += fee;
       revenueByCurrency[currency].count += 1;
+    }
+
+    // Track by provider
+    if (provider && provider.startsWith('PRETIUM')) {
+      revenueByProvider.PRETIUM.total += fee;
+      revenueByProvider.PRETIUM.count += 1;
+    } else {
+      // Default to PayCrest if no provider specified
+      revenueByProvider.PAYCREST.total += fee;
+      revenueByProvider.PAYCREST.count += 1;
     }
   });
 
@@ -218,6 +295,16 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
     : 0;
   revenueByCurrency.NGN.avgFee = revenueByCurrency.NGN.count > 0
     ? revenueByCurrency.NGN.total / revenueByCurrency.NGN.count
+    : 0;
+  revenueByCurrency.GHS.avgFee = revenueByCurrency.GHS.count > 0
+    ? revenueByCurrency.GHS.total / revenueByCurrency.GHS.count
+    : 0;
+
+  revenueByProvider.PAYCREST.avgFee = revenueByProvider.PAYCREST.count > 0
+    ? revenueByProvider.PAYCREST.total / revenueByProvider.PAYCREST.count
+    : 0;
+  revenueByProvider.PRETIUM.avgFee = revenueByProvider.PRETIUM.count > 0
+    ? revenueByProvider.PRETIUM.total / revenueByProvider.PRETIUM.count
     : 0;
 
   // Daily revenue breakdown (last 30 days)
@@ -247,7 +334,7 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
   }
 
   // Monthly revenue breakdown (all months with transactions)
-  const monthlyRevenueMap = new Map<string, { revenue: number; txCount: number; kesRevenue: number; ngnRevenue: number; kesCount: number; ngnCount: number }>();
+  const monthlyRevenueMap = new Map<string, { revenue: number; txCount: number; kesRevenue: number; ngnRevenue: number; ghsRevenue: number; kesCount: number; ngnCount: number; ghsCount: number }>();
 
   completedOrders.forEach(order => {
     if (!order.createdAt) return;
@@ -263,8 +350,10 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
         txCount: 0,
         kesRevenue: 0,
         ngnRevenue: 0,
+        ghsRevenue: 0,
         kesCount: 0,
-        ngnCount: 0
+        ngnCount: 0,
+        ghsCount: 0
       });
     }
 
@@ -278,6 +367,9 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
     } else if (currency === 'NGN') {
       monthData.ngnRevenue += fee;
       monthData.ngnCount += 1;
+    } else if (currency === 'GHS') {
+      monthData.ghsRevenue += fee;
+      monthData.ghsCount += 1;
     }
   });
 
@@ -289,8 +381,10 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
       avgFee: Number((data.txCount > 0 ? data.revenue / data.txCount : 0).toFixed(6)),
       kesRevenue: Number(data.kesRevenue.toFixed(6)),
       ngnRevenue: Number(data.ngnRevenue.toFixed(6)),
+      ghsRevenue: Number(data.ghsRevenue.toFixed(6)),
       kesCount: data.kesCount,
-      ngnCount: data.ngnCount
+      ngnCount: data.ngnCount,
+      ghsCount: data.ghsCount
     }))
     .sort((a, b) => a.month.localeCompare(b.month));
 
@@ -332,6 +426,23 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
           total: Number(revenueByCurrency.NGN.total.toFixed(6)),
           count: revenueByCurrency.NGN.count,
           avgFee: Number(revenueByCurrency.NGN.avgFee.toFixed(6))
+        },
+        GHS: {
+          total: Number(revenueByCurrency.GHS.total.toFixed(6)),
+          count: revenueByCurrency.GHS.count,
+          avgFee: Number(revenueByCurrency.GHS.avgFee.toFixed(6))
+        }
+      },
+      revenueByProvider: {
+        PAYCREST: {
+          total: Number(revenueByProvider.PAYCREST.total.toFixed(6)),
+          count: revenueByProvider.PAYCREST.count,
+          avgFee: Number(revenueByProvider.PAYCREST.avgFee.toFixed(6))
+        },
+        PRETIUM: {
+          total: Number(revenueByProvider.PRETIUM.total.toFixed(6)),
+          count: revenueByProvider.PRETIUM.count,
+          avgFee: Number(revenueByProvider.PRETIUM.avgFee.toFixed(6))
         }
       },
       growthMetrics: {
