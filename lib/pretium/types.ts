@@ -29,13 +29,14 @@ export interface PretiumExchangeRate {
 export interface PretiumDisburseRequest {
   type: PretiumPaymentType;
   shortcode: string;
-  account_number?: string; // Required only for PAYBILL type
+  account_number?: string; // Required for PAYBILL and NGN bank transfers
   amount: string;
   fee?: string; // Optional fee for collection
-  mobile_network: string; // e.g., "Safaricom"
+  mobile_network: string; // e.g., "Safaricom", "MTN", or bank code for NGN
   chain: PretiumChain;
   transaction_hash: string;
   callback_url?: string;
+  bank_code?: string; // Required for NGN bank transfers
 }
 
 export interface PretiumDisburseResponse {
@@ -119,7 +120,7 @@ export interface PretiumOrderPayload {
   accountNumber?: string;
   amount: number;
   fee: number;
-  currency: 'KES';
+  currency: 'KES' | 'GHS';
   transactionHash: string;
   accountName: string;
   walletAddress: string;
