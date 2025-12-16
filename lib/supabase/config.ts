@@ -1,21 +1,24 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 // Client-side Supabase client (with RLS)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Only create client if environment variables are available (prevents build-time errors)
+export const supabase: SupabaseClient = (supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : createClient('https://placeholder.supabase.co', 'placeholder-key'))
 
 // Server-side Supabase client (bypasses RLS)
-export const supabaseAdmin = supabaseServiceKey 
+export const supabaseAdmin: SupabaseClient = (supabaseUrl && supabaseServiceKey
   ? createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     })
-  : supabase
+  : supabase)
 
 // Database types
 export interface User {
@@ -522,11 +525,14 @@ export class DatabaseService {
     walletAddress: string;
     amountInUsdc: number;
     amountInLocal: number;
-    currency: 'KES';
+    currency: 'KES' | 'GHS' | 'NGN';
     phoneNumber?: string;
     tillNumber?: string;
     paybillNumber?: string;
     paybillAccount?: string;
+    accountNumber?: string;
+    bankCode?: string;
+    bankName?: string;
     accountName: string;
     rate: number;
     transactionHash: string;
@@ -534,17 +540,20 @@ export class DatabaseService {
     pretiumStatus: string;
     fee: number;
     fid?: number;
+    mobileNetwork?: string;
     settlementAddress?: string;
     callbackUrl?: string;
     rawDisburseRequest?: Record<string, unknown>;
     rawDisburseResponse?: Record<string, unknown>;
   }): Promise<PretiumOrder> {
     // Determine payment type
-    let paymentType: 'MOBILE' | 'BUY_GOODS' | 'PAYBILL' = 'MOBILE';
+    let paymentType: 'MOBILE' | 'BUY_GOODS' | 'PAYBILL' | 'BANK_TRANSFER' = 'MOBILE';
     if (orderData.tillNumber) {
       paymentType = 'BUY_GOODS';
     } else if (orderData.paybillNumber) {
       paymentType = 'PAYBILL';
+    } else if (orderData.accountNumber && orderData.currency === 'NGN') {
+      paymentType = 'BANK_TRANSFER';
     }
 
     const { data, error} = await supabaseAdmin
@@ -563,11 +572,14 @@ export class DatabaseService {
         sender_fee: orderData.fee,
         payment_type: paymentType,
         phone_number: orderData.phoneNumber,
+        account_number: orderData.accountNumber,
+        bank_code: orderData.bankCode,
+        bank_name: orderData.bankName,
         till_number: orderData.tillNumber,
         paybill_number: orderData.paybillNumber,
         paybill_account: orderData.paybillAccount,
         account_name: orderData.accountName,
-        mobile_network: 'SAFARICOM',
+        mobile_network: orderData.mobileNetwork || null,
         chain: 'BASE',
         settlement_address: orderData.settlementAddress,
         callback_url: orderData.callbackUrl,
