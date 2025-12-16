@@ -1,17 +1,47 @@
-# Phone Number Verification
+# Account Detail
 
-This endpoint validates a phone number and returns the registered individual's name as provided by Mobile Network Operators (MNOs).
-
-Note: Reliability varies by country, so avoid heavy dependence on this endpoint for phone number validation.
+This endpoint validates an account number and returns the registered account name as provided by the bank or the mobile money wallet.
 
 ```
-POST {{url}}/v1/validation/{currency_code}
+POST {{uri}}/v1/validation/NGN
 ```
+
+#### Body Request
 
 ```
 {
-    "type": "MOBILE",
-    "shortcode": "0700123456",
-    "mobile_network": "Safaricom"
+    "account_number": "0536243713",
+    "bank_code": 232,
 }
 ```
+
+{% tabs %}
+{% tab title="200 - Success" %}
+
+```
+{
+    "code": 200,
+    "message": "Validation results",
+    "data": {
+        "status": "COMPLETE",
+        "account_name": "JOHN DOE",
+        "account_number": "90154195756",
+        "bank_name": "Opay",
+        "bank_code": "100004"
+    }
+}
+```
+
+{% endtab %}
+
+{% tab title="400 - Bad Request" %}
+
+```
+{
+   "code": 400,
+   "message": "Failed - Bad Request"
+}
+```
+
+{% endtab %}
+{% endtabs %}
