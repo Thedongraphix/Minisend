@@ -75,7 +75,6 @@ export async function POST(request: NextRequest) {
       shortcode = ngnAccountNumber.replace(/\D/g, ''); // Clean account number
       accountNumber = shortcode; // For NGN, account_number field is used
       mobileNetwork = bankCode; // Bank code is used as mobile_network for NGN
-      bankName = bankCode; // Store for logging
 
       // Validate account number format
       if (shortcode.length < 10 || shortcode.length > 11) {

@@ -88,7 +88,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const [transactionCode, setTransactionCode] = useState<string>('');
 
   // Fetch institutions (banks) for NGN from Pretium
-  const fetchInstitutions = async (currency: string) => {
+  const fetchInstitutions = async () => {
     setLoadingInstitutions(true);
     try {
       // Use Pretium banks endpoint for NGN
@@ -223,7 +223,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   // Fetch institutions when step changes to details with NGN
   useEffect(() => {
     if (step === 'details' && swapData && swapData.currency === 'NGN') {
-      fetchInstitutions('NGN');
+      fetchInstitutions();
     }
   }, [step, swapData]);
 
