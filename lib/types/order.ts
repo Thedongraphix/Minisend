@@ -4,7 +4,7 @@ export interface OrderData {
   paycrest_order_id?: string;
   amount_in_usdc: number;
   amount_in_local: number;
-  local_currency: 'KES' | 'NGN';
+  local_currency: 'KES' | 'NGN' | 'GHS';
   account_name: string;
   phone_number?: string;
   account_number?: string;
@@ -23,7 +23,7 @@ export interface OrderData {
   valid_until?: string;
   blockchain_tx_hash?: string;
   transactionHash?: string;
-  currency?: 'KES' | 'NGN';
+  currency?: 'KES' | 'NGN' | 'GHS';
   amount?: string;
   accountName?: string;
   phoneNumber?: string;

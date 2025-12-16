@@ -33,7 +33,7 @@ export interface Order {
   wallet_address: string
   amount_in_usdc: number
   amount_in_local: number
-  local_currency: 'KES' | 'NGN'
+  local_currency: 'KES' | 'NGN' | 'GHS'
   phone_number?: string
   account_number?: string
   bank_code?: string
@@ -59,7 +59,7 @@ export interface Order {
   account_name?: string
   memo?: string
   fid?: number // Farcaster ID for push notifications (only present for Farcaster users)
-  payment_provider?: 'PAYCREST_KES' | 'PAYCREST_NGN' | 'PRETIUM_KES'
+  payment_provider?: 'PAYCREST_KES' | 'PAYCREST_NGN' | 'PRETIUM_KES' | 'PRETIUM_GHS' | 'PRETIUM_NGN'
   pretium_transaction_code?: string
   pretium_receipt_number?: string
   exchange_rate?: number
@@ -127,7 +127,7 @@ export interface PretiumOrder {
   pretium_status?: string
   amount_in_usdc: number
   amount_in_local: number
-  local_currency: 'KES'
+  local_currency: 'KES' | 'GHS'
   exchange_rate: number
   sender_fee: number
   payment_type: 'MOBILE' | 'BUY_GOODS' | 'PAYBILL'

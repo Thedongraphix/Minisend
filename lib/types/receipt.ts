@@ -8,7 +8,7 @@ export interface ReceiptData {
   // Financial Details
   usdcAmount: number;
   localAmount: number;
-  localCurrency: 'KES' | 'NGN';
+  localCurrency: 'KES' | 'NGN' | 'GHS';
   exchangeRate: number;
   
   // Fees Breakdown

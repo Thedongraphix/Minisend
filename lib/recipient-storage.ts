@@ -11,7 +11,7 @@
 
 export interface SavedRecipient {
   id: string;
-  type: 'KES' | 'NGN';
+  type: 'KES' | 'NGN' | 'GHS';
   phoneNumber?: string;
   accountNumber?: string;
   accountName: string;
@@ -99,7 +99,7 @@ export function getSavedRecipients(): SavedRecipient[] {
 /**
  * Get recipients filtered by currency type
  */
-export function getRecipientsByCurrency(currency: 'KES' | 'NGN'): SavedRecipient[] {
+export function getRecipientsByCurrency(currency: 'KES' | 'NGN' | 'GHS'): SavedRecipient[] {
   return getSavedRecipients().filter(r => r.type === currency);
 }
 
@@ -114,8 +114,8 @@ export function saveRecipient(recipient: Omit<SavedRecipient, 'id' | 'lastUsed' 
     const sanitizedAccountName = sanitizeString(recipient.accountName);
     if (!sanitizedAccountName) return; // Don't save if name is empty after sanitization
 
-    // Validate phone number for KES
-    if (recipient.type === 'KES') {
+    // Validate phone number for KES and GHS
+    if (recipient.type === 'KES' || recipient.type === 'GHS') {
       if (!recipient.phoneNumber || !isValidPhone(recipient.phoneNumber)) {
         return; // Invalid phone number
       }
@@ -135,7 +135,7 @@ export function saveRecipient(recipient: Omit<SavedRecipient, 'id' | 'lastUsed' 
 
     // Find existing recipient based on unique identifiers
     const existingIndex = recipients.findIndex(r => {
-      if (recipient.type === 'KES') {
+      if (recipient.type === 'KES' || recipient.type === 'GHS') {
         return r.phoneNumber === recipient.phoneNumber;
       } else {
         return r.accountNumber === recipient.accountNumber && r.bankCode === recipient.bankCode;
