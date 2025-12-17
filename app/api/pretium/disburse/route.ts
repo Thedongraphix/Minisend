@@ -210,29 +210,64 @@ export async function POST(request: NextRequest) {
     }
 
     // Log the complete disburse request for debugging
-    console.log('[Disburse] Sending request to Pretium:', {
+    console.log('='.repeat(80));
+    console.log(`[Disburse] ${currency} DISBURSEMENT REQUEST - START`);
+    console.log('='.repeat(80));
+    console.log('[Disburse] Request details:', {
       currency,
+      payment_type: paymentType,
       endpoint: `/v1/pay/${currency}`,
-      request: JSON.stringify(disburseRequest, null, 2)
+      timestamp: new Date().toISOString(),
+      wallet: returnAddress,
+      transaction_hash: transactionHash
     });
+    console.log('[Disburse] Amount breakdown:', {
+      usdc_amount: amountNum,
+      exchange_rate: exchangeRate,
+      total_local: totalLocalFromUSdc,
+      recipient_amount: recipientAmount,
+      fee_amount: feeAmount,
+      fee_percentage: ((feeAmount / totalLocalFromUSdc) * 100).toFixed(2) + '%'
+    });
+    console.log('[Disburse] Pretium API payload:', JSON.stringify(disburseRequest, null, 2));
+    console.log('='.repeat(80));
 
     // Initiate disbursement with Pretium
     let disburseResponse;
     try {
       disburseResponse = await pretiumClient.disburse(disburseRequest, currency);
-      console.log('[Disburse] Pretium response received:', {
+
+      console.log('='.repeat(80));
+      console.log(`[Disburse] ${currency} PRETIUM RESPONSE - SUCCESS`);
+      console.log('='.repeat(80));
+      console.log('[Disburse] Response details:', {
         currency,
+        response_code: disburseResponse.code,
         transaction_code: disburseResponse.data.transaction_code,
         status: disburseResponse.data.status,
-        full_response: JSON.stringify(disburseResponse, null, 2)
+        message: disburseResponse.data.message,
+        timestamp: new Date().toISOString()
       });
+      console.log('[Disburse] Full response:', JSON.stringify(disburseResponse, null, 2));
+      console.log('='.repeat(80));
     } catch (error) {
       const pretiumError = error as { message?: string; data?: unknown; code?: number };
-      console.error('[Disburse] Pretium disburse error:', {
+
+      console.log('='.repeat(80));
+      console.error(`[Disburse] ${currency} PRETIUM ERROR - FAILED`);
+      console.log('='.repeat(80));
+      console.error('[Disburse] Error details:', {
         currency,
-        error: pretiumError,
-        request: disburseRequest
+        payment_type: paymentType,
+        error_code: pretiumError.code,
+        error_message: pretiumError.message,
+        timestamp: new Date().toISOString()
       });
+      console.error('[Disburse] Error data:', JSON.stringify(pretiumError.data, null, 2));
+      console.error('[Disburse] Request that failed:', JSON.stringify(disburseRequest, null, 2));
+      console.error('[Disburse] Full error object:', JSON.stringify(error, null, 2));
+      console.log('='.repeat(80));
+
       return NextResponse.json(
         {
           error: pretiumError.message || 'Failed to initiate disbursement with Pretium',
@@ -244,7 +279,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (disburseResponse.code !== 200) {
-      console.error('Pretium disburse failed:', disburseResponse);
+      console.log('='.repeat(80));
+      console.error(`[Disburse] ${currency} PRETIUM RESPONSE - NON-200 CODE`);
+      console.log('='.repeat(80));
+      console.error('[Disburse] Non-success response:', {
+        currency,
+        response_code: disburseResponse.code,
+        message: disburseResponse.message,
+        timestamp: new Date().toISOString()
+      });
+      console.error('[Disburse] Response data:', JSON.stringify(disburseResponse.data, null, 2));
+      console.error('[Disburse] Request that caused error:', JSON.stringify(disburseRequest, null, 2));
+      console.log('='.repeat(80));
+
       return NextResponse.json(
         {
           error: disburseResponse.message,
