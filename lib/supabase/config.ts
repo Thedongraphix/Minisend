@@ -130,14 +130,17 @@ export interface PretiumOrder {
   pretium_status?: string
   amount_in_usdc: number
   amount_in_local: number
-  local_currency: 'KES' | 'GHS'
+  local_currency: 'KES' | 'GHS' | 'NGN'
   exchange_rate: number
   sender_fee: number
-  payment_type: 'MOBILE' | 'BUY_GOODS' | 'PAYBILL'
+  payment_type: 'MOBILE' | 'BUY_GOODS' | 'PAYBILL' | 'BANK_TRANSFER'
   phone_number?: string
   till_number?: string
   paybill_number?: string
   paybill_account?: string
+  account_number?: string
+  bank_code?: string
+  bank_name?: string
   account_name: string
   receipt_number?: string
   public_name?: string
