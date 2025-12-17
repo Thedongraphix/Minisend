@@ -26,6 +26,7 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [attempts, setAttempts] = useState(0);
 
   // Check receipt status (polls until webhook data is received)
@@ -52,36 +53,57 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
     }
   }, [transactionCode]);
 
-  // Poll for receipt readiness
+  // Poll for receipt readiness - improved polling logic
   useEffect(() => {
     if (!transactionCode) return;
 
-    let pollInterval: NodeJS.Timeout;
-    const maxAttempts = 20; // 20 attempts * 3 seconds = 60 seconds max
+    let pollTimeout: NodeJS.Timeout;
+    let currentAttempt = 0;
+    const maxAttempts = 30; // Increased to 30 attempts for longer polling
+    let isCancelled = false;
 
     const poll = async () => {
-      if (attempts >= maxAttempts) {
+      if (isCancelled) return;
+
+      if (currentAttempt >= maxAttempts) {
+        console.log('[PretiumReceipt] Polling timed out after', currentAttempt, 'attempts');
         setIsChecking(false);
+        setAttempts(currentAttempt);
         return;
       }
 
+      console.log('[PretiumReceipt] Polling attempt', currentAttempt + 1, 'of', maxAttempts);
       const isReady = await checkReceiptStatus();
 
-      if (!isReady) {
-        setAttempts(prev => prev + 1);
-        // Exponential backoff: 3s, 3s, 5s, 5s, 10s, 10s...
-        const interval = attempts < 2 ? 3000 : attempts < 4 ? 5000 : 10000;
-        pollInterval = setTimeout(poll, interval);
+      if (isReady) {
+        console.log('[PretiumReceipt] Receipt ready!');
+        setAttempts(currentAttempt);
+        return;
       }
+
+      if (isCancelled) return;
+
+      currentAttempt++;
+      setAttempts(currentAttempt);
+
+      // Exponential backoff: 2s, 2s, 3s, 3s, 5s, 5s, then 10s for the rest
+      let interval = 10000; // default 10s
+      if (currentAttempt < 2) interval = 2000;
+      else if (currentAttempt < 4) interval = 3000;
+      else if (currentAttempt < 6) interval = 5000;
+
+      console.log('[PretiumReceipt] Next check in', interval / 1000, 'seconds');
+      pollTimeout = setTimeout(poll, interval);
     };
 
-    // Initial check
+    // Start polling immediately
     poll();
 
     return () => {
-      if (pollInterval) clearTimeout(pollInterval);
+      isCancelled = true;
+      if (pollTimeout) clearTimeout(pollTimeout);
     };
-  }, [transactionCode, attempts, checkReceiptStatus]);
+  }, [transactionCode, checkReceiptStatus]);
 
   // Download receipt PDF
   const downloadReceipt = async () => {
