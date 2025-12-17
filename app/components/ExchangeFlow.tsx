@@ -756,14 +756,13 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
           </p>
 
           {/* Modern Receipt Component - Direct DB Integration */}
-          {(swapData.currency === 'KES' || swapData.currency === 'GHS') && transactionCode ? (
+          {transactionCode ? (
             <div className="pt-4">
               <PretiumReceipt transactionCode={transactionCode} />
             </div>
           ) : (
             <div className="pt-4 text-sm text-gray-400">
-              {swapData.currency === 'NGN' && 'Receipt only available for KES and GHS transactions'}
-              {(swapData.currency === 'KES' || swapData.currency === 'GHS') && !transactionCode && 'Waiting for transaction code...'}
+              Waiting for transaction code...
             </div>
           )}
           

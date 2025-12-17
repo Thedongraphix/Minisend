@@ -330,7 +330,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
           </p>
 
           {/* Modern Receipt Component - Direct DB Integration */}
-          {swapData.currency === 'KES' && transactionData.transactionCode && (
+          {transactionData.transactionCode && (
             <div className="pt-4">
               <PretiumReceipt transactionCode={transactionData.transactionCode} />
             </div>

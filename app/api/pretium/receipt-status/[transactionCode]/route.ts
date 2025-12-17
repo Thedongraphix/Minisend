@@ -53,6 +53,17 @@ export async function GET(
     const amount = order.amount_in_local;
     const currency = order.local_currency;
 
+    // Log receipt status check for debugging
+    console.log('[Receipt-Status] Checking receipt readiness:', {
+      transactionCode,
+      currency,
+      status: order.status,
+      hasReceiptNumber: !!receiptNumber,
+      receiptNumber,
+      isReady,
+      payment_type: isPretiumOrder ? order.payment_type : 'legacy'
+    });
+
     return NextResponse.json({
       ready: isReady,
       status: order.status,
