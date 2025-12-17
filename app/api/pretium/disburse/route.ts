@@ -161,30 +161,78 @@ export async function POST(request: NextRequest) {
     const recipientAmount = Math.floor(totalLocalFromUSdc / 1.01);
     const feeAmount = totalLocalFromUSdc - recipientAmount;
 
-    // Prepare Pretium disbursement request
-    const disburseRequest: PretiumDisburseRequest = {
+    // Prepare Pretium disbursement request - build based on payment type
+    // This ensures we match Pretium's expected format exactly
+    const baseRequest = {
       type: paymentType,
-      account_name: accountName, // Required: Recipient account name
-      amount: totalLocalFromUSdc.toString(), // Total local currency from USDC (includes recipient + fee)
-      fee: feeAmount.toString(), // Platform fee (credited to our fiat wallet)
+      account_name: accountName,
+      amount: totalLocalFromUSdc.toString(),
+      fee: feeAmount.toString(),
       chain: PRETIUM_CONFIG.CHAIN,
       transaction_hash: transactionHash,
       callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
-      // Conditionally add fields based on payment type
-      ...(shortcode ? { shortcode } : {}),
-      ...(accountNumber ? { account_number: accountNumber } : {}),
-      ...(mobileNetwork ? { mobile_network: mobileNetwork } : {}),
-      ...(currency === 'NGN' && bankCode ? { bank_code: bankCode } : {}),
-      ...(currency === 'NGN' && bankName ? { bank_name: bankName } : {}),
     };
+
+    let disburseRequest: PretiumDisburseRequest;
+
+    if (paymentType === 'BANK_TRANSFER' && currency === 'NGN') {
+      // NGN Bank Transfer - match Pretium docs exactly
+      disburseRequest = {
+        ...baseRequest,
+        account_number: accountNumber!,
+        bank_code: bankCode!,
+        bank_name: bankName!,
+      };
+    } else if (paymentType === 'MOBILE') {
+      // Mobile money transfer (KES/GHS)
+      disburseRequest = {
+        ...baseRequest,
+        shortcode: shortcode!,
+        mobile_network: mobileNetwork!,
+      };
+    } else if (paymentType === 'BUY_GOODS') {
+      // KES Till/Buy Goods
+      disburseRequest = {
+        ...baseRequest,
+        shortcode: shortcode!,
+        mobile_network: mobileNetwork!,
+      };
+    } else if (paymentType === 'PAYBILL') {
+      // KES Paybill
+      disburseRequest = {
+        ...baseRequest,
+        shortcode: shortcode!,
+        account_number: accountNumber!,
+        mobile_network: mobileNetwork!,
+      };
+    } else {
+      throw new Error(`Unsupported payment type: ${paymentType}`);
+    }
+
+    // Log the complete disburse request for debugging
+    console.log('[Disburse] Sending request to Pretium:', {
+      currency,
+      endpoint: `/v1/pay/${currency}`,
+      request: JSON.stringify(disburseRequest, null, 2)
+    });
 
     // Initiate disbursement with Pretium
     let disburseResponse;
     try {
       disburseResponse = await pretiumClient.disburse(disburseRequest, currency);
+      console.log('[Disburse] Pretium response received:', {
+        currency,
+        transaction_code: disburseResponse.data.transaction_code,
+        status: disburseResponse.data.status,
+        full_response: JSON.stringify(disburseResponse, null, 2)
+      });
     } catch (error) {
       const pretiumError = error as { message?: string; data?: unknown; code?: number };
-      console.error('Pretium disburse error:', error);
+      console.error('[Disburse] Pretium disburse error:', {
+        currency,
+        error: pretiumError,
+        request: disburseRequest
+      });
       return NextResponse.json(
         {
           error: pretiumError.message || 'Failed to initiate disbursement with Pretium',

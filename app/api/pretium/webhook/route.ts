@@ -6,13 +6,32 @@ export async function POST(request: NextRequest) {
   try {
     const payload: PretiumWebhookPayload = await request.json();
 
-    console.log('Pretium webhook received:', JSON.stringify(payload, null, 2));
+    console.log('[Webhook] Pretium webhook received:', JSON.stringify(payload, null, 2));
 
     const { transaction_code, status, receipt_number, public_name, message, is_released } =
       payload;
 
     if (!transaction_code) {
+      console.error('[Webhook] Missing transaction_code in payload');
       return NextResponse.json({ error: 'Missing transaction_code' }, { status: 400 });
+    }
+
+    // Fetch order to log currency for debugging
+    try {
+      const order = await DatabaseService.getPretiumOrderByTransactionCode(transaction_code);
+      if (order) {
+        console.log('[Webhook] Order found:', {
+          transaction_code,
+          currency: order.local_currency,
+          payment_type: order.payment_type,
+          status: order.status,
+          webhook_status: status
+        });
+      } else {
+        console.warn('[Webhook] Order not found for transaction_code:', transaction_code);
+      }
+    } catch (lookupError) {
+      console.error('[Webhook] Error looking up order:', lookupError);
     }
 
     // Handle off-ramp payment confirmation webhook
