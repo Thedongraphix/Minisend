@@ -159,14 +159,27 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
           >
             <div className="space-y-3">
               <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-2">
+                {/* Only show transaction code for KES and GHS, not NGN */}
+                {receiptData.currency !== 'NGN' && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">
+                      {receiptData.currency === 'GHS' ? 'Mobile Money Code' : 'M-Pesa Code'}
+                    </span>
+                    <span className="text-white font-mono font-semibold">{receiptData.receiptNumber}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">M-Pesa Code</span>
-                  <span className="text-white font-mono font-semibold">{receiptData.receiptNumber}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">Recipient</span>
+                  <span className="text-gray-400 text-sm">
+                    {receiptData.currency === 'NGN' ? 'Sent to' : 'Recipient'}
+                  </span>
                   <span className="text-gray-200 text-sm">{receiptData.recipientName}</span>
                 </div>
+                {receiptData.currency === 'NGN' && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">Amount</span>
+                    <span className="text-white font-semibold">₦{receiptData.amount?.toLocaleString()}</span>
+                  </div>
+                )}
               </div>
 
               <button
