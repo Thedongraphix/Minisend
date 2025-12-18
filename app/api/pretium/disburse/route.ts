@@ -163,27 +163,34 @@ export async function POST(request: NextRequest) {
 
     // Prepare Pretium disbursement request - build based on payment type
     // This ensures we match Pretium's expected format exactly
-    const baseRequest = {
-      type: paymentType,
-      account_name: accountName,
-      amount: totalLocalFromUSdc.toString(),
-      fee: feeAmount.toString(),
-      chain: PRETIUM_CONFIG.CHAIN,
-      transaction_hash: transactionHash,
-      callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
-    };
-
     let disburseRequest: PretiumDisburseRequest;
 
     if (paymentType === 'BANK_TRANSFER' && currency === 'NGN') {
-      // NGN Bank Transfer - match Pretium docs exactly
+      // NGN Bank Transfer - send recipient amount only, NO fee field
+      // Bank transfers don't support the fee split mechanism used for mobile money
       disburseRequest = {
-        ...baseRequest,
+        type: paymentType,
+        account_name: accountName,
+        amount: recipientAmount.toString(), // Send only what recipient receives
+        // fee: omitted - not supported for bank transfers
+        chain: PRETIUM_CONFIG.CHAIN,
+        transaction_hash: transactionHash,
+        callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
         account_number: accountNumber!,
         bank_code: bankCode!,
         bank_name: bankName!,
       };
     } else if (paymentType === 'MOBILE') {
+      // Mobile money transfer (KES/GHS) - includes fee split
+      const baseRequest = {
+        type: paymentType,
+        account_name: accountName,
+        amount: totalLocalFromUSdc.toString(),
+        fee: feeAmount.toString(),
+        chain: PRETIUM_CONFIG.CHAIN,
+        transaction_hash: transactionHash,
+        callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
+      };
       // Mobile money transfer (KES/GHS)
       disburseRequest = {
         ...baseRequest,
@@ -191,14 +198,32 @@ export async function POST(request: NextRequest) {
         mobile_network: mobileNetwork!,
       };
     } else if (paymentType === 'BUY_GOODS') {
-      // KES Till/Buy Goods
+      // KES Till/Buy Goods - includes fee split
+      const baseRequest = {
+        type: paymentType,
+        account_name: accountName,
+        amount: totalLocalFromUSdc.toString(),
+        fee: feeAmount.toString(),
+        chain: PRETIUM_CONFIG.CHAIN,
+        transaction_hash: transactionHash,
+        callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
+      };
       disburseRequest = {
         ...baseRequest,
         shortcode: shortcode!,
         mobile_network: mobileNetwork!,
       };
     } else if (paymentType === 'PAYBILL') {
-      // KES Paybill
+      // KES Paybill - includes fee split
+      const baseRequest = {
+        type: paymentType,
+        account_name: accountName,
+        amount: totalLocalFromUSdc.toString(),
+        fee: feeAmount.toString(),
+        chain: PRETIUM_CONFIG.CHAIN,
+        transaction_hash: transactionHash,
+        callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
+      };
       disburseRequest = {
         ...baseRequest,
         shortcode: shortcode!,
@@ -227,7 +252,9 @@ export async function POST(request: NextRequest) {
       total_local: totalLocalFromUSdc,
       recipient_amount: recipientAmount,
       fee_amount: feeAmount,
-      fee_percentage: ((feeAmount / totalLocalFromUSdc) * 100).toFixed(2) + '%'
+      fee_percentage: ((feeAmount / totalLocalFromUSdc) * 100).toFixed(2) + '%',
+      amount_sent_to_pretium: currency === 'NGN' ? recipientAmount : totalLocalFromUSdc,
+      fee_included_in_request: currency !== 'NGN' ? 'YES' : 'NO (omitted for bank transfers)'
     });
     console.log('[Disburse] Pretium API payload:', JSON.stringify(disburseRequest, null, 2));
     console.log('='.repeat(80));
