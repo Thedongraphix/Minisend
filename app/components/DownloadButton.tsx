@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { generateReceiptPDF } from '@/lib/receipt-generator';
 import { OrderData } from '@/lib/types/order';
+import { useOpenUrl } from '@coinbase/onchainkit/minikit';
 
 interface DownloadButtonProps {
   orderData: OrderData;
@@ -20,6 +21,7 @@ export function DownloadButton({
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInMiniApp, setIsInMiniApp] = useState(false);
+  const openUrl = useOpenUrl();
 
   useEffect(() => {
     const checkMiniAppEnvironment = async () => {
@@ -43,72 +45,62 @@ export function DownloadButton({
     setGenerating(true);
     setError(null);
 
-    // Open window immediately to avoid popup blocker (only for Mini App)
-    let newWindow: Window | null = null;
-    if (isInMiniApp) {
-      // Open blank window immediately while in user action context
-      newWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
-    }
-
     try {
-      let pdfBlob: Blob;
+      // Get the base URL
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
-      // For Pretium transactions, use API endpoint to get fresh data with M-Pesa code
-      if (orderData.pretium_transaction_code) {
-        const response = await fetch(`/api/pretium/receipt/${orderData.pretium_transaction_code}`);
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || errorData.hint || 'Failed to fetch receipt from server');
-        }
-
-        pdfBlob = await response.blob();
-      } else {
-        // For other transactions, generate locally
-        pdfBlob = await generateReceiptPDF(orderData);
-      }
-      const date = new Date().toISOString().split('T')[0];
-      const filename = `minisend-receipt-${orderData.id || 'transaction'}-${date}.pdf`;
-
-      // Farcaster Mini App: Use Web Share API or open in new window
       if (isInMiniApp) {
-        // Try Web Share API first (works on mobile)
-        if (navigator.share && navigator.canShare) {
-          try {
-            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+        // Farcaster Mini App: Use openUrl to open the receipt
+        if (orderData.pretium_transaction_code) {
+          // For Pretium transactions, use API endpoint
+          const receiptUrl = `${baseUrl}/api/pretium/receipt/${orderData.pretium_transaction_code}`;
+          await openUrl(receiptUrl);
+        } else {
+          // For other transactions, we need to generate locally first, then share
+          // This is less ideal but necessary for non-Pretium orders
+          const pdfBlob = await generateReceiptPDF(orderData);
+          const date = new Date().toISOString().split('T')[0];
+          const filename = `minisend-receipt-${orderData.id || 'transaction'}-${date}.pdf`;
 
-            if (navigator.canShare({ files: [file] })) {
-              // Close the blank window we opened earlier
-              if (newWindow) {
-                newWindow.close();
+          // Try Web Share API for locally generated PDFs
+          if (navigator.share && navigator.canShare) {
+            try {
+              const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                  files: [file],
+                  title: 'Minisend Receipt',
+                  text: 'Your transaction receipt from Minisend'
+                });
+                return;
               }
-
-              await navigator.share({
-                files: [file],
-                title: 'Minisend Receipt',
-                text: 'Your transaction receipt from Minisend'
-              });
-              return;
+            } catch (err) {
+              console.error('[DownloadButton] Web Share failed:', err);
+              setError('Unable to share receipt. Please try again.');
             }
-          } catch {
-            // Share API failed, fall through to alternative
+          } else {
+            setError('Receipt sharing not supported in this environment.');
           }
         }
-
-        // Fallback: Use the window we already opened
-        if (newWindow && !newWindow.closed) {
-          const pdfUrl = URL.createObjectURL(pdfBlob);
-          newWindow.location.href = pdfUrl;
-
-          // Cleanup after a delay
-          setTimeout(() => URL.revokeObjectURL(pdfUrl), 10000);
-        } else {
-          // Window was blocked or closed, show error
-          setError('Please allow popups for this site to view receipts.');
-        }
-
       } else {
         // Standard web browser: Use traditional download
+        let pdfBlob: Blob;
+
+        if (orderData.pretium_transaction_code) {
+          const response = await fetch(`${baseUrl}/api/pretium/receipt/${orderData.pretium_transaction_code}`);
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || errorData.hint || 'Failed to fetch receipt from server');
+          }
+
+          pdfBlob = await response.blob();
+        } else {
+          pdfBlob = await generateReceiptPDF(orderData);
+        }
+
+        const date = new Date().toISOString().split('T')[0];
+        const filename = `minisend-receipt-${orderData.id || 'transaction'}-${date}.pdf`;
         const url = URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
         link.href = url;
@@ -121,11 +113,8 @@ export function DownloadButton({
         URL.revokeObjectURL(url);
       }
 
-    } catch {
-      // Close window on error
-      if (newWindow && !newWindow.closed) {
-        newWindow.close();
-      }
+    } catch (err) {
+      console.error('[DownloadButton] Error:', err);
       setError('Failed to generate receipt. Please try again.');
     } finally {
       setGenerating(false);
@@ -197,6 +186,7 @@ export function CompactReceiptButton({
 }) {
   const [generating, setGenerating] = useState(false);
   const [isInMiniApp, setIsInMiniApp] = useState(false);
+  const openUrl = useOpenUrl();
 
   useEffect(() => {
     const checkMiniAppEnvironment = async () => {
@@ -214,64 +204,53 @@ export function CompactReceiptButton({
   const downloadReceipt = async () => {
     setGenerating(true);
 
-    // Open window immediately to avoid popup blocker (only for Mini App)
-    let newWindow: Window | null = null;
-    if (isInMiniApp) {
-      newWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
-    }
-
     try {
-      let pdfBlob: Blob;
-
-      // For Pretium transactions, use API endpoint to get fresh data with M-Pesa code
-      if (orderData.pretium_transaction_code) {
-        const response = await fetch(`/api/pretium/receipt/${orderData.pretium_transaction_code}`);
-        
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || errorData.hint || 'Failed to fetch receipt');
-        }
-
-        pdfBlob = await response.blob();
-      } else {
-        // For other transactions, generate locally
-        pdfBlob = await generateReceiptPDF(orderData);
-      }
-
-      const filename = `receipt-${orderData.id || Date.now()}.pdf`;
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
       if (isInMiniApp) {
-        // Farcaster Mini App: Use Web Share API or open in new window
-        if (navigator.share && navigator.canShare) {
-          try {
-            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
-            if (navigator.canShare({ files: [file] })) {
-              // Close the blank window
-              if (newWindow) {
-                newWindow.close();
+        // Farcaster Mini App: Use openUrl to open the receipt
+        if (orderData.pretium_transaction_code) {
+          const receiptUrl = `${baseUrl}/api/pretium/receipt/${orderData.pretium_transaction_code}`;
+          await openUrl(receiptUrl);
+        } else {
+          // For other transactions, generate and share
+          const pdfBlob = await generateReceiptPDF(orderData);
+          const filename = `receipt-${orderData.id || Date.now()}.pdf`;
+
+          if (navigator.share && navigator.canShare) {
+            try {
+              const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                  files: [file],
+                  title: 'Minisend Receipt',
+                  text: 'Your transaction receipt'
+                });
+                return;
               }
-              await navigator.share({
-                files: [file],
-                title: 'Minisend Receipt',
-                text: 'Your transaction receipt'
-              });
-              return;
+            } catch (err) {
+              console.error('[CompactReceiptButton] Web Share failed:', err);
             }
-          } catch {
-            // Fall through to window.open
           }
         }
-
-        // Fallback: Use the window we already opened
-        if (newWindow && !newWindow.closed) {
-          const pdfUrl = URL.createObjectURL(pdfBlob);
-          newWindow.location.href = pdfUrl;
-          setTimeout(() => URL.revokeObjectURL(pdfUrl), 10000);
-        }
-
       } else {
         // Standard browser download
+        let pdfBlob: Blob;
+
+        if (orderData.pretium_transaction_code) {
+          const response = await fetch(`${baseUrl}/api/pretium/receipt/${orderData.pretium_transaction_code}`);
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || errorData.hint || 'Failed to fetch receipt');
+          }
+
+          pdfBlob = await response.blob();
+        } else {
+          pdfBlob = await generateReceiptPDF(orderData);
+        }
+
+        const filename = `receipt-${orderData.id || Date.now()}.pdf`;
         const url = URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
         link.href = url;
@@ -281,11 +260,8 @@ export function CompactReceiptButton({
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       }
-    } catch {
-      // Close window on error
-      if (newWindow && !newWindow.closed) {
-        newWindow.close();
-      }
+    } catch (err) {
+      console.error('[CompactReceiptButton] Error:', err);
     } finally {
       setGenerating(false);
     }

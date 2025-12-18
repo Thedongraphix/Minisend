@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useOpenUrl } from '@coinbase/onchainkit/minikit';
 
 interface PretiumReceiptProps {
   transactionCode: string;
@@ -29,6 +30,7 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
   const [isInMiniApp, setIsInMiniApp] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [attempts, setAttempts] = useState(0);
+  const openUrl = useOpenUrl();
 
   // Detect miniapp environment
   useEffect(() => {
@@ -124,67 +126,29 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
   const downloadReceipt = async () => {
     setIsDownloading(true);
 
-    // Open window immediately to avoid popup blocker (only for Mini App)
-    let newWindow: Window | null = null;
-    if (isInMiniApp) {
-      // Open blank window immediately while in user action context
-      newWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
-    }
-
     try {
-      const response = await fetch(`/api/pretium/receipt/${transactionCode}`);
+      // Get the full URL for the receipt
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const receiptUrl = `${baseUrl}/api/pretium/receipt/${transactionCode}`;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to generate receipt');
-      }
-
-      const blob = await response.blob();
-      const filename = `minisend-receipt-${transactionCode}.pdf`;
-
-      // Farcaster Mini App: Use Web Share API or open in new window
       if (isInMiniApp) {
-        // Try Web Share API first (works on mobile)
-        if (navigator.share && navigator.canShare) {
-          try {
-            const file = new File([blob], filename, { type: 'application/pdf' });
-
-            if (navigator.canShare({ files: [file] })) {
-              // Close the blank window we opened earlier
-              if (newWindow) {
-                newWindow.close();
-              }
-
-              await navigator.share({
-                files: [file],
-                title: 'Minisend Receipt',
-                text: 'Your transaction receipt from Minisend'
-              });
-              return;
-            }
-          } catch {
-            // Share API failed, fall through to alternative
-          }
-        }
-
-        // Fallback: Use the window we already opened
-        if (newWindow && !newWindow.closed) {
-          const pdfUrl = URL.createObjectURL(blob);
-          newWindow.location.href = pdfUrl;
-
-          // Cleanup after a delay
-          setTimeout(() => URL.revokeObjectURL(pdfUrl), 10000);
-        } else {
-          // Window was blocked or closed, show error
-          console.error('[PretiumReceipt] Popup was blocked. Please allow popups to view receipts.');
-        }
-
+        // Farcaster Mini App: Use openUrl to open the PDF
+        // The miniapp will handle displaying/downloading the PDF appropriately
+        await openUrl(receiptUrl);
       } else {
         // Standard web browser: Use traditional download
+        const response = await fetch(receiptUrl);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to generate receipt');
+        }
+
+        const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = filename;
+        link.download = `minisend-receipt-${transactionCode}.pdf`;
 
         document.body.appendChild(link);
         link.click();
@@ -194,10 +158,6 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
       }
     } catch (err) {
       console.error('[PretiumReceipt] Download error:', err);
-      // Close window on error
-      if (newWindow && !newWindow.closed) {
-        newWindow.close();
-      }
     } finally {
       setIsDownloading(false);
     }
@@ -312,6 +272,7 @@ export function CompactReceiptButton({
   const [isChecking, setIsChecking] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isInMiniApp, setIsInMiniApp] = useState(false);
+  const openUrl = useOpenUrl();
 
   // Detect miniapp environment
   useEffect(() => {
@@ -351,52 +312,22 @@ export function CompactReceiptButton({
   const download = async () => {
     setIsDownloading(true);
 
-    // Open window immediately to avoid popup blocker (only for Mini App)
-    let newWindow: Window | null = null;
-    if (isInMiniApp) {
-      newWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
-    }
-
     try {
-      const response = await fetch(`/api/pretium/receipt/${transactionCode}`);
-      const blob = await response.blob();
-      const filename = `receipt-${transactionCode}.pdf`;
+      // Get the full URL for the receipt
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const receiptUrl = `${baseUrl}/api/pretium/receipt/${transactionCode}`;
 
       if (isInMiniApp) {
-        // Farcaster Mini App: Use Web Share API or open in new window
-        if (navigator.share && navigator.canShare) {
-          try {
-            const file = new File([blob], filename, { type: 'application/pdf' });
-            if (navigator.canShare({ files: [file] })) {
-              // Close the blank window
-              if (newWindow) {
-                newWindow.close();
-              }
-              await navigator.share({
-                files: [file],
-                title: 'Minisend Receipt',
-                text: 'Your transaction receipt'
-              });
-              return;
-            }
-          } catch {
-            // Fall through to window.open
-          }
-        }
-
-        // Fallback: Use the window we already opened
-        if (newWindow && !newWindow.closed) {
-          const pdfUrl = URL.createObjectURL(blob);
-          newWindow.location.href = pdfUrl;
-          setTimeout(() => URL.revokeObjectURL(pdfUrl), 10000);
-        }
-
+        // Farcaster Mini App: Use openUrl to open the PDF
+        await openUrl(receiptUrl);
       } else {
         // Standard browser download
+        const response = await fetch(receiptUrl);
+        const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = filename;
+        link.download = `receipt-${transactionCode}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -404,10 +335,6 @@ export function CompactReceiptButton({
       }
     } catch (err) {
       console.error('[CompactReceiptButton] Download error:', err);
-      // Close window on error
-      if (newWindow && !newWindow.closed) {
-        newWindow.close();
-      }
     } finally {
       setIsDownloading(false);
     }
