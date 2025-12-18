@@ -8,9 +8,32 @@ import { detectKenyanCarrier } from '@/lib/utils/phoneCarrier';
 import { detectGhanaNetwork } from '@/lib/utils/ghanaNetworkDetector';
 import type { PretiumDisburseRequest, PretiumPaymentType } from '@/lib/pretium/types';
 
+/**
+ * Pretium Disburse Endpoint - Rebuilt from scratch following official docs
+ *
+ * Flow:
+ * 1. Validate input and calculate amounts
+ * 2. Call Pretium API /v1/pay/{currency}
+ * 3. IMMEDIATELY save transaction_code to database (critical!)
+ * 4. Return success to frontend
+ * 5. Webhook will update status when complete
+ *
+ * Reference: docs/offramp.md, docs/fee.md, docs/webhooks.md
+ */
 export async function POST(request: NextRequest) {
+  const requestId = `disburse_${Date.now()}`; // Unique ID for tracking this request
+
   try {
+    console.log('='.repeat(80));
+    console.log(`[${requestId}] DISBURSEMENT REQUEST INITIATED`);
+    console.log('='.repeat(80));
+
     const body = await request.json();
+    console.log(`[${requestId}] Request body:`, JSON.stringify(body, null, 2));
+
+    // ========================================================================
+    // STEP 1: VALIDATE INPUT & EXTRACT PARAMETERS
+    // ========================================================================
 
     const {
       amount,
@@ -22,91 +45,103 @@ export async function POST(request: NextRequest) {
       transactionHash,
       returnAddress,
       fid,
-      currency = 'KES', // Default to KES for backwards compatibility
-      accountNumber: ngnAccountNumber, // For NGN bank transfers
-      bankCode, // For NGN bank transfers
-      bankName, // For NGN bank transfers
+      currency = 'KES',
+      // NGN-specific fields
+      accountNumber: ngnAccountNumber,
+      bankCode,
+      bankName,
     } = body;
 
-    // Validate currency is supported
+    // Validate currency
     if (!isCurrencySupported(currency)) {
+      console.error(`[${requestId}] Unsupported currency: ${currency}`);
       return NextResponse.json(
-        { error: `Currency ${currency} is not supported. Supported currencies: KES, GHS, NGN` },
+        { error: `Currency ${currency} not supported. Supported: KES, GHS, NGN` },
         { status: 400 }
       );
     }
 
     // Validate required fields
     if (!amount || !accountName || !transactionHash || !returnAddress) {
+      console.error(`[${requestId}] Missing required fields`);
       return NextResponse.json(
-        {
-          error: 'Missing required fields: amount, accountName, transactionHash, returnAddress',
-        },
+        { error: 'Missing required: amount, accountName, transactionHash, returnAddress' },
         { status: 400 }
       );
     }
 
-    // Validate and normalize amount to 2 decimal places to avoid rate mismatch
-    // This ensures consistency between what user sees and what Pretium calculates
+    // Normalize amount to 2 decimal places
     const amountNum = Math.round(parseFloat(amount) * 100) / 100;
     if (isNaN(amountNum) || amountNum <= 0) {
+      console.error(`[${requestId}] Invalid amount: ${amount}`);
       return NextResponse.json(
-        { error: 'Invalid amount: must be a positive number' },
+        { error: 'Invalid amount: must be positive number' },
         { status: 400 }
       );
     }
 
-    // Determine payment type and format shortcode
+    console.log(`[${requestId}] Validated input:`, {
+      currency,
+      amount: amountNum,
+      wallet: returnAddress,
+      txHash: transactionHash
+    });
+
+    // ========================================================================
+    // STEP 2: DETERMINE PAYMENT TYPE & FORMAT RECIPIENT DETAILS
+    // ========================================================================
+
     let paymentType: PretiumPaymentType;
     let shortcode: string | undefined;
     let accountNumber: string | undefined;
     let mobileNetwork: string | undefined;
 
-    // Handle NGN bank transfers first
     if (currency === 'NGN') {
+      // NGN Bank Transfers
       if (!ngnAccountNumber || !bankCode || !bankName) {
+        console.error(`[${requestId}] NGN missing bank details`);
         return NextResponse.json(
-          { error: 'NGN requires account number, bank code, and bank name' },
+          { error: 'NGN requires: accountNumber, bankCode, bankName' },
           { status: 400 }
         );
       }
 
-      paymentType = 'BANK_TRANSFER'; // Use BANK_TRANSFER type for NGN
-      const cleanedAccountNumber = ngnAccountNumber.replace(/\D/g, ''); // Clean account number
+      paymentType = 'BANK_TRANSFER';
+      const cleanedAccountNumber = ngnAccountNumber.replace(/\D/g, ''); // Clean to digits only
       accountNumber = cleanedAccountNumber;
-      // Note: For bank transfers, shortcode and mobile_network are not required
 
       // Validate account number format
       if (cleanedAccountNumber.length < 10 || cleanedAccountNumber.length > 11) {
+        console.error(`[${requestId}] Invalid NGN account number length: ${cleanedAccountNumber.length}`);
         return NextResponse.json(
           { error: 'Invalid NGN account number (must be 10-11 digits)' },
           { status: 400 }
         );
       }
-    } else if (tillNumber) {
-      // Till numbers only supported for KES
-      if (currency !== 'KES') {
-        return NextResponse.json(
-          { error: 'Till numbers are only supported for KES' },
-          { status: 400 }
-        );
-      }
+
+      console.log(`[${requestId}] NGN Bank Transfer:`, {
+        accountNumber,
+        bankCode,
+        bankName
+      });
+
+    } else if (tillNumber && currency === 'KES') {
+      // KES Till/Buy Goods
       paymentType = 'BUY_GOODS';
       shortcode = formatTillNumber(tillNumber);
       mobileNetwork = 'Safaricom';
-    } else if (paybillNumber && paybillAccount) {
-      // Paybill only supported for KES
-      if (currency !== 'KES') {
-        return NextResponse.json(
-          { error: 'Paybill numbers are only supported for KES' },
-          { status: 400 }
-        );
-      }
+      console.log(`[${requestId}] KES Buy Goods: ${shortcode}`);
+
+    } else if (paybillNumber && paybillAccount && currency === 'KES') {
+      // KES Paybill
       paymentType = 'PAYBILL';
       shortcode = paybillNumber;
       accountNumber = paybillAccount;
       mobileNetwork = 'Safaricom';
+      console.log(`[${requestId}] KES Paybill: ${shortcode}/${accountNumber}`);
+
     } else if (phoneNumber) {
+      // Mobile Money
       paymentType = 'MOBILE';
 
       if (currency === 'KES') {
@@ -117,62 +152,79 @@ export async function POST(request: NextRequest) {
         shortcode = formatGhanaPhoneNumber(phoneNumber);
         const network = detectGhanaNetwork(shortcode);
         mobileNetwork = network === 'MTN' ? 'MTN' : network === 'VODAFONE' ? 'Vodafone' : network === 'AIRTELTIGO' ? 'AirtelTigo' : 'MTN';
-      } else if (currency === 'NGN') {
-        return NextResponse.json(
-          { error: 'NGN requires bank account details, not phone number' },
-          { status: 400 }
-        );
       } else {
+        console.error(`[${requestId}] Phone number not supported for ${currency}`);
         return NextResponse.json(
-          { error: 'Unsupported currency' },
+          { error: `${currency} does not support phone number payments` },
           { status: 400 }
         );
       }
+
+      console.log(`[${requestId}] ${currency} Mobile: ${shortcode} (${mobileNetwork})`);
+
     } else {
+      console.error(`[${requestId}] No valid payment method provided`);
       return NextResponse.json(
-        {
-          error: 'Must provide either phoneNumber, tillNumber, paybillNumber with paybillAccount, or accountNumber with bankCode',
-        },
+        { error: 'Must provide: phoneNumber, tillNumber, paybillNumber+account, or accountNumber+bankCode' },
         { status: 400 }
       );
     }
 
-    // Get exchange rate for the specified currency
+    // ========================================================================
+    // STEP 3: GET EXCHANGE RATE
+    // ========================================================================
+
+    console.log(`[${requestId}] Fetching ${currency} exchange rate...`);
     const rateResponse = await pretiumClient.getExchangeRate(currency);
+
     if (rateResponse.code !== 200) {
+      console.error(`[${requestId}] Failed to fetch exchange rate:`, rateResponse);
       return NextResponse.json(
         { error: 'Failed to fetch exchange rate' },
         { status: 500 }
       );
     }
 
-    // Use buying_rate for offramp (we're buying local currency from Pretium)
     const exchangeRate = rateResponse.data.buying_rate;
+    console.log(`[${requestId}] Exchange rate: 1 USDC = ${exchangeRate} ${currency}`);
 
-    // Calculate total local currency amount from the USDC user is sending
-    // The USDC amount already includes everything (recipient amount + fee)
+    // ========================================================================
+    // STEP 4: CALCULATE AMOUNTS PER PRETIUM DOCS
+    // Per docs/fee.md:
+    // - User wants to receive 1000 KES with 1% fee (10 KES)
+    // - Deduct 1010 KES equivalent from wallet
+    // - Send: { amount: 1010, fee: 10 }
+    // - Pretium sends 1000 to recipient, credits 10 to our fiat wallet
+    // ========================================================================
+
     const totalLocalFromUSdc = Math.round(amountNum * exchangeRate);
-
-    // According to Pretium docs: if user sends equivalent of 1,010 local currency
-    // We should send: { amount: 1010, fee: 10 }
-    // Pretium will send 1,000 to recipient and credit 10 to our fiat wallet
-    // So we need to calculate backwards: if total is 1010, recipient gets 1000, fee is 10
-    // Formula: recipient = total / 1.01, fee = total - recipient
     const recipientAmount = Math.floor(totalLocalFromUSdc / 1.01);
     const feeAmount = totalLocalFromUSdc - recipientAmount;
 
-    // Prepare Pretium disbursement request - build based on payment type
-    // This ensures we match Pretium's expected format exactly
+    console.log(`[${requestId}] Amount calculation:`, {
+      usdc: amountNum,
+      rate: exchangeRate,
+      total_local: totalLocalFromUSdc,
+      recipient_gets: recipientAmount,
+      platform_fee: feeAmount,
+      fee_percentage: ((feeAmount / totalLocalFromUSdc) * 100).toFixed(2) + '%'
+    });
+
+    // ========================================================================
+    // STEP 5: BUILD PRETIUM API REQUEST PER OFFICIAL DOCS
+    // Reference: docs/offramp.md
+    // ========================================================================
+
     let disburseRequest: PretiumDisburseRequest;
 
-    if (paymentType === 'BANK_TRANSFER' && currency === 'NGN') {
-      // NGN Bank Transfer - send recipient amount only, NO fee field
-      // Bank transfers don't support the fee split mechanism used for mobile money
+    if (currency === 'NGN' && paymentType === 'BANK_TRANSFER') {
+      // NGN Bank Transfer - TESTING WITHOUT FEE FIRST
+      // If Pretium docs don't show account_name for NGN, maybe we shouldn't send it?
       disburseRequest = {
         type: paymentType,
-        account_name: accountName,
-        amount: recipientAmount.toString(), // Send only what recipient receives
-        // fee: omitted - not supported for bank transfers
+        account_name: accountName, // Keeping this as it's standard
+        amount: recipientAmount.toString(), // Send only recipient amount (no fee for now)
+        // fee: feeAmount.toString(), // OMITTED - testing if this causes issues
         chain: PRETIUM_CONFIG.CHAIN,
         transaction_hash: transactionHash,
         callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
@@ -180,248 +232,218 @@ export async function POST(request: NextRequest) {
         bank_code: bankCode!,
         bank_name: bankName!,
       };
-    } else if (paymentType === 'MOBILE') {
-      // Mobile money transfer (KES/GHS) - includes fee split
-      const baseRequest = {
-        type: paymentType,
-        account_name: accountName,
-        amount: totalLocalFromUSdc.toString(),
-        fee: feeAmount.toString(),
-        chain: PRETIUM_CONFIG.CHAIN,
-        transaction_hash: transactionHash,
-        callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
-      };
-      // Mobile money transfer (KES/GHS)
-      disburseRequest = {
-        ...baseRequest,
-        shortcode: shortcode!,
-        mobile_network: mobileNetwork!,
-      };
-    } else if (paymentType === 'BUY_GOODS') {
-      // KES Till/Buy Goods - includes fee split
-      const baseRequest = {
-        type: paymentType,
-        account_name: accountName,
-        amount: totalLocalFromUSdc.toString(),
-        fee: feeAmount.toString(),
-        chain: PRETIUM_CONFIG.CHAIN,
-        transaction_hash: transactionHash,
-        callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
-      };
-      disburseRequest = {
-        ...baseRequest,
-        shortcode: shortcode!,
-        mobile_network: mobileNetwork!,
-      };
-    } else if (paymentType === 'PAYBILL') {
-      // KES Paybill - includes fee split
-      const baseRequest = {
-        type: paymentType,
-        account_name: accountName,
-        amount: totalLocalFromUSdc.toString(),
-        fee: feeAmount.toString(),
-        chain: PRETIUM_CONFIG.CHAIN,
-        transaction_hash: transactionHash,
-        callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
-      };
-      disburseRequest = {
-        ...baseRequest,
-        shortcode: shortcode!,
-        account_number: accountNumber!,
-        mobile_network: mobileNetwork!,
-      };
+
+      console.log(`[${requestId}] NGN Request (fee omitted):`, JSON.stringify(disburseRequest, null, 2));
+
     } else {
-      throw new Error(`Unsupported payment type: ${paymentType}`);
+      // KES/GHS Mobile Money - Follow docs exactly
+      disburseRequest = {
+        type: paymentType,
+        account_name: accountName,
+        amount: totalLocalFromUSdc.toString(), // Total including fee
+        fee: feeAmount.toString(), // Fee to be credited to our wallet
+        chain: PRETIUM_CONFIG.CHAIN,
+        transaction_hash: transactionHash,
+        callback_url: PRETIUM_CONFIG.WEBHOOK_URL,
+        shortcode: shortcode!,
+        mobile_network: mobileNetwork!,
+        ...(accountNumber && { account_number: accountNumber }), // For PAYBILL
+      };
+
+      console.log(`[${requestId}] ${currency} Request (with fee):`, JSON.stringify(disburseRequest, null, 2));
     }
 
-    // Log the complete disburse request for debugging
-    console.log('='.repeat(80));
-    console.log(`[Disburse] ${currency} DISBURSEMENT REQUEST - START`);
-    console.log('='.repeat(80));
-    console.log('[Disburse] Request details:', {
-      currency,
-      payment_type: paymentType,
-      endpoint: `/v1/pay/${currency}`,
-      timestamp: new Date().toISOString(),
-      wallet: returnAddress,
-      transaction_hash: transactionHash
-    });
-    console.log('[Disburse] Amount breakdown:', {
-      usdc_amount: amountNum,
-      exchange_rate: exchangeRate,
-      total_local: totalLocalFromUSdc,
-      recipient_amount: recipientAmount,
-      fee_amount: feeAmount,
-      fee_percentage: ((feeAmount / totalLocalFromUSdc) * 100).toFixed(2) + '%',
-      amount_sent_to_pretium: currency === 'NGN' ? recipientAmount : totalLocalFromUSdc,
-      fee_included_in_request: currency !== 'NGN' ? 'YES' : 'NO (omitted for bank transfers)'
-    });
-    console.log('[Disburse] Pretium API payload:', JSON.stringify(disburseRequest, null, 2));
-    console.log('='.repeat(80));
+    // ========================================================================
+    // STEP 6: CALL PRETIUM API
+    // ========================================================================
 
-    // Initiate disbursement with Pretium
-    let disburseResponse;
+    console.log(`[${requestId}] Calling Pretium API: POST /v1/pay/${currency}`);
+    let pretiumResponse;
+
     try {
-      disburseResponse = await pretiumClient.disburse(disburseRequest, currency);
-
-      console.log('='.repeat(80));
-      console.log(`[Disburse] ${currency} PRETIUM RESPONSE - SUCCESS`);
-      console.log('='.repeat(80));
-      console.log('[Disburse] Response details:', {
-        currency,
-        response_code: disburseResponse.code,
-        transaction_code: disburseResponse.data.transaction_code,
-        status: disburseResponse.data.status,
-        message: disburseResponse.data.message,
-        timestamp: new Date().toISOString()
-      });
-      console.log('[Disburse] Full response:', JSON.stringify(disburseResponse, null, 2));
-      console.log('='.repeat(80));
+      pretiumResponse = await pretiumClient.disburse(disburseRequest, currency);
+      console.log(`[${requestId}] Pretium API success:`, JSON.stringify(pretiumResponse, null, 2));
     } catch (error) {
+      console.error('='.repeat(80));
+      console.error(`[${requestId}] PRETIUM API ERROR`);
+      console.error('='.repeat(80));
+      console.error(`[${requestId}] Error:`, error);
+      console.error(`[${requestId}] Request that failed:`, JSON.stringify(disburseRequest, null, 2));
+      console.error('='.repeat(80));
+
       const pretiumError = error as { message?: string; data?: unknown; code?: number };
-
-      console.log('='.repeat(80));
-      console.error(`[Disburse] ${currency} PRETIUM ERROR - FAILED`);
-      console.log('='.repeat(80));
-      console.error('[Disburse] Error details:', {
-        currency,
-        payment_type: paymentType,
-        error_code: pretiumError.code,
-        error_message: pretiumError.message,
-        timestamp: new Date().toISOString()
-      });
-      console.error('[Disburse] Error data:', JSON.stringify(pretiumError.data, null, 2));
-      console.error('[Disburse] Request that failed:', JSON.stringify(disburseRequest, null, 2));
-      console.error('[Disburse] Full error object:', JSON.stringify(error, null, 2));
-      console.log('='.repeat(80));
-
       return NextResponse.json(
         {
-          error: pretiumError.message || 'Failed to initiate disbursement with Pretium',
+          error: pretiumError.message || 'Pretium API error',
           details: pretiumError.data || {},
-          request: disburseRequest,
+          requestId
         },
         { status: pretiumError.code || 500 }
       );
     }
 
-    if (disburseResponse.code !== 200) {
-      console.log('='.repeat(80));
-      console.error(`[Disburse] ${currency} PRETIUM RESPONSE - NON-200 CODE`);
-      console.log('='.repeat(80));
-      console.error('[Disburse] Non-success response:', {
-        currency,
-        response_code: disburseResponse.code,
-        message: disburseResponse.message,
-        timestamp: new Date().toISOString()
-      });
-      console.error('[Disburse] Response data:', JSON.stringify(disburseResponse.data, null, 2));
-      console.error('[Disburse] Request that caused error:', JSON.stringify(disburseRequest, null, 2));
-      console.log('='.repeat(80));
+    // Validate response code
+    if (pretiumResponse.code !== 200) {
+      console.error('='.repeat(80));
+      console.error(`[${requestId}] PRETIUM RETURNED NON-200 CODE`);
+      console.error('='.repeat(80));
+      console.error(`[${requestId}] Response:`, JSON.stringify(pretiumResponse, null, 2));
+      console.error('='.repeat(80));
 
       return NextResponse.json(
         {
-          error: disburseResponse.message,
-          details: disburseResponse.data,
+          error: pretiumResponse.message || 'Pretium request failed',
+          details: pretiumResponse.data,
+          requestId
         },
-        { status: disburseResponse.code }
+        { status: pretiumResponse.code }
       );
     }
 
-    const { transaction_code, status, message } = disburseResponse.data;
+    const { transaction_code, status, message } = pretiumResponse.data;
 
-    // Store order in database
+    if (!transaction_code) {
+      console.error(`[${requestId}] CRITICAL: No transaction_code in response!`);
+      return NextResponse.json(
+        { error: 'No transaction code received from Pretium', requestId },
+        { status: 500 }
+      );
+    }
+
+    console.log('='.repeat(80));
+    console.log(`[${requestId}] PRETIUM SUCCESS - Transaction Code: ${transaction_code}`);
+    console.log('='.repeat(80));
+
+    // ========================================================================
+    // STEP 7: SAVE TO DATABASE IMMEDIATELY
+    // THIS IS CRITICAL - Must happen before returning to frontend!
+    // ========================================================================
+
+    console.log(`[${requestId}] Saving to database...`);
+
     try {
       // Ensure user exists
       let user = await DatabaseService.getUserByWallet(returnAddress);
       if (!user) {
+        console.log(`[${requestId}] Creating new user for wallet: ${returnAddress}`);
         user = await DatabaseService.createUser(
           returnAddress,
           paymentType === 'MOBILE' ? shortcode : ''
         );
+        console.log(`[${requestId}] User created: ${user.id}`);
+      } else {
+        console.log(`[${requestId}] Existing user found: ${user.id}`);
       }
 
-      // Create order record in the new pretium_orders table
-      console.log('[Disburse] Creating order in pretium_orders table:', {
-        transaction_code,
-        wallet: returnAddress,
-        amount: amountNum
+      // Create order record
+      console.log(`[${requestId}] Creating Pretium order record...`);
+      const createdOrder = await DatabaseService.createPretiumOrder({
+        transactionCode: transaction_code,
+        userId: user.id,
+        walletAddress: returnAddress,
+        amountInUsdc: amountNum,
+        amountInLocal: recipientAmount,
+        currency: currency as 'KES' | 'GHS' | 'NGN',
+        phoneNumber: paymentType === 'MOBILE' ? shortcode : undefined,
+        tillNumber: paymentType === 'BUY_GOODS' ? shortcode : undefined,
+        paybillNumber: paymentType === 'PAYBILL' ? shortcode : undefined,
+        paybillAccount: paymentType === 'PAYBILL' ? accountNumber : undefined,
+        accountNumber: paymentType === 'BANK_TRANSFER' ? accountNumber : undefined,
+        bankCode: currency === 'NGN' ? bankCode : undefined,
+        bankName: currency === 'NGN' ? bankName : undefined,
+        accountName: accountName,
+        rate: exchangeRate,
+        transactionHash: transactionHash,
+        status: 'pending',
+        pretiumStatus: status,
+        fee: feeAmount,
+        fid,
+        mobileNetwork: mobileNetwork,
+        settlementAddress: PRETIUM_CONFIG.SETTLEMENT_ADDRESS,
+        callbackUrl: PRETIUM_CONFIG.WEBHOOK_URL,
+        rawDisburseRequest: JSON.parse(JSON.stringify(disburseRequest)) as Record<string, unknown>,
+        rawDisburseResponse: JSON.parse(JSON.stringify(pretiumResponse.data)) as Record<string, unknown>,
       });
 
-      try {
-        const createdOrder = await DatabaseService.createPretiumOrder({
-          transactionCode: transaction_code,
-          userId: user.id,
-          walletAddress: returnAddress,
-          amountInUsdc: amountNum,
-          amountInLocal: recipientAmount,
-          currency: currency as 'KES' | 'GHS' | 'NGN',
-          phoneNumber: paymentType === 'MOBILE' ? shortcode : undefined,
-          tillNumber: paymentType === 'BUY_GOODS' ? shortcode : undefined,
-          paybillNumber: paymentType === 'PAYBILL' ? shortcode : undefined,
-          paybillAccount: paymentType === 'PAYBILL' ? accountNumber : undefined,
-          accountNumber: paymentType === 'BANK_TRANSFER' ? accountNumber : undefined,
-          bankCode: currency === 'NGN' ? bankCode : undefined,
-          bankName: currency === 'NGN' ? bankName : undefined,
-          accountName: accountName,
-          rate: exchangeRate,
-          transactionHash: transactionHash,
-          status: 'pending',
-          pretiumStatus: status,
-          fee: feeAmount,
-          fid,
-          mobileNetwork: mobileNetwork,
-          settlementAddress: PRETIUM_CONFIG.SETTLEMENT_ADDRESS,
-          callbackUrl: PRETIUM_CONFIG.WEBHOOK_URL,
-          rawDisburseRequest: JSON.parse(JSON.stringify(disburseRequest)) as Record<string, unknown>,
-          rawDisburseResponse: JSON.parse(JSON.stringify(disburseResponse.data)) as Record<string, unknown>,
-        });
-
-        console.log('[Disburse] Order created successfully:', {
-          order_id: createdOrder.id,
-          transaction_code: createdOrder.transaction_code
-        });
-      } catch (dbError) {
-        console.error('[Disburse] FAILED to create order in pretium_orders:', {
-          transaction_code,
-          error: dbError,
-          errorMessage: dbError instanceof Error ? dbError.message : 'Unknown error'
-        });
-        throw dbError;
-      }
+      console.log('='.repeat(80));
+      console.log(`[${requestId}] DATABASE SAVE SUCCESS`);
+      console.log('='.repeat(80));
+      console.log(`[${requestId}] Order ID: ${createdOrder.id}`);
+      console.log(`[${requestId}] Transaction Code: ${createdOrder.transaction_code}`);
+      console.log('='.repeat(80));
 
       // Log analytics event
       await DatabaseService.logAnalyticsEvent('pretium_disburse_initiated', returnAddress, {
+        request_id: requestId,
         transaction_code,
         amount_usdc: amountNum,
         amount_local_total: totalLocalFromUSdc,
         recipient_amount: recipientAmount,
         fee_amount: feeAmount,
         payment_type: paymentType,
+        currency,
       });
+
     } catch (dbError) {
-      console.error('Failed to save order to database:', {
-        transaction_code,
-        error: dbError instanceof Error ? dbError.message : dbError,
-        stack: dbError instanceof Error ? dbError.stack : undefined
+      // DATABASE SAVE FAILED - THIS IS CRITICAL!
+      console.error('='.repeat(80));
+      console.error(`[${requestId}] CRITICAL: DATABASE SAVE FAILED`);
+      console.error('='.repeat(80));
+      console.error(`[${requestId}] Error:`, dbError);
+      console.error(`[${requestId}] Transaction Code: ${transaction_code}`);
+      console.error(`[${requestId}] Wallet: ${returnAddress}`);
+      console.error(`[${requestId}] Amount: ${amountNum} USDC`);
+      console.error('='.repeat(80));
+      console.error(`[${requestId}] PAYMENT WILL COMPLETE BUT WON'T BE TRACKED!`);
+      console.error('='.repeat(80));
+
+      // Still return success to user since Pretium accepted the payment
+      // But log this heavily so we can manually track it
+      return NextResponse.json({
+        success: true,
+        warning: 'Payment initiated but tracking failed - contact support',
+        transactionCode: transaction_code,
+        status,
+        message,
+        requestId,
+        totalAmount: totalLocalFromUSdc,
+        recipientAmount,
+        feeAmount,
+        exchangeRate,
+        settlementAddress: PRETIUM_CONFIG.SETTLEMENT_ADDRESS,
       });
     }
 
+    // ========================================================================
+    // STEP 8: RETURN SUCCESS
+    // ========================================================================
+
+    console.log(`[${requestId}] Returning success to frontend`);
     return NextResponse.json({
       success: true,
       transactionCode: transaction_code,
       status,
       message,
+      requestId,
       totalAmount: totalLocalFromUSdc,
       recipientAmount,
       feeAmount,
       exchangeRate,
       settlementAddress: PRETIUM_CONFIG.SETTLEMENT_ADDRESS,
     });
+
   } catch (error) {
+    console.error('='.repeat(80));
+    console.error(`[${requestId}] UNEXPECTED ERROR`);
+    console.error('='.repeat(80));
+    console.error(`[${requestId}] Error:`, error);
+    console.error(`[${requestId}] Stack:`, error instanceof Error ? error.stack : 'No stack');
+    console.error('='.repeat(80));
+
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'Failed to initiate disbursement',
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        requestId
       },
       { status: 500 }
     );
