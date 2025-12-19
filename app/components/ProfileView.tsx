@@ -7,6 +7,7 @@ import { Name, Avatar } from '@coinbase/onchainkit/identity';
 import { Button, Icon } from './BaseComponents';
 import { Order } from '../../lib/supabase/config';
 import { DownloadButton } from './DownloadButton';
+import { CompactReceiptButton } from './PretiumReceipt';
 import { OrderData } from '../../lib/types/order';
 
 
@@ -412,11 +413,20 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                       </div>
 
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {isSuccess && (
+                        {isSuccess && order.pretium_transaction_code && (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <CompactReceiptButton
+                              transactionCode={order.pretium_transaction_code}
+                              className=""
+                            />
+                          </div>
+                        )}
+                        {isSuccess && !order.pretium_transaction_code && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Trigger download from DownloadButton
+                              const downloadBtn = document.getElementById(`download-${order.id}`);
+                              if (downloadBtn) downloadBtn.click();
                             }}
                             className="p-2 bg-purple-600 hover:bg-purple-700 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
                             title="Download Receipt"
@@ -458,14 +468,16 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                         </div>
                       </div>
 
-                      {/* Hidden Download Button for functionality */}
-                      {isSuccess && (
+                      {/* Hidden Download Button for non-Pretium orders */}
+                      {isSuccess && !order.pretium_transaction_code && (
                         <div className="hidden">
-                          <DownloadButton
-                            orderData={convertOrderToOrderData(order)}
-                            variant="secondary"
-                            size="sm"
-                          />
+                          <div id={`download-${order.id}`}>
+                            <DownloadButton
+                              orderData={convertOrderToOrderData(order)}
+                              variant="secondary"
+                              size="sm"
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
@@ -540,10 +552,20 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                       </div>
 
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {isSuccess && (
+                        {isSuccess && order.pretium_transaction_code && (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <CompactReceiptButton
+                              transactionCode={order.pretium_transaction_code}
+                              className=""
+                            />
+                          </div>
+                        )}
+                        {isSuccess && !order.pretium_transaction_code && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              const downloadBtn = document.getElementById(`download-${order.id}`);
+                              if (downloadBtn) downloadBtn.click();
                             }}
                             className="p-2 bg-purple-600 hover:bg-purple-700 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
                             title="Download Receipt"
@@ -585,14 +607,16 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                         </div>
                       </div>
 
-                      {/* Hidden Download Button for functionality */}
-                      {isSuccess && (
+                      {/* Hidden Download Button for non-Pretium orders */}
+                      {isSuccess && !order.pretium_transaction_code && (
                         <div className="hidden">
-                          <DownloadButton
-                            orderData={convertOrderToOrderData(order)}
-                            variant="secondary"
-                            size="sm"
-                          />
+                          <div id={`download-${order.id}`}>
+                            <DownloadButton
+                              orderData={convertOrderToOrderData(order)}
+                              variant="secondary"
+                              size="sm"
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
