@@ -218,42 +218,39 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     }
   };
 
-  const formatDate = (dateString: string, currency?: string) => {
+  const formatDate = (dateString: string) => {
+    // Database stores timestamps incorrectly (stores EAT time as UTC)
+    // So we display the raw timestamp without timezone conversion
     const date = new Date(dateString);
-    const { timezone } = getTimezoneInfo(currency);
 
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    // Convert both dates to same timezone for comparison
-    const dateInTimezone = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
-    const todayInTimezone = new Date(today.toLocaleString('en-US', { timeZone: timezone }));
-    const yesterdayInTimezone = new Date(yesterday.toLocaleString('en-US', { timeZone: timezone }));
-
-    if (dateInTimezone.toDateString() === todayInTimezone.toDateString()) {
+    // Compare dates without timezone conversion
+    if (date.toDateString() === today.toDateString()) {
       return 'Today';
-    } else if (dateInTimezone.toDateString() === yesterdayInTimezone.toDateString()) {
+    } else if (date.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
     } else {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
-        timeZone: timezone
       });
     }
   };
 
   const formatTime = (dateString: string, currency?: string) => {
+    // Database stores timestamps incorrectly (stores EAT time as UTC)
+    // Display the raw timestamp as-is, which is actually the correct local time
     const date = new Date(dateString);
-    const { timezone, abbr } = getTimezoneInfo(currency);
+    const { abbr } = getTimezoneInfo(currency);
 
     const timeStr = date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
-      timeZone: timezone
     });
 
     return `${timeStr} ${abbr}`;
@@ -463,7 +460,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                         <div>
                           <div className="text-gray-500 text-xs mb-1 font-medium">Date</div>
                           <div className="text-white text-sm font-semibold">
-                            {formatDate(order.created_at, order.local_currency)}
+                            {formatDate(order.created_at)}
                           </div>
                         </div>
                       </div>
@@ -602,7 +599,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                         <div>
                           <div className="text-gray-500 text-xs mb-1 font-medium">Date</div>
                           <div className="text-white text-sm font-semibold">
-                            {formatDate(order.created_at, order.local_currency)}
+                            {formatDate(order.created_at)}
                           </div>
                         </div>
                       </div>
