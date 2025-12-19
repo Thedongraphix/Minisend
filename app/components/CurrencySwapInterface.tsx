@@ -92,7 +92,7 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
         // User entered USDC amount
         // Calculate total KES, then what recipient gets after 1% fee
         const totalKES = Number.parseFloat(sendAmount) * rate
-        const recipientAmount = Math.floor(totalKES / 1.01)
+        const recipientAmount = Math.round(totalKES / 1.01)
         setReceiveAmount(recipientAmount.toFixed(2))
       }
     }, 100) // Reduced debounce for faster response
@@ -162,7 +162,7 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
       if (rate) {
         // Calculate what they'll receive after 1% fee
         const totalKES = roundedMax * rate
-        const recipientAmount = Math.floor(totalKES / 1.01)
+        const recipientAmount = Math.round(totalKES / 1.01)
         setReceiveAmount(recipientAmount.toFixed(2))
       }
     }

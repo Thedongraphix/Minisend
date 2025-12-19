@@ -195,10 +195,16 @@ export async function POST(request: NextRequest) {
     // - Deduct 1010 KES equivalent from wallet
     // - Send: { amount: 1010, fee: 10 }
     // - Pretium sends 1000 to recipient, credits 10 to our fiat wallet
+    //
+    // CRITICAL: Using Math.round() instead of Math.floor() to ensure
+    // recipients receive the exact amount they expect. Math.floor() can
+    // cause users to receive less due to floating point precision issues.
+    // Example: 1212 / 1.01 = 1199.999... → floor = 1199 (wrong!)
+    //          1212 / 1.01 = 1199.999... → round = 1200 (correct!)
     // ========================================================================
 
     const totalLocalFromUSdc = Math.round(amountNum * exchangeRate);
-    const recipientAmount = Math.floor(totalLocalFromUSdc / 1.01);
+    const recipientAmount = Math.round(totalLocalFromUSdc / 1.01);
     const feeAmount = totalLocalFromUSdc - recipientAmount;
 
     console.log(`[${requestId}] Amount calculation:`, {
