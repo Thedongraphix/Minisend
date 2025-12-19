@@ -342,7 +342,7 @@ export function CompactReceiptButton({
 
   if (isChecking) {
     return (
-      <button disabled className={`px-3 py-2 bg-white/5 border border-white/10 rounded-xl ${className}`}>
+      <button disabled className={`p-2.5 bg-white/5 border border-white/10 rounded-2xl ${className}`}>
         <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
       </button>
     );
@@ -350,8 +350,8 @@ export function CompactReceiptButton({
 
   if (!isReady) {
     return (
-      <button disabled className={`px-3 py-2 bg-white/5 border border-white/10 rounded-xl opacity-50 ${className}`}>
-        <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <button disabled className={`p-2.5 bg-white/5 border border-white/10 rounded-2xl opacity-40 ${className}`}>
+        <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </button>
@@ -362,14 +362,15 @@ export function CompactReceiptButton({
     <button
       onClick={download}
       disabled={isDownloading}
-      className={`px-3 py-2 bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors ${className}`}
+      className={`group/btn p-2.5 bg-purple-600 hover:bg-purple-700 rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95 ${className}`}
+      title="Download Receipt"
     >
       {isDownloading ? (
         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
       ) : (
-        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+        <svg className="w-4 h-4 text-white group-hover/btn:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
         </svg>
       )}
     </button>
