@@ -249,18 +249,6 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     return `${timeStr} ${timezoneAbbr}`;
   };
 
-  const getStatusBadgeColor = (status: string) => {
-    const normalizedStatus = status?.toLowerCase() || '';
-    if (['completed', 'fulfilled', 'settled'].includes(normalizedStatus)) {
-      return 'bg-blue-500/20 border-blue-500/30 text-blue-400';
-    } else if (['pending', 'processing', 'validated', 'initiated'].includes(normalizedStatus)) {
-      return 'bg-gray-500/20 border-gray-500/30 text-gray-400';
-    } else if (['failed', 'cancelled', 'expired', 'refunded'].includes(normalizedStatus)) {
-      return 'bg-gray-600/20 border-gray-600/30 text-gray-500';
-    }
-    return 'bg-gray-500/20 border-gray-500/30 text-gray-400';
-  };
-
   if (initialLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -302,29 +290,29 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
       </div>
 
       {/* Statistics Grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         {/* Total Transactions */}
-        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <div className="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center">
-              <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/[0.07] hover:border-purple-500/30 transition-all duration-200">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <span className="text-gray-400 text-[10px] sm:text-xs font-medium uppercase tracking-wide">Transactions</span>
+            <span className="text-gray-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wide">Transactions</span>
           </div>
           <p className="text-white text-2xl sm:text-3xl font-bold leading-none">{stats.totalTransactions}</p>
         </div>
 
         {/* Total Volume */}
-        <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <div className="w-5 h-5 rounded bg-blue-500/20 flex items-center justify-center">
-              <svg className="w-3 h-3 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/[0.07] hover:border-purple-500/30 transition-all duration-200">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <span className="text-gray-400 text-[10px] sm:text-xs font-medium uppercase tracking-wide">Volume</span>
+            <span className="text-gray-400 text-[10px] sm:text-xs font-semibold uppercase tracking-wide">Volume</span>
           </div>
           <p className="text-white text-2xl sm:text-3xl font-bold leading-none">${stats.totalVolumeUSDC.toFixed(2)}</p>
         </div>
@@ -386,63 +374,90 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
               return (
                 <div
                   key={order.id}
-                  className="bg-white/5 rounded-lg border border-white/10 overflow-hidden transition-all"
+                  className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden transition-all hover:bg-white/[0.07] hover:border-purple-500/30"
                 >
                   {/* Collapsed View - Always Visible */}
                   <div
                     onClick={() => setExpandedCard(isExpanded ? null : order.id)}
-                    className="p-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                    className="p-4 cursor-pointer transition-colors"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-white font-bold text-base">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-white font-bold text-lg">
                             {order.local_currency} {order.amount_in_local.toLocaleString()}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusBadgeColor(order.status)}`}>
-                            {order.status}
-                          </span>
+                          {isSuccess && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded-full">
+                              <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                              <span className="text-[10px] text-green-300 font-medium">Done</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="text-gray-400 text-xs truncate">
-                          {getPaymentDestination(order)} • {formatTime(order.created_at, order.local_currency)}
+                        <div className="text-gray-400 text-xs font-medium truncate">
+                          {getPaymentDestination(order)}
+                        </div>
+                        <div className="text-gray-500 text-[10px] mt-0.5">
+                          {formatTime(order.created_at, order.local_currency)}
                         </div>
                       </div>
-                      <svg
-                        className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isSuccess && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Trigger download from DownloadButton
+                            }}
+                            className="p-2 bg-purple-600 hover:bg-purple-700 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                            title="Download Receipt"
+                          >
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                          </button>
+                        )}
+                        <svg
+                          className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
 
                   {/* Expanded View */}
                   {isExpanded && (
-                    <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3">
-                      <div>
-                        <div className="text-gray-500 text-xs mb-1">USDC Amount</div>
-                        <div className="text-white text-sm font-medium">
-                          ${order.amount_in_usdc.toFixed(2)} USDC
+                    <div className="px-4 pb-4 space-y-3 border-t border-white/10 pt-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <div className="text-gray-500 text-xs mb-1 font-medium">USDC Amount</div>
+                          <div className="text-white text-sm font-semibold">
+                            ${order.amount_in_usdc.toFixed(2)}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="text-gray-500 text-xs mb-1 font-medium">Date</div>
+                          <div className="text-white text-sm font-semibold">
+                            {formatDate(order.created_at, order.local_currency)}
+                          </div>
                         </div>
                       </div>
 
-                      <div>
-                        <div className="text-gray-500 text-xs mb-1">Date</div>
-                        <div className="text-white text-sm">
-                          {formatDate(order.created_at, order.local_currency)}
-                        </div>
-                      </div>
-
-                      {/* Download Button */}
+                      {/* Hidden Download Button for functionality */}
                       {isSuccess && (
-                        <DownloadButton
-                          orderData={convertOrderToOrderData(order)}
-                          variant="secondary"
-                          size="sm"
-                          className="w-full"
-                        />
+                        <div className="hidden">
+                          <DownloadButton
+                            orderData={convertOrderToOrderData(order)}
+                            variant="secondary"
+                            size="sm"
+                          />
+                        </div>
                       )}
                     </div>
                   )}
@@ -487,56 +502,89 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
               return (
                 <div
                   key={order.id}
-                  className="bg-white/5 rounded-lg border border-white/10 overflow-hidden transition-all"
+                  className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden transition-all hover:bg-white/[0.07] hover:border-purple-500/30"
                 >
                   {/* Collapsed View - Always Visible */}
                   <div
                     onClick={() => setExpandedCard(isExpanded ? null : order.id)}
-                    className="p-3 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                    className="p-4 cursor-pointer transition-colors"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-white font-bold text-base">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-white font-bold text-lg">
                             {order.local_currency} {order.amount_in_local.toLocaleString()}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusBadgeColor(order.status)}`}>
-                            {order.status}
-                          </span>
+                          {isSuccess && (
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded-full">
+                              <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                              <span className="text-[10px] text-green-300 font-medium">Done</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="text-gray-400 text-xs truncate">
-                          {getPaymentDestination(order)} • {formatTime(order.created_at, order.local_currency)}
+                        <div className="text-gray-400 text-xs font-medium truncate">
+                          {getPaymentDestination(order)}
+                        </div>
+                        <div className="text-gray-500 text-[10px] mt-0.5">
+                          {formatTime(order.created_at, order.local_currency)}
                         </div>
                       </div>
-                      <svg
-                        className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-180' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
+
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isSuccess && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                            className="p-2 bg-purple-600 hover:bg-purple-700 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                            title="Download Receipt"
+                          >
+                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                          </button>
+                        )}
+                        <svg
+                          className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
 
                   {/* Expanded View */}
                   {isExpanded && (
-                    <div className="px-3 pb-3 space-y-3 border-t border-white/10 pt-3">
-                      <div>
-                        <div className="text-gray-500 text-xs mb-1">USDC Amount</div>
-                        <div className="text-white text-sm font-medium">
-                          ${order.amount_in_usdc.toFixed(2)} USDC
+                    <div className="px-4 pb-4 space-y-3 border-t border-white/10 pt-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <div className="text-gray-500 text-xs mb-1 font-medium">USDC Amount</div>
+                          <div className="text-white text-sm font-semibold">
+                            ${order.amount_in_usdc.toFixed(2)}
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="text-gray-500 text-xs mb-1 font-medium">Date</div>
+                          <div className="text-white text-sm font-semibold">
+                            {formatDate(order.created_at, order.local_currency)}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Download Button */}
+                      {/* Hidden Download Button for functionality */}
                       {isSuccess && (
-                        <DownloadButton
-                          orderData={convertOrderToOrderData(order)}
-                          variant="secondary"
-                          size="sm"
-                          className="w-full"
-                        />
+                        <div className="hidden">
+                          <DownloadButton
+                            orderData={convertOrderToOrderData(order)}
+                            variant="secondary"
+                            size="sm"
+                          />
+                        </div>
                       )}
                     </div>
                   )}
@@ -555,21 +603,21 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                 <div
                   key={date}
                   onClick={() => handleDateClick(date)}
-                  className="bg-white/5 hover:bg-white/[0.07] rounded-lg p-2.5 border border-white/10 hover:border-blue-500/30 cursor-pointer transition-colors group"
+                  className="bg-white/5 hover:bg-white/[0.07] rounded-2xl p-3.5 border border-white/10 hover:border-purple-500/30 cursor-pointer transition-all duration-200 group"
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="text-white font-semibold text-sm mb-0.5 leading-none">{formatDate(date)}</p>
-                      <p className="text-gray-400 text-[10px]">
-                        {orders.length} tx - {successfulOrders.length} completed
+                      <p className="text-white font-bold text-sm mb-1 leading-none">{formatDate(date)}</p>
+                      <p className="text-gray-400 text-[10px] font-medium">
+                        {orders.length} transactions • {successfulOrders.length} completed
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <p className="text-blue-400 font-bold text-sm leading-none">${totalUSDC.toFixed(2)}</p>
-                        <p className="text-gray-500 text-[10px]">volume</p>
+                        <p className="text-purple-400 font-bold text-sm leading-none">${totalUSDC.toFixed(2)}</p>
+                        <p className="text-gray-500 text-[10px] font-medium">total volume</p>
                       </div>
-                      <svg className="w-4 h-4 text-blue-400 group-hover:translate-x-0.5 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-purple-400 group-hover:translate-x-1 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>
