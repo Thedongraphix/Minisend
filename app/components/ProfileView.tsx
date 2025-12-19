@@ -204,11 +204,22 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     return order.account_number || 'Unknown';
   };
 
+  // Get timezone info based on currency
+  const getTimezoneInfo = (currency?: string) => {
+    switch (currency) {
+      case 'NGN':
+        return { timezone: 'Africa/Lagos', abbr: 'WAT' }; // West Africa Time (UTC+1)
+      case 'GHS':
+        return { timezone: 'Africa/Accra', abbr: 'GMT' }; // Ghana Mean Time (UTC+0)
+      case 'KES':
+      default:
+        return { timezone: 'Africa/Nairobi', abbr: 'EAT' }; // East Africa Time (UTC+3)
+    }
+  };
+
   const formatDate = (dateString: string, currency?: string) => {
     const date = new Date(dateString);
-
-    // Use appropriate timezone based on currency
-    const timezone = currency === 'NGN' ? 'Africa/Lagos' : 'Africa/Nairobi'; // WAT for NGN, EAT for KES
+    const { timezone } = getTimezoneInfo(currency);
 
     const today = new Date();
     const yesterday = new Date(today);
@@ -235,9 +246,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
 
   const formatTime = (dateString: string, currency?: string) => {
     const date = new Date(dateString);
-    // Use appropriate timezone based on currency
-    const timezone = currency === 'NGN' ? 'Africa/Lagos' : 'Africa/Nairobi'; // WAT for NGN, EAT for KES
-    const timezoneAbbr = currency === 'NGN' ? 'WAT' : 'EAT';
+    const { timezone, abbr } = getTimezoneInfo(currency);
 
     const timeStr = date.toLocaleTimeString('en-US', {
       hour: 'numeric',
@@ -246,7 +255,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
       timeZone: timezone
     });
 
-    return `${timeStr} ${timezoneAbbr}`;
+    return `${timeStr} ${abbr}`;
   };
 
   if (initialLoading) {
