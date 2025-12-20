@@ -49,24 +49,32 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
       // Use PayCrest for NGN, Pretium for KES and GHS
       if (toCurrency === 'NGN') {
         endpoint = `/api/paycrest/rates/USDC/1/${toCurrency}?network=base`;
+        console.log('[NGN Rate] Fetching from PayCrest:', endpoint);
       } else {
         endpoint = `/api/pretium/rates?currency=${toCurrency}`;
+        console.log('[Rate] Fetching from Pretium:', endpoint);
       }
 
       const response = await fetch(endpoint)
+      console.log('[Rate] Response status:', response.status);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
 
       const data = await response.json()
+      console.log('[Rate] Response data:', data);
 
       let fetchedRate: number | null = null;
 
       if (toCurrency === 'NGN') {
-        // Handle PayCrest response format
-        if (data.status === 'success' && data.data) {
-          fetchedRate = parseFloat(data.data);
+        // Handle PayCrest response format: { success: true, rate: 1650.50 }
+        console.log('[NGN Rate] Parsing PayCrest response:', { success: data.success, rate: data.rate });
+        if (data.success && data.rate) {
+          fetchedRate = typeof data.rate === 'number' ? data.rate : parseFloat(data.rate);
+          console.log('[NGN Rate] Parsed rate:', fetchedRate);
+        } else {
+          console.error('[NGN Rate] Failed to parse - missing success or rate field');
         }
       } else {
         // Handle Pretium response format
@@ -76,16 +84,19 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
       }
 
       if (fetchedRate && typeof fetchedRate === 'number') {
+        console.log('[Rate] Setting rate:', fetchedRate);
         setRate(fetchedRate)
         setRateError(null)
       } else {
         // API responded but with invalid data - use fallback
+        console.warn('[Rate] Invalid rate data, using fallback');
         const fallbackRate = toCurrency === "KES" ? 150.5 : toCurrency === "GHS" ? 16.5 : 1650.0
         setRate(fallbackRate)
         setRateError("Using estimated rate")
       }
-    } catch {
+    } catch (error) {
       // Network error or parsing error - use fallback
+      console.error('[Rate] Error fetching rate:', error);
       const fallbackRate = toCurrency === "KES" ? 150.5 : toCurrency === "GHS" ? 16.5 : 1650.0
       setRate(fallbackRate)
       setRateError("Using estimated rate")
