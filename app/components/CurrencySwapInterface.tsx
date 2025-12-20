@@ -17,7 +17,7 @@ interface CurrencySwapInterfaceProps {
 
 const CURRENCIES = [
   { code: "KES", name: "Kenyan Shilling", flag: "🇰🇪", symbol: "KSh" },
-  // { code: "NGN", name: "Nigerian Naira", flag: "🇳🇬", symbol: "₦" }, // Temporarily disabled
+  { code: "NGN", name: "Nigerian Naira", flag: "🇳🇬", symbol: "₦" },
   { code: "GHS", name: "Ghanaian Cedi", flag: "🇬🇭", symbol: "₵" },
 ]
 
@@ -44,8 +44,14 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
     setRateError(null)
 
     try {
-      // Use Pretium for all currencies (KES, GHS, NGN)
-      const endpoint = `/api/pretium/rates?currency=${toCurrency}`;
+      let endpoint: string;
+
+      // Use PayCrest for NGN, Pretium for KES and GHS
+      if (toCurrency === 'NGN') {
+        endpoint = `/api/paycrest/rates/USDC/1/${toCurrency}?network=base`;
+      } else {
+        endpoint = `/api/pretium/rates?currency=${toCurrency}`;
+      }
 
       const response = await fetch(endpoint)
 
@@ -55,12 +61,18 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
 
       const data = await response.json()
 
-      // Handle Pretium response format
       let fetchedRate: number | null = null;
 
-      if (data.success && data.rates?.quoted_rate) {
-        // Pretium response format
-        fetchedRate = data.rates.quoted_rate;
+      if (toCurrency === 'NGN') {
+        // Handle PayCrest response format
+        if (data.status === 'success' && data.data) {
+          fetchedRate = parseFloat(data.data);
+        }
+      } else {
+        // Handle Pretium response format
+        if (data.success && data.rates?.quoted_rate) {
+          fetchedRate = data.rates.quoted_rate;
+        }
       }
 
       if (fetchedRate && typeof fetchedRate === 'number') {
@@ -317,7 +329,7 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
                         <button
                           key={currency.code}
                           onClick={() => {
-                            setReceiveCurrency(currency.code as "KES" | "NGN")
+                            setReceiveCurrency(currency.code as "KES" | "NGN" | "GHS")
                             setShowCurrencyMenu(false)
                             setSendAmount("")
                             setReceiveAmount("")
