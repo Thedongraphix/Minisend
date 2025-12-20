@@ -67,6 +67,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate minimum amounts per currency (PayCrest provider requirements)
+    const minimumAmounts = {
+      'KES': 0.5,  // $0.50 minimum for KES
+      'NGN': 1.0,  // $1.00 minimum for NGN
+      'GHS': 0.5,  // $0.50 minimum for GHS
+    };
+
+    const minAmount = minimumAmounts[currency as keyof typeof minimumAmounts] || 1.0;
+    if (amountNum < minAmount) {
+      return NextResponse.json(
+        {
+          error: `Minimum amount for ${currency} is $${minAmount} USDC`,
+          details: `You tried to send $${amountNum}. Please increase your amount to at least $${minAmount}.`
+        },
+        { status: 400 }
+      );
+    }
+
 
     // Get rate - use provided rate or fetch from PayCrest
     let exchangeRate: number;

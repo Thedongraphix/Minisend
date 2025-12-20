@@ -78,20 +78,23 @@ export async function POST(request: NextRequest) {
     console.log('📡 PayCrest verify response status:', verifyResponse.status);
     
     if (!verifyResponse.ok) {
-      let errorData;
-      try {
-        errorData = await verifyResponse.json();
+      const contentType = verifyResponse.headers.get('content-type') || '';
+
+      if (contentType.includes('application/json')) {
+        const errorData = await verifyResponse.json();
         console.error('PayCrest verify error (JSON):', JSON.stringify(errorData, null, 2));
-      } catch {
+        return NextResponse.json(
+          { error: errorData.message || 'Account verification failed' },
+          { status: verifyResponse.status }
+        );
+      } else {
         const errorText = await verifyResponse.text();
         console.error('PayCrest verify error (text):', errorText);
-        throw new Error(`PayCrest API error ${verifyResponse.status}: ${errorText}`);
+        return NextResponse.json(
+          { error: `PayCrest API error ${verifyResponse.status}` },
+          { status: verifyResponse.status }
+        );
       }
-      
-      return NextResponse.json(
-        { error: errorData.message || 'Account verification failed' },
-        { status: verifyResponse.status }
-      );
     }
 
     const result = await verifyResponse.json();

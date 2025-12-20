@@ -191,12 +191,23 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
     }
   }
 
+  // Minimum amounts per currency (PayCrest requirements)
+  const minimumAmounts = {
+    'KES': 0.5,
+    'NGN': 1.0,
+    'GHS': 0.5,
+  };
+
+  const minAmount = receiveCurrency ? minimumAmounts[receiveCurrency] : 0;
+  const isBelowMinimum = receiveCurrency && Number.parseFloat(sendAmount) > 0 && Number.parseFloat(sendAmount) < minAmount;
+
   const isValid =
     sendAmount &&
     receiveAmount &&
     receiveCurrency &&
     Number.parseFloat(sendAmount) > 0 &&
-    Number.parseFloat(receiveAmount) > 0
+    Number.parseFloat(receiveAmount) > 0 &&
+    !isBelowMinimum
   const hasInsufficientBalance = Number.parseFloat(sendAmount) > usdcBalance
 
   return (
@@ -258,6 +269,7 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
             </div>
 
             {hasInsufficientBalance && <div className="mt-2 text-[#ff453a] text-xs">Insufficient balance</div>}
+            {isBelowMinimum && <div className="mt-2 text-amber-400 text-xs">Minimum ${minAmount} USDC required for {receiveCurrency}</div>}
           </div>
 
           {/* Swap Arrow */}
@@ -391,11 +403,13 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
         >
           {!receiveCurrency
             ? "Select currency"
-            : !isValid
-              ? "Enter amount"
-              : hasInsufficientBalance
-                ? "Insufficient balance"
-                : "Swap"}
+            : isBelowMinimum
+              ? `Minimum $${minAmount} USDC`
+              : !isValid
+                ? "Enter amount"
+                : hasInsufficientBalance
+                  ? "Insufficient balance"
+                  : "Swap"}
         </button>
       </div>
     </div>
