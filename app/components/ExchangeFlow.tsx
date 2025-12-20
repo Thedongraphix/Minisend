@@ -87,12 +87,12 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const [loadingInstitutions, setLoadingInstitutions] = useState(false);
   const [transactionCode, setTransactionCode] = useState<string>('');
 
-  // Fetch institutions (banks) for NGN from Pretium
+  // Fetch institutions (banks) for NGN from PayCrest
   const fetchInstitutions = async () => {
     setLoadingInstitutions(true);
     try {
-      // Use Pretium banks endpoint for NGN
-      const response = await fetch('/api/pretium/banks');
+      // Use PayCrest institutions endpoint for NGN
+      const response = await fetch('/api/paycrest/institutions/NGN');
       const data = await response.json();
 
       if (data.success) {
@@ -143,27 +143,28 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
     }
   }, [formData.accountName, swapData]);
 
-  // Verify account for NGN using Pretium
+  // Verify account for NGN using PayCrest
   const verifyAccount = useCallback(async (accountNumber: string, bankCode: string) => {
     if (!accountNumber || !bankCode) return;
 
     setVerifyingAccount(true);
     try {
-      const response = await fetch('/api/pretium/verify-account', {
+      const response = await fetch('/api/paycrest/verify-account', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           accountNumber,
-          bankCode
+          bankCode,
+          currency: 'NGN'
         }),
       });
 
       const data = await response.json();
 
-      if (data.success && data.verified) {
-        // Set the account name from Pretium's response
+      if (data.success && data.isValid) {
+        // Set the account name from PayCrest's response
         if (data.accountName) {
           setFormData(prev => ({ ...prev, accountName: data.accountName }));
         }
@@ -624,14 +625,11 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             </div>
           </div>
 
-          {(swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'NGN') ? (
+          {(swapData.currency === 'KES' || swapData.currency === 'GHS') ? (
             <PretiumPaymentProcessor
               amount={swapData.usdcAmount}
               phoneNumber={formData.phoneNumber}
               accountName={formData.accountName}
-              accountNumber={formData.accountNumber}
-              bankCode={formData.bankCode}
-              bankName={swapData.currency === 'NGN' && formData.bankCode ? institutions.find(inst => inst.code === formData.bankCode)?.name : undefined}
               returnAddress={walletAddress || ''}
               rate={swapData.rate}
               currency={swapData.currency}
@@ -679,7 +677,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                 }, context || undefined);
               }}
             />
-          ) : (
+          ) : swapData.currency === 'NGN' ? (
             <PaymentProcessor
               amount={swapData.usdcAmount}
               phoneNumber={formData.phoneNumber}
@@ -731,7 +729,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                 }, context || undefined);
               }}
             />
-          )}
+          ) : null}
 
           <button
             onClick={() => setStep('details')}
@@ -755,16 +753,16 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             Your {swapData.currency} has been sent to {(swapData.currency === 'KES' || swapData.currency === 'GHS') ? formData.phoneNumber : formData.accountName}
           </p>
 
-          {/* Modern Receipt Component - Direct DB Integration */}
-          {transactionCode ? (
+          {/* Modern Receipt Component - Direct DB Integration (Pretium only) */}
+          {(swapData.currency === 'KES' || swapData.currency === 'GHS') && transactionCode ? (
             <div className="pt-4">
               <PretiumReceipt transactionCode={transactionCode} />
             </div>
-          ) : (
+          ) : swapData.currency === 'NGN' ? (
             <div className="pt-4 text-sm text-gray-400">
-              Waiting for transaction code...
+              Transaction completed successfully. View details in your profile.
             </div>
-          )}
+          ) : null}
           
           <div className="space-y-4">
             
