@@ -160,7 +160,7 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
       )}
 
       {/* Success Receipt */}
-      {isComplete && (
+      {isComplete && orderData && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
