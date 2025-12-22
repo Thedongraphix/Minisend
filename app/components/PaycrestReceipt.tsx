@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { useOpenUrl } from '@coinbase/onchainkit/minikit';
 
 interface PaycrestReceiptProps {
   orderId: string;
@@ -59,8 +60,25 @@ const getProgress = (status: string) => {
 
 export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
   const [orderData, setOrderData] = useState<OrderStatus | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isInMiniApp, setIsInMiniApp] = useState(false);
   const pollCountRef = useRef(0);
   const maxPolls = 30;
+  const openUrl = useOpenUrl();
+
+  // Detect miniapp environment
+  useEffect(() => {
+    const checkMiniAppEnvironment = async () => {
+      try {
+        const { sdk } = await import('@farcaster/miniapp-sdk');
+        const inMiniApp = await sdk.isInMiniApp();
+        setIsInMiniApp(inMiniApp);
+      } catch {
+        setIsInMiniApp(false);
+      }
+    };
+    checkMiniAppEnvironment();
+  }, []);
 
   useEffect(() => {
     if (!orderId) {
@@ -122,6 +140,40 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [orderId]);
+
+  // Download receipt PDF
+  const downloadReceipt = async () => {
+    setIsDownloading(true);
+
+    try {
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const receiptUrl = `${baseUrl}/api/paycrest/receipt/${orderId}`;
+
+      if (isInMiniApp) {
+        await openUrl(receiptUrl);
+      } else {
+        const response = await fetch(receiptUrl);
+
+        if (!response.ok) {
+          throw new Error('Failed to generate receipt');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `minisend-receipt-${orderId.slice(0, 8)}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Error downloading receipt:', error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const currentStatus = orderData?.status || 'initiated';
   const progress = getProgress(currentStatus);
@@ -233,6 +285,27 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
               </div>
             )}
           </div>
+
+          {/* Download Receipt Button */}
+          <button
+            onClick={downloadReceipt}
+            disabled={isDownloading}
+            className="w-full bg-[#5e5ce6] hover:bg-[#4e4cd6] disabled:bg-[#5e5ce6]/50 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center space-x-2"
+          >
+            {isDownloading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span className="text-sm">Generating...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="text-sm">{isInMiniApp ? 'View Receipt' : 'Download Receipt'}</span>
+              </>
+            )}
+          </button>
         </motion.div>
       )}
 
