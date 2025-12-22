@@ -754,10 +754,15 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
       {step === 'success' && swapData && (
         <div className="text-center space-y-6">
           <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold text-white">Payment Successful!</h2>
+          <h2 className="text-2xl font-bold text-white">
+            {swapData.currency === 'NGN' ? 'Delivering Your NGN' : 'Payment Successful!'}
+          </h2>
 
           <p className="text-gray-300 text-sm">
-            Your {swapData.currency} has been sent to {(swapData.currency === 'KES' || swapData.currency === 'GHS') ? formData.phoneNumber : formData.accountName}
+            {swapData.currency === 'NGN'
+              ? `Sending ₦${parseFloat(swapData.localAmount).toLocaleString()} to ${formData.accountName}...`
+              : `Your ${swapData.currency} has been sent to ${(swapData.currency === 'KES' || swapData.currency === 'GHS') ? formData.phoneNumber : formData.accountName}`
+            }
           </p>
 
           {/* Modern Receipt Component - Real-time status updates */}
