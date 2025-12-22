@@ -55,13 +55,11 @@ const getProgress = (status: string) => {
 
 export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
   const [orderData, setOrderData] = useState<OrderStatus | null>(null);
-  const [isChecking, setIsChecking] = useState(true);
   const pollCountRef = useRef(0);
   const maxPolls = 30;
 
   useEffect(() => {
     if (!orderId) {
-      setIsChecking(false);
       return;
     }
 
@@ -70,7 +68,6 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
 
     const checkOrderStatus = async () => {
       if (!isMounted || pollCountRef.current >= maxPolls) {
-        setIsChecking(false);
         return;
       }
 
@@ -93,7 +90,6 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
 
           // Stop polling if complete or failed
           if (statusData.ready || ['refunded', 'expired', 'failed'].includes(order.status)) {
-            setIsChecking(false);
             return;
           }
         }
@@ -103,12 +99,10 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
         const nextInterval = pollCountRef.current < 10 ? 3000 : 4000;
         timeoutId = setTimeout(checkOrderStatus, nextInterval);
 
-      } catch (err) {
+      } catch {
         pollCountRef.current++;
         if (pollCountRef.current < maxPolls) {
           timeoutId = setTimeout(checkOrderStatus, 3000);
-        } else {
-          setIsChecking(false);
         }
       }
     };
