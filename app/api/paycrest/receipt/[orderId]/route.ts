@@ -62,8 +62,7 @@ export async function GET(
       fee: order.sender_fee || 0,
       date,
       walletAddress: order.wallet_address,
-      txHash: order.transaction_hash || '',
-      bankName: order.bank_name
+      txHash: order.transaction_hash || ''
     });
 
     // Convert blob to buffer for Next.js response
