@@ -65,12 +65,19 @@ export async function GET(
     }
 
     // Log the order data from database
-    // Format date
-    const date = new Date(order.created_at).toLocaleDateString('en-US', {
+    // Format date with time
+    const dateObj = new Date(order.created_at);
+    const date = dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
+    const time = dateObj.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+    const dateTime = `${date} at ${time}`;
 
     // Generate modern receipt
     const pdfBlob = await generateModernReceipt({
@@ -86,7 +93,7 @@ export async function GET(
       usdcAmount: order.amount_in_usdc,
       exchangeRate: exchangeRate,
       fee: order.sender_fee || 0,
-      date,
+      date: dateTime,
       walletAddress: order.wallet_address,
       txHash: transactionHash
     });

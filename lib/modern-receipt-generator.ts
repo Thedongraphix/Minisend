@@ -9,6 +9,7 @@ interface ReceiptData {
   tillNumber?: string;
   paybillNumber?: string;
   paybillAccount?: string;
+  bankName?: string;
   amount: number;
   currency: string;
   usdcAmount: number;
@@ -46,10 +47,17 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   pdf.text('Minisend', pageWidth / 2, y, { align: 'center' });
   y += 8;
 
+  // Dynamic receipt title based on currency
+  const receiptTitle = data.currency === 'KES'
+    ? 'USDC to M-Pesa Receipt'
+    : data.currency === 'NGN'
+    ? 'USDC to Bank Transfer Receipt'
+    : 'USDC to Mobile Money Receipt';
+
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(9);
   pdf.setTextColor(...gray600);
-  pdf.text('USDC to M-Pesa Receipt', pageWidth / 2, y, { align: 'center' });
+  pdf.text(receiptTitle, pageWidth / 2, y, { align: 'center' });
   y += 15;
 
   // Receipt number and date - Bold
@@ -82,7 +90,13 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
 
   // Payment method - Bold
   let paymentMethod = '';
-  if (data.tillNumber) {
+  if (data.bankName) {
+    // For NGN bank transfers
+    paymentMethod = data.bankName;
+    if (data.paybillAccount) {
+      paymentMethod += ` - ${data.paybillAccount}`;
+    }
+  } else if (data.tillNumber) {
     paymentMethod = `Till ${data.tillNumber}`;
   } else if (data.phoneNumber) {
     paymentMethod = data.phoneNumber;
@@ -156,7 +170,15 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   row('Total received', `${data.currency} ${data.amount.toLocaleString()}`, true); // Highlight total
 
   y += 6;
-  row('M-Pesa code', data.receiptNumber, true); // Highlight M-Pesa code
+
+  // Dynamic reference code label based on currency
+  const referenceLabel = data.currency === 'KES'
+    ? 'M-Pesa code'
+    : data.currency === 'NGN'
+    ? 'Reference'
+    : 'Transaction ref';
+
+  row(referenceLabel, data.receiptNumber, true); // Highlight reference code
   row('Transaction ID', `${data.transactionCode.slice(0, 16)}...`);
 
   y += 12;
@@ -165,7 +187,7 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
   pdf.setTextColor(...gray600);
-  pdf.text('Minisend - USDC to M-Pesa', pageWidth / 2, y, { align: 'center' });
+  pdf.text('Minisend - Fast USDC off-ramp', pageWidth / 2, y, { align: 'center' });
   y += 4;
   pdf.text('app.minisend.xyz', pageWidth / 2, y, { align: 'center' });
 

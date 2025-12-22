@@ -39,12 +39,19 @@ export async function GET(
       );
     }
 
-    // Format date
-    const date = new Date(order.created_at).toLocaleDateString('en-US', {
+    // Format date with time
+    const dateObj = new Date(order.created_at);
+    const date = dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
+    const time = dateObj.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+    const dateTime = `${date} at ${time}`;
 
     // Generate modern receipt
     const pdfBlob = await generateModernReceipt({
@@ -55,12 +62,13 @@ export async function GET(
       tillNumber: undefined,
       paybillNumber: undefined,
       paybillAccount: order.account_number,
+      bankName: order.bank_name,
       amount: order.amount_in_local,
       currency: order.local_currency,
       usdcAmount: order.amount_in_usdc,
       exchangeRate: order.rate || 0,
       fee: order.sender_fee || 0,
-      date,
+      date: dateTime,
       walletAddress: order.wallet_address,
       txHash: order.transaction_hash || ''
     });
