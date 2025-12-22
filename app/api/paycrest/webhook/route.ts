@@ -75,7 +75,10 @@ export async function POST(request: NextRequest) {
 
     // Parse the webhook payload
     const webhookEvent: PaycrestWebhookEvent = JSON.parse(rawBody);
-    
+
+    // Log the FULL raw payload for debugging
+    console.log('📨 Full webhook payload:', JSON.stringify(webhookEvent, null, 2));
+
     console.log('📨 Webhook event received:', {
       event: webhookEvent.event,
       orderId: webhookEvent.orderId,
@@ -105,11 +108,11 @@ export async function POST(request: NextRequest) {
 
 async function handleWebhookEvent(event: PaycrestWebhookEvent) {
   const { orderId, status: eventType, data } = event;
-  
+
   try {
     // Get the order from database
     const dbOrder = await DatabaseService.getOrderByPaycrestId(orderId);
-    
+
     if (!dbOrder) {
       console.log(`⚠️ Order not found in database - this may be from another system`);
       return;
@@ -120,7 +123,7 @@ async function handleWebhookEvent(event: PaycrestWebhookEvent) {
     // Map PayCrest webhook events to our order statuses
     let ourStatus = dbOrder.status;
     let shouldCreateSettlement = false;
-    
+
     // Map PayCrest webhook events to our order statuses (per apiguide.md)
     switch (event.event) {
       case 'order.initiated':
