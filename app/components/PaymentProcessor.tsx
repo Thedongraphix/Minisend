@@ -18,7 +18,7 @@ interface PaymentProcessorProps {
   currency: 'KES' | 'NGN' | 'GHS';
   returnAddress: string;
   rate?: number | null;
-  onSuccess: () => void;
+  onSuccess: (orderId?: string) => void;
   onError: (error: string) => void;
 }
 
@@ -64,66 +64,8 @@ export function PaymentProcessor({
   // USDC contract on Base
   const USDC_CONTRACT = USDC_CONTRACTS.mainnet;
 
-  // Optimized polling that works alongside webhooks for maximum speed
-  const startPolling = useCallback((orderId: string) => {
-    if (pollingStartedRef.current) {
-      return;
-    }
-    pollingStartedRef.current = true;
-
-    let attempts = 0;
-    const maxAttempts = 60;
-
-    const poll = async () => {
-      try {
-        const response = await fetch(`/api/paycrest/status/${orderId}`);
-
-        if (!response.ok) {
-          attempts++;
-          if (attempts < maxAttempts) {
-            setTimeout(poll, 5000);
-          }
-          return;
-        }
-
-        const result = await response.json();
-        const order = result.order;
-
-        switch (order?.status) {
-          case 'pending':
-            break;
-          case 'validated':
-          case 'settled':
-            return;
-        }
-
-        if (order?.status === 'refunded') {
-          setStatus('error');
-          onError('Payment was refunded. Please try again.');
-          return;
-        }
-
-        if (order?.status === 'expired') {
-          setStatus('error');
-          onError('Payment expired. Please try again.');
-          return;
-        }
-
-        attempts++;
-        if (attempts < maxAttempts) {
-          const pollInterval = attempts < 20 ? 3000 : 10000;
-          setTimeout(poll, pollInterval);
-        }
-      } catch {
-        attempts++;
-        if (attempts < maxAttempts) {
-          setTimeout(poll, 5000);
-        }
-      }
-    };
-
-    setTimeout(poll, 5000);
-  }, [onError]);
+  // Polling removed - status updates now handled by PaycrestReceipt component
+  // which polls frequently and gets near-instant updates from webhooks
 
   // Create PayCrest order
   const createPaycrestOrder = useCallback(async () => {
@@ -238,18 +180,15 @@ export function PaymentProcessor({
 
         setStatus('success');
 
-        if (paycrestOrder?.id) {
-          startPolling(paycrestOrder.id);
-        }
-
-        setTimeout(() => onSuccess(), 2000);
+        // Pass order ID to onSuccess so the receipt component can track status
+        setTimeout(() => onSuccess(paycrestOrder?.id), 2000);
         break;
       case 'error':
         setStatus('error');
         onError('Transaction failed');
         break;
     }
-  }, [paycrestOrder, returnAddress, currency, startPolling, onError, onSuccess]);
+  }, [paycrestOrder, onError, onSuccess]);
 
   // Swipe slider handlers
   const handleSwipeStart = useCallback(() => {

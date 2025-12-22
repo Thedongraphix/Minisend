@@ -11,6 +11,7 @@ import { Button } from './BaseComponents';
 import Image from 'next/image';
 import { trackOffRampEvent, trackWalletEvent } from '@/lib/analytics';
 import { PretiumReceipt } from './PretiumReceipt';
+import { PaycrestReceipt } from './PaycrestReceipt';
 import { CurrencySwapInterface } from './CurrencySwapInterface';
 import { SavedRecipients } from './SavedRecipients';
 import { saveRecipient, SavedRecipient } from '@/lib/recipient-storage';
@@ -86,6 +87,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const [institutions, setInstitutions] = useState<{code: string, name: string, type: string}[]>([]);
   const [loadingInstitutions, setLoadingInstitutions] = useState(false);
   const [transactionCode, setTransactionCode] = useState<string>('');
+  const [paycrestOrderId, setPaycrestOrderId] = useState<string>('');
 
   // Fetch institutions (banks) for NGN from PayCrest
   const fetchInstitutions = async () => {
@@ -687,7 +689,12 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
               currency={swapData.currency}
               returnAddress={walletAddress || ''}
               rate={swapData.rate}
-              onSuccess={() => {
+              onSuccess={(orderId) => {
+                // Store PayCrest order ID for receipt tracking
+                if (orderId) {
+                  setPaycrestOrderId(orderId);
+                }
+
                 trackOffRampEvent('payment_completed', {
                   currency: swapData.currency,
                   amount: parseFloat(swapData.localAmount),
@@ -753,14 +760,14 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             Your {swapData.currency} has been sent to {(swapData.currency === 'KES' || swapData.currency === 'GHS') ? formData.phoneNumber : formData.accountName}
           </p>
 
-          {/* Modern Receipt Component - Direct DB Integration (Pretium only) */}
+          {/* Modern Receipt Component - Real-time status updates */}
           {(swapData.currency === 'KES' || swapData.currency === 'GHS') && transactionCode ? (
             <div className="pt-4">
               <PretiumReceipt transactionCode={transactionCode} />
             </div>
-          ) : swapData.currency === 'NGN' ? (
-            <div className="pt-4 text-sm text-gray-400">
-              Transaction completed successfully. View details in your profile.
+          ) : swapData.currency === 'NGN' && paycrestOrderId ? (
+            <div className="pt-4">
+              <PaycrestReceipt orderId={paycrestOrderId} />
             </div>
           ) : null}
           
