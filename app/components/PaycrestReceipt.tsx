@@ -24,8 +24,9 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
   const [orderData, setOrderData] = useState<OrderStatus | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
   const pollCountRef = useRef(0);
-  const maxPolls = 40; // 40 attempts at 2-3s intervals = ~2 minutes max
+  const maxPolls = 30; // 30 attempts at 3-4s intervals = ~2 minutes max
 
   useEffect(() => {
     if (!orderId) {
@@ -76,22 +77,43 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
 
         setOrderData(statusData);
 
+        // Calculate progress based on status
+        let currentProgress = 0;
+        if (order.status === 'pending') {
+          currentProgress = 30; // Waiting for provider
+        } else if (order.status === 'processing') {
+          currentProgress = 60; // Provider assigned, sending funds
+        } else if (order.status === 'validated' || order.status === 'settled') {
+          currentProgress = 100; // Complete
+        } else {
+          // Default progress based on time elapsed
+          currentProgress = Math.min(20 + (pollCountRef.current * 2), 90);
+        }
+        setProgress(currentProgress);
+
         // If payment is delivered (validated or settled), stop polling
         if (statusData.ready) {
+          setProgress(100);
           setIsChecking(false);
           return;
         }
 
         // If payment failed, show error
         if (['refunded', 'expired', 'failed'].includes(order.status)) {
-          setError('Payment could not be completed');
+          if (order.status === 'refunded') {
+            setError('Payment was refunded - no provider could fulfill the order');
+          } else if (order.status === 'expired') {
+            setError('Payment expired - please try again');
+          } else {
+            setError('Payment could not be completed');
+          }
           setIsChecking(false);
           return;
         }
 
-        // Continue polling with adaptive intervals
+        // Continue polling with slower intervals to avoid rate limiting
         pollCountRef.current++;
-        const nextInterval = pollCountRef.current < 15 ? 2000 : 3000; // Fast for first 30s, then slower
+        const nextInterval = pollCountRef.current < 10 ? 3000 : 4000; // Slower polling to avoid 429 errors
         timeoutId = setTimeout(checkOrderStatus, nextInterval);
 
       } catch (err) {
@@ -128,13 +150,13 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-2xl p-6"
+          className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-xl p-4"
         >
-          <div className="flex flex-col items-center space-y-4">
-            <div className="w-12 h-12 border-4 border-[#3a3a3c] border-t-[#0066FF] rounded-full animate-spin"></div>
-            <div className="text-center space-y-2">
-              <p className="text-white font-medium">Verifying Payment Status</p>
-              <p className="text-[#8e8e93] text-sm">This may take a moment...</p>
+          <div className="flex flex-col items-center space-y-3">
+            <div className="w-10 h-10 border-4 border-[#3a3a3c] border-t-[#5e5ce6] rounded-full animate-spin"></div>
+            <div className="text-center space-y-1">
+              <p className="text-white font-medium text-sm">Verifying Payment</p>
+              <p className="text-[#8e8e93] text-xs">Please wait...</p>
             </div>
           </div>
         </motion.div>
@@ -148,15 +170,18 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-[#1c1c1e] border border-red-500/30 rounded-2xl p-6"
+        className="bg-[#1c1c1e] border border-red-500/30 rounded-xl p-4"
       >
-        <div className="flex flex-col items-center space-y-3">
-          <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex items-center space-y-0 space-x-3">
+          <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-red-400 text-sm text-center">{error}</p>
+          <div className="flex-1">
+            <p className="text-red-400 text-sm font-medium">Payment Failed</p>
+            <p className="text-[#8e8e93] text-xs mt-0.5">{error}</p>
+          </div>
         </div>
       </motion.div>
     );
@@ -170,58 +195,53 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
           key="processing"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-2xl p-6 space-y-4"
+          className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-xl p-4 space-y-3"
         >
           {/* Status Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-[#3a3a3c]">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-[#0066FF]/20 rounded-full flex items-center justify-center">
-                <div className="w-6 h-6 border-3 border-[#0066FF] border-t-transparent rounded-full animate-spin"></div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 bg-[#5e5ce6]/20 rounded-full flex items-center justify-center">
+                <div className="w-5 h-5 border-3 border-[#5e5ce6] border-t-transparent rounded-full animate-spin"></div>
               </div>
               <div>
-                <h3 className="text-white font-semibold">Processing Payment</h3>
+                <h3 className="text-white font-semibold text-sm">Processing Payment</h3>
                 <p className="text-[#8e8e93] text-xs">
-                  {orderData.status === 'pending' ? 'Awaiting provider assignment' :
-                   orderData.status === 'processing' ? 'Sending funds to recipient' :
-                   'Processing transaction'}
+                  {orderData.status === 'pending' ? 'Finding provider' :
+                   orderData.status === 'processing' ? 'Sending to bank' :
+                   'Processing'}
                 </p>
               </div>
             </div>
+            <span className="text-[#5e5ce6] font-bold text-sm">{progress}%</span>
           </div>
 
-          {/* Payment Details */}
-          <div className="space-y-3">
+          {/* Progress Bar */}
+          <div className="w-full bg-[#2c2c2e] rounded-full h-2 overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-[#5e5ce6] to-[#7b79ea] rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            />
+          </div>
+
+          {/* Compact Payment Details */}
+          <div className="pt-1 space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-[#8e8e93] text-sm">Amount</span>
-              <span className="text-white font-semibold">
+              <span className="text-[#8e8e93] text-xs">Amount</span>
+              <span className="text-white font-semibold text-sm">
                 ₦{parseFloat(orderData.amount || '0').toLocaleString()}
               </span>
             </div>
 
             {orderData.recipientName && (
               <div className="flex justify-between items-center">
-                <span className="text-[#8e8e93] text-sm">Recipient</span>
-                <span className="text-white font-medium text-sm truncate max-w-[200px]">
+                <span className="text-[#8e8e93] text-xs">To</span>
+                <span className="text-white font-medium text-xs truncate max-w-[180px]">
                   {orderData.recipientName}
                 </span>
               </div>
             )}
-
-            {orderData.recipientAccount && (
-              <div className="flex justify-between items-center">
-                <span className="text-[#8e8e93] text-sm">Account</span>
-                <span className="text-white font-mono text-sm">
-                  {orderData.recipientAccount}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Animated Status Indicator */}
-          <div className="pt-3 flex items-center justify-center space-x-2">
-            <div className="w-2 h-2 bg-[#0066FF] rounded-full animate-pulse"></div>
-            <div className="w-2 h-2 bg-[#0066FF] rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-            <div className="w-2 h-2 bg-[#0066FF] rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
           </div>
         </motion.div>
       </AnimatePresence>
@@ -236,36 +256,36 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
           key="success"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-[#1c1c1e] border border-green-500/30 rounded-2xl p-6 space-y-6"
+          className="bg-[#1c1c1e] border border-green-500/30 rounded-xl p-4 space-y-3"
         >
           {/* Success Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-[#3a3a3c]">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+          <div className="flex items-center justify-between pb-3 border-b border-[#3a3a3c]">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <h3 className="text-white font-semibold">Payment Delivered</h3>
+                <h3 className="text-white font-semibold text-sm">Payment Delivered</h3>
                 <p className="text-green-400 text-xs">Funds sent successfully</p>
               </div>
             </div>
           </div>
 
           {/* Receipt Details */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-[#8e8e93] text-sm">Amount Sent</span>
-              <span className="text-white font-bold text-lg">
+              <span className="text-[#8e8e93] text-xs">Amount Sent</span>
+              <span className="text-white font-bold text-base">
                 ₦{parseFloat(orderData.amount || '0').toLocaleString()}
               </span>
             </div>
 
             {orderData.rate && (
               <div className="flex justify-between items-center">
-                <span className="text-[#8e8e93] text-sm">Exchange Rate</span>
-                <span className="text-white font-medium text-sm">
+                <span className="text-[#8e8e93] text-xs">Exchange Rate</span>
+                <span className="text-white font-medium text-xs">
                   1 USDC = ₦{parseFloat(orderData.rate).toFixed(2)}
                 </span>
               </div>
@@ -275,8 +295,8 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
 
             {orderData.recipientName && (
               <div className="flex justify-between items-center">
-                <span className="text-[#8e8e93] text-sm">Recipient</span>
-                <span className="text-white font-medium text-sm truncate max-w-[200px]">
+                <span className="text-[#8e8e93] text-xs">Recipient</span>
+                <span className="text-white font-medium text-xs truncate max-w-[180px]">
                   {orderData.recipientName}
                 </span>
               </div>
@@ -284,8 +304,8 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
 
             {orderData.recipientAccount && (
               <div className="flex justify-between items-center">
-                <span className="text-[#8e8e93] text-sm">Account Number</span>
-                <span className="text-white font-mono text-sm">
+                <span className="text-[#8e8e93] text-xs">Account</span>
+                <span className="text-white font-mono text-xs">
                   {orderData.recipientAccount}
                 </span>
               </div>
@@ -293,31 +313,21 @@ export function PaycrestReceipt({ orderId }: PaycrestReceiptProps) {
 
             {orderData.bankName && (
               <div className="flex justify-between items-center">
-                <span className="text-[#8e8e93] text-sm">Bank</span>
-                <span className="text-white font-medium text-sm">
+                <span className="text-[#8e8e93] text-xs">Bank</span>
+                <span className="text-white font-medium text-xs truncate max-w-[180px]">
                   {orderData.bankName}
                 </span>
               </div>
             )}
 
             {orderData.reference && (
-              <div className="flex flex-col space-y-1 pt-2">
-                <span className="text-[#8e8e93] text-xs">Reference ID</span>
-                <span className="text-[#8e8e93] font-mono text-xs break-all">
+              <div className="flex justify-between items-center pt-1">
+                <span className="text-[#8e8e93] text-[10px]">Ref</span>
+                <span className="text-[#8e8e93] font-mono text-[10px] truncate max-w-[200px]">
                   {orderData.reference}
                 </span>
               </div>
             )}
-          </div>
-
-          {/* Success Footer */}
-          <div className="pt-3 text-center">
-            <div className="inline-flex items-center space-x-2 bg-green-500/10 px-4 py-2 rounded-lg">
-              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-green-400 text-sm font-medium">Transaction Complete</span>
-            </div>
           </div>
         </motion.div>
       </AnimatePresence>
