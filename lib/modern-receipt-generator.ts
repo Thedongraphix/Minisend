@@ -181,18 +181,13 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   row(referenceLabel, data.receiptNumber, true); // Highlight reference code
   row('Transaction ID', `${data.transactionCode.slice(0, 16)}...`);
 
-  // Add bank name for NGN receipts
-  if (data.currency === 'NGN' && data.bankName) {
-    row('Bank', data.bankName);
-  }
-
   y += 12;
 
   // Footer - Bold
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
   pdf.setTextColor(...gray600);
-  pdf.text('Minisend - Fast USDC off-ramp', pageWidth / 2, y, { align: 'center' });
+  pdf.text('Minisend - USDC to local currency', pageWidth / 2, y, { align: 'center' });
   y += 4;
   pdf.text('app.minisend.xyz', pageWidth / 2, y, { align: 'center' });
 
