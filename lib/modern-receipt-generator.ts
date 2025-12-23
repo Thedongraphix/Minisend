@@ -181,6 +181,11 @@ export async function generateModernReceipt(data: ReceiptData): Promise<Blob> {
   row(referenceLabel, data.receiptNumber, true); // Highlight reference code
   row('Transaction ID', `${data.transactionCode.slice(0, 16)}...`);
 
+  // Add bank name for NGN receipts
+  if (data.currency === 'NGN' && data.bankName) {
+    row('Bank', data.bankName);
+  }
+
   y += 12;
 
   // Footer - Bold
