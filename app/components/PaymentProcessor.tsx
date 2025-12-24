@@ -88,9 +88,18 @@ export function PaymentProcessor({
           provider: currency === 'KES' ? 'M-Pesa' : 'Bank Transfer',
           returnAddress,
           ...(rate && { rate }),
-          // Include FID only if user is on Farcaster (for notifications)
-          // Web users won't have this field, ensuring backward compatibility
-          ...(context?.user?.fid && { fid: context.user.fid })
+          // Include FID and user profile if user is on Farcaster
+          // Web users won't have these fields, ensuring backward compatibility
+          ...(context?.user?.fid && {
+            fid: context.user.fid,
+            farcasterUsername: context.user.username,
+            farcasterDisplayName: context.user.displayName,
+            farcasterPfpUrl: context.user.pfpUrl,
+            // Client tracking: which app they're using (Base app, Warpcast, etc.)
+            clientFid: context.client?.clientFid,
+            platformType: context.client?.platformType,
+            locationType: context.location?.type
+          })
         }),
       });
 

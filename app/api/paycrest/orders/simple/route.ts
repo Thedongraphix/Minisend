@@ -32,7 +32,13 @@ export async function POST(request: NextRequest) {
       currency,
       returnAddress,
       rate, // Accept rate from client if provided
-      fid // Farcaster ID for notifications
+      fid, // Farcaster ID for notifications
+      farcasterUsername, // Farcaster username for profile tracking
+      farcasterDisplayName, // Farcaster display name for profile tracking
+      farcasterPfpUrl, // Farcaster profile picture URL for profile tracking
+      clientFid, // Client FID (9152 for Warpcast, different for Base app, etc.)
+      platformType, // 'web' or 'mobile'
+      locationType // 'launcher', 'cast_embed', 'notification', etc.
     } = body;
 
     // Validate required fields
@@ -358,7 +364,26 @@ export async function POST(request: NextRequest) {
       } else {
         console.log('👤 Found existing user:', user.id)
       }
-      
+
+      // 📝 Save Farcaster user profile if FID is provided (for leaderboard and analytics)
+      // This allows us to display usernames and avatars even for users who haven't explicitly
+      // saved their profile yet. Web users won't have FID, so this is safely skipped.
+      if (fid && returnAddress) {
+        try {
+          await DatabaseService.saveFarcasterProfile({
+            walletAddress: returnAddress,
+            fid,
+            username: farcasterUsername,
+            displayName: farcasterDisplayName,
+            pfpUrl: farcasterPfpUrl
+          });
+          console.log('✅ Farcaster profile saved/updated for FID:', fid);
+        } catch (profileError) {
+          console.error('⚠️ Failed to save Farcaster profile (non-blocking):', profileError);
+          // Don't fail the order if profile save fails
+        }
+      }
+
       // Create order record from Paycrest response
       await DatabaseService.createOrderFromPaycrest(order, {
         amount: amountNum.toString(),
@@ -376,7 +401,10 @@ export async function POST(request: NextRequest) {
           : 'BANK_TRANSFER',
         localAmount: localAmount.toString(),
         institutionCode: institutionCode,
-        fid: fid // Save FID for notifications
+        fid: fid, // Save FID for notifications
+        clientFid: clientFid, // Save client FID for tracking
+        platformType: platformType, // Save platform type (web/mobile)
+        locationType: locationType // Save where they opened the app from
       })
 
       console.log('📊 Order saved to database successfully')
