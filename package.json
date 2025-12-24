@@ -27,7 +27,9 @@
     "health-check": "node -e \"require('./lib/supabase/config').checkHealth().then(console.log)\"",
     "test-db-quick": "node scripts/quick-db-test.js",
     "test-db-full": "node test-database-integration.js",
-    "test-notification": "tsx scripts/test-notifications.ts"
+    "test-notification": "tsx scripts/test-notifications.ts",
+    "inspect-fid": "tsx scripts/inspect-fid-tracking.ts",
+    "backfill-farcaster": "tsx scripts/backfill-farcaster-profiles.ts"
   },
   "dependencies": {
     "@coinbase/onchainkit": "^0.38.19",
