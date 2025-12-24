@@ -257,6 +257,9 @@ interface RequestData {
   localAmount?: string
   institutionCode?: string
   fid?: number // Farcaster ID for push notifications (optional, only from Farcaster users)
+  clientFid?: number // Client FID (9152 for Warpcast, etc.) - for tracking which app they're using
+  platformType?: string // 'web' or 'mobile' - from context.client.platformType
+  locationType?: string // 'launcher', 'cast_embed', etc. - from context.location.type
 }
 
 // Database operations
@@ -282,6 +285,30 @@ export class DatabaseService {
 
     if (error && error.code !== 'PGRST116') throw error
     return data
+  }
+
+  // Farcaster user profile management
+  static async saveFarcasterProfile(profileData: {
+    walletAddress: string
+    fid: number
+    username?: string
+    displayName?: string
+    pfpUrl?: string
+  }): Promise<void> {
+    const { error } = await supabaseAdmin
+      .from('farcaster_users')
+      .upsert({
+        wallet_address: profileData.walletAddress,
+        fid: profileData.fid,
+        username: profileData.username,
+        display_name: profileData.displayName,
+        pfp_url: profileData.pfpUrl
+      }, {
+        onConflict: 'wallet_address',
+        ignoreDuplicates: false
+      })
+
+    if (error) throw error
   }
 
   // Orders - Enhanced for Paycrest compatibility
@@ -323,7 +350,10 @@ export class DatabaseService {
       institution_code: requestData.institutionCode || order.recipient?.institution || (requestData.currency === 'KES' ? 'SAFAKEPC' : 'GTBINGLA'),
       recipient_data: order.recipient,
       memo: order.recipient?.memo,
-      fid: requestData.fid
+      fid: requestData.fid,
+      client_fid: requestData.clientFid,
+      platform_type: requestData.platformType,
+      location_type: requestData.locationType
     }
 
     const { data, error } = await supabaseAdmin
