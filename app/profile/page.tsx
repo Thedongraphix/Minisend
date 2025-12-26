@@ -138,7 +138,7 @@ export default function ProfilePage() {
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-medium text-white mb-2">Connect Wallet</h1>
-            <p className="text-sm text-gray-400">Connect your wallet to view your transaction history and wrapped stats</p>
+            <p className="text-sm text-gray-400">Connect your wallet to view your wrapped stats</p>
           </div>
           <div className="flex justify-center">
             <ConnectWidget />
