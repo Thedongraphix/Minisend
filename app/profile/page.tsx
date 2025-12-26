@@ -132,6 +132,53 @@ export default function ProfilePage() {
     }
   };
 
+  const handleShare = async () => {
+    if (!cardRef.current || !stats) return;
+
+    setIsDownloading(true);
+    try {
+      // Generate image
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const dataUrl = await toPng(cardRef.current, {
+        quality: 1,
+        pixelRatio: 2,
+        backgroundColor: '#0a0a0a',
+        cacheBust: true,
+        skipFonts: false,
+      });
+
+      // Convert data URL to blob
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], 'minisend-wrapped-2025.png', { type: 'image/png' });
+
+      const shareText = `Just checked my Minisend 2025 Wrapped! 🎉\n\n💸 Sent ${formatNumber(stats.totalUsdcSent)} USDC\n📊 ${stats.totalTransactions} ${stats.totalTransactions === 1 ? 'trade' : 'trades'}\n🏆 ${getRankText()}\n\nCheck yours at minisend.xyz/profile`;
+
+      // Try native share
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          text: shareText,
+          files: [file],
+        });
+      } else {
+        // Fallback: Copy text and download image
+        await navigator.clipboard.writeText(shareText);
+        const link = document.createElement('a');
+        link.download = 'minisend-wrapped-2025.png';
+        link.href = dataUrl;
+        link.click();
+        alert('Image downloaded and share text copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+      if ((err as Error).name !== 'AbortError') {
+        alert('Failed to share. Please try again.');
+      }
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   if (!isConnected) {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
@@ -198,8 +245,8 @@ export default function ProfilePage() {
           <>
             {/* Wrapped Card - Optimized for Social Media Stories */}
             <div className="flex justify-center mb-6">
-              <div ref={cardRef} className="w-full" style={{ maxWidth: '540px' }}>
-                <div className="border border-gray-800/50 rounded-2xl p-8 bg-[#111]">
+              <div ref={cardRef} className="w-full max-w-[440px] sm:max-w-[540px]">
+                <div className="border border-gray-800/50 rounded-2xl p-6 sm:p-8 bg-[#111]">
                   {/* Header with Logo */}
                   <div className="flex items-center justify-between mb-6">
                     <div>
@@ -307,8 +354,8 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Download Button - Purple */}
-            <div className="flex justify-center">
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-3 flex-wrap">
               <button
                 onClick={handleDownload}
                 disabled={isDownloading}
@@ -324,9 +371,20 @@ export default function ProfilePage() {
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    Download Image
+                    Download
                   </>
                 )}
+              </button>
+
+              <button
+                onClick={handleShare}
+                disabled={isDownloading}
+                className="px-6 py-3 bg-white text-black rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Share
               </button>
             </div>
           </>
