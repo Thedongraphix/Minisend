@@ -365,25 +365,6 @@ export async function POST(request: NextRequest) {
         console.log('👤 Found existing user:', user.id)
       }
 
-      // 📝 Save Farcaster user profile if FID is provided (for leaderboard and analytics)
-      // This allows us to display usernames and avatars even for users who haven't explicitly
-      // saved their profile yet. Web users won't have FID, so this is safely skipped.
-      if (fid && returnAddress) {
-        try {
-          await DatabaseService.saveFarcasterProfile({
-            walletAddress: returnAddress,
-            fid,
-            username: farcasterUsername,
-            displayName: farcasterDisplayName,
-            pfpUrl: farcasterPfpUrl
-          });
-          console.log('✅ Farcaster profile saved/updated for FID:', fid);
-        } catch (profileError) {
-          console.error('⚠️ Failed to save Farcaster profile (non-blocking):', profileError);
-          // Don't fail the order if profile save fails
-        }
-      }
-
       // Create order record from Paycrest response
       await DatabaseService.createOrderFromPaycrest(order, {
         amount: amountNum.toString(),
@@ -408,6 +389,20 @@ export async function POST(request: NextRequest) {
       })
 
       console.log('📊 Order saved to database successfully')
+
+      // 📝 Save Farcaster user profile asynchronously (fire-and-forget, non-blocking)
+      // This runs in the background without delaying the order response
+      if (fid && returnAddress && (farcasterUsername || farcasterDisplayName || farcasterPfpUrl)) {
+        DatabaseService.saveFarcasterProfile({
+          walletAddress: returnAddress,
+          fid,
+          username: farcasterUsername,
+          displayName: farcasterDisplayName,
+          pfpUrl: farcasterPfpUrl
+        }).catch(profileError => {
+          console.error('⚠️ Background profile save failed (non-critical):', profileError);
+        });
+      }
 
       // 🔔 Send notification to Farcaster users via Neynar (only if FID is provided)
       // Web users won't have FID, so this is safely skipped for them
