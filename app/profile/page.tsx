@@ -152,7 +152,7 @@ export default function ProfilePage() {
       const blob = await res.blob();
       const file = new File([blob], 'minisend-wrapped-2025.png', { type: 'image/png' });
 
-      const shareText = `Just checked my Minisend 2025 Wrapped! 🎉\n\n💸 Sent ${formatNumber(stats.totalUsdcSent)} USDC\n📊 ${stats.totalTransactions} ${stats.totalTransactions === 1 ? 'trade' : 'trades'}\n🏆 ${getRankText()}\n\nCheck yours at minisend.xyz/profile`;
+      const shareText = `Just checked my Minisend 2025 Wrapped! 🎉\n\n💸 Sent ${formatNumber(stats.totalUsdcSent)} USDC\n📊 ${stats.totalTransactions} ${stats.totalTransactions === 1 ? 'trade' : 'trades'}\n🏆 ${getRankText()}\n\nCheck yours at app.minisend.xyz/profile`;
 
       // Try native share
       if (navigator.share && navigator.canShare({ files: [file] })) {
@@ -215,7 +215,7 @@ export default function ProfilePage() {
       <div className="max-w-5xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="text-2xl font-medium text-white mb-2">Your 2025 Wrapped</h1>
+          <h1 className="text-2xl font-medium text-white mb-2">Minisend 2025 Wrapped </h1>
           <p className="text-sm text-gray-500 font-mono">
             {address?.substring(0, 6)}...{address?.substring(address.length - 4)}
           </p>
