@@ -24,10 +24,13 @@ yarn-error.log*
 
 # Local env files
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+*.env
+.envrc
 
 # Vercel
 .vercel
@@ -70,6 +73,7 @@ Thumbs.db
 *.md
 !README.md
 !CLAUDE.md
+!SECURITY_AUDIT.md
 
 # Claude Code configuration
 .claude/
@@ -77,3 +81,45 @@ Thumbs.db
 # Test files
 test-*.html
 test-*.js
+
+# Security and secrets
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.cert
+*.crt
+*.csr
+secrets/
+credentials/
+*.secret
+.secrets
+.credentials
+*.backup
+*.bak
+*~
+*.orig
+*.rej
+
+# Database dumps
+*.sql.gz
+*.dump
+*.sqlite
+*.db
+
+# Private keys and certificates
+id_rsa
+id_dsa
+*.ppk
+
+# Service account files
+*-service-account.json
+serviceAccountKey.json
+gcloud-service-key.json
+
+# API keys and tokens (additional patterns)
+.api-keys
+.tokens
+auth-token*
