@@ -20,6 +20,7 @@ import { DebugPanel } from "./components/DebugPanel";
 import { AppProvider } from "./components/AppProvider";
 // Analytics imports removed - not used in current implementation
 import Image from 'next/image';
+import Link from 'next/link';
 import "./theme.css";
 import { ConnectWidget } from "./components/ConnectWidget";
 import { WhatsAppButton } from "./components/WhatsAppButton";
@@ -146,20 +147,19 @@ export default function App() {
 
         {/* Wrapped 2025 Banner */}
         <div className="w-full max-w-md mx-auto px-4 mb-4">
-          <button
-            onClick={() => setActiveTab("profile")}
-            className="w-full bg-gradient-to-r from-[#8b53ff] to-[#6b3fd9] p-4 rounded-xl hover:from-[#7a47e6] hover:to-[#5a35c8] transition-all duration-200 shadow-lg"
-          >
-            <div className="flex items-center justify-between">
-              <div className="text-left">
-                <div className="text-white font-bold text-base mb-0.5">🎉 Your 2025 Wrapped is Ready!</div>
-                <div className="text-white/90 text-xs">Check your year in review</div>
+          <Link href="/profile" className="block">
+            <div className="w-full bg-gradient-to-r from-[#8b53ff] to-[#6b3fd9] p-4 rounded-xl hover:from-[#7a47e6] hover:to-[#5a35c8] transition-all duration-200 shadow-lg cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div className="text-left">
+                  <div className="text-white font-bold text-base mb-0.5">🎉 Your 2025 Wrapped is Ready!</div>
+                  <div className="text-white/90 text-xs">Check your year in review</div>
+                </div>
+                <svg className="w-5 h-5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-              <svg className="w-5 h-5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
             </div>
-          </button>
+          </Link>
         </div>
 
         <div className="w-full max-w-md mx-auto px-4 pb-6 overflow-visible">
