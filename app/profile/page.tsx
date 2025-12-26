@@ -41,6 +41,7 @@ export default function ProfilePage() {
   const cardRef = useRef<HTMLDivElement>(null);
   const [usdcImage, setUsdcImage] = useState<string>('');
   const [baseImage, setBaseImage] = useState<string>('');
+  const [showCelebration, setShowCelebration] = useState(false);
 
   // Convert images to base64 for reliable html2canvas rendering
   useEffect(() => {
@@ -103,6 +104,15 @@ export default function ProfilePage() {
     }
   }, [address, fetchWrappedStats]);
 
+  // Trigger celebration animation when stats load
+  useEffect(() => {
+    if (stats && stats.hasTransactions) {
+      setShowCelebration(true);
+      const timer = setTimeout(() => setShowCelebration(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [stats]);
+
   const handleDownload = async () => {
     if (!cardRef.current || !stats) return;
 
@@ -152,7 +162,7 @@ export default function ProfilePage() {
       const blob = await res.blob();
       const file = new File([blob], 'minisend-wrapped-2025.png', { type: 'image/png' });
 
-      const shareText = `Just checked my @minisend 2025 Wrapped! 🎉\n\n💸 Sent ${formatNumber(stats.totalUsdcSent)} USDC\n📊 ${stats.totalTransactions} ${stats.totalTransactions === 1 ? 'trade' : 'trades'}\n🏆 ${getRankText()}\n\nCheck yours at app.minisend.xyz/profile`;
+      const shareText = `Just checked my 2025 Wrapped! 🎉\n\n💸 Sent ${formatNumber(stats.totalUsdcSent)} USDC\n📊 ${stats.totalTransactions} ${stats.totalTransactions === 1 ? 'trade' : 'trades'}\n🏆 ${getRankText()}\n\nCheck yours at app.minisend.xyz/profile\n\ncc: @minisend\nhttps://farcaster.xyz/minisend`;
 
       // Try native share
       if (navigator.share && navigator.canShare({ files: [file] })) {
@@ -211,8 +221,63 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="max-w-5xl mx-auto px-6 py-12">
+    <div className="min-h-screen bg-[#0a0a0a] text-white relative overflow-hidden">
+      {/* Celebration Animation */}
+      {showCelebration && (
+        <>
+          <style jsx>{`
+            @keyframes sparkle {
+              0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+              50% { opacity: 1; transform: scale(1) rotate(180deg); }
+            }
+            @keyframes confetti-fall {
+              0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+              100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+            }
+            .animate-sparkle {
+              animation: sparkle 2s ease-in-out infinite;
+              font-size: 24px;
+              pointer-events: none;
+              z-index: 50;
+            }
+            .animate-confetti {
+              width: 10px;
+              height: 10px;
+              animation: confetti-fall 3s linear forwards;
+              pointer-events: none;
+              z-index: 50;
+            }
+          `}</style>
+          {/* Sparkles */}
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-sparkle"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 2}s`,
+              }}
+            >
+              ✨
+            </div>
+          ))}
+          {/* Confetti */}
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={`confetti-${i}`}
+              className="absolute animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 1}s`,
+                backgroundColor: ['#8b53ff', '#ff6b9d', '#ffd93d', '#6bcf7f'][Math.floor(Math.random() * 4)],
+              }}
+            />
+          ))}
+        </>
+      )}
+
+      <div className="max-w-5xl mx-auto px-6 py-12 relative z-10">
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-2xl font-medium text-white mb-2">Minisend 2025 Wrapped </h1>
