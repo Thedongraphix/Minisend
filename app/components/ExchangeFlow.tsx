@@ -17,6 +17,8 @@ import { SavedRecipients } from './SavedRecipients';
 import { saveRecipient, SavedRecipient } from '@/lib/recipient-storage';
 import { BankSelector } from './BankSelector';
 import { FormInput } from './FormInput';
+import { PhoneNumberInput } from './PhoneNumberInput';
+import { AccountNumberInput } from './AccountNumberInput';
 
 interface ExchangeFlowProps {
   setActiveTab: (tab: string) => void;
@@ -387,19 +389,17 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
           {/* Conditional input fields based on currency */}
           {swapData.currency === 'KES' || swapData.currency === 'GHS' ? (
             <>
-              <FormInput
+              <PhoneNumberInput
                 label="Phone Number"
-                type="tel"
-                inputMode="tel"
                 value={formData.phoneNumber}
                 onChange={(value) => setFormData(prev => ({ ...prev, phoneNumber: value }))}
-                placeholder={swapData.currency === 'KES' ? '+254712345678' : '+233241234567'}
-                icon={
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                }
-                helperText={swapData.currency === 'KES' ? 'Enter M-Pesa mobile number' : 'Enter Mobile Money number (MTN, Vodafone, AirtelTigo)'}
+                currency={swapData.currency}
+                placeholder={swapData.currency === 'KES' ? '712345678' : '241234567'}
+                onValidationChange={(isValid) => {
+                  if (isValid && !accountVerified) {
+                    // Auto-verify will be triggered by the useEffect
+                  }
+                }}
               />
 
               <FormInput
@@ -444,46 +444,18 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                 />
               </div>
 
-              <FormInput
+              <AccountNumberInput
                 label="Account Number"
-                type="text"
-                inputMode="numeric"
                 value={formData.accountNumber}
                 onChange={(value) => setFormData(prev => ({ ...prev, accountNumber: value }))}
                 placeholder="0123456789"
-                maxLength={11}
-                disabled={verifyingAccount}
-                error={
-                  formData.accountNumber && !isAccountNumberValid && formData.accountNumber.length > 0
-                    ? "Account number must be 10-11 digits"
-                    : undefined
-                }
-                success={isAccountNumberValid && formData.accountNumber.length > 0}
-                helperText={
-                  verifyingAccount
-                    ? "Verifying account with bank..."
-                    : !formData.accountNumber
-                      ? "Enter your 10-digit account number"
-                      : undefined
-                }
-                icon={
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                  </svg>
-                }
-                statusIcon={
-                  verifyingAccount ? (
-                    <div className="w-5 h-5 border-2 border-[#0066FF] border-t-transparent rounded-full animate-spin" />
-                  ) : isAccountNumberValid && formData.accountNumber ? (
-                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  ) : formData.accountNumber && !isAccountNumberValid ? (
-                    <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  ) : null
-                }
+                disabled={!formData.bankCode}
+                verifying={verifyingAccount}
+                onValidationChange={(isValid) => {
+                  if (isValid && formData.bankCode && !accountVerified) {
+                    // Auto-verify will be triggered by the useEffect
+                  }
+                }}
               />
 
               {accountVerified && formData.accountName && !verifyingAccount && (
