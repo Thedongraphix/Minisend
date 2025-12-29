@@ -92,6 +92,8 @@ Top ${stats.percentile}% user
     }
   };
 
+  // Unused for now - keeping for future share functionality
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleShare = async () => {
     if (!cardRef.current || !stats) return;
 
