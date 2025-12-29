@@ -329,7 +329,7 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-400">Single Trade</span>
                       <span className="text-sm font-semibold text-white">
-                        ${formatNumber(stats.biggestTransaction.usdcAmount)} → {stats.biggestTransaction.currency} {formatNumber(stats.biggestTransaction.localAmount)}
+                        ${formatNumber(stats.biggestTransaction.usdcAmount)}
                       </span>
                     </div>
 
