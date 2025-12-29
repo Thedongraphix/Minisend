@@ -55,21 +55,61 @@ export function validatePaybillAccountNumber(accountNumber: string): boolean {
  */
 export function validateKenyanPhoneNumber(phoneNumber: string): boolean {
   const cleanPhone = phoneNumber.replace(/\D/g, '');
-  
+
   // Check for valid Kenyan phone number patterns
   if (cleanPhone.startsWith('254')) {
     return cleanPhone.length === 12; // 254XXXXXXXXX
   }
-  
+
   if (cleanPhone.startsWith('0')) {
     return cleanPhone.length === 10; // 0XXXXXXXXX
   }
-  
+
   if (cleanPhone.length === 9) {
     return true; // XXXXXXXXX
   }
-  
+
   return false;
+}
+
+/**
+ * Validates Ghanaian phone numbers
+ */
+export function validateGhanaianPhoneNumber(phoneNumber: string): boolean {
+  const cleanPhone = phoneNumber.replace(/\D/g, '');
+
+  // Check for valid Ghanaian phone number patterns
+  if (cleanPhone.startsWith('233')) {
+    return cleanPhone.length === 12; // 233XXXXXXXXX
+  }
+
+  if (cleanPhone.startsWith('0')) {
+    return cleanPhone.length === 10; // 0XXXXXXXXX
+  }
+
+  if (cleanPhone.length === 9) {
+    return true; // XXXXXXXXX
+  }
+
+  return false;
+}
+
+/**
+ * Format phone number for API based on country
+ */
+export function formatPhoneForAPI(phoneNumber: string, currency: 'KES' | 'GHS'): string {
+  const cleanPhone = phoneNumber.replace(/\D/g, '');
+  const countryCode = currency === 'KES' ? '254' : '233';
+
+  if (cleanPhone.startsWith(countryCode)) {
+    return cleanPhone;
+  }
+
+  if (cleanPhone.startsWith('0')) {
+    return countryCode + cleanPhone.substring(1);
+  }
+
+  return countryCode + cleanPhone;
 }
 
 /**
@@ -253,16 +293,32 @@ export const TEST_PAYBILL_NUMBERS = {
  * Test phone numbers for development
  */
 export const TEST_PHONE_NUMBERS = {
-  valid: [
-    '+254712345678',
-    '254712345678',
-    '0712345678',
-    '712345678'
-  ],
-  invalid: [
-    '254712345',    // Too short
-    '25471234567890', // Too long
-    '712345',       // Too short
-    'phone123'      // Contains letters
-  ]
+  kenya: {
+    valid: [
+      '+254712345678',
+      '254712345678',
+      '0712345678',
+      '712345678'
+    ],
+    invalid: [
+      '254712345',    // Too short
+      '25471234567890', // Too long
+      '712345',       // Too short
+      'phone123'      // Contains letters
+    ]
+  },
+  ghana: {
+    valid: [
+      '+233241234567',
+      '233241234567',
+      '0241234567',
+      '241234567'
+    ],
+    invalid: [
+      '233241234',    // Too short
+      '23324123456789', // Too long
+      '241234',       // Too short
+      'phone123'      // Contains letters
+    ]
+  }
 };
