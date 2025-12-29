@@ -6,11 +6,20 @@ import { useOpenUrl, useComposeCast } from "@coinbase/onchainkit/minikit";
  * @see https://docs.base.org/mini-apps/core-concepts/sharing-and-social-graph
  */
 
+// Type for Farcaster window extension
+interface WindowWithFarcaster extends Window {
+  farcaster?: {
+    actions?: {
+      openProfile?: (params: { fid: number }) => Promise<void>;
+    };
+  };
+}
+
 // Compose cast action for sharing - uses official OnchainKit hook
 export function useShareCast() {
   const { composeCast } = useComposeCast();
 
-  const shareCast = async (text: string, embeds?: string[]) => {
+  const shareCast = async (text: string, embeds?: [string] | [string, string]) => {
     try {
       // Use official composeCast hook from OnchainKit
       await composeCast({ text, embeds });
