@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import html2canvas from 'html2canvas';
+import { useComposeCast } from '@coinbase/onchainkit/minikit';
 
 interface WrappedStats {
   walletAddress: string;
@@ -22,6 +23,7 @@ export default function WrappedPage() {
   const params = useParams();
   const router = useRouter();
   const { address: connectedAddress, isConnected } = useAccount();
+  const { composeCast } = useComposeCast();
   const [stats, setStats] = useState<WrappedStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +64,31 @@ export default function WrappedPage() {
       setError('Failed to load wrapped stats');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFarcasterShare = async () => {
+    if (!stats) return;
+
+    setIsSharing(true);
+    try {
+      // Natural caption that tags @minisend
+      const text = `My 2025 wrapped 🎁
+
+${stats.totalTransactions} transactions
+${stats.totalUsdcSent.toFixed(2)} USDC sent
+Top ${stats.percentile}% user
+
+@minisend`;
+
+      await composeCast({
+        text,
+        embeds: ['https://farcaster.xyz/minisend'],
+      });
+    } catch (error) {
+      console.error('Error sharing to Farcaster:', error);
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -230,7 +257,7 @@ export default function WrappedPage() {
         {/* Action Button */}
         <div className="flex justify-center">
           <button
-            onClick={handleShare}
+            onClick={handleFarcasterShare}
             disabled={isSharing}
             className="px-6 py-3 bg-white text-black rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >

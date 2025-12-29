@@ -1,46 +1,22 @@
-import { useOpenUrl } from "@coinbase/onchainkit/minikit";
-
-// Type definitions for Farcaster SDK
-interface FarcasterActions {
-  composeCast?: (args: { text: string; embeds?: string[] }) => Promise<void>;
-  openProfile?: (args: { fid: number }) => Promise<void>;
-}
-
-interface FarcasterSDK {
-  actions?: FarcasterActions;
-}
-
-interface WindowWithFarcaster extends Window {
-  farcaster?: FarcasterSDK;
-}
+import { useOpenUrl, useComposeCast } from "@coinbase/onchainkit/minikit";
 
 /**
  * SDK Actions utility for mini apps
- * Following Coinbase Wallet guide to use official SDK functions instead of deeplinks
+ * Following Base documentation for proper share implementation
+ * @see https://docs.base.org/mini-apps/core-concepts/sharing-and-social-graph
  */
 
-// Compose cast action for sharing
+// Compose cast action for sharing - uses official OnchainKit hook
 export function useShareCast() {
-  const openUrl = useOpenUrl();
+  const { composeCast } = useComposeCast();
 
   const shareCast = async (text: string, embeds?: string[]) => {
     try {
-      // Use composeCast SDK action if available, otherwise fallback to openUrl
-      // The guide mentions composeCast function but it might not be available yet
-      const farcasterWindow = window as WindowWithFarcaster;
-      if (typeof window !== 'undefined' && farcasterWindow.farcaster?.actions?.composeCast) {
-        await farcasterWindow.farcaster.actions.composeCast!({
-          text,
-          embeds,
-        });
-      } else {
-        // Fallback to openUrl with proper share format
-        const encodedText = encodeURIComponent(text);
-        const url = `https://warpcast.com/~/compose?text=${encodedText}`;
-        await openUrl(url);
-      }
+      // Use official composeCast hook from OnchainKit
+      await composeCast({ text, embeds });
     } catch (error) {
       console.error("Error sharing cast:", error);
+      throw error;
     }
   };
 
@@ -76,52 +52,39 @@ export function useAppNavigation() {
   return { openExternal, openProfile };
 }
 
-// Share helpers for Kenya USDC app
+// Share helpers for multi-currency USDC off-ramp app
 export function createShareMessages() {
-  const baseUrl = process.env.NEXT_PUBLIC_URL || "https://minitest-phi.vercel.app";
-  
+  const baseUrl = process.env.NEXT_PUBLIC_URL || "https://app.minisend.xyz";
+
   return {
-    // Share successful transaction
-    shareTransaction: (amount: number, kshAmount: number) => ({
-      text: `🇰🇪 Just converted ${amount} USDC to ${kshAmount.toLocaleString()} KSH via M-Pesa! 
+    // Share successful transaction - contextual based on currency
+    shareTransaction: (amount: number, localAmount: number, currency: 'KES' | 'NGN' | 'GHS') => {
+      const currencyData = {
+        KES: { symbol: 'KSh', flag: '🇰🇪', country: 'Kenya', service: 'M-Pesa' },
+        NGN: { symbol: '₦', flag: '🇳🇬', country: 'Nigeria', service: 'bank transfer' },
+        GHS: { symbol: '₵', flag: '🇬🇭', country: 'Ghana', service: 'mobile money' }
+      };
+      const { symbol, flag, country, service } = currencyData[currency];
 
-Fast, secure, and affordable crypto off-ramp for Kenya 🚀
+      return {
+        text: `${flag} Just converted ${amount} USDC to ${symbol}${localAmount.toLocaleString()} via ${service}!
 
-Try it: ${baseUrl}`,
-      embeds: [baseUrl],
-    }),
+Fast, secure crypto off-ramp for ${country} 🚀
+
+Try Minisend: ${baseUrl}`,
+        embeds: [baseUrl],
+      };
+    },
 
     // Share app discovery
     shareApp: () => ({
-      text: `🔥 Found this amazing USDC to M-Pesa converter!
+      text: `🔥 Found Minisend - convert USDC to local currency instantly!
 
-Perfect for Kenya's crypto users:
-✅ Direct M-Pesa integration
-✅ Real-time rates  
-✅ Mobile-first design
-✅ Built on Base
+🇰🇪 Kenya (M-Pesa)
+🇳🇬 Nigeria (Bank)
+🇬🇭 Ghana (Mobile Money)
 
 Try it: ${baseUrl}`,
-      embeds: [baseUrl],
-    }),
-
-    // Share feature discovery
-    shareFeature: (feature: string) => ({
-      text: `💡 Love the ${feature} feature in this Kenya USDC off-ramp app!
-
-Built specifically for Kenyan crypto users with M-Pesa integration 🇰🇪
-
-Check it out: ${baseUrl}`,
-      embeds: [baseUrl],
-    }),
-
-    // Share wallet connection success
-    shareConnection: () => ({
-      text: `🔗 Connected my wallet to this Kenya USDC off-ramp!
-
-Finally a crypto app designed for African mobile money 🌍
-
-Built with MiniKit on Base: ${baseUrl}`,
       embeds: [baseUrl],
     }),
   };
@@ -133,8 +96,8 @@ export function useAppActions() {
   const { openExternal } = useAppNavigation();
   const shareMessages = createShareMessages();
 
-  const shareSuccess = async (amount: number, kshAmount: number) => {
-    const message = shareMessages.shareTransaction(amount, kshAmount);
+  const shareSuccess = async (amount: number, localAmount: number, currency: 'KES' | 'NGN' | 'GHS') => {
+    const message = shareMessages.shareTransaction(amount, localAmount, currency);
     await shareCast(message.text, message.embeds);
   };
 
