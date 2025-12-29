@@ -81,7 +81,7 @@ export function createShareMessages() {
 Fast, secure crypto off-ramp for ${country} 🚀
 
 Try Minisend: ${baseUrl}`,
-        embeds: [baseUrl],
+        embeds: [baseUrl] as [string],
       };
     },
 
@@ -94,7 +94,7 @@ Try Minisend: ${baseUrl}`,
 🇬🇭 Ghana (Mobile Money)
 
 Try it: ${baseUrl}`,
-      embeds: [baseUrl],
+      embeds: [baseUrl] as [string],
     }),
   };
 }

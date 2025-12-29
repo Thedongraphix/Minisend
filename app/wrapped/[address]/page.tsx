@@ -83,7 +83,7 @@ Top ${stats.percentile}% user
 
       await composeCast({
         text,
-        embeds: ['https://farcaster.xyz/minisend'],
+        embeds: ['https://farcaster.xyz/minisend'] as [string],
       });
     } catch (error) {
       console.error('Error sharing to Farcaster:', error);
