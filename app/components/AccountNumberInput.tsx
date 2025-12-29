@@ -136,7 +136,7 @@ export function AccountNumberInput({
         </motion.label>
 
         {/* Right Status Icon with Animation */}
-        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+        <div className="absolute right-4 top-[52%] -translate-y-1/2">
           <AnimatePresence mode="wait">
             {verifying && (
               <motion.div

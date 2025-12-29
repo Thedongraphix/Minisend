@@ -283,7 +283,7 @@ export function PhoneNumberInput({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
               transition={{ duration: 0.2, ease: "backOut" }}
-              className="absolute right-4 top-1/2 -translate-y-1/2"
+              className="absolute right-4 top-[52%] -translate-y-1/2"
             >
               {isValid ? (
                 <motion.div
