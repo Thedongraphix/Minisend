@@ -65,14 +65,18 @@ export async function GET(
     }
 
     // Log the order data from database
-    // Format date with time
+    // Format date with time in appropriate timezone based on currency
+    // KES (Kenya) → EAT (Africa/Nairobi), GHS (Ghana) → GMT (Africa/Accra)
+    const timezone = order.local_currency === 'KES' ? 'Africa/Nairobi' : 'Africa/Accra';
     const dateObj = new Date(order.created_at);
     const date = dateObj.toLocaleDateString('en-US', {
+      timeZone: timezone,
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
     const time = dateObj.toLocaleTimeString('en-US', {
+      timeZone: timezone,
       hour: '2-digit',
       minute: '2-digit',
       hour12: true

@@ -39,14 +39,16 @@ export async function GET(
       );
     }
 
-    // Format date with time
+    // Format date with time in appropriate timezone (WAT for Nigeria)
     const dateObj = new Date(order.created_at);
     const date = dateObj.toLocaleDateString('en-US', {
+      timeZone: 'Africa/Lagos',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
     const time = dateObj.toLocaleTimeString('en-US', {
+      timeZone: 'Africa/Lagos',
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
