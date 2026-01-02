@@ -42,12 +42,35 @@ export function validatePaybillNumber(paybillNumber: string): boolean {
 }
 
 /**
+ * Paybill numbers blocked by Pretium
+ * These paybills are flagged and not supported for payments
+ */
+export const BLOCKED_PAYBILLS = [
+  "955100", "7650880", "888880", "5212121", "888888", "79079", "260680",
+  "247979", "800088", "718085", "8228252", "955700", "290290", "4087777",
+  "290059", "290077", "779900", "290020", "565619", "290680", "880185",
+  "212927", "999880", "290090", "940828", "7325515", "852048", "299690",
+  "260077", "663661", "783227", "290011", "141114", "811822", "290028",
+  "920620", "427427", "4998983", "7011780", "569699", "808087", "290063",
+  "999833", "547717", "4076659", "499995", "290898", "498098", "444268",
+  "562424", "4999902", "4135837", "290067", "565612", "333345", "4029669"
+];
+
+/**
+ * Checks if a paybill number is blocked by Pretium
+ */
+export function isPaybillBlocked(paybillNumber: string): boolean {
+  const cleanPaybill = paybillNumber.replace(/\D/g, '');
+  return BLOCKED_PAYBILLS.includes(cleanPaybill);
+}
+
+/**
  * Validates paybill account numbers
- * Account numbers for paybills can vary but typically 6-12 digits
+ * Account numbers for paybills can vary in length, so we just check they're non-empty and numeric
  */
 export function validatePaybillAccountNumber(accountNumber: string): boolean {
   const cleanAccount = accountNumber.replace(/\D/g, '');
-  return cleanAccount.length >= 6 && cleanAccount.length <= 12 && /^\d+$/.test(cleanAccount);
+  return cleanAccount.length >= 1 && /^\d+$/.test(cleanAccount);
 }
 
 /**

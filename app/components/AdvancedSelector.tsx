@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { detectPaymentDestination, detectPaybillWithAccount, getPaymentDestinationDescription, isPaymentDestinationSupported } from '@/lib/utils/tillValidator';
+import { detectPaymentDestination, detectPaybillWithAccount, getPaymentDestinationDescription, isPaymentDestinationSupported, isPaybillBlocked } from '@/lib/utils/tillValidator';
 import { FormInput } from './FormInput';
 
 interface PaymentMethodData {
@@ -33,12 +33,13 @@ export function AdvancedSelector({
     let result: PaymentMethodData | null = null;
 
     if (paymentMode === 'paybill') {
-      // Paybill mode - validate both paybill number and account
+      // Paybill mode - validate both paybill number and account, check if blocked
       if (paybillNumber.trim() && paybillAccount.trim()) {
         const destination = detectPaybillWithAccount(paybillNumber, paybillAccount);
         setCurrentDestination(destination);
 
-        if (destination.isValid) {
+        // Only set result if valid AND not blocked
+        if (destination.isValid && !isPaybillBlocked(paybillNumber)) {
           result = {
             type: 'paybill',
             value: destination.value,
@@ -159,9 +160,21 @@ export function AdvancedSelector({
             value={paybillNumber}
             onChange={setPaybillNumber}
             placeholder="Enter paybill number (e.g., 522522)"
-            success={paybillNumber.trim().length >= 5 && paybillNumber.trim().length <= 7}
-            error={paybillNumber.trim() && (paybillNumber.trim().length < 5 || paybillNumber.trim().length > 7) ? 'Must be 5-7 digits' : undefined}
-            helperText={paybillNumber.trim() ? 'M-Pesa paybill numbers are typically 5-7 digits' : undefined}
+            success={paybillNumber.trim().length >= 5 && paybillNumber.trim().length <= 7 && !isPaybillBlocked(paybillNumber)}
+            error={
+              paybillNumber.trim() && isPaybillBlocked(paybillNumber)
+                ? 'This paybill is not supported'
+                : paybillNumber.trim() && (paybillNumber.trim().length < 5 || paybillNumber.trim().length > 7)
+                ? 'Must be 5-7 digits'
+                : undefined
+            }
+            helperText={
+              paybillNumber.trim() && isPaybillBlocked(paybillNumber)
+                ? 'This paybill number is blocked by our payment provider. Please use a different payment method.'
+                : paybillNumber.trim()
+                ? 'M-Pesa paybill numbers are typically 5-7 digits'
+                : undefined
+            }
           />
           <FormInput
             label="Account Number"
@@ -171,9 +184,9 @@ export function AdvancedSelector({
             placeholder="Enter account number"
             success={getPaybillStatus() === 'valid'}
             error={paybillAccount.trim() && getPaybillStatus() === 'invalid' ? 'Invalid account number' : undefined}
-            helperText={paybillAccount.trim() ? 'Account number for the paybill (6-12 digits)' : undefined}
+            helperText={paybillAccount.trim() ? 'Account number for this paybill' : undefined}
           />
-          {getPaybillStatus() === 'valid' && (
+          {getPaybillStatus() === 'valid' && !isPaybillBlocked(paybillNumber) && (
             <div className="text-xs text-green-500 flex items-center gap-2">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
