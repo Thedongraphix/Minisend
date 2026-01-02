@@ -227,7 +227,7 @@ export function PhoneNumberInput({
           placeholder={shouldFloatLabel ? (placeholder || pattern.placeholder) : ""}
           className={`
             w-full
-            pl-28 pr-12
+            pl-32 pr-12
             pt-6 pb-2
             bg-[#1c1c1e] border
             rounded-xl
@@ -258,7 +258,7 @@ export function PhoneNumberInput({
           }}
           transition={{ duration: 0.2, ease: "easeOut" }}
           className={`
-            absolute left-28 pointer-events-none
+            absolute left-32 pointer-events-none
             transition-colors duration-200
             ${
               isValid && hasValue
