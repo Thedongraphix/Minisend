@@ -175,18 +175,25 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
               className="mb-4"
             />
 
-            <FormInput
-              label="Recipient Name"
-              type="text"
-              value={formData.accountName}
-              onChange={(value) => setFormData(prev => ({ ...prev, accountName: value }))}
-              placeholder="Business or person name"
-              success={formData.accountName.length > 0}
-            />
+            {/* Only show recipient name input for phone and till payments, not paybill */}
+            {paymentMethod?.type !== 'paybill' && (
+              <FormInput
+                label="Recipient Name"
+                type="text"
+                value={formData.accountName}
+                onChange={(value) => setFormData(prev => ({ ...prev, accountName: value }))}
+                placeholder="Business or person name"
+                success={formData.accountName.length > 0}
+              />
+            )}
 
             <button
               onClick={() => setStep('payment')}
-              disabled={!formData.accountName || !paymentMethod || !paymentMethod.formatted}
+              disabled={
+                (paymentMethod?.type !== 'paybill' && !formData.accountName) ||
+                !paymentMethod ||
+                !paymentMethod.formatted
+              }
               className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 border border-purple-500 hover:border-purple-400 disabled:border-gray-600"
             >
               Continue to Payment
@@ -271,8 +278,8 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
               phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
               tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
               paybillNumber={paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined}
-              paybillAccount={paymentMethod.type === 'paybill' ? formData.paybillAccount : undefined}
-              accountName={formData.accountName}
+              paybillAccount={paymentMethod.type === 'paybill' ? paymentMethod.paybillAccount : undefined}
+              accountName={paymentMethod.type === 'paybill' ? `Paybill ${paymentMethod.formatted}` : formData.accountName}
               returnAddress={address || ''}
               rate={swapData.rate}
               currency={swapData.currency}
