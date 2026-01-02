@@ -20,7 +20,6 @@ import { DebugPanel } from "./components/DebugPanel";
 import { AppProvider } from "./components/AppProvider";
 // Analytics imports removed - not used in current implementation
 import Image from 'next/image';
-import Link from 'next/link';
 import "./theme.css";
 import { ConnectWidget } from "./components/ConnectWidget";
 import { WhatsAppButton } from "./components/WhatsAppButton";
