@@ -145,7 +145,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Wrapped 2025 Banner */}
+        {/* Wrapped 2025 Banner 
         <div className="w-full max-w-md mx-auto px-4 mb-4">
           <Link href="/profile" className="block">
             <div className="w-full bg-gradient-to-r from-[#8b53ff] to-[#6b3fd9] p-4 rounded-xl hover:from-[#7a47e6] hover:to-[#5a35c8] transition-all duration-200 shadow-lg cursor-pointer">
@@ -161,7 +161,7 @@ export default function App() {
             </div>
           </Link>
         </div>
-
+*/}
         <div className="w-full max-w-md mx-auto px-4 pb-6 overflow-visible">
           {saveFrameButton && (
             <div className="flex justify-end mb-4">
