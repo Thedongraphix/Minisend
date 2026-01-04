@@ -17,7 +17,7 @@ export default function SharePage() {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 text-center">
         <div className="mb-6">
           <img
-            src="https://app.minisend.xyz/minisend-logo.png"
+            src="https://app.minisend.xyz/logo.svg"
             alt="Minisend Logo"
             className="w-20 h-20 mx-auto mb-4 rounded-full"
           />

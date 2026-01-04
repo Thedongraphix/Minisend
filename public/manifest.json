@@ -14,15 +14,15 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/minisend-logo.png",
-      "sizes": "192x192",
-      "type": "image/png",
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/minisend-logo.png",
-      "sizes": "512x512", 
-      "type": "image/png",
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "maskable"
     }
   ],
@@ -30,12 +30,12 @@
     {
       "name": "Cash Out",
       "url": "/?tab=offramp",
-      "icons": [{ "src": "/minisend-logo.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
-      "name": "Swap", 
+      "name": "Swap",
       "url": "/?tab=swap",
-      "icons": [{ "src": "/minisend-logo.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
   ]
 }

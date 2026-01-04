@@ -2,10 +2,8 @@ const CACHE_NAME = 'minisend-v1';
 const STATIC_CACHE_URLS = [
   '/',
   '/manifest.json',
-  '/minisend-logo.png',
-  '/icon.png',
-  '/minisend-logo.svg',
-  '/favicon.svg'
+  '/logo.svg',
+  '/favicon.ico'
 ];
 
 // Install service worker and cache essential resources

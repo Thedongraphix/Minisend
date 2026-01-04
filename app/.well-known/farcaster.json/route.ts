@@ -17,7 +17,7 @@ export async function GET() {
   // Build screenshot URLs array
   const screenshots: string[] = process.env.NEXT_PUBLIC_SCREENSHOT_URLS
     ? process.env.NEXT_PUBLIC_SCREENSHOT_URLS.split(',')
-    : [`${URL || "https://app.minisend.xyz"}/minisend-logo.png`];
+    : [`${URL || "https://app.minisend.xyz"}/logo.svg`];
 
   // Build tags array - default tags for Kenya USDC off-ramp
   const tags = ["usdc", "mpesa", "kenya", "crypto", "finance"];
@@ -41,8 +41,8 @@ export async function GET() {
       buttonTitle: process.env.NEXT_PUBLIC_BUTTON_TITLE || "Open Minisend",
 
       // Visual Assets
-      iconUrl: process.env.NEXT_PUBLIC_ICON_URL || "https://app.minisend.xyz/minisend-logo.png",
-      splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || "https://app.minisend.xyz/minisend-logo.png",
+      iconUrl: process.env.NEXT_PUBLIC_ICON_URL || "https://app.minisend.xyz/logo.svg",
+      splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || "https://app.minisend.xyz/logo.svg",
       splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#FFFFFF",
       heroImageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || "https://app.minisend.xyz/hero-image.png",
       

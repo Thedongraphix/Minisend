@@ -126,7 +126,7 @@ export default function App() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-3 min-w-0 flex-1">
               <Image
-                src="/minisend-logo.png"
+                src="/logo.svg"
                 alt="Minisend"
                 width={40}
                 height={40}

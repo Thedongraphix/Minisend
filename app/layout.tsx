@@ -56,10 +56,10 @@ export async function generateMetadata(): Promise<Metadata> {
     // Icons
     icons: {
       icon: [
-        { url: '/favicon.svg', type: 'image/svg+xml' },
-        { url: '/minisend-logo.png', type: 'image/png', sizes: '32x32' },
+        { url: '/favicon.ico', type: 'image/x-icon' },
+        { url: '/logo.svg', type: 'image/svg+xml' },
       ],
-      apple: '/minisend-logo.png',
+      apple: '/logo.svg',
     },
 
     other: {
@@ -76,7 +76,7 @@ export async function generateMetadata(): Promise<Metadata> {
             type: "launch_frame",
             name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "Minisend",
             url: URL || "https://app.minisend.xyz",
-            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || ogImage || (URL || "https://app.minisend.xyz") + "/minisend-logo.png",
+            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || ogImage || (URL || "https://app.minisend.xyz") + "/logo.svg",
             splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#FFFFFF",
           },
         },
@@ -101,14 +101,14 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black" />
         <meta name="apple-mobile-web-app-title" content="Minisend" />
-        <link rel="apple-touch-icon" href="/minisend-logo.png" />
+        <link rel="apple-touch-icon" href="/logo.svg" />
 
         {/* iOS Splash Screens */}
-        <link rel="apple-touch-startup-image" href="/minisend-logo.png" />
+        <link rel="apple-touch-startup-image" href="/logo.svg" />
 
         {/* Windows Tile */}
         <meta name="msapplication-TileColor" content="#000000" />
-        <meta name="msapplication-TileImage" content="/minisend-logo.png" />
+        <meta name="msapplication-TileImage" content="/logo.svg" />
 
         {/* Android Theme */}
         <meta name="mobile-web-app-capable" content="yes" />

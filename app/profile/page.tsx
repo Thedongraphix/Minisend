@@ -295,7 +295,7 @@ export default function ProfilePage() {
                       <p className="text-[10px] text-gray-500">User since {stats.memberSince}</p>
                     </div>
                     <img
-                      src="/minisend 7 transparent.png"
+                      src="/logo.svg"
                       alt="Minisend"
                       className="h-14 w-auto"
                     />
