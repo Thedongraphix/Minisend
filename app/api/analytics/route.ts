@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase/config';
 
 const PAYCREST_API_URL = process.env.PAYCREST_BASE_URL;
 const PAYCREST_API_KEY = process.env.PAYCREST_API_KEY;
@@ -70,14 +69,13 @@ export async function GET(request: Request) {
       });
     }
 
-    // Fetch all orders from both PayCrest API and Pretium (Supabase)
-    const [paycrestOrders, pretiumOrders] = await Promise.all([
-      fetchAllOrdersParallel().catch(() => []),
-      fetchAllPretiumOrders().catch(() => [])
-    ]);
+    // Fetch all orders from PayCrest API (NGN only)
+    const paycrestOrders = await fetchAllOrdersParallel().catch(() => []);
 
-    // Combine all orders
-    const allOrders = [...paycrestOrders, ...pretiumOrders];
+    // Filter to only include NGN orders
+    const allOrders = paycrestOrders.filter(order =>
+      order.recipient?.currency === 'NGN'
+    );
 
     // Process revenue analytics
     const analytics = processRevenueAnalytics(allOrders);
@@ -153,44 +151,7 @@ async function fetchAllOrdersParallel(): Promise<PayCrestOrder[]> {
   return allOrders;
 }
 
-// Fetch all Pretium orders from Supabase
-async function fetchAllPretiumOrders(): Promise<PayCrestOrder[]> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('orders')
-      .select('*')
-      .like('payment_provider', 'PRETIUM_%')
-      .in('status', ['completed', 'settled', 'fulfilled']);
-
-    if (error) {
-      console.error('Error fetching Pretium orders:', error);
-      return [];
-    }
-
-    // Transform Pretium orders to PayCrest format for analytics processing
-    return (data || []).map(order => ({
-      id: order.pretium_transaction_code || order.id,
-      amount: order.amount_in_usdc.toString(),
-      status: 'settled', // Only fetching completed orders
-      network: order.network || 'base',
-      createdAt: order.created_at,
-      updatedAt: order.updated_at,
-      returnAddress: order.wallet_address,
-      senderFee: order.sender_fee || 0,
-      transactionFee: order.transaction_fee || 0,
-      recipient: {
-        currency: order.local_currency,
-        accountName: order.account_name,
-        accountIdentifier: order.phone_number || order.account_number,
-      },
-      // Add metadata to identify as Pretium
-      _provider: order.payment_provider, // Custom field to track provider
-    }));
-  } catch (error) {
-    console.error('Error in fetchAllPretiumOrders:', error);
-    return [];
-  }
-}
+// Removed fetchAllPretiumOrders - only tracking PayCrest NGN orders
 
 function processRevenueAnalytics(orders: PayCrestOrder[]) {
   // Filter completed orders only (settled status in PayCrest)
@@ -234,77 +195,27 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
       return sum + fee;
     }, 0);
 
-  // Revenue by currency
-  const revenueByCurrency = {
-    KES: {
-      total: 0,
-      count: 0,
-      avgFee: 0
-    },
-    NGN: {
-      total: 0,
-      count: 0,
-      avgFee: 0
-    },
-    GHS: {
-      total: 0,
-      count: 0,
-      avgFee: 0
-    }
-  };
-
-  // Revenue by provider
-  const revenueByProvider = {
-    PAYCREST: {
-      total: 0,
-      count: 0,
-      avgFee: 0
-    },
-    PRETIUM: {
-      total: 0,
-      count: 0,
-      avgFee: 0
-    }
+  // Revenue tracking (NGN only via PayCrest)
+  const ngnRevenue = {
+    total: 0,
+    count: 0,
+    avgFee: 0
   };
 
   completedOrders.forEach(order => {
     const fee = typeof order.senderFee === 'number' ? order.senderFee : parseFloat(String(order.senderFee || 0));
     const currency = order.recipient?.currency;
-    const provider = (order as { _provider?: string })._provider;
 
-    // Track by currency
-    if (currency === 'KES' || currency === 'NGN' || currency === 'GHS') {
-      revenueByCurrency[currency].total += fee;
-      revenueByCurrency[currency].count += 1;
-    }
-
-    // Track by provider
-    if (provider && provider.startsWith('PRETIUM')) {
-      revenueByProvider.PRETIUM.total += fee;
-      revenueByProvider.PRETIUM.count += 1;
-    } else {
-      // Default to PayCrest if no provider specified
-      revenueByProvider.PAYCREST.total += fee;
-      revenueByProvider.PAYCREST.count += 1;
+    // Track NGN revenue only
+    if (currency === 'NGN') {
+      ngnRevenue.total += fee;
+      ngnRevenue.count += 1;
     }
   });
 
-  // Calculate averages
-  revenueByCurrency.KES.avgFee = revenueByCurrency.KES.count > 0
-    ? revenueByCurrency.KES.total / revenueByCurrency.KES.count
-    : 0;
-  revenueByCurrency.NGN.avgFee = revenueByCurrency.NGN.count > 0
-    ? revenueByCurrency.NGN.total / revenueByCurrency.NGN.count
-    : 0;
-  revenueByCurrency.GHS.avgFee = revenueByCurrency.GHS.count > 0
-    ? revenueByCurrency.GHS.total / revenueByCurrency.GHS.count
-    : 0;
-
-  revenueByProvider.PAYCREST.avgFee = revenueByProvider.PAYCREST.count > 0
-    ? revenueByProvider.PAYCREST.total / revenueByProvider.PAYCREST.count
-    : 0;
-  revenueByProvider.PRETIUM.avgFee = revenueByProvider.PRETIUM.count > 0
-    ? revenueByProvider.PRETIUM.total / revenueByProvider.PRETIUM.count
+  // Calculate average
+  ngnRevenue.avgFee = ngnRevenue.count > 0
+    ? ngnRevenue.total / ngnRevenue.count
     : 0;
 
   // Daily revenue breakdown (last 30 days)
@@ -333,8 +244,8 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
     });
   }
 
-  // Monthly revenue breakdown (all months with transactions)
-  const monthlyRevenueMap = new Map<string, { revenue: number; txCount: number; kesRevenue: number; ngnRevenue: number; ghsRevenue: number; kesCount: number; ngnCount: number; ghsCount: number }>();
+  // Monthly revenue breakdown (NGN only)
+  const monthlyRevenueMap = new Map<string, { revenue: number; txCount: number }>();
 
   completedOrders.forEach(order => {
     if (!order.createdAt) return;
@@ -344,33 +255,19 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
     const fee = typeof order.senderFee === 'number' ? order.senderFee : parseFloat(String(order.senderFee || 0));
     const currency = order.recipient?.currency;
 
+    // Only track NGN orders
+    if (currency !== 'NGN') return;
+
     if (!monthlyRevenueMap.has(monthKey)) {
       monthlyRevenueMap.set(monthKey, {
         revenue: 0,
-        txCount: 0,
-        kesRevenue: 0,
-        ngnRevenue: 0,
-        ghsRevenue: 0,
-        kesCount: 0,
-        ngnCount: 0,
-        ghsCount: 0
+        txCount: 0
       });
     }
 
     const monthData = monthlyRevenueMap.get(monthKey)!;
     monthData.revenue += fee;
     monthData.txCount += 1;
-
-    if (currency === 'KES') {
-      monthData.kesRevenue += fee;
-      monthData.kesCount += 1;
-    } else if (currency === 'NGN') {
-      monthData.ngnRevenue += fee;
-      monthData.ngnCount += 1;
-    } else if (currency === 'GHS') {
-      monthData.ghsRevenue += fee;
-      monthData.ghsCount += 1;
-    }
   });
 
   const monthlyRevenue = Array.from(monthlyRevenueMap.entries())
@@ -378,13 +275,7 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
       month,
       revenue: Number(data.revenue.toFixed(6)),
       txCount: data.txCount,
-      avgFee: Number((data.txCount > 0 ? data.revenue / data.txCount : 0).toFixed(6)),
-      kesRevenue: Number(data.kesRevenue.toFixed(6)),
-      ngnRevenue: Number(data.ngnRevenue.toFixed(6)),
-      ghsRevenue: Number(data.ghsRevenue.toFixed(6)),
-      kesCount: data.kesCount,
-      ngnCount: data.ngnCount,
-      ghsCount: data.ghsCount
+      avgFee: Number((data.txCount > 0 ? data.revenue / data.txCount : 0).toFixed(6))
     }))
     .sort((a, b) => a.month.localeCompare(b.month));
 
@@ -416,34 +307,10 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
         month: Number(monthRevenue.toFixed(6)),
         allTime: Number(totalRevenue.toFixed(6))
       },
-      revenueByCurrency: {
-        KES: {
-          total: Number(revenueByCurrency.KES.total.toFixed(6)),
-          count: revenueByCurrency.KES.count,
-          avgFee: Number(revenueByCurrency.KES.avgFee.toFixed(6))
-        },
-        NGN: {
-          total: Number(revenueByCurrency.NGN.total.toFixed(6)),
-          count: revenueByCurrency.NGN.count,
-          avgFee: Number(revenueByCurrency.NGN.avgFee.toFixed(6))
-        },
-        GHS: {
-          total: Number(revenueByCurrency.GHS.total.toFixed(6)),
-          count: revenueByCurrency.GHS.count,
-          avgFee: Number(revenueByCurrency.GHS.avgFee.toFixed(6))
-        }
-      },
-      revenueByProvider: {
-        PAYCREST: {
-          total: Number(revenueByProvider.PAYCREST.total.toFixed(6)),
-          count: revenueByProvider.PAYCREST.count,
-          avgFee: Number(revenueByProvider.PAYCREST.avgFee.toFixed(6))
-        },
-        PRETIUM: {
-          total: Number(revenueByProvider.PRETIUM.total.toFixed(6)),
-          count: revenueByProvider.PRETIUM.count,
-          avgFee: Number(revenueByProvider.PRETIUM.avgFee.toFixed(6))
-        }
+      ngnRevenue: {
+        total: Number(ngnRevenue.total.toFixed(6)),
+        count: ngnRevenue.count,
+        avgFee: Number(ngnRevenue.avgFee.toFixed(6))
       },
       growthMetrics: {
         revenueGrowth: Number(revenueGrowth.toFixed(1))
@@ -457,7 +324,7 @@ function processRevenueAnalytics(orders: PayCrestOrder[]) {
       wallet_address: order.returnAddress || 'Unknown',
       amount_in_usdc: parseFloat(order.amount),
       amount_in_local: 0, // Not available from PayCrest API directly
-      local_currency: order.recipient?.currency || 'Unknown',
+      local_currency: order.recipient?.currency || 'NGN',
       sender_fee: typeof order.senderFee === 'number' ? order.senderFee : parseFloat(String(order.senderFee || 0)),
       transaction_fee: typeof order.transactionFee === 'number' ? order.transactionFee : parseFloat(String(order.transactionFee || 0)),
       status: order.status,
