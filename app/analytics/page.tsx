@@ -23,12 +23,6 @@ interface MonthlyRevenue {
   revenue: number;
   txCount: number;
   avgFee: number;
-  kesRevenue: number;
-  ngnRevenue: number;
-  ghsRevenue: number;
-  kesCount: number;
-  ngnCount: number;
-  ghsCount: number;
 }
 
 interface AnalyticsData {
@@ -42,14 +36,10 @@ interface AnalyticsData {
       month: number;
       allTime: number;
     };
-    revenueByCurrency: {
-      KES: { total: number; count: number; avgFee: number };
-      NGN: { total: number; count: number; avgFee: number };
-      GHS: { total: number; count: number; avgFee: number };
-    };
-    revenueByProvider: {
-      PAYCREST: { total: number; count: number; avgFee: number };
-      PRETIUM: { total: number; count: number; avgFee: number };
+    ngnRevenue: {
+      total: number;
+      count: number;
+      avgFee: number;
     };
     growthMetrics: {
       revenueGrowth: number;
@@ -61,7 +51,6 @@ interface AnalyticsData {
 }
 
 type DateFilter = 'all' | 'today' | 'week' | 'month';
-type CurrencyFilter = 'all' | 'KES' | 'NGN' | 'GHS';
 
 export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
@@ -78,7 +67,6 @@ export default function AnalyticsPage() {
 
   // Filter states
   const [dateFilter, setDateFilter] = useState<DateFilter>('all');
-  const [currencyFilter, setCurrencyFilter] = useState<CurrencyFilter>('all');
 
   const ordersPerPage = 20;
 
@@ -211,10 +199,6 @@ export default function AnalyticsPage() {
       });
     }
 
-    if (currencyFilter !== 'all') {
-      orders = orders.filter(order => order.local_currency === currencyFilter);
-    }
-
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       orders = orders.filter(order =>
@@ -225,7 +209,7 @@ export default function AnalyticsPage() {
     }
 
     return orders;
-  }, [analyticsData, dateFilter, currencyFilter, searchTerm]);
+  }, [analyticsData, dateFilter, searchTerm]);
 
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
   const startIndex = (currentPage - 1) * ordersPerPage;
@@ -233,7 +217,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [dateFilter, currencyFilter, searchTerm]);
+  }, [dateFilter, searchTerm]);
 
   // Login screen
   if (!isAuthenticated) {
@@ -397,102 +381,32 @@ export default function AnalyticsPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="border border-gray-800/50 rounded-2xl p-4 sm:p-6 bg-[#111]">
-            <h3 className="text-base sm:text-lg font-medium text-white mb-3 sm:mb-4">KES Revenue</h3>
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Total</span>
-                <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByCurrency.KES.total.toFixed(4)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Transactions</span>
-                <span className="text-xs sm:text-sm text-white font-medium">{analyticsData.summary.revenueByCurrency.KES.count}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Avg Fee</span>
-                <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByCurrency.KES.avgFee.toFixed(4)}</span>
-              </div>
+        <div className="border border-gray-800/50 rounded-2xl p-4 sm:p-6 bg-[#111] mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 className="text-base sm:text-lg font-medium text-white">NGN Revenue (PayCrest)</h3>
+            <div className="text-right">
+              <p className="text-xs text-gray-400">Total Value (USD)</p>
+              <p className="text-lg sm:text-xl font-bold text-green-400">${analyticsData.summary.ngnRevenue.total.toFixed(2)}</p>
             </div>
           </div>
-
-          <div className="border border-gray-800/50 rounded-2xl p-4 sm:p-6 bg-[#111]">
-            <h3 className="text-base sm:text-lg font-medium text-white mb-3 sm:mb-4">NGN Revenue</h3>
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Total</span>
-                <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByCurrency.NGN.total.toFixed(4)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Transactions</span>
-                <span className="text-xs sm:text-sm text-white font-medium">{analyticsData.summary.revenueByCurrency.NGN.count}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Avg Fee</span>
-                <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByCurrency.NGN.avgFee.toFixed(4)}</span>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs sm:text-sm text-gray-400 mb-2">Total Revenue</p>
+              <p className="text-xl sm:text-2xl font-medium text-green-400">${analyticsData.summary.ngnRevenue.total.toFixed(4)} USDC</p>
             </div>
-          </div>
-
-          <div className="border border-gray-800/50 rounded-2xl p-4 sm:p-6 bg-[#111]">
-            <h3 className="text-base sm:text-lg font-medium text-white mb-3 sm:mb-4">GHS Revenue</h3>
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Total</span>
-                <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByCurrency.GHS.total.toFixed(4)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Transactions</span>
-                <span className="text-xs sm:text-sm text-white font-medium">{analyticsData.summary.revenueByCurrency.GHS.count}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Avg Fee</span>
-                <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByCurrency.GHS.avgFee.toFixed(4)}</span>
-              </div>
+            <div>
+              <p className="text-xs sm:text-sm text-gray-400 mb-2">Transactions</p>
+              <p className="text-xl sm:text-2xl font-medium text-white">{analyticsData.summary.ngnRevenue.count}</p>
             </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="border border-gray-800/50 rounded-2xl p-4 sm:p-6 bg-[#111]">
-            <h3 className="text-base sm:text-lg font-medium text-white mb-3 sm:mb-4">PayCrest Revenue</h3>
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Total</span>
-                <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByProvider.PAYCREST.total.toFixed(4)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Transactions</span>
-                <span className="text-xs sm:text-sm text-white font-medium">{analyticsData.summary.revenueByProvider.PAYCREST.count}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Avg Fee</span>
-                <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByProvider.PAYCREST.avgFee.toFixed(4)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="border border-gray-800/50 rounded-2xl p-4 sm:p-6 bg-[#111]">
-            <h3 className="text-base sm:text-lg font-medium text-white mb-3 sm:mb-4">Pretium Revenue</h3>
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Total</span>
-                <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByProvider.PRETIUM.total.toFixed(4)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Transactions</span>
-                <span className="text-xs sm:text-sm text-white font-medium">{analyticsData.summary.revenueByProvider.PRETIUM.count}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-xs sm:text-sm text-gray-400">Avg Fee</span>
-                <span className="text-xs sm:text-sm text-white font-medium">${analyticsData.summary.revenueByProvider.PRETIUM.avgFee.toFixed(4)}</span>
-              </div>
+            <div>
+              <p className="text-xs sm:text-sm text-gray-400 mb-2">Average Fee</p>
+              <p className="text-xl sm:text-2xl font-medium text-white">${analyticsData.summary.ngnRevenue.avgFee.toFixed(4)} USDC</p>
             </div>
           </div>
         </div>
 
         <div className="border border-gray-800/50 rounded-2xl p-4 sm:p-6 bg-[#111] mb-6 sm:mb-8">
-          <h3 className="text-base sm:text-lg font-medium text-white mb-4 sm:mb-6">Monthly Revenue Breakdown</h3>
+          <h3 className="text-base sm:text-lg font-medium text-white mb-4 sm:mb-6">Monthly Revenue Breakdown (NGN)</h3>
           <div className="overflow-x-auto">
             <div className="min-w-full inline-block align-middle">
               <div className="grid gap-3 sm:gap-4">
@@ -502,7 +416,7 @@ export default function AnalyticsPage() {
                       key={monthData.month}
                       className="border border-gray-800/30 rounded-xl p-4 sm:p-5 hover:bg-[#0a0a0a] transition-colors"
                     >
-                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div className="flex-1">
                           <h4 className="text-sm sm:text-base font-medium text-white mb-1">
                             {formatMonthName(monthData.month)}
@@ -512,7 +426,7 @@ export default function AnalyticsPage() {
                           </p>
                         </div>
 
-                        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-6 flex-1">
+                        <div className="grid grid-cols-2 gap-4 sm:gap-6">
                           <div>
                             <p className="text-[10px] sm:text-xs text-gray-400 mb-1">Total Revenue</p>
                             <p className="text-sm sm:text-base font-medium text-green-400">
@@ -524,36 +438,6 @@ export default function AnalyticsPage() {
                             <p className="text-[10px] sm:text-xs text-gray-400 mb-1">Avg Fee</p>
                             <p className="text-sm sm:text-base font-medium text-white">
                               ${monthData.avgFee.toFixed(4)}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] sm:text-xs text-gray-400 mb-1">KES Revenue</p>
-                            <p className="text-sm sm:text-base font-medium text-white">
-                              ${monthData.kesRevenue.toFixed(4)}
-                            </p>
-                            <p className="text-[10px] text-gray-500 mt-0.5">
-                              {monthData.kesCount} tx
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] sm:text-xs text-gray-400 mb-1">NGN Revenue</p>
-                            <p className="text-sm sm:text-base font-medium text-white">
-                              ${monthData.ngnRevenue.toFixed(4)}
-                            </p>
-                            <p className="text-[10px] text-gray-500 mt-0.5">
-                              {monthData.ngnCount} tx
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] sm:text-xs text-gray-400 mb-1">GHS Revenue</p>
-                            <p className="text-sm sm:text-base font-medium text-white">
-                              ${monthData.ghsRevenue.toFixed(4)}
-                            </p>
-                            <p className="text-[10px] text-gray-500 mt-0.5">
-                              {monthData.ghsCount} tx
                             </p>
                           </div>
                         </div>
@@ -599,17 +483,6 @@ export default function AnalyticsPage() {
                 <option value="today">Today</option>
                 <option value="week">Last 7 Days</option>
                 <option value="month">Last 30 Days</option>
-              </select>
-
-              <select
-                value={currencyFilter}
-                onChange={(e) => setCurrencyFilter(e.target.value as CurrencyFilter)}
-                className="px-4 py-2 bg-[#111] border border-gray-800/50 rounded-lg text-white text-sm focus:outline-none focus:border-gray-600 cursor-pointer"
-              >
-                <option value="all">All Currencies</option>
-                <option value="KES">KES Only</option>
-                <option value="NGN">NGN Only</option>
-                <option value="GHS">GHS Only</option>
               </select>
             </div>
           </div>
