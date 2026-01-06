@@ -65,12 +65,20 @@ export function isPaybillBlocked(paybillNumber: string): boolean {
 }
 
 /**
- * Validates paybill account numbers
- * Account numbers for paybills can vary in length, so we just check they're non-empty and numeric
+ * Validates paybill account field (can be account number OR account name)
+ * Some merchants use account numbers (numeric), others use account names (alphanumeric)
+ */
+export function validatePaybillAccount(account: string): boolean {
+  const trimmed = account.trim();
+  // Must be at least 1 character and not empty
+  return trimmed.length >= 1;
+}
+
+/**
+ * @deprecated Use validatePaybillAccount instead - supports both numbers and names
  */
 export function validatePaybillAccountNumber(accountNumber: string): boolean {
-  const cleanAccount = accountNumber.replace(/\D/g, '');
-  return cleanAccount.length >= 1 && /^\d+$/.test(cleanAccount);
+  return validatePaybillAccount(accountNumber);
 }
 
 /**
@@ -209,20 +217,21 @@ export function detectPaymentDestination(input: string): PaymentDestination {
 }
 
 /**
- * Specifically detects and validates paybill numbers with account numbers
+ * Specifically detects and validates paybill numbers with account (number or name)
+ * Account can be numeric (account number) or alphanumeric (account name)
  */
-export function detectPaybillWithAccount(paybillNumber: string, accountNumber: string): PaymentDestination {
+export function detectPaybillWithAccount(paybillNumber: string, account: string): PaymentDestination {
   const cleanPaybill = paybillNumber.replace(/\D/g, '');
-  const cleanAccount = accountNumber.replace(/\D/g, '');
-  
+  const trimmedAccount = account.trim();
+
   const isValidPaybill = validatePaybillNumber(cleanPaybill);
-  const isValidAccount = validatePaybillAccountNumber(cleanAccount);
-  
+  const isValidAccount = validatePaybillAccount(trimmedAccount);
+
   return {
     type: 'paybill',
     value: paybillNumber.trim(),
     formatted: cleanPaybill,
-    accountNumber: cleanAccount,
+    accountNumber: trimmedAccount,
     isValid: isValidPaybill && isValidAccount
   };
 }

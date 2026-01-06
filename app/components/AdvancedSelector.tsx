@@ -177,14 +177,14 @@ export function AdvancedSelector({
             }
           />
           <FormInput
-            label="Account Number"
+            label="Account Number or Name"
             type="text"
             value={paybillAccount}
             onChange={setPaybillAccount}
-            placeholder="Enter account number"
+            placeholder="Enter account number or name"
             success={getPaybillStatus() === 'valid'}
-            error={paybillAccount.trim() && getPaybillStatus() === 'invalid' ? 'Invalid account number' : undefined}
-            helperText={paybillAccount.trim() ? 'Account number for this paybill' : undefined}
+            error={paybillAccount.trim() && getPaybillStatus() === 'invalid' ? 'Account is required' : undefined}
+            helperText={paybillAccount.trim() ? 'Some paybills use account numbers, others use account names' : 'Enter the account number or name for this paybill'}
           />
           {getPaybillStatus() === 'valid' && !isPaybillBlocked(paybillNumber) && (
             <div className="text-xs text-green-500 flex items-center gap-2">

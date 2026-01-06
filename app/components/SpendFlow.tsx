@@ -175,8 +175,8 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
               className="mb-4"
             />
 
-            {/* Only show recipient name input for phone and till payments, not paybill */}
-            {paymentMethod?.type !== 'paybill' && (
+            {/* Only show recipient name input for phone payments (not till or paybill) */}
+            {paymentMethod?.type === 'phone' && (
               <FormInput
                 label="Recipient Name"
                 type="text"
@@ -190,7 +190,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             <button
               onClick={() => setStep('payment')}
               disabled={
-                (paymentMethod?.type !== 'paybill' && !formData.accountName) ||
+                (paymentMethod?.type === 'phone' && !formData.accountName) ||
                 !paymentMethod ||
                 !paymentMethod.formatted
               }
@@ -279,7 +279,13 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
               tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
               paybillNumber={paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined}
               paybillAccount={paymentMethod.type === 'paybill' ? paymentMethod.paybillAccount : undefined}
-              accountName={paymentMethod.type === 'paybill' ? `Paybill ${paymentMethod.formatted}` : formData.accountName}
+              accountName={
+                paymentMethod.type === 'paybill'
+                  ? `Paybill ${paymentMethod.formatted}`
+                  : paymentMethod.type === 'till'
+                  ? `Till ${paymentMethod.formatted}`
+                  : formData.accountName
+              }
               returnAddress={address || ''}
               rate={swapData.rate}
               currency={swapData.currency}
