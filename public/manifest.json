@@ -14,15 +14,15 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
@@ -30,12 +30,12 @@
     {
       "name": "Cash Out",
       "url": "/?tab=offramp",
-      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icon.png", "sizes": "96x96", "type": "image/png" }]
     },
     {
       "name": "Swap",
       "url": "/?tab=swap",
-      "icons": [{ "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icon.png", "sizes": "96x96", "type": "image/png" }]
     }
   ]
 }

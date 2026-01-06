@@ -76,7 +76,7 @@ export async function generateMetadata(): Promise<Metadata> {
             type: "launch_frame",
             name: process.env.NEXT_PUBLIC_ONCHAINKIT_PROJECT_NAME || "Minisend",
             url: URL || "https://app.minisend.xyz",
-            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || ogImage || (URL || "https://app.minisend.xyz") + "/logo.svg",
+            splashImageUrl: process.env.NEXT_PUBLIC_APP_SPLASH_IMAGE || ogImage || (URL || "https://app.minisend.xyz") + "/icon.png",
             splashBackgroundColor: process.env.NEXT_PUBLIC_SPLASH_BACKGROUND_COLOR || "#FFFFFF",
           },
         },
