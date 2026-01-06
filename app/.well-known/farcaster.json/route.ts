@@ -14,10 +14,14 @@ function withValidProperties(
 export async function GET() {
   const URL = process.env.NEXT_PUBLIC_URL;
 
-  // Build screenshot URLs array
+  // Build screenshot URLs array - portrait orientation 1284x2778 for app store
   const screenshots: string[] = process.env.NEXT_PUBLIC_SCREENSHOT_URLS
     ? process.env.NEXT_PUBLIC_SCREENSHOT_URLS.split(',')
-    : [`${URL || "https://app.minisend.xyz"}/icon.png`];
+    : [
+        `${URL || "https://app.minisend.xyz"}/swap.jpeg`,
+        `${URL || "https://app.minisend.xyz"}/rates.jpeg`,
+        `${URL || "https://app.minisend.xyz"}/confirmation.jpeg`
+      ];
 
   // Build tags array - default tags for Kenya USDC off-ramp
   const tags = ["usdc", "mpesa", "kenya", "crypto", "finance"];

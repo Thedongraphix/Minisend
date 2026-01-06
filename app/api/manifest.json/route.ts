@@ -21,7 +21,11 @@ export async function GET() {
       description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Convert USDC to KES or NGN instantly",
       screenshotUrls: process.env.NEXT_PUBLIC_SCREENSHOT_URLS
         ? process.env.NEXT_PUBLIC_SCREENSHOT_URLS.split(',')
-        : [`${process.env.NEXT_PUBLIC_APP_URL || "https://app.minisend.xyz"}/screenshot.jpeg`],
+        : [
+            `${process.env.NEXT_PUBLIC_APP_URL || "https://app.minisend.xyz"}/swap.jpeg`,
+            `${process.env.NEXT_PUBLIC_APP_URL || "https://app.minisend.xyz"}/rates.jpeg`,
+            `${process.env.NEXT_PUBLIC_APP_URL || "https://app.minisend.xyz"}/confirmation.jpeg`
+          ],
       primaryCategory: process.env.NEXT_PUBLIC_APP_PRIMARY_CATEGORY || "finance",
       tags: process.env.NEXT_PUBLIC_APP_KEYWORDS?.split(',').map(tag => tag.trim()) || ["usdc", "mpesa", "kenya", "crypto", "finance"],
       heroImageUrl: process.env.NEXT_PUBLIC_APP_HERO_IMAGE || process.env.NEXT_PUBLIC_ICON_URL || "https://app.minisend.xyz/icon.png",
