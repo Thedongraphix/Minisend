@@ -79,7 +79,7 @@ export default function App() {
             className="text-[var(--app-accent)] p-4"
             iconName="plus"
           >
-            Save Frame
+            Save Minisend
           </Button>
           {addFrameError && (
             <div className="text-xs text-red-400 mt-1 px-4">
