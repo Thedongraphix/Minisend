@@ -87,7 +87,7 @@ export async function GET(
     const pdfBlob = await generateModernReceipt({
       transactionCode: txCode || transactionCode,
       receiptNumber: receiptNumber || '',
-      recipientName: order.account_name || 'Unknown',
+      recipientName: order.public_name || order.account_name || 'Unknown',
       phoneNumber: order.phone_number,
       tillNumber: order.till_number,
       paybillNumber: order.paybill_number,

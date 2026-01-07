@@ -170,7 +170,7 @@ export async function getReceiptSummary(
     return {
       transactionCode,
       mpesaReceiptNumber: receiptNumber,
-      recipientName: order.account_name || undefined,
+      recipientName: order.public_name || order.account_name || undefined,
       amount: order.amount_in_local,
       currency: order.local_currency,
       date: order.created_at,
