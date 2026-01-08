@@ -65,6 +65,7 @@ export interface Order {
   payment_provider?: 'PAYCREST_KES' | 'PAYCREST_NGN' | 'PRETIUM_KES' | 'PRETIUM_GHS' | 'PRETIUM_NGN'
   pretium_transaction_code?: string
   pretium_receipt_number?: string
+  public_name?: string
   exchange_rate?: number
   created_at: string
   updated_at: string

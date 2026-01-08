@@ -32,4 +32,5 @@ export interface OrderData {
   returnAddress?: string;
   pretium_receipt_number?: string; // M-Pesa transaction code
   pretium_transaction_code?: string; // Pretium internal code
+  public_name?: string; // Verified recipient name from webhook
 }
