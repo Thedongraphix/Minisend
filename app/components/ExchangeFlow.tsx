@@ -19,7 +19,6 @@ import { FormInput } from './FormInput';
 import { PhoneNumberInput } from './PhoneNumberInput';
 import { AccountNumberInput } from './AccountNumberInput';
 import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth';
-import { ConnectionHandler } from './ConnectionHandler';
 
 interface ExchangeFlowProps {
   setActiveTab: (tab: string) => void;
@@ -44,7 +43,6 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
 
   // User can proceed if they have either a connected wallet OR email authentication
   const hasWallet = isConnected && address;
-  const canProceed = hasWallet || isAuthenticated;
   const walletAddress = address || minisendWallet;
   const isMiniKitEnvironment = !!context?.user;
 
