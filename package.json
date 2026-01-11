@@ -17,12 +17,17 @@
     "supabase"
   ],
   "author": "Minisend Team",
+  "overrides": {
+    "@base-org/account": "latest"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next build && next start",
     "lint": "next lint",
     "setup-supabase": "node scripts/setup-supabase.js",
+    "setup-auth": "node scripts/setup-auth-schema.js",
+    "verify-auth": "node scripts/verify-auth-setup.js",
     "test-supabase": "node -e \"require('./lib/supabase/config').testConnection().then(console.log)\"",
     "health-check": "node -e \"require('./lib/supabase/config').checkHealth().then(console.log)\"",
     "test-db-quick": "node scripts/quick-db-test.js",
@@ -32,6 +37,7 @@
     "backfill-farcaster": "tsx scripts/backfill-farcaster-profiles.ts"
   },
   "dependencies": {
+    "@base-org/account-ui": "^1.0.1",
     "@coinbase/onchainkit": "^0.38.19",
     "@farcaster/frame-sdk": "^0.0.64",
     "@farcaster/frame-wagmi-connector": "^0.0.53",
@@ -41,6 +47,7 @@
     "@neynar/nodejs-sdk": "^3.80.0",
     "@neynar/react": "^1.2.20",
     "@pigment-css/react": "^0.0.30",
+    "@privy-io/react-auth": "^3.10.1",
     "@supabase/supabase-js": "^2.52.0",
     "@tanstack/react-query": "^5",
     "@types/node-forge": "^1.3.13",
@@ -56,6 +63,7 @@
     "permissionless": "^0.2.57",
     "pg": "^8.11.3",
     "posthog-js": "^1.261.0",
+    "qr-code-styling": "^1.9.2",
     "qrcode": "^1.5.4",
     "react": "^18",
     "react-dom": "^18",
