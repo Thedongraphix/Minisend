@@ -19,6 +19,7 @@ import { BankSelector } from './BankSelector';
 import { FormInput } from './FormInput';
 import { PhoneNumberInput } from './PhoneNumberInput';
 import { AccountNumberInput } from './AccountNumberInput';
+import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth';
 
 interface ExchangeFlowProps {
   setActiveTab: (tab: string) => void;
@@ -39,10 +40,12 @@ function getCurrencyInfo(currency: 'KES' | 'NGN' | 'GHS') {
 export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
+  const { isAuthenticated, minisendWallet } = useMinisendAuth();
 
-  // MiniKit should work through wagmi automatically
+  // User can proceed if they have either a connected wallet OR email authentication
   const hasWallet = isConnected && address;
-  const walletAddress = address;
+  const canProceed = hasWallet || isAuthenticated;
+  const walletAddress = address || minisendWallet;
   const isMiniKitEnvironment = !!context?.user;
 
   const [mounted, setMounted] = useState(false);
@@ -247,7 +250,20 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
 
   // Show wallet connection if not connected or not mounted
   // For MiniKit users, auto-detect wallet from context
-  if (!mounted || !hasWallet) {
+  // Show loading state while mounting
+  if (!mounted) {
+    return (
+      <div className="max-w-md mx-auto p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-700 rounded w-3/4 mx-auto"></div>
+          <div className="h-64 bg-gray-700 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Only show connection screen if user is not authenticated at all
+  if (!canProceed) {
     return (
       <div className="max-w-md mx-auto p-6">
         <div className="text-center mb-8">
