@@ -50,19 +50,7 @@ export function BalanceView() {
   }
 
   if (!mounted || !hasWallet) {
-    return (
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 p-8 rounded-2xl shadow-2xl">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center mb-6 shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-white mb-2">Connect Your Wallet</h3>
-          <p className="text-gray-300">Connect wallet or sign up to view USDC balance</p>
-        </div>
-      </div>
-    )
+    return null;
   }
 
   if (chainId !== base.id) {

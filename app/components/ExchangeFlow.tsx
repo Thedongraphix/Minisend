@@ -19,6 +19,7 @@ import { FormInput } from './FormInput';
 import { PhoneNumberInput } from './PhoneNumberInput';
 import { AccountNumberInput } from './AccountNumberInput';
 import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth';
+import { ConnectionHandler } from './ConnectionHandler';
 
 interface ExchangeFlowProps {
   setActiveTab: (tab: string) => void;
@@ -262,21 +263,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   }
 
   // Only show connection screen if user is not authenticated at all
-  if (!canProceed) {
-    return (
-      <div className="max-w-md mx-auto p-6">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto bg-blue-600 border border-blue-500 rounded-2xl flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2">MiniSend</h1>
-          <p className="text-gray-300">Send money to mobile wallets</p>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-6 overflow-visible">
