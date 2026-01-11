@@ -39,7 +39,7 @@ function getCurrencyInfo(currency: 'KES' | 'NGN' | 'GHS') {
 export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
-  const { isAuthenticated, minisendWallet } = useMinisendAuth();
+  const { minisendWallet } = useMinisendAuth();
 
   // User can proceed if they have either a connected wallet OR email authentication
   const hasWallet = isConnected && address;
