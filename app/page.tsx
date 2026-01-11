@@ -125,11 +125,11 @@ export default function App() {
               <Image
                 src="/logo.svg"
                 alt="Minisend"
-                width={40}
-                height={40}
+                width={20}
+                height={20}
                 className="flex-shrink-0"
               />
-              <h1 className="text-2xl font-bold text-white truncate">Minisend</h1>
+              <h5 className="text-lg font-bold text-white truncate">Minisend</h5>
             </div>
 
             {/* Profile Icon / Connect Button in top right */}
