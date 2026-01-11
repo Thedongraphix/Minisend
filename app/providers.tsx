@@ -28,11 +28,9 @@ function ConditionalPrivyProvider({ children }: { children: ReactNode }) {
             accentColor: '#0052FF',
             logo: process.env.NEXT_PUBLIC_ICON_URL,
             landingHeader: 'Welcome to Minisend',
-            loginMessage: 'Sign up with email or connect your wallet',
-            walletList: ['metamask', 'coinbase_wallet', 'rabby_wallet', 'rainbow', 'wallet_connect'],
-            showWalletLoginFirst: false,
+            loginMessage: 'Sign up to get a minisend wallet',
           },
-          loginMethods: ['email', 'wallet'],
+          loginMethods: ['email'],
           defaultChain: privyBase,
           supportedChains: [privyBase],
         }}
