@@ -17,6 +17,7 @@ import {
   Identity,
   EthBalance,
 } from '@coinbase/onchainkit/identity';
+import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth';
 
 interface ConnectionHandlerProps {
   onConnectionSuccess?: () => void;
@@ -30,6 +31,7 @@ export function ConnectionHandler({
   className = ''
 }: ConnectionHandlerProps) {
   const { isConnected, address } = useAccount();
+  const { isAuthenticated } = useMinisendAuth();
 
   useEffect(() => {
     if (isConnected && onConnectionSuccess) {
@@ -37,6 +39,13 @@ export function ConnectionHandler({
     }
   }, [isConnected, onConnectionSuccess]);
 
+  // If user is authenticated via email (has minisend wallet but no connected wallet),
+  // don't show wallet connection prompt - they can use their deposit address
+  if (isAuthenticated && !isConnected) {
+    return null;
+  }
+
+  // Show wallet connection for users who need to connect a wallet for transactions
   return (
     <div className={`flex justify-center ${className}`}>
       <Wallet>
@@ -47,16 +56,16 @@ export function ConnectionHandler({
         <WalletDropdown>
           <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
             <Avatar />
-            <Name 
-              address={address} 
-              chain={base} 
-              className="text-white font-semibold" 
+            <Name
+              address={address}
+              chain={base}
+              className="text-white font-semibold"
             />
             <Address className="text-gray-300 text-sm" />
-            
+
             {showBalance && <EthBalance />}
           </Identity>
-          
+
           <WalletDropdownFundLink />
           <WalletDropdownDisconnect />
         </WalletDropdown>

@@ -16,6 +16,7 @@ import type { Token } from '@coinbase/onchainkit/token';
 import { Button } from './BaseComponents';
 import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { trackSwapEvent, trackWalletEvent } from '@/lib/analytics';
+import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth';
 
 interface SwapInterfaceProps {
   setActiveTab: (tab: string) => void;
@@ -24,6 +25,7 @@ interface SwapInterfaceProps {
 export function SwapInterface({ setActiveTab }: SwapInterfaceProps) {
   const { address, isConnected } = useAccount();
   const { context } = useMiniKit();
+  const { isAuthenticated } = useMinisendAuth();
 
   // Track component mount and wallet connection state
   useEffect(() => {
@@ -60,7 +62,9 @@ export function SwapInterface({ setActiveTab }: SwapInterfaceProps) {
   // Add other tokens here to display them as options in the swap
   const swappableTokens: Token[] = [ETHToken, USDCToken];
 
-  if (!address) {
+  // If user is authenticated via email, don't show wallet connection prompt
+  // They should use the main payment flows instead
+  if (!address && !isAuthenticated) {
     return (
       <div className="space-y-2 animate-fade-in">
         <div className="glass-effect rounded-xl card-shadow overflow-hidden max-w-xs mx-auto">
@@ -69,7 +73,7 @@ export function SwapInterface({ setActiveTab }: SwapInterfaceProps) {
             <p className="text-gray-400 mb-2 text-xs">
               Connect your wallet to swap ETH to USDC
             </p>
-            
+
             <div className="mb-2">
               <Wallet>
                 <ConnectWallet>
@@ -79,10 +83,35 @@ export function SwapInterface({ setActiveTab }: SwapInterfaceProps) {
               </Wallet>
             </div>
 
-            <Button 
-              variant="outlined" 
-              onClick={() => setActiveTab("home")} 
-              fullWidth 
+            <Button
+              variant="outlined"
+              onClick={() => setActiveTab("home")}
+              fullWidth
+              size="medium"
+            >
+              Back to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If email user without wallet, show message to use payment flows
+  if (!address && isAuthenticated) {
+    return (
+      <div className="space-y-2 animate-fade-in">
+        <div className="glass-effect rounded-xl card-shadow overflow-hidden max-w-xs mx-auto">
+          <div className="p-3 text-center">
+            <h3 className="text-base font-bold text-white mb-1">Swap Tokens</h3>
+            <p className="text-gray-400 mb-3 text-xs">
+              Swap feature requires a connected wallet. Use the payment flows to convert USDC to mobile money.
+            </p>
+
+            <Button
+              variant="primary"
+              onClick={() => setActiveTab("home")}
+              fullWidth
               size="medium"
             >
               Back to Home

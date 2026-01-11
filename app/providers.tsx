@@ -33,6 +33,11 @@ function ConditionalPrivyProvider({ children }: { children: ReactNode }) {
           loginMethods: ['email'],
           defaultChain: privyBase,
           supportedChains: [privyBase],
+          // Legal links for session persistence
+          legal: {
+            termsAndConditionsUrl: 'https://app.minisend.xyz/terms',
+            privacyPolicyUrl: 'https://app.minisend.xyz/privacy',
+          },
         }}
       >
         {children}
