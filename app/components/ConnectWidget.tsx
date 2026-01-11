@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { isFarcasterMiniApp } from '@/lib/platform-detection';
-import { useAccount } from 'wagmi';
+import { useAccount, useDisconnect } from 'wagmi';
 import { Avatar, Name } from '@coinbase/onchainkit/identity';
 import { Wallet, ConnectWallet } from '@coinbase/onchainkit/wallet';
 import { base } from 'viem/chains';
@@ -16,7 +16,10 @@ interface ConnectWidgetProps {
 
 export function ConnectWidget({ className = '', onProfileClick }: ConnectWidgetProps) {
   const [mounted, setMounted] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
   const isFarcaster = isFarcasterMiniApp();
 
   // Get Minisend auth state (handles email + wallet)
@@ -26,13 +29,57 @@ export function ConnectWidget({ className = '', onProfileClick }: ConnectWidgetP
   const privyHooks = usePrivy();
 
   // Use Privy hooks only if not in Farcaster
-  const { authenticated, ready, login } = !isFarcaster
+  const { authenticated, ready, login, logout: privyLogout } = !isFarcaster
     ? privyHooks
-    : { authenticated: false, ready: false, login: async () => {} };
+    : { authenticated: false, ready: false, login: async () => {}, logout: async () => {} };
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDropdown]);
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      // Disconnect wallet if connected
+      if (isConnected) {
+        disconnect();
+      }
+
+      // Logout from Privy if authenticated
+      if (authenticated) {
+        await privyLogout();
+      }
+
+      setShowDropdown(false);
+
+      // Optional: Reload page to clear all state
+      window.location.reload();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  // Handle profile click
+  const handleProfileClick = () => {
+    if (onProfileClick) {
+      onProfileClick();
+      setShowDropdown(false);
+    }
+  };
 
   if (!mounted || isFarcaster) return null;
 
@@ -72,31 +119,85 @@ export function ConnectWidget({ className = '', onProfileClick }: ConnectWidgetP
     );
   }
 
-  // Authenticated: show professional profile icon with avatar
+  // Authenticated: show profile button with dropdown
   return (
-    <div className={className}>
+    <div className={`${className} relative`} ref={dropdownRef}>
       <button
-        onClick={onProfileClick}
-        className="group relative"
-        title="View Profile"
+        onClick={() => setShowDropdown(!showDropdown)}
+        className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all border border-white/10 hover:border-white/20"
       >
+        {/* Avatar */}
         <div className="relative">
           {displayAddress ? (
             <Avatar
               address={displayAddress as `0x${string}`}
               chain={base}
-              className="h-10 w-10 rounded-full ring-2 ring-white/10 group-hover:ring-[#0052FF]/50 transition-all"
+              className="h-8 w-8 rounded-full ring-2 ring-white/10 group-hover:ring-[#0052FF]/50 transition-all"
             />
           ) : (
-            <div className="h-10 w-10 rounded-full ring-2 ring-white/10 group-hover:ring-[#0052FF]/50 bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center transition-all">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="h-8 w-8 rounded-full ring-2 ring-white/10 group-hover:ring-[#0052FF]/50 bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center transition-all">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
           )}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent to-white/5 group-hover:to-white/10 transition-all pointer-events-none" />
         </div>
+
+        {/* "Your profile" text */}
+        <span className="text-sm font-medium text-white/90 group-hover:text-white transition-colors">
+          Your profile
+        </span>
+
+        {/* Chevron icon */}
+        <svg
+          className={`w-4 h-4 text-white/60 group-hover:text-white/80 transition-all ${showDropdown ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
       </button>
+
+      {/* Dropdown Menu */}
+      {showDropdown && (
+        <div className="absolute right-0 mt-2 w-56 rounded-xl bg-[#1a1a1a] border border-white/10 shadow-2xl overflow-hidden z-50">
+          {/* User Info Section */}
+          <div className="px-4 py-3 border-b border-white/10 bg-white/5">
+            <p className="text-xs text-white/50 mb-1">Signed in as</p>
+            <p className="text-sm text-white font-medium truncate">
+              {user?.email || (displayAddress ? `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}` : 'User')}
+            </p>
+          </div>
+
+          {/* Menu Items */}
+          <div className="py-2">
+            {/* View Profile */}
+            {onProfileClick && (
+              <button
+                onClick={handleProfileClick}
+                className="w-full px-4 py-2.5 text-left text-sm text-white/90 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-3"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                View Profile
+              </button>
+            )}
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center gap-3"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
