@@ -3,10 +3,48 @@
 import { type ReactNode } from "react";
 import { MiniKitProvider } from "@coinbase/onchainkit/minikit";
 import { MiniAppProvider } from "@neynar/react";
+import { PrivyProvider } from "@privy-io/react-auth";
+import { base as privyBase } from "@privy-io/chains";
 import { base, baseSepolia } from "viem/chains";
 import { PostHogProvider } from "@/lib/posthog-provider";
 import { Logger } from "@/app/components/Logger";
 import { paymasterConfig } from "@/lib/paymaster-config";
+import { isWeb } from "@/lib/platform-detection";
+
+/**
+ * Conditional Privy Wrapper with Base Account Integration
+ * Only wraps the app with Privy for web users, not for miniapps
+ * Follows Base Account + Privy setup from docs.base.org
+ */
+function ConditionalPrivyProvider({ children }: { children: ReactNode }) {
+  // Only use Privy on web platform, not in miniapps
+  if (typeof window !== 'undefined' && isWeb()) {
+    return (
+      <PrivyProvider
+        appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+        config={{
+          appearance: {
+            theme: 'light',
+            accentColor: '#0052FF',
+            logo: process.env.NEXT_PUBLIC_ICON_URL,
+            landingHeader: 'Welcome to Minisend',
+            loginMessage: 'Sign up with email or connect your wallet',
+            walletList: ['metamask', 'coinbase_wallet', 'rabby_wallet', 'rainbow', 'wallet_connect'],
+            showWalletLoginFirst: false,
+          },
+          loginMethods: ['email', 'wallet'],
+          defaultChain: privyBase,
+          supportedChains: [privyBase],
+        }}
+      >
+        {children}
+      </PrivyProvider>
+    );
+  }
+
+  // For miniapps, render children without Privy wrapper
+  return <>{children}</>;
+}
 
 export function Providers(props: { children: ReactNode }) {
   // Use testnet or mainnet based on paymaster config
@@ -33,10 +71,12 @@ export function Providers(props: { children: ReactNode }) {
           paymaster: paymasterConfig.isEnabled ? paymasterConfig.rpcUrl : undefined,
         }}
       >
-        <Logger />
-        <PostHogProvider>
-          {props.children}
-        </PostHogProvider>
+        <ConditionalPrivyProvider>
+          <Logger />
+          <PostHogProvider>
+            {props.children}
+          </PostHogProvider>
+        </ConditionalPrivyProvider>
       </MiniKitProvider>
     </MiniAppProvider>
   );
