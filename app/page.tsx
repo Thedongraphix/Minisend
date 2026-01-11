@@ -4,8 +4,6 @@ import {
   useMiniKit,
 } from "@coinbase/onchainkit/minikit";
 import { sdk } from "@farcaster/miniapp-sdk";
-// Wallet components removed since we don't show wallet connection in main page anymore
-// Wallet components removed - now handled in Home component
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "./components/BaseComponents";
 import { Icon } from "./components/BaseComponents";
@@ -18,7 +16,6 @@ import { ProfileView } from "./components/ProfileView";
 
 import { DebugPanel } from "./components/DebugPanel";
 import { AppProvider } from "./components/AppProvider";
-// Analytics imports removed - not used in current implementation
 import Image from 'next/image';
 import "./theme.css";
 import { ConnectWidget } from "./components/ConnectWidget";
@@ -135,10 +132,11 @@ export default function App() {
               <h1 className="text-2xl font-bold text-white truncate">Minisend</h1>
             </div>
 
-            {/* Wallet Island in top right */}
+            {/* Profile Icon / Connect Button in top right */}
             <div className="flex items-center gap-2 flex-shrink-0 ml-2">
               <ConnectWidget
                 className="scale-75 sm:scale-100"
+                onProfileClick={() => setActiveTab('profile')}
               />
             </div>
           </div>
