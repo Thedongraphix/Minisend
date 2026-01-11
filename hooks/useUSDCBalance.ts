@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { getUSDCContract } from '@/lib/contracts'
 import { base } from 'viem/chains'
-// import { useMiniKit } from '@coinbase/onchainkit/minikit'
+import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth'
 
 interface UseUSDCBalanceReturn {
   balance: string;
@@ -18,10 +18,11 @@ interface UseUSDCBalanceReturn {
 export function useUSDCBalance(): UseUSDCBalanceReturn {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
+  const { minisendWallet } = useMinisendAuth()
 
-  // Use regular wagmi addresses
-  const effectiveAddress = address
-  const hasWallet = isConnected && address
+  // Use connected wallet address if available, otherwise use Minisend wallet
+  const effectiveAddress = address || minisendWallet
+  const hasWallet = (isConnected && address) || minisendWallet
 
   const [balance, setBalance] = useState<string>('0.00')
   const [isLoading, setIsLoading] = useState(false)

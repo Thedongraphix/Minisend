@@ -7,20 +7,28 @@ import { base } from 'viem/chains'
 import { Name } from '@coinbase/onchainkit/identity'
 import Image from 'next/image'
 import { useUSDCBalance } from '@/hooks/useUSDCBalance'
+import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth'
 
 export function BalanceView() {
   // Use wagmi hooks for Coinbase Wallet connection
   const { address, isConnected } = useAccount()
+  const { minisendWallet } = useMinisendAuth()
   const chainId = useChainId()
   const [mounted, setMounted] = useState(false)
+
+  // Determine which wallet to display (connected wallet takes priority)
+  const displayAddress = address || minisendWallet
+  const hasWallet = (isConnected && address) || minisendWallet
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
   // Debug logging
-  console.log('DirectUSDCBalance - Coinbase Wallet:', {
+  console.log('DirectUSDCBalance:', {
     address,
+    minisendWallet,
+    displayAddress,
     isConnected,
     chainId
   });
@@ -41,7 +49,7 @@ export function BalanceView() {
     }
   }
 
-  if (!mounted || !isConnected) {
+  if (!mounted || !hasWallet) {
     return (
       <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 p-8 rounded-2xl shadow-2xl">
         <div className="text-center">
@@ -51,7 +59,7 @@ export function BalanceView() {
             </svg>
           </div>
           <h3 className="text-xl font-semibold text-white mb-2">Connect Your Wallet</h3>
-          <p className="text-gray-300">Connect wallet to view USDC balance</p>
+          <p className="text-gray-300">Connect wallet or sign up to view USDC balance</p>
         </div>
       </div>
     )
@@ -191,19 +199,23 @@ export function BalanceView() {
           
           {/* Center Section - User Identity */}
           <div className="space-y-1">
-            <p className="text-gray-400 text-[10px] font-medium tracking-[0.3em] uppercase">Wallet Owner</p>
+            <p className="text-gray-400 text-[10px] font-medium tracking-[0.3em] uppercase">
+              {minisendWallet && !address ? 'Minisend Wallet' : 'Wallet Owner'}
+            </p>
             <div className="flex items-center space-x-2">
               <div className="text-white text-lg font-medium">
-                <Name 
-                  address={address} 
-                  chain={base} 
-                  className="text-white font-semibold tracking-[0.05em]"
-                />
+                {displayAddress && (
+                  <Name 
+                    address={displayAddress as `0x${string}`} 
+                    chain={base} 
+                    className="text-white font-semibold tracking-[0.05em]"
+                  />
+                )}
               </div>
-              {address && (
+              {displayAddress && (
                 <button
                   onClick={() => {
-                    copyToClipboard(address);
+                    copyToClipboard(displayAddress);
                   }}
                   className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-white/10 focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200 group/copy"
                   title={copyFeedback ? "Copied!" : "Copy full address"}

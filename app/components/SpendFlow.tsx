@@ -5,7 +5,6 @@ import { useAccount } from 'wagmi';
 import { PaymentProcessor } from './PaymentProcessor';
 import { PretiumPaymentProcessor } from './PretiumPaymentProcessor';
 import { BalanceView } from './BalanceView';
-import { ConnectionHandler } from './ConnectionHandler';
 import { AdvancedSelector } from './AdvancedSelector';
 import { Button } from './BaseComponents';
 import Image from 'next/image';
@@ -63,8 +62,6 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
           <h1 className="text-3xl font-bold text-white mb-2">Spend USDC</h1>
           <p className="text-gray-300">Pay businesses with M-Pesa till & paybill</p>
         </div>
-
-        <ConnectionHandler showBalance={false} />
       </div>
     );
   }

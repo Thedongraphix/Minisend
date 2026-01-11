@@ -6,7 +6,6 @@ import { useAccount } from 'wagmi';
 import { PaymentProcessor } from './PaymentProcessor';
 import { PretiumPaymentProcessor } from './PretiumPaymentProcessor';
 import { BalanceView } from './BalanceView';
-import { ConnectionHandler } from './ConnectionHandler';
 import { Button } from './BaseComponents';
 import Image from 'next/image';
 import { trackOffRampEvent, trackWalletEvent } from '@/lib/analytics';
@@ -275,8 +274,6 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
           <h1 className="text-3xl font-bold text-white mb-2">MiniSend</h1>
           <p className="text-gray-300">Send money to mobile wallets</p>
         </div>
-
-        <ConnectionHandler showBalance={false} />
       </div>
     );
   }

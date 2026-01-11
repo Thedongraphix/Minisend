@@ -123,13 +123,13 @@ export default function App() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-3 min-w-0 flex-1">
               <Image
-                src="/logo.svg"
+                src="/minisend-white.png"
                 alt="Minisend"
-                width={20}
-                height={20}
+                width={100}
+                height={100}
                 className="flex-shrink-0"
               />
-              <h5 className="text-lg font-bold text-white truncate">Minisend</h5>
+          
             </div>
 
             {/* Profile Icon / Connect Button in top right */}
