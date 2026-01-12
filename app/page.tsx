@@ -142,7 +142,26 @@ export default function App() {
           </div>
         </div>
 
-        {/* Wrapped 2025 Banner 
+        {/* Service Disruption Banner */}
+        <div className="w-full max-w-md mx-auto px-4 mb-4">
+          <div className="w-full bg-gradient-to-r from-amber-600 to-orange-600 p-4 rounded-xl shadow-lg border border-amber-500/50">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <div className="text-white font-bold text-sm mb-1">Service Temporarily Unavailable</div>
+                <div className="text-white/95 text-xs leading-relaxed">
+                  We are currently experiencing a temporary service disruption. Our team is working to resolve the issue. We'll be back online soon.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Wrapped 2025 Banner
         <div className="w-full max-w-md mx-auto px-4 mb-4">
           <Link href="/profile" className="block">
             <div className="w-full bg-gradient-to-r from-[#8b53ff] to-[#6b3fd9] p-4 rounded-xl hover:from-[#7a47e6] hover:to-[#5a35c8] transition-all duration-200 shadow-lg cursor-pointer">
