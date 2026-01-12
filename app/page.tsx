@@ -154,7 +154,7 @@ export default function App() {
               <div className="flex-1">
                 <div className="text-white font-bold text-sm mb-1">Service Temporarily Unavailable</div>
                 <div className="text-white/95 text-xs leading-relaxed">
-                  We are currently experiencing a temporary service disruption. Our team is working to resolve the issue. We'll be back online soon.
+                  We are currently experiencing a temporary service disruption. Our team is working to resolve the issue. We&apos;ll be back online soon.
                 </div>
               </div>
             </div>
