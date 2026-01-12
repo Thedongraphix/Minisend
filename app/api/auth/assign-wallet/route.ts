@@ -41,6 +41,32 @@ interface BlockRadarAddressResponse {
   statusCode: number;
 }
 
+interface AutoSettlementRuleResponse {
+  data: {
+    id: string;
+    name: string;
+    isActive: boolean;
+    isGateway: boolean;
+    order: string;
+    slippageTolerance: string;
+    source: {
+      assets: string[];
+      blockchain: string;
+      minAmount: string;
+      maxAmount: string;
+    };
+    destination: {
+      address?: string;
+      asset?: string;
+      blockchain?: string;
+    };
+    createdAt: string;
+    updatedAt: string;
+  };
+  message: string;
+  statusCode: number;
+}
+
 /**
  * Verify Farcaster authentication token
  */
@@ -98,6 +124,79 @@ async function createBlockRadarWallet(metadata: Record<string, unknown>): Promis
   } catch (error) {
     console.error('Failed to create BlockRadar wallet:', error);
     throw error;
+  }
+}
+
+/**
+ * Create auto-settlement rule for a child address
+ * This enables automatic USDC sweeping from user deposits to master wallet
+ */
+async function createAutoSettlementRule(
+  walletId: string,
+  addressId: string
+): Promise<{ ruleId: string; isActive: boolean }> {
+  const BLOCKRADAR_API_KEY = process.env.BLOCKRADAR_API_KEY;
+
+  if (!BLOCKRADAR_API_KEY) {
+    throw new Error('BlockRadar API key not configured');
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.blockradar.co/v1/wallets/${walletId}/addresses/${addressId}/auto-settlements/rules`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': BLOCKRADAR_API_KEY,
+        },
+        body: JSON.stringify({
+          name: 'Auto-sweep USDC to Master Wallet',
+          order: 'FASTEST', // Prioritize speed
+          slippageTolerance: '5', // 5% tolerance
+          isGateway: true, // Use BlockRadar Gateway for instant settlement
+          isActive: true, // Activate immediately
+          source: {
+            assets: ['USDC'], // Monitor USDC deposits only
+            minAmount: '1', // Minimum 1 USDC to trigger
+            maxAmount: '1000000', // Up to 1M USDC
+          },
+          destination: {}, // Empty for gateway rules (goes to master wallet)
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('BlockRadar auto-settlement API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+      });
+      throw new Error(`Failed to create auto-settlement rule: ${response.status} ${response.statusText}`);
+    }
+
+    const data: AutoSettlementRuleResponse = await response.json();
+
+    console.log('✅ Auto-settlement rule created successfully:', {
+      ruleId: data.data.id,
+      addressId,
+      isActive: data.data.isActive,
+      order: data.data.order,
+    });
+
+    return {
+      ruleId: data.data.id,
+      isActive: data.data.isActive,
+    };
+  } catch (error) {
+    console.error('Failed to create auto-settlement rule:', error);
+    // Don't throw - wallet assignment should still succeed even if auto-settlement fails
+    // We'll log the error and return a null ruleId
+    return {
+      ruleId: '',
+      isActive: false,
+    };
   }
 }
 
@@ -208,6 +307,29 @@ export async function POST(request: NextRequest) {
       created_at: Date.now(),
     });
 
+    console.log('✅ BlockRadar wallet created:', {
+      userId,
+      addressId,
+      minisendWallet,
+    });
+
+    // Create auto-settlement rule for automatic USDC sweeping
+    const BLOCKRADAR_WALLET_ID = process.env.BLOCKRADAR_WALLET_ID;
+    const { ruleId: autoSettlementRuleId, isActive: settlementActive } = await createAutoSettlementRule(
+      BLOCKRADAR_WALLET_ID!,
+      addressId
+    );
+
+    if (autoSettlementRuleId) {
+      console.log('✅ Auto-settlement rule configured:', {
+        userId,
+        ruleId: autoSettlementRuleId,
+        isActive: settlementActive,
+      });
+    } else {
+      console.warn('⚠️ Auto-settlement rule creation failed, but wallet assignment continues');
+    }
+
     // Insert or update user in database
     const { data: upsertedUser, error: upsertError } = await supabase
       .from('minisend_users')
@@ -217,6 +339,7 @@ export async function POST(request: NextRequest) {
         connected_wallet: walletAddress,
         minisend_wallet: minisendWallet,
         blockradar_address_id: addressId,
+        auto_settlement_rule_id: autoSettlementRuleId || null,
         email,
         last_login_at: new Date().toISOString(),
       }, {
