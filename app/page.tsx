@@ -142,7 +142,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Service Disruption Banner */}
+        {/* Service Disruption Banner 
         <div className="w-full max-w-md mx-auto px-4 mb-4">
           <div className="w-full bg-gradient-to-r from-amber-600 to-orange-600 p-4 rounded-xl shadow-lg border border-amber-500/50">
             <div className="flex items-start gap-3">
@@ -160,7 +160,7 @@ export default function App() {
             </div>
           </div>
         </div>
-
+      */}
         {/* Wrapped 2025 Banner
         <div className="w-full max-w-md mx-auto px-4 mb-4">
           <Link href="/profile" className="block">
