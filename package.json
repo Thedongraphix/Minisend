@@ -59,6 +59,7 @@
     "@neynar/nodejs-sdk": "^3.80.0",
     "@neynar/react": "^1.2.20",
     "@pigment-css/react": "^0.0.30",
+    "@privy-io/chains": "^0.0.5",
     "@privy-io/react-auth": "^3.10.1",
     "@supabase/supabase-js": "^2.52.0",
     "@tanstack/react-query": "^5",
