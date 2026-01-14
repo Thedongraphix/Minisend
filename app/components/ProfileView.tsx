@@ -432,8 +432,8 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
 
       {/* Expanded Deposit Details */}
       {showDeposit && minisendWallet && (
-        <div className="bg-[#1a1a1a] rounded-2xl p-5 sm:p-6 animate-fade-in border border-white/10">
-          <div className="flex flex-col sm:flex-row items-center sm:items-center gap-8">
+        <div className="bg-[#1a1a1a] rounded-2xl p-4 sm:p-6 animate-fade-in border border-white/10">
+          <div className="flex flex-col items-center gap-4">
             {/* QR Code - Left Side with Blockchain Logos */}
             <div className="flex-shrink-0 flex flex-col items-center gap-3">
               <div className="bg-white rounded-lg p-2 shadow-lg w-[200px] h-[200px] overflow-hidden relative">
@@ -467,8 +467,8 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
               </div>
             </div>
 
-            {/* Content - Right Side */}
-            <div className="flex-1 flex flex-col justify-center space-y-3 text-center sm:text-left">
+            {/* Content - Below QR */}
+            <div className="w-full flex flex-col items-center space-y-3 text-center">
               <p className="text-gray-300 text-xs sm:text-sm leading-relaxed max-w-md">
                 Scan this code to deposit supported assets on Base to this address.
               </p>
@@ -476,7 +476,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
               {/* Copy Address Button */}
               <button
                 onClick={handleCopyAddress}
-                className="px-4 py-2 sm:px-5 sm:py-2.5 bg-transparent border border-white/20 hover:border-white/40 hover:bg-white/5 text-white text-xs sm:text-sm font-medium rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="px-4 py-2 sm:px-5 sm:py-2.5 bg-transparent border border-white/20 hover:border-white/40 hover:bg-white/5 text-white text-xs sm:text-sm font-medium rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
