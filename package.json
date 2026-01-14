@@ -69,6 +69,7 @@
     "@upstash/redis": "^1.34.4",
     "framer-motion": "^12.23.25",
     "html-to-image": "^1.11.13",
+    "html2canvas": "^1.4.1",
     "jspdf": "^3.0.2",
     "next": "15.5.9",
     "node-fetch": "^3.3.2",
