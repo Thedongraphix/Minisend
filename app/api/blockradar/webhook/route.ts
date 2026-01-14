@@ -12,7 +12,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend lazily to avoid build-time errors
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not configured');
+  }
+  return new Resend(apiKey);
+}
 
 interface GatewayDepositWebhook {
   event: 'gateway-deposit.success' | 'gateway-deposit.failed';
@@ -74,6 +81,7 @@ async function sendDepositNotification(
   txHash: string
 ): Promise<void> {
   try {
+    const resend = getResendClient();
     await resend.emails.send({
       from: 'Minisend <info@minisend.xyz>',
       to: userEmail,
@@ -185,6 +193,7 @@ async function sendDepositFailedNotification(
   txHash: string
 ): Promise<void> {
   try {
+    const resend = getResendClient();
     await resend.emails.send({
       from: 'Minisend <info@minisend.xyz>',
       to: userEmail,

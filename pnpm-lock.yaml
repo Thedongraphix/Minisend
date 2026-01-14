@@ -74,6 +74,9 @@ importers:
       html2canvas:
         specifier: ^1.4.1
         version: 1.4.1
+      jose:
+        specifier: ^6.1.3
+        version: 6.1.3
       jspdf:
         specifier: ^3.0.2
         version: 3.0.4
