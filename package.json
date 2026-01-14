@@ -17,8 +17,20 @@
     "supabase"
   ],
   "author": "Minisend Team",
-  "overrides": {
-    "@base-org/account": "latest"
+  "pnpm": {
+    "overrides": {
+      "@base-org/account": "latest"
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "bufferutil",
+      "utf-8-validate",
+      "keccak",
+      "unrs-resolver",
+      "protobufjs",
+      "@reown/appkit"
+    ]
   },
   "scripts": {
     "dev": "next dev",
