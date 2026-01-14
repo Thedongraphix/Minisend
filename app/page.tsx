@@ -125,8 +125,8 @@ export default function App() {
               <Image
                 src="/minisend-white.png"
                 alt="Minisend"
-                width={100}
-                height={100}
+                width={130}
+                height={130}
                 className="flex-shrink-0"
               />
           

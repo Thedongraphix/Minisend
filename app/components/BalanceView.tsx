@@ -107,7 +107,7 @@ export function BalanceView() {
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-gray-800">
           {/* Subtle mesh gradient overlay */}
           <div className="absolute inset-0 gradient-mesh"></div>
-          
+
           {/* Premium geometric patterns */}
           <div className="absolute inset-0 opacity-5">
             <div className="absolute top-0 right-0 w-40 h-40 border border-white rounded-full -translate-y-20 translate-x-20"></div>
@@ -115,7 +115,7 @@ export function BalanceView() {
             <div className="absolute top-1/2 left-1/2 w-24 h-24 border border-white rounded-full -translate-x-12 -translate-y-12"></div>
           </div>
         </div>
-        
+
         {/* Card Content Layer */}
         <div className="relative z-10 p-8 h-full flex flex-col justify-between">
           {/* Header Section */}
@@ -181,10 +181,10 @@ export function BalanceView() {
                 <p className="text-red-400 text-xs font-medium">{error}</p>
               ) : null}
             </div>
-            
-            
+
+
           </div>
-          
+
           {/* Center Section - User Identity */}
           <div className="space-y-1">
             <p className="text-gray-400 text-[10px] font-medium tracking-[0.3em] uppercase">
@@ -193,9 +193,9 @@ export function BalanceView() {
             <div className="flex items-center space-x-2">
               <div className="text-white text-lg font-medium">
                 {displayAddress && (
-                  <Name 
-                    address={displayAddress as `0x${string}`} 
-                    chain={base} 
+                  <Name
+                    address={displayAddress as `0x${string}`}
+                    chain={base}
                     className="text-white font-semibold tracking-[0.05em]"
                   />
                 )}
@@ -224,29 +224,29 @@ export function BalanceView() {
               )}
             </div>
           </div>
-          
+
           {/* Footer Section */}
           <div className="flex justify-between items-end">
             <div className="space-y-0.5">
               <p className="text-gray-400 text-[10px] font-medium tracking-[0.2em] uppercase">Network</p>
               <div className="flex items-center space-x-2">
-                <Image 
-                  src="/Base_Network_Logo.svg" 
-                  alt="Base Network" 
+                <Image
+                  src="/Base_Network_Logo.svg"
+                  alt="Base Network"
                   width={16}
                   height={16}
                 />
               <p className="text-white text-sm font-semibold">{networkConfig.name}</p>
               </div>
             </div>
-            
+
             <div className="text-right space-y-0.5">
               <p className="text-gray-400 text-[10px] font-medium tracking-[0.2em] uppercase">Currency</p>
               <p className="text-white text-sm font-semibold">USD Coin</p>
             </div>
           </div>
         </div>
-        
+
         {/* Subtle border glow */}
         <div className="absolute inset-0 rounded-3xl border border-white/10"></div>
       </div>

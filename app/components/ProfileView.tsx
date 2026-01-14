@@ -66,7 +66,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
   } = useBlockradarBalance({
     addressId: user?.blockradarAddressId || null,
     autoFetch: true,
-    refreshInterval: 60000, // Refresh every minute
+    // Refresh every minute
   });
 
   const [allOrders, setAllOrders] = useState<Order[]>([]);
@@ -155,11 +155,11 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
       qrContainerRef.current.innerHTML = '';
 
       const qrCode = new QRCodeStyling({
-        width: 260,
-        height: 260,
+        width: 188,
+        height: 190,
         type: 'canvas',
         data: minisendWallet,
-        margin: 4,
+        margin: 0,
         qrOptions: {
           typeNumber: 0,
           mode: 'Byte',
@@ -171,15 +171,15 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
           margin: 4,
         },
         dotsOptions: {
-          color: '#1a1a1a',
+          color: '#8b53ff',
           type: 'rounded', // Rounded dots instead of squares
         },
         cornersSquareOptions: {
-          color: '#1a1a1a',
+          color: '#8b53ff',
           type: 'extra-rounded', // Rounded corner squares
         },
         cornersDotOptions: {
-          color: '#1a1a1a',
+          color: '#8b53ff',
           type: 'dot', // Rounded corner dots
         },
         backgroundOptions: {
@@ -432,122 +432,57 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
 
       {/* Expanded Deposit Details */}
       {showDeposit && minisendWallet && (
-        <div className="bg-white/[0.02] rounded-2xl overflow-hidden animate-fade-in">
-          {/* Header */}
-          <div className="px-5 py-4">
-            <div className="text-white font-semibold text-sm mb-3">Multi-Chain Deposit Address</div>
-            
-          </div>
-
-          {/* QR Code Section */}
-          <div className="px-6 py-5">
-            <div className="bg-white rounded-2xl p-3 shadow-lg">
-              {/* QR Code with Logo */}
-              <div className="flex justify-center mb-2">
-                <div className="relative">
-                  <div ref={qrContainerRef} />
-                  {/* Minisend Logo overlay in center */}
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1">
-                    <Image
-                      src="/logo.svg"
-                      alt="Minisend"
-                      width={20}
-                      height={20}
-                      className="w-full h-full"
-                    />
-                  </div>
+        <div className="bg-[#1a1a1a] rounded-2xl p-5 sm:p-6 animate-fade-in border border-white/10">
+          <div className="flex flex-col sm:flex-row items-center sm:items-center gap-8">
+            {/* QR Code - Left Side with Blockchain Logos */}
+            <div className="flex-shrink-0 flex flex-col items-center gap-3">
+              <div className="bg-white rounded-lg p-2 shadow-lg w-[200px] h-[200px] overflow-hidden relative">
+                <div ref={qrContainerRef} className="w-full h-full" />
+                {/* Minisend Logo overlay in center */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1 pointer-events-none">
+                  <Image
+                    src="/logo.svg"
+                    alt="Minisend"
+                    width={20}
+                    height={20}
+                    className="w-full h-full"
+                  />
                 </div>
               </div>
+              
+              {/* Blockchain Logos */}
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-white/10 p-1 flex items-center justify-center">
+                  <Image src="/Base_Network_Logo.svg" alt="Base" width={14} height={14} />
+                </div>
+                <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
+                  <Image src="/polygon-logo.svg" alt="Polygon" width={14} height={14} />
+                </div>
+                <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
+                  <Image src="/celo-logo.svg" alt="Celo" width={14} height={14} />
+                </div>
+                <div className="w-6 h-6 rounded-full bg-white p-0.5 flex items-center justify-center">
+                  <Image src="/lisk-logo.svg" alt="Lisk" width={14} height={14} className="invert-0" />
+                </div>
+              </div>
+            </div>
 
+            {/* Content - Right Side */}
+            <div className="flex-1 flex flex-col justify-center space-y-3 text-center sm:text-left">
+              <p className="text-gray-300 text-xs sm:text-sm leading-relaxed max-w-md">
+                Scan this code to deposit supported assets on Base to this address.
+              </p>
+              
               {/* Copy Address Button */}
-              <div className="flex justify-center mb-3">
-                <button
-                  onClick={handleCopyAddress}
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold rounded-lg transition-all active:scale-95 flex items-center gap-2"
-                >
-                  {copied ? (
-                    <>
-                      <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      Copy Address
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Supported Networks */}
-              <div className="space-y-2">
-                <div className="text-center">
-                  <p className="text-gray-600 text-xs font-medium uppercase tracking-wider">Supported Networks</p>
-                </div>
-                <div className="flex items-center justify-center gap-3">
-                  
-
-                  {/* Base */}
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-6 h-6 flex items-center justify-center">
-                      <Image
-                        src="/base-logo.svg"
-                        alt="Base"
-                        width={22}
-                        height={22}
-                        className="w-full h-full"
-                      />
-                    </div>
-                    <span className="text-gray-700 text-[9px] font-medium">Base</span>
-                  </div>
-
-                  {/* Polygon */}
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-6 h-6 flex items-center justify-center">
-                      <Image
-                        src="/polygon-logo.svg"
-                        alt="Polygon"
-                        width={22}
-                        height={22}
-                        className="w-full h-full"
-                      />
-                    </div>
-                    <span className="text-gray-700 text-[9px] font-medium">Polygon</span>
-                  </div>
-
-                  {/* Celo */}
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-6 h-6 flex items-center justify-center">
-                      <Image
-                        src="/celo-logo.svg"
-                        alt="Celo"
-                        width={22}
-                        height={22}
-                        className="w-full h-full"
-                      />
-                    </div>
-                    <span className="text-gray-700 text-[9px] font-medium">Celo</span>
-                  </div>
-
-                  {/* Lisk */}
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-6 h-6 flex items-center justify-center">
-                      <Image
-                        src="/lisk-logo.svg"
-                        alt="Lisk"
-                        width={22}
-                        height={22}
-                        className="w-full h-full"
-                      />
-                    </div>
-                    <span className="text-gray-700 text-[9px] font-medium">Lisk</span>
-                  </div>
-                </div>
-              </div>
+              <button
+                onClick={handleCopyAddress}
+                className="px-4 py-2 sm:px-5 sm:py-2.5 bg-transparent border border-white/20 hover:border-white/40 hover:bg-white/5 text-white text-xs sm:text-sm font-medium rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2 w-full sm:w-auto"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                {copied ? 'Copied!' : 'Copy address'}
+              </button>
             </div>
           </div>
         </div>
