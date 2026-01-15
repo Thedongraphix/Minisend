@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     // Validate currency is supported
     if (!isCurrencySupported(currency)) {
       return NextResponse.json(
-        { error: `Currency ${currency} is not supported. Supported currencies: KES, GHS, NGN` },
+        { error: `Currency ${currency} is not supported. Supported currencies: KES, GHS, NGN, UGX` },
         { status: 400 }
       );
     }

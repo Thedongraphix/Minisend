@@ -21,7 +21,7 @@ export const PRETIUM_CONFIG = {
     : 'https://app.minisend.xyz/api/pretium/webhook',
 
   // Supported currencies
-  SUPPORTED_CURRENCIES: ['KES', 'GHS', 'NGN'] as const,
+  SUPPORTED_CURRENCIES: ['KES', 'GHS', 'NGN', 'UGX'] as const,
 } as const;
 
 // Currency-specific configuration
@@ -41,14 +41,20 @@ export const CURRENCY_CONFIG = {
     SUPPORTED_NETWORKS: ['BANK'] as const,
     PAYMENT_TYPES: ['BANK'] as const,
   },
+  UGX: {
+    DEFAULT_NETWORK: 'MTN',
+    SUPPORTED_NETWORKS: ['MTN', 'Airtel'] as const,
+    PAYMENT_TYPES: ['MOBILE'] as const,
+  },
 } as const;
 
 // Type exports for supported currencies
-export type SupportedCurrency = 'KES' | 'GHS' | 'NGN';
+export type SupportedCurrency = 'KES' | 'GHS' | 'NGN' | 'UGX';
 export type KESNetwork = (typeof CURRENCY_CONFIG.KES.SUPPORTED_NETWORKS)[number];
 export type GHSNetwork = (typeof CURRENCY_CONFIG.GHS.SUPPORTED_NETWORKS)[number];
 export type NGNNetwork = (typeof CURRENCY_CONFIG.NGN.SUPPORTED_NETWORKS)[number];
-export type PaymentNetwork = KESNetwork | GHSNetwork | NGNNetwork;
+export type UGXNetwork = (typeof CURRENCY_CONFIG.UGX.SUPPORTED_NETWORKS)[number];
+export type PaymentNetwork = KESNetwork | GHSNetwork | NGNNetwork | UGXNetwork;
 
 export function validatePretiumConfig(): void {
   const requiredVars = [

@@ -36,7 +36,7 @@ export interface Order {
   wallet_address: string
   amount_in_usdc: number
   amount_in_local: number
-  local_currency: 'KES' | 'NGN' | 'GHS'
+  local_currency: 'KES' | 'NGN' | 'GHS' | 'UGX'
   phone_number?: string
   account_number?: string
   bank_code?: string
@@ -131,7 +131,7 @@ export interface PretiumOrder {
   pretium_status?: string
   amount_in_usdc: number
   amount_in_local: number
-  local_currency: 'KES' | 'GHS' | 'NGN'
+  local_currency: 'KES' | 'GHS' | 'NGN' | 'UGX'
   exchange_rate: number
   sender_fee: number
   payment_type: 'MOBILE' | 'BUY_GOODS' | 'PAYBILL' | 'BANK_TRANSFER'
@@ -559,7 +559,7 @@ export class DatabaseService {
     walletAddress: string;
     amountInUsdc: number;
     amountInLocal: number;
-    currency: 'KES' | 'GHS' | 'NGN';
+    currency: 'KES' | 'GHS' | 'NGN' | 'UGX';
     phoneNumber?: string;
     tillNumber?: string;
     paybillNumber?: string;

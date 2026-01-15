@@ -12,7 +12,7 @@ interface PaymentMethodData {
 }
 
 interface AdvancedSelectorProps {
-  currency: 'KES' | 'NGN' | 'GHS';
+  currency: 'KES' | 'NGN' | 'GHS' | 'UGX';
   onPaymentMethodChange: (method: PaymentMethodData | null) => void;
   className?: string;
 }

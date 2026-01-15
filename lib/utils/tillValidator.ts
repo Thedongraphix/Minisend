@@ -255,12 +255,15 @@ export function getPaymentDestinationDescription(destination: PaymentDestination
 /**
  * Gets placeholder text for payment input
  */
-export function getPaymentInputPlaceholder(currency: 'KES' | 'NGN' | 'GHS'): string {
+export function getPaymentInputPlaceholder(currency: 'KES' | 'NGN' | 'GHS' | 'UGX'): string {
   if (currency === 'KES') {
     return 'Enter phone number (254...) or till number (12345)';
   }
   if (currency === 'GHS') {
     return 'Enter mobile money number (233...) or bank account';
+  }
+  if (currency === 'UGX') {
+    return 'Enter mobile money number (256...)';
   }
   return 'Enter bank account number';
 }
@@ -270,14 +273,14 @@ export function getPaymentInputPlaceholder(currency: 'KES' | 'NGN' | 'GHS'): str
  */
 export function isPaymentDestinationSupported(
   destination: PaymentDestination,
-  currency: 'KES' | 'NGN' | 'GHS'
+  currency: 'KES' | 'NGN' | 'GHS' | 'UGX'
 ): boolean {
   if (currency === 'NGN') {
     return false; // Till numbers not supported for NGN
   }
 
-  if (currency === 'GHS') {
-    return destination.type === 'phone'; // GHS supports mobile money only through this function
+  if (currency === 'GHS' || currency === 'UGX') {
+    return destination.type === 'phone'; // GHS and UGX support mobile money only
   }
 
   return destination.type === 'phone' || destination.type === 'till';

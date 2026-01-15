@@ -15,7 +15,7 @@ interface PaymentProcessorProps {
   accountNumber?: string;
   bankCode?: string;
   accountName: string;
-  currency: 'KES' | 'NGN' | 'GHS';
+  currency: 'KES' | 'NGN' | 'GHS' | 'UGX';
   returnAddress: string;
   rate?: number | null;
   onSuccess: (orderId?: string) => void;

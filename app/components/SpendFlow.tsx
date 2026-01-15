@@ -30,7 +30,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
   const [swapData, setSwapData] = useState<{
     usdcAmount: string;
     localAmount: string;
-    currency: 'KES' | 'NGN' | 'GHS';
+    currency: 'KES' | 'NGN' | 'GHS' | 'UGX';
     rate: number;
   } | null>(null);
   const [formData, setFormData] = useState({

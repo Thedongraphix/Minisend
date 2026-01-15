@@ -187,11 +187,11 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
           >
             <div className="space-y-3">
               <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-2">
-                {/* Only show transaction code for KES and GHS, not NGN */}
+                {/* Only show transaction code for KES, GHS, and UGX, not NGN */}
                 {receiptData.currency !== 'NGN' && (
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400 text-sm">
-                      {receiptData.currency === 'GHS' ? 'Mobile Money Code' : 'M-Pesa Code'}
+                      {receiptData.currency === 'KES' ? 'M-Pesa Code' : 'Mobile Money Code'}
                     </span>
                     <span className="text-white font-mono font-semibold">{receiptData.receiptNumber}</span>
                   </div>

@@ -122,7 +122,7 @@ export interface PretiumOrderPayload {
   accountNumber?: string;
   amount: number;
   fee: number;
-  currency: 'KES' | 'GHS';
+  currency: 'KES' | 'GHS' | 'UGX';
   transactionHash: string;
   accountName: string;
   walletAddress: string;

@@ -21,7 +21,7 @@ interface PretiumPaymentProcessorProps {
   bankName?: string; // For NGN bank transfers
   returnAddress: string;
   rate: number;
-  currency: 'KES' | 'GHS' | 'NGN';
+  currency: 'KES' | 'GHS' | 'NGN' | 'UGX';
   onSuccess: (transactionCode?: string, txHash?: string) => void;
   onError: (error: string) => void;
 }

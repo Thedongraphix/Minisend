@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { formatPhoneNumber, formatTillNumber } from '@/lib/utils/tillValidator';
 import { formatGhanaPhoneNumber } from '@/lib/utils/ghanaValidator';
+import { formatUgandaPhoneNumber } from '@/lib/utils/ugandaValidator';
 import { detectKenyanCarrier } from '@/lib/utils/phoneCarrier';
 import { detectGhanaNetwork } from '@/lib/utils/ghanaNetworkDetector';
+import { detectUgandaNetwork } from '@/lib/utils/ugandaNetworkDetector';
 import { PRETIUM_CONFIG, getPretiumHeaders, isCurrencySupported } from '@/lib/pretium/config';
 
 export async function POST(request: NextRequest) {
@@ -13,7 +15,7 @@ export async function POST(request: NextRequest) {
     // Validate currency is supported
     if (!isCurrencySupported(currency)) {
       return NextResponse.json(
-        { error: `Currency ${currency} is not supported. Supported currencies: KES, GHS, NGN` },
+        { error: `Currency ${currency} is not supported. Supported currencies: KES, GHS, NGN, UGX` },
         { status: 400 }
       );
     }
@@ -95,6 +97,31 @@ export async function POST(request: NextRequest) {
           // Detect network for GHS
           const network = detectGhanaNetwork(formattedNumber);
           mobileNetwork = network === 'MTN' ? 'MTN' : network === 'VODAFONE' ? 'Vodafone' : network === 'AIRTELTIGO' ? 'AirtelTigo' : 'MTN';
+
+          // Convert to shortcode format (0XXXXXXXXX)
+          shortcode = '0' + formattedNumber.substring(3);
+        } else if (currency === 'UGX') {
+          formattedNumber = formatUgandaPhoneNumber(phoneNumber);
+
+          // Validate it's a Ugandan number (starts with 256)
+          if (!formattedNumber.startsWith('256')) {
+            return NextResponse.json(
+              { error: 'Invalid Ugandan phone number' },
+              { status: 400 }
+            );
+          }
+
+          // Validate length (256 + 9 digits = 12 total)
+          if (formattedNumber.length !== 12) {
+            return NextResponse.json(
+              { error: 'Phone number must be 9 digits after country code' },
+              { status: 400 }
+            );
+          }
+
+          // Detect network for UGX
+          const network = detectUgandaNetwork(formattedNumber);
+          mobileNetwork = network === 'MTN' ? 'MTN' : network === 'AIRTEL' ? 'Airtel' : 'MTN';
 
           // Convert to shortcode format (0XXXXXXXXX)
           shortcode = '0' + formattedNumber.substring(3);

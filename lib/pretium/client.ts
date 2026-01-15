@@ -127,7 +127,7 @@ class PretiumApiClient {
    */
   async disburse(
     request: PretiumDisburseRequest,
-    currency: 'KES' | 'GHS' | 'NGN'
+    currency: 'KES' | 'GHS' | 'NGN' | 'UGX'
   ): Promise<PretiumDisburseResponse> {
     return this.request<PretiumDisburseResponse>(
       `/v1/pay/${currency}`,
@@ -143,7 +143,7 @@ class PretiumApiClient {
    */
   async getTransactionStatus(
     transactionCode: string,
-    currency: 'KES' | 'GHS' | 'NGN'
+    currency: 'KES' | 'GHS' | 'NGN' | 'UGX'
   ): Promise<PretiumStatusResponse> {
     const body: PretiumStatusRequest = {
       transaction_code: transactionCode,

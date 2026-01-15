@@ -25,7 +25,7 @@ interface ExchangeFlowProps {
 }
 
 // Helper function to get currency display info
-function getCurrencyInfo(currency: 'KES' | 'NGN' | 'GHS') {
+function getCurrencyInfo(currency: 'KES' | 'NGN' | 'GHS' | 'UGX') {
   switch (currency) {
     case 'KES':
       return { symbol: 'KSh', flag: '🇰🇪', name: 'Kenya' };
@@ -33,6 +33,8 @@ function getCurrencyInfo(currency: 'KES' | 'NGN' | 'GHS') {
       return { symbol: '₦', flag: '🇳🇬', name: 'Nigeria' };
     case 'GHS':
       return { symbol: '₵', flag: '🇬🇭', name: 'Ghana' };
+    case 'UGX':
+      return { symbol: 'USh', flag: '🇺🇬', name: 'Uganda' };
   }
 }
 
@@ -76,7 +78,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const [swapData, setSwapData] = useState<{
     usdcAmount: string;
     localAmount: string;
-    currency: 'KES' | 'NGN' | 'GHS';
+    currency: 'KES' | 'NGN' | 'GHS' | 'UGX';
     rate: number;
   } | null>(null);
   const [formData, setFormData] = useState({
@@ -190,22 +192,24 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
     formData.accountNumber.length <= 12 &&
     /^\d+$/.test(formData.accountNumber);
 
-  // Check if phone number format is valid (Kenyan or Ghanaian mobile numbers)
+  // Check if phone number format is valid (Kenyan, Ghanaian, or Ugandan mobile numbers)
   const isPhoneNumberValid = swapData?.currency === 'KES'
     ? formData.phoneNumber.length >= 9 && formData.phoneNumber.length <= 12 && /^(\+?254|0)?[17]\d{8}$/.test(formData.phoneNumber)
     : swapData?.currency === 'GHS'
     ? formData.phoneNumber.length >= 9 && formData.phoneNumber.length <= 12 && /^(\+?233|0)?[2352]\d{8}$/.test(formData.phoneNumber)
+    : swapData?.currency === 'UGX'
+    ? formData.phoneNumber.length >= 9 && formData.phoneNumber.length <= 12 && /^(\+?256|0)?[7]\d{8}$/.test(formData.phoneNumber)
     : false;
 
-  // Auto-verify phone number for KES and GHS
+  // Auto-verify phone number for KES, GHS, and UGX
   useEffect(() => {
-    if (swapData && (swapData.currency === 'KES' || swapData.currency === 'GHS') && isPhoneNumberValid && !accountVerified) {
+    if (swapData && (swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'UGX') && isPhoneNumberValid && !accountVerified) {
       const debounceTimer = setTimeout(() => {
         verifyPhoneNumber(formData.phoneNumber);
       }, 1000); // Debounce for 1 second
 
       return () => clearTimeout(debounceTimer);
-    } else if (swapData && (swapData.currency === 'KES' || swapData.currency === 'GHS') && formData.phoneNumber && !isPhoneNumberValid) {
+    } else if (swapData && (swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'UGX') && formData.phoneNumber && !isPhoneNumberValid) {
       // Reset verification state if phone number becomes invalid
       setAccountVerified(false);
     }
@@ -385,14 +389,14 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
           />
 
           {/* Conditional input fields based on currency */}
-          {swapData.currency === 'KES' || swapData.currency === 'GHS' ? (
+          {swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'UGX' ? (
             <>
               <PhoneNumberInput
                 label="Phone Number"
                 value={formData.phoneNumber}
                 onChange={(value) => setFormData(prev => ({ ...prev, phoneNumber: value }))}
                 currency={swapData.currency}
-                placeholder={swapData.currency === 'KES' ? '712345678' : '241234567'}
+                placeholder={swapData.currency === 'KES' ? '712345678' : swapData.currency === 'GHS' ? '241234567' : '771234567'}
                 onValidationChange={(isValid) => {
                   if (isValid && !accountVerified) {
                     // Auto-verify will be triggered by the useEffect
@@ -490,7 +494,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             }}
             disabled={
               !formData.accountName ||
-              ((swapData.currency === 'KES' || swapData.currency === 'GHS') && !formData.phoneNumber) ||
+              ((swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'UGX') && !formData.phoneNumber) ||
               (swapData.currency === 'NGN' && (!formData.accountNumber || !formData.bankCode || !accountVerified))
             }
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 border border-blue-500 hover:border-blue-400 disabled:border-gray-600"
@@ -597,7 +601,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             </div>
           </div>
 
-          {(swapData.currency === 'KES' || swapData.currency === 'GHS') ? (
+          {(swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'UGX') ? (
             <PretiumPaymentProcessor
               amount={swapData.usdcAmount}
               phoneNumber={formData.phoneNumber}
@@ -731,12 +735,12 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
           <p className="text-gray-300 text-sm">
             {swapData.currency === 'NGN'
               ? `Sending ₦${parseFloat(swapData.localAmount).toLocaleString()} to ${formData.accountName}...`
-              : `Your ${swapData.currency} has been sent to ${(swapData.currency === 'KES' || swapData.currency === 'GHS') ? formData.phoneNumber : formData.accountName}`
+              : `Your ${swapData.currency} has been sent to ${(swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'UGX') ? formData.phoneNumber : formData.accountName}`
             }
           </p>
 
           {/* Modern Receipt Component - Real-time status updates */}
-          {(swapData.currency === 'KES' || swapData.currency === 'GHS') && transactionCode ? (
+          {(swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'UGX') && transactionCode ? (
             <div className="pt-4">
               <PretiumReceipt transactionCode={transactionCode} />
             </div>

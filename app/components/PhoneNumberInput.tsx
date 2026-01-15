@@ -7,7 +7,7 @@ interface PhoneNumberInputProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  currency: 'KES' | 'GHS';
+  currency: 'KES' | 'GHS' | 'UGX';
   placeholder?: string;
   disabled?: boolean;
   onValidationChange?: (isValid: boolean) => void;
@@ -42,12 +42,27 @@ const PHONE_PATTERNS = {
       return value;
     },
     placeholder: '241234567'
+  },
+  UGX: {
+    countryCode: '+256',
+    flag: '🇺🇬',
+    name: 'Uganda',
+    regex: /^(\+?256|0)?[7]\d{8}$/,
+    format: (value: string) => {
+      const digits = value.replace(/\D/g, '');
+      if (digits.startsWith('256')) return '+' + digits;
+      if (digits.startsWith('0')) return '+256' + digits.substring(1);
+      if (digits.length === 9) return '+256' + digits;
+      return value;
+    },
+    placeholder: '771234567'
   }
 };
 
 const AVAILABLE_COUNTRIES = [
   { code: 'KES' as const, ...PHONE_PATTERNS.KES },
-  { code: 'GHS' as const, ...PHONE_PATTERNS.GHS }
+  { code: 'GHS' as const, ...PHONE_PATTERNS.GHS },
+  { code: 'UGX' as const, ...PHONE_PATTERNS.UGX }
 ];
 
 export function PhoneNumberInput({
@@ -96,7 +111,7 @@ export function PhoneNumberInput({
   }, [value, pattern, onValidationChange]);
 
   // Handle country change
-  const handleCountryChange = (newCountry: 'KES' | 'GHS') => {
+  const handleCountryChange = (newCountry: 'KES' | 'GHS' | 'UGX') => {
     setSelectedCountry(newCountry);
     setShowDropdown(false);
 

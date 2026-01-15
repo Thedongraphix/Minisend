@@ -4,8 +4,10 @@ import { PRETIUM_CONFIG, isCurrencySupported } from '@/lib/pretium/config';
 import { DatabaseService } from '@/lib/supabase/config';
 import { formatPhoneNumber, formatTillNumber } from '@/lib/utils/tillValidator';
 import { formatGhanaPhoneNumber } from '@/lib/utils/ghanaValidator';
+import { formatUgandaPhoneNumber } from '@/lib/utils/ugandaValidator';
 import { detectKenyanCarrier } from '@/lib/utils/phoneCarrier';
 import { detectGhanaNetwork } from '@/lib/utils/ghanaNetworkDetector';
+import { detectUgandaNetwork } from '@/lib/utils/ugandaNetworkDetector';
 import type { PretiumDisburseRequest, PretiumPaymentType } from '@/lib/pretium/types';
 
 /**
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (!isCurrencySupported(currency)) {
       console.error(`[${requestId}] Unsupported currency: ${currency}`);
       return NextResponse.json(
-        { error: `Currency ${currency} not supported. Supported: KES, GHS, NGN` },
+        { error: `Currency ${currency} not supported. Supported: KES, GHS, NGN, UGX` },
         { status: 400 }
       );
     }
@@ -152,6 +154,10 @@ export async function POST(request: NextRequest) {
         shortcode = formatGhanaPhoneNumber(phoneNumber);
         const network = detectGhanaNetwork(shortcode);
         mobileNetwork = network === 'MTN' ? 'MTN' : network === 'VODAFONE' ? 'Vodafone' : network === 'AIRTELTIGO' ? 'AirtelTigo' : 'MTN';
+      } else if (currency === 'UGX') {
+        shortcode = formatUgandaPhoneNumber(phoneNumber);
+        const network = detectUgandaNetwork(shortcode);
+        mobileNetwork = network === 'MTN' ? 'MTN' : network === 'AIRTEL' ? 'Airtel' : 'MTN';
       } else {
         console.error(`[${requestId}] Phone number not supported for ${currency}`);
         return NextResponse.json(
@@ -242,7 +248,7 @@ export async function POST(request: NextRequest) {
       console.log(`[${requestId}] NGN Request (fee omitted):`, JSON.stringify(disburseRequest, null, 2));
 
     } else {
-      // KES/GHS Mobile Money - Follow docs exactly
+      // KES/GHS/UGX Mobile Money - Follow docs exactly
       disburseRequest = {
         type: paymentType,
         account_name: accountName,
@@ -349,7 +355,7 @@ export async function POST(request: NextRequest) {
         walletAddress: returnAddress,
         amountInUsdc: amountNum,
         amountInLocal: recipientAmount,
-        currency: currency as 'KES' | 'GHS' | 'NGN',
+        currency: currency as 'KES' | 'GHS' | 'NGN' | 'UGX',
         phoneNumber: paymentType === 'MOBILE' ? shortcode : undefined,
         tillNumber: paymentType === 'BUY_GOODS' ? shortcode : undefined,
         paybillNumber: paymentType === 'PAYBILL' ? shortcode : undefined,

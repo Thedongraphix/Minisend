@@ -4,11 +4,11 @@ export interface ReceiptData {
   paycrestOrderId: string;
   date: string;
   status: 'completed' | 'pending' | 'failed';
-  
+
   // Financial Details
   usdcAmount: number;
   localAmount: number;
-  localCurrency: 'KES' | 'NGN' | 'GHS';
+  localCurrency: 'KES' | 'NGN' | 'GHS' | 'UGX';
   exchangeRate: number;
   
   // Fees Breakdown

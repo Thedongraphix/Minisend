@@ -9,7 +9,7 @@ interface CurrencySwapInterfaceProps {
   onContinue: (data: {
     usdcAmount: string
     localAmount: string
-    currency: "KES" | "NGN" | "GHS"
+    currency: "KES" | "NGN" | "GHS" | "UGX"
     rate: number
   }) => void
   className?: string
@@ -19,13 +19,14 @@ const CURRENCIES = [
   { code: "KES", name: "Kenyan Shilling", flag: "🇰🇪", symbol: "KSh" },
   { code: "NGN", name: "Nigerian Naira", flag: "🇳🇬", symbol: "₦" },
   { code: "GHS", name: "Ghanaian Cedi", flag: "🇬🇭", symbol: "₵" },
+  { code: "UGX", name: "Ugandan Shilling", flag: "🇺🇬", symbol: "USh" },
 ]
 
 export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySwapInterfaceProps) {
   const { balanceNum: usdcBalance, isLoading: balanceLoading } = useUSDCBalance()
   const { address } = useAccount()
 
-  const [receiveCurrency, setReceiveCurrency] = useState<"KES" | "NGN" | "GHS" | null>(null)
+  const [receiveCurrency, setReceiveCurrency] = useState<"KES" | "NGN" | "GHS" | "UGX" | null>(null)
   const [sendAmount, setSendAmount] = useState("")
   const [receiveAmount, setReceiveAmount] = useState("")
   const [rate, setRate] = useState<number | null>(null)
@@ -46,11 +47,12 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
     try {
       let endpoint: string;
 
-      // Use PayCrest for NGN, Pretium for KES and GHS
+      // Use PayCrest for NGN, Pretium for KES, GHS, and UGX
       if (toCurrency === 'NGN') {
         endpoint = `/api/paycrest/rates/USDC/1/${toCurrency}?network=base`;
         console.log('[NGN Rate] Fetching from PayCrest:', endpoint);
       } else {
+        // KES, GHS, UGX use Pretium
         endpoint = `/api/pretium/rates?currency=${toCurrency}`;
         console.log('[Rate] Fetching from Pretium:', endpoint);
       }
@@ -90,14 +92,14 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
       } else {
         // API responded but with invalid data - use fallback
         console.warn('[Rate] Invalid rate data, using fallback');
-        const fallbackRate = toCurrency === "KES" ? 150.5 : toCurrency === "GHS" ? 16.5 : 1650.0
+        const fallbackRate = toCurrency === "KES" ? 150.5 : toCurrency === "GHS" ? 16.5 : toCurrency === "UGX" ? 3750.0 : 1650.0
         setRate(fallbackRate)
         setRateError("Using estimated rate")
       }
     } catch (error) {
       // Network error or parsing error - use fallback
       console.error('[Rate] Error fetching rate:', error);
-      const fallbackRate = toCurrency === "KES" ? 150.5 : toCurrency === "GHS" ? 16.5 : 1650.0
+      const fallbackRate = toCurrency === "KES" ? 150.5 : toCurrency === "GHS" ? 16.5 : toCurrency === "UGX" ? 3750.0 : 1650.0
       setRate(fallbackRate)
       setRateError("Using estimated rate")
     } finally {
@@ -191,11 +193,12 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
     }
   }
 
-  // Minimum amounts per currency (PayCrest requirements)
+  // Minimum amounts per currency (PayCrest/Pretium requirements)
   const minimumAmounts = {
     'KES': 0.5,
     'NGN': 1.0,
     'GHS': 0.5,
+    'UGX': 0.5,
   };
 
   const minAmount = receiveCurrency ? minimumAmounts[receiveCurrency] : 0;
@@ -352,7 +355,7 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
                         <button
                           key={currency.code}
                           onClick={() => {
-                            setReceiveCurrency(currency.code as "KES" | "NGN" | "GHS")
+                            setReceiveCurrency(currency.code as "KES" | "NGN" | "GHS" | "UGX")
                             setShowCurrencyMenu(false)
                             setSendAmount("")
                             setReceiveAmount("")

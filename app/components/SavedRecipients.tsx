@@ -13,7 +13,7 @@ function sanitizeDisplay(text: string | undefined): string {
 }
 
 interface SavedRecipientsProps {
-  currency: 'KES' | 'NGN' | 'GHS';
+  currency: 'KES' | 'NGN' | 'GHS' | 'UGX';
   onSelect: (recipient: SavedRecipient) => void;
   currentPhone?: string;
   currentAccount?: string;
@@ -60,7 +60,7 @@ export function SavedRecipients({ currency, onSelect, currentPhone, currentAccou
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
         {recipients.map((recipient) => {
-          const isSelected = currency === 'KES'
+          const isSelected = (currency === 'KES' || currency === 'GHS' || currency === 'UGX')
             ? recipient.phoneNumber === currentPhone
             : recipient.accountNumber === currentAccount;
 
@@ -124,7 +124,7 @@ export function SavedRecipients({ currency, onSelect, currentPhone, currentAccou
                 </div>
 
                 <div className="text-[#8e8e93] text-xs font-mono truncate">
-                  {currency === 'KES'
+                  {(currency === 'KES' || currency === 'GHS' || currency === 'UGX')
                     ? sanitizeDisplay(recipient.phoneNumber)
                     : sanitizeDisplay(recipient.accountNumber)
                   }
