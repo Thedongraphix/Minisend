@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { usePrivy, useLogin } from '@privy-io/react-auth';
 import { isFarcasterMiniApp } from '@/lib/platform-detection';
 import { useAccount, useDisconnect } from 'wagmi';
 import { Avatar, Name } from '@coinbase/onchainkit/identity';
@@ -28,10 +28,32 @@ export function ConnectWidget({ className = '', onProfileClick }: ConnectWidgetP
   // Always call hooks unconditionally
   const privyHooks = usePrivy();
 
+  // Use useLogin hook with callbacks for better UX
+  const { login: privyLogin } = useLogin({
+    onComplete: ({ user, isNewUser, loginMethod, loginAccount }) => {
+      console.log('[Privy] Login complete:', {
+        userId: user.id,
+        isNewUser,
+        loginMethod,
+        accountType: loginAccount?.type
+      });
+      // Track new user signups for analytics
+      if (isNewUser) {
+        console.log('[Privy] New user signed up via:', loginMethod);
+      }
+    },
+    onError: (error) => {
+      console.error('[Privy] Login error:', error);
+    }
+  });
+
   // Use Privy hooks only if not in Farcaster
-  const { authenticated, ready, login, logout: privyLogout } = !isFarcaster
+  const { authenticated, ready, logout: privyLogout } = !isFarcaster
     ? privyHooks
-    : { authenticated: false, ready: false, login: async () => {}, logout: async () => {} };
+    : { authenticated: false, ready: false, logout: async () => {} };
+
+  // Login function that works across platforms
+  const login = !isFarcaster ? privyLogin : async () => {};
 
   useEffect(() => {
     setMounted(true);

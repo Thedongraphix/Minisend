@@ -28,9 +28,10 @@ function ConditionalPrivyProvider({ children }: { children: ReactNode }) {
             accentColor: '#0052FF',
             logo: process.env.NEXT_PUBLIC_ICON_URL,
             landingHeader: 'Get a Minisend Wallet',
-            loginMessage: 'Sign up and cashout usdc on any network',
+            loginMessage: 'Sign up and cashout USDC to mobile money',
           },
-          loginMethods: ['email'],
+          // Email + Google OAuth login methods
+          loginMethods: ['email', 'google'],
           defaultChain: privyBase,
           supportedChains: [privyBase],
           // Legal links for session persistence
