@@ -64,8 +64,7 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
       }
 
       return false; // Continue polling
-    } catch (err) {
-      console.error('[PretiumReceipt] Status check error:', err);
+    } catch {
       return false;
     }
   }, [transactionCode]);
@@ -83,17 +82,14 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
       if (isCancelled) return;
 
       if (currentAttempt >= maxAttempts) {
-        console.log('[PretiumReceipt] Polling timed out after', currentAttempt, 'attempts');
         setIsChecking(false);
         setAttempts(currentAttempt);
         return;
       }
 
-      console.log('[PretiumReceipt] Polling attempt', currentAttempt + 1, 'of', maxAttempts);
       const isReady = await checkReceiptStatus();
 
       if (isReady) {
-        console.log('[PretiumReceipt] Receipt ready!');
         setAttempts(currentAttempt);
         return;
       }
@@ -109,7 +105,6 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
       else if (currentAttempt < 4) interval = 3000;
       else if (currentAttempt < 6) interval = 5000;
 
-      console.log('[PretiumReceipt] Next check in', interval / 1000, 'seconds');
       pollTimeout = setTimeout(poll, interval);
     };
 
@@ -156,8 +151,8 @@ export function PretiumReceipt({ transactionCode, className = '' }: PretiumRecei
 
         URL.revokeObjectURL(url);
       }
-    } catch (err) {
-      console.error('[PretiumReceipt] Download error:', err);
+    } catch {
+      // Download failed - silently handle
     } finally {
       setIsDownloading(false);
     }
@@ -333,8 +328,8 @@ export function CompactReceiptButton({
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       }
-    } catch (err) {
-      console.error('[CompactReceiptButton] Download error:', err);
+    } catch {
+      // Download failed - silently handle
     } finally {
       setIsDownloading(false);
     }

@@ -48,7 +48,6 @@ export function detectUgandaNetwork(phoneNumber: string): UgandaNetwork {
 
   // Default to MTN for unknown prefixes (most popular in Uganda)
   // This helps ensure transactions don't fail due to new number ranges
-  console.warn(`Unknown Uganda prefix: ${threeDigitPrefix}, defaulting to MTN`);
   return 'MTN';
 }
 

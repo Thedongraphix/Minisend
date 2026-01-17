@@ -139,12 +139,11 @@ export function PretiumPaymentProcessor({
       }
     } catch (error) {
       // Don't set error status - user already sent USDC successfully
-      // Just log the error for debugging
       if (error instanceof Error) {
         onError(error.message);
       }
     }
-  }, [amount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountName, accountNumber, bankCode, returnAddress, currency, context, startPolling, onError]);
+  }, [amount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountName, accountNumber, bankCode, bankName, returnAddress, currency, context, startPolling, onError]);
 
   // USDC transfer using OnchainKit standard format
   // Normalize amount to 2 decimal places to match what Pretium API expects

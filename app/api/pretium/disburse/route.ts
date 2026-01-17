@@ -147,17 +147,23 @@ export async function POST(request: NextRequest) {
       paymentType = 'MOBILE';
 
       if (currency === 'KES') {
-        shortcode = formatPhoneNumber(phoneNumber);
-        const carrier = detectKenyanCarrier(shortcode);
+        const formattedPhone = formatPhoneNumber(phoneNumber); // Returns 254XXXXXXXXX
+        const carrier = detectKenyanCarrier(formattedPhone);
         mobileNetwork = carrier === 'SAFARICOM' ? 'Safaricom' : carrier === 'AIRTEL' ? 'Airtel' : 'Safaricom';
+        // Convert to local format (0XXXXXXXXX) as required by Pretium API
+        shortcode = '0' + formattedPhone.substring(3);
       } else if (currency === 'GHS') {
-        shortcode = formatGhanaPhoneNumber(phoneNumber);
-        const network = detectGhanaNetwork(shortcode);
+        const formattedPhone = formatGhanaPhoneNumber(phoneNumber); // Returns 233XXXXXXXXX
+        const network = detectGhanaNetwork(formattedPhone);
         mobileNetwork = network === 'MTN' ? 'MTN' : network === 'VODAFONE' ? 'Vodafone' : network === 'AIRTELTIGO' ? 'AirtelTigo' : 'MTN';
+        // Convert to local format (0XXXXXXXXX) as required by Pretium API
+        shortcode = '0' + formattedPhone.substring(3);
       } else if (currency === 'UGX') {
-        shortcode = formatUgandaPhoneNumber(phoneNumber);
-        const network = detectUgandaNetwork(shortcode);
+        const formattedPhone = formatUgandaPhoneNumber(phoneNumber); // Returns 256XXXXXXXXX
+        const network = detectUgandaNetwork(formattedPhone);
         mobileNetwork = network === 'MTN' ? 'MTN' : network === 'AIRTEL' ? 'Airtel' : 'MTN';
+        // Convert to local format (0XXXXXXXXX) as required by Pretium API
+        shortcode = '0' + formattedPhone.substring(3);
       } else {
         console.error(`[${requestId}] Phone number not supported for ${currency}`);
         return NextResponse.json(
