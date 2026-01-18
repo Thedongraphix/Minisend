@@ -519,37 +519,57 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
       {/* Expanded Deposit Details */}
       {showDeposit && minisendWallet && (
         <div className="animate-fade-in">
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-3">
             {/* QR Code - rendered directly without card */}
-            <div className="flex-shrink-0 flex flex-col items-center gap-3">
-              <div className="relative">
-                <div ref={qrContainerRef} className="rounded-xl overflow-hidden" />
-                {/* Minisend Logo overlay in center */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 pointer-events-none shadow-sm">
-                  <Image
-                    src="/logo.svg"
-                    alt="Minisend"
-                    width={20}
-                    height={20}
-                    className="w-full h-full"
-                  />
-                </div>
+            <div className="relative">
+              <div ref={qrContainerRef} className="rounded-xl overflow-hidden" />
+              {/* Minisend Logo overlay in center */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 pointer-events-none shadow-sm">
+                <Image
+                  src="/logo.svg"
+                  alt="Minisend"
+                  width={20}
+                  height={20}
+                  className="w-full h-full"
+                />
               </div>
+            </div>
 
-              {/* Blockchain Logos */}
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-white/10 p-1 flex items-center justify-center">
-                  <Image src="/Base_Network_Logo.svg" alt="Base" width={14} height={14} />
-                </div>
-                <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
-                  <Image src="/polygon-logo.svg" alt="Polygon" width={14} height={14} />
-                </div>
-                <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
-                  <Image src="/celo-logo.svg" alt="Celo" width={14} height={14} />
-                </div>
-                <div className="w-6 h-6 rounded-full bg-white p-0.5 flex items-center justify-center">
-                  <Image src="/lisk-logo.svg" alt="Lisk" width={14} height={14} className="invert-0" />
-                </div>
+            {/* Wallet Address with Copy Icon */}
+            <div className="flex items-center gap-2">
+              <span className="text-gray-300 text-xs font-mono">
+                {minisendWallet.substring(0, 6)}...{minisendWallet.substring(minisendWallet.length - 4)}
+              </span>
+              <button
+                onClick={handleCopyAddress}
+                className="p-1 rounded-md hover:bg-white/10 transition-colors"
+                title="Copy address"
+              >
+                {copied ? (
+                  <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5 text-gray-400 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+
+            {/* Blockchain Logos */}
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-white/10 p-1 flex items-center justify-center">
+                <Image src="/Base_Network_Logo.svg" alt="Base" width={14} height={14} />
+              </div>
+              <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
+                <Image src="/polygon-logo.svg" alt="Polygon" width={14} height={14} />
+              </div>
+              <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
+                <Image src="/celo-logo.svg" alt="Celo" width={14} height={14} />
+              </div>
+              <div className="w-6 h-6 rounded-full bg-white p-0.5 flex items-center justify-center">
+                <Image src="/lisk-logo.svg" alt="Lisk" width={14} height={14} className="invert-0" />
               </div>
             </div>
           </div>
