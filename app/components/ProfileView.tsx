@@ -400,76 +400,6 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
         </div>
       </div>
 
-      {/* Deposit Section */}
-      {minisendWallet && (
-        <button
-          onClick={() => setShowDeposit(!showDeposit)}
-          className="w-full bg-white/5 hover:bg-white/[0.07] border border-white/10 hover:border-white/20 rounded-2xl p-4 transition-all duration-200"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <div className="text-left">
-                <div className="text-white font-semibold text-sm">Deposit USDC</div>
-                <div className="text-gray-400 text-xs">Upto 4 networks supported</div>
-              </div>
-            </div>
-            <svg
-              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showDeposit ? 'rotate-180' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </button>
-      )}
-
-      {/* Expanded Deposit Details */}
-      {showDeposit && minisendWallet && (
-        <div className="animate-fade-in">
-          <div className="flex flex-col items-center gap-4">
-            {/* QR Code - rendered directly without card */}
-            <div className="flex-shrink-0 flex flex-col items-center gap-3">
-              <div className="relative">
-                <div ref={qrContainerRef} className="rounded-xl overflow-hidden" />
-                {/* Minisend Logo overlay in center */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 pointer-events-none shadow-sm">
-                  <Image
-                    src="/logo.svg"
-                    alt="Minisend"
-                    width={20}
-                    height={20}
-                    className="w-full h-full"
-                  />
-                </div>
-              </div>
-
-              {/* Blockchain Logos */}
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-white/10 p-1 flex items-center justify-center">
-                  <Image src="/Base_Network_Logo.svg" alt="Base" width={14} height={14} />
-                </div>
-                <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
-                  <Image src="/polygon-logo.svg" alt="Polygon" width={14} height={14} />
-                </div>
-                <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
-                  <Image src="/celo-logo.svg" alt="Celo" width={14} height={14} />
-                </div>
-                <div className="w-6 h-6 rounded-full bg-white p-0.5 flex items-center justify-center">
-                  <Image src="/lisk-logo.svg" alt="Lisk" width={14} height={14} className="invert-0" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Statistics Grid */}
       <div className="grid grid-cols-2 gap-4">
         {/* Total Transactions
@@ -555,6 +485,76 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
           </div>
         </div>
       </div>
+
+      {/* Deposit Section */}
+      {minisendWallet && (
+        <button
+          onClick={() => setShowDeposit(!showDeposit)}
+          className="w-full bg-white/5 hover:bg-white/[0.07] border border-white/10 hover:border-white/20 rounded-2xl p-4 transition-all duration-200"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <div className="text-white font-semibold text-sm">Deposit USDC</div>
+                <div className="text-gray-400 text-xs">Upto 4 networks supported</div>
+              </div>
+            </div>
+            <svg
+              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showDeposit ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </button>
+      )}
+
+      {/* Expanded Deposit Details */}
+      {showDeposit && minisendWallet && (
+        <div className="animate-fade-in">
+          <div className="flex flex-col items-center gap-4">
+            {/* QR Code - rendered directly without card */}
+            <div className="flex-shrink-0 flex flex-col items-center gap-3">
+              <div className="relative">
+                <div ref={qrContainerRef} className="rounded-xl overflow-hidden" />
+                {/* Minisend Logo overlay in center */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 pointer-events-none shadow-sm">
+                  <Image
+                    src="/logo.svg"
+                    alt="Minisend"
+                    width={20}
+                    height={20}
+                    className="w-full h-full"
+                  />
+                </div>
+              </div>
+
+              {/* Blockchain Logos */}
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-white/10 p-1 flex items-center justify-center">
+                  <Image src="/Base_Network_Logo.svg" alt="Base" width={14} height={14} />
+                </div>
+                <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
+                  <Image src="/polygon-logo.svg" alt="Polygon" width={14} height={14} />
+                </div>
+                <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
+                  <Image src="/celo-logo.svg" alt="Celo" width={14} height={14} />
+                </div>
+                <div className="w-6 h-6 rounded-full bg-white p-0.5 flex items-center justify-center">
+                  <Image src="/lisk-logo.svg" alt="Lisk" width={14} height={14} className="invert-0" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Transaction History */}
       <div>
