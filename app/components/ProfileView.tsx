@@ -432,14 +432,14 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
 
       {/* Expanded Deposit Details */}
       {showDeposit && minisendWallet && (
-        <div className="bg-[#1a1a1a] rounded-2xl p-4 sm:p-6 animate-fade-in border border-white/10">
+        <div className="animate-fade-in">
           <div className="flex flex-col items-center gap-4">
-            {/* QR Code - Left Side with Blockchain Logos */}
+            {/* QR Code - rendered directly without card */}
             <div className="flex-shrink-0 flex flex-col items-center gap-3">
-              <div className="bg-white rounded-lg p-2 shadow-lg w-[200px] h-[200px] overflow-hidden relative">
-                <div ref={qrContainerRef} className="w-full h-full" />
+              <div className="relative">
+                <div ref={qrContainerRef} className="rounded-xl overflow-hidden" />
                 {/* Minisend Logo overlay in center */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-lg flex items-center justify-center p-1 pointer-events-none">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 pointer-events-none shadow-sm">
                   <Image
                     src="/logo.svg"
                     alt="Minisend"
@@ -449,7 +449,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                   />
                 </div>
               </div>
-              
+
               {/* Blockchain Logos */}
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-white/10 p-1 flex items-center justify-center">
@@ -467,23 +467,32 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
               </div>
             </div>
 
-            {/* Content - Below QR */}
-            <div className="w-full flex flex-col items-center space-y-3 text-center">
-              <p className="text-gray-300 text-xs sm:text-sm leading-relaxed max-w-md">
-                Scan this code to deposit supported assets on Base to this address.
-              </p>
-              
-              {/* Copy Address Button */}
+            {/* Wallet Address with Copy Icon */}
+            <div className="flex items-center gap-2">
+              <span className="text-gray-300 text-xs sm:text-sm font-mono">
+                {minisendWallet}
+              </span>
               <button
                 onClick={handleCopyAddress}
-                className="px-4 py-2 sm:px-5 sm:py-2.5 bg-transparent border border-white/20 hover:border-white/40 hover:bg-white/5 text-white text-xs sm:text-sm font-medium rounded-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
+                title="Copy address"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                {copied ? 'Copied!' : 'Copy address'}
+                {copied ? (
+                  <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-gray-400 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
               </button>
             </div>
+
+            {/* Description */}
+            <p className="text-gray-400 text-xs text-center max-w-xs">
+              Scan this code to deposit supported assets on any chain.
+            </p>
           </div>
         </div>
       )}
