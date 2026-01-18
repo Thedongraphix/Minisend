@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { sdk } from '@farcaster/miniapp-sdk';
-import { Button, Icon } from './BaseComponents';
+import { Icon } from './BaseComponents';
 import Image from 'next/image';
 
 interface LeaderboardViewProps {
