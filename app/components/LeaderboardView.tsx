@@ -167,20 +167,23 @@ export function LeaderboardView({ setActiveTab }: LeaderboardViewProps) {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Back Button */}
+      <button
+        onClick={() => setActiveTab('send')}
+        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-all duration-200"
+        title="Go back"
+      >
+        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
       <div className="glass-effect rounded-3xl p-6 sm:p-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">Leaderboard</h2>
             <p className="text-gray-400 text-xs sm:text-sm">Top users by daily transactions</p>
           </div>
-          <Button
-            onClick={() => setActiveTab('home')}
-            variant="outlined"
-            size="medium"
-            className="px-3 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm"
-          >
-            Back
-          </Button>
         </div>
 
         <div className="flex items-center justify-between mb-6">

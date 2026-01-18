@@ -123,7 +123,18 @@ export function SwapInterface({ setActiveTab }: SwapInterfaceProps) {
   }
 
   return (
-    <div className="space-y-2 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
+      {/* Back Button */}
+      <button
+        onClick={() => setActiveTab('send')}
+        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-all duration-200"
+        title="Go back"
+      >
+        <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
       <div className="glass-effect rounded-xl card-shadow overflow-hidden max-w-xs mx-auto">
         <div className="p-3">
           <h3 className="text-base font-bold text-white mb-1 text-center">Swap Tokens</h3>
@@ -164,19 +175,11 @@ export function SwapInterface({ setActiveTab }: SwapInterfaceProps) {
             </Swap>
           </div>
 
-          <div className="mt-3 pt-2 border-t border-gray-700 flex gap-2">
-            <Button 
-              variant="outlined" 
-              onClick={() => setActiveTab("home")} 
-              fullWidth 
-              size="medium"
-            >
-              Back
-            </Button>
-            <Button 
-              variant="secondary" 
-              onClick={() => setActiveTab("offramp")} 
-              fullWidth 
+          <div className="mt-3 pt-2 border-t border-gray-700">
+            <Button
+              variant="secondary"
+              onClick={() => setActiveTab("offramp")}
+              fullWidth
               size="medium"
             >
               Cash Out
