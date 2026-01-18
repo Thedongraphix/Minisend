@@ -466,33 +466,6 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                 </div>
               </div>
             </div>
-
-            {/* Wallet Address with Copy Icon */}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-300 text-xs sm:text-sm font-mono">
-                {minisendWallet}
-              </span>
-              <button
-                onClick={handleCopyAddress}
-                className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
-                title="Copy address"
-              >
-                {copied ? (
-                  <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4 text-gray-400 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                )}
-              </button>
-            </div>
-
-            {/* Description */}
-            <p className="text-gray-400 text-xs text-center max-w-xs">
-              Scan this code to deposit supported assets on any chain.
-            </p>
           </div>
         </div>
       )}
