@@ -226,7 +226,7 @@ type HomeProps = {
 
 export function Home({ setActiveTab }: HomeProps) {
   const [mounted, setMounted] = useState(false);
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
