@@ -208,13 +208,13 @@ export default function PayPage() {
 
       {/* Tab Bar */}
       <div className="max-w-lg mx-auto px-4 pt-4">
-        <div className="flex bg-white/[0.06] rounded-xl p-1">
+        <div className="flex bg-[#1c1c1e] border border-white/[0.1] rounded-xl p-1">
           <button
             onClick={() => setActiveTab('links')}
             className={`flex-1 py-2.5 px-4 rounded-lg text-[15px] font-semibold transition-all ${
               activeTab === 'links'
-                ? 'bg-white/[0.12] text-white'
-                : 'text-gray-400'
+                ? 'bg-[#8b53ff]/20 text-[#8b53ff]'
+                : 'text-gray-400 hover:text-gray-300'
             }`}
           >
             My Links
@@ -226,8 +226,8 @@ export default function PayPage() {
             }}
             className={`flex-1 py-2.5 px-4 rounded-lg text-[15px] font-semibold transition-all ${
               activeTab === 'create'
-                ? 'bg-white/[0.12] text-white'
-                : 'text-gray-400'
+                ? 'bg-[#8b53ff]/20 text-[#8b53ff]'
+                : 'text-gray-400 hover:text-gray-300'
             }`}
           >
             Create New
@@ -252,36 +252,36 @@ export default function PayPage() {
             {/* Basic Fields */}
             <div className="space-y-4">
               <div>
-                <label className="text-[13px] text-gray-400 font-medium mb-2 block">Name *</label>
+                <label className="text-[13px] text-[#8b53ff] font-medium mb-2 block">Name *</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Consulting Fee"
-                  className="w-full bg-white/[0.06] border border-white/[0.08] text-white text-[16px] px-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#0A84FF]/50 transition-colors"
+                  className="w-full bg-[#1c1c1e] border border-white/[0.1] text-white text-[16px] px-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#8b53ff]/50 transition-colors"
                 />
               </div>
               <div>
-                <label className="text-[13px] text-gray-400 font-medium mb-2 block">Description</label>
+                <label className="text-[13px] text-[#8b53ff] font-medium mb-2 block">Description</label>
                 <input
                   type="text"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="What is this payment for?"
-                  className="w-full bg-white/[0.06] border border-white/[0.08] text-white text-[16px] px-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#0A84FF]/50 transition-colors"
+                  className="w-full bg-[#1c1c1e] border border-white/[0.1] text-white text-[16px] px-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#8b53ff]/50 transition-colors"
                 />
               </div>
               <div>
-                <label className="text-[13px] text-gray-400 font-medium mb-2 block">Amount (USD)</label>
+                <label className="text-[13px] text-[#8b53ff] font-medium mb-2 block">Amount (USD)</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8b53ff] text-[16px]">$</span>
                   <input
                     type="text"
                     inputMode="decimal"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                     placeholder="0.00"
-                    className="w-full bg-white/[0.06] border border-white/[0.08] text-white text-[16px] pl-8 pr-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#0A84FF]/50 transition-colors"
+                    className="w-full bg-[#1c1c1e] border border-white/[0.1] text-white text-[16px] pl-8 pr-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#8b53ff]/50 transition-colors"
                   />
                 </div>
                 <p className="text-[13px] text-gray-500 mt-2">Leave empty to let payer enter any amount</p>
@@ -291,11 +291,11 @@ export default function PayPage() {
             {/* Advanced Options Toggle */}
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-white/[0.04] rounded-2xl"
+              className="w-full flex items-center justify-between px-4 py-3 bg-[#1c1c1e] border border-white/[0.1] rounded-2xl"
             >
               <span className="text-white text-[15px] font-medium">Advanced Options</span>
               <svg
-                className={`w-5 h-5 text-gray-400 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+                className={`w-5 h-5 text-[#8b53ff] transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -308,8 +308,8 @@ export default function PayPage() {
             {showAdvanced && (
               <div className="space-y-4 animate-fade-in">
                 <div>
-                  <label className="text-[13px] text-gray-400 font-medium mb-2 block">Custom URL Slug</label>
-                  <div className="flex items-center bg-white/[0.06] border border-white/[0.08] rounded-xl overflow-hidden focus-within:border-[#0A84FF]/50 transition-colors">
+                  <label className="text-[13px] text-[#8b53ff] font-medium mb-2 block">Custom URL Slug</label>
+                  <div className="flex items-center bg-[#1c1c1e] border border-white/[0.1] rounded-xl overflow-hidden focus-within:border-[#8b53ff]/50 transition-colors">
                     <span className="text-gray-500 text-[14px] pl-4 flex-shrink-0">pay.blockradar.co/</span>
                     <input
                       type="text"
@@ -321,34 +321,34 @@ export default function PayPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[13px] text-gray-400 font-medium mb-2 block">Redirect URL</label>
+                  <label className="text-[13px] text-[#8b53ff] font-medium mb-2 block">Redirect URL</label>
                   <input
                     type="url"
                     value={formData.redirectUrl}
                     onChange={(e) => setFormData({ ...formData, redirectUrl: e.target.value })}
                     placeholder="https://yoursite.com/thank-you"
-                    className="w-full bg-white/[0.06] border border-white/[0.08] text-white text-[16px] px-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#0A84FF]/50 transition-colors"
+                    className="w-full bg-[#1c1c1e] border border-white/[0.1] text-white text-[16px] px-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#8b53ff]/50 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="text-[13px] text-gray-400 font-medium mb-2 block">Success Message</label>
+                  <label className="text-[13px] text-[#8b53ff] font-medium mb-2 block">Success Message</label>
                   <input
                     type="text"
                     value={formData.successMessage}
                     onChange={(e) => setFormData({ ...formData, successMessage: e.target.value })}
                     placeholder="Thank you for your payment!"
-                    className="w-full bg-white/[0.06] border border-white/[0.08] text-white text-[16px] px-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#0A84FF]/50 transition-colors"
+                    className="w-full bg-[#1c1c1e] border border-white/[0.1] text-white text-[16px] px-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#8b53ff]/50 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="text-[13px] text-gray-400 font-medium mb-2 block">Payment Limit</label>
+                  <label className="text-[13px] text-[#8b53ff] font-medium mb-2 block">Payment Limit</label>
                   <input
                     type="text"
                     inputMode="numeric"
                     value={formData.paymentLimit}
                     onChange={(e) => setFormData({ ...formData, paymentLimit: e.target.value })}
                     placeholder="Unlimited"
-                    className="w-full bg-white/[0.06] border border-white/[0.08] text-white text-[16px] px-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#0A84FF]/50 transition-colors"
+                    className="w-full bg-[#1c1c1e] border border-white/[0.1] text-white text-[16px] px-4 py-3.5 rounded-xl outline-none placeholder:text-gray-500 focus:border-[#8b53ff]/50 transition-colors"
                   />
                   <p className="text-[13px] text-gray-500 mt-2">Max number of payments this link can receive</p>
                 </div>
@@ -359,7 +359,7 @@ export default function PayPage() {
             <button
               onClick={createLink}
               disabled={creating || !formData.name.trim()}
-              className="w-full bg-[#0A84FF] hover:bg-[#0A84FF]/90 disabled:bg-white/[0.08] disabled:text-gray-500 text-white font-semibold py-4 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full bg-[#8b53ff] hover:bg-[#7a45e6] disabled:bg-white/[0.08] disabled:text-gray-500 text-white font-semibold py-4 rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
               {creating ? (
                 <>
@@ -377,10 +377,10 @@ export default function PayPage() {
             </button>
 
             {/* Info Card */}
-            <div className="bg-white/[0.04] rounded-2xl p-4">
+            <div className="bg-[#1c1c1e] border border-white/[0.1] rounded-2xl p-4">
               <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#0A84FF]/10 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-[#0A84FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-10 h-10 rounded-xl bg-[#8b53ff]/10 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-[#8b53ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -398,13 +398,13 @@ export default function PayPage() {
           <div className="space-y-4 animate-fade-in">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-8 h-8 border-2 border-white/20 border-t-[#0A84FF] rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-white/20 border-t-[#8b53ff] rounded-full animate-spin" />
                 <p className="text-gray-500 text-[15px] mt-4">Loading your links...</p>
               </div>
             ) : links.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 rounded-full bg-white/[0.06] flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-16 h-16 rounded-full bg-[#8b53ff]/10 flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-[#8b53ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                   </svg>
                 </div>
@@ -412,22 +412,24 @@ export default function PayPage() {
                 <p className="text-gray-500 text-[15px] mt-1">Create your first link to start accepting payments</p>
                 <button
                   onClick={() => setActiveTab('create')}
-                  className="mt-6 px-6 py-3 bg-[#0A84FF] text-white font-semibold rounded-xl active:scale-[0.98] transition-transform"
+                  className="mt-6 px-6 py-3 bg-[#8b53ff] hover:bg-[#7a45e6] text-white font-semibold rounded-full active:scale-[0.98] transition-all shadow-lg shadow-[#8b53ff]/25"
                 >
                   Create Link
                 </button>
               </div>
             ) : (
               <>
-                {/* Create Button at Top */}
+                {/* Create Button - Upload/Dropzone style with dashed border */}
                 <button
                   onClick={() => setActiveTab('create')}
-                  className="w-full bg-[#0A84FF] hover:bg-[#0A84FF]/90 text-white font-semibold py-3.5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 mb-4"
+                  className="w-full mb-4 py-6 rounded-2xl border-2 border-dashed border-[#8b53ff]/40 hover:border-[#8b53ff]/60 bg-[#8b53ff]/5 hover:bg-[#8b53ff]/10 transition-all active:scale-[0.98] flex flex-col items-center justify-center gap-2"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span>Create New Link</span>
+                  <div className="w-12 h-12 rounded-full bg-[#8b53ff]/20 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-[#8b53ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <span className="text-[#8b53ff] font-semibold text-[15px]">Create New Link</span>
                 </button>
 
                 {/* Links */}
@@ -435,15 +437,15 @@ export default function PayPage() {
                   {links.map((link) => (
                     <div
                       key={link.id}
-                      className="bg-white/[0.04] rounded-2xl overflow-hidden active:bg-white/[0.06] transition-colors"
+                      className="bg-[#1c1c1e] border border-white/[0.1] rounded-2xl overflow-hidden active:bg-[#252528] transition-colors"
                     >
                       <div
                         className="p-4 cursor-pointer"
                         onClick={() => setSelectedLink(selectedLink?.id === link.id ? null : link)}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-[#0A84FF]/10 flex items-center justify-center flex-shrink-0">
-                            <svg className="w-5 h-5 text-[#0A84FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <div className="w-10 h-10 rounded-xl bg-[#8b53ff]/10 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-5 h-5 text-[#8b53ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                             </svg>
                           </div>
@@ -460,7 +462,7 @@ export default function PayPage() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-gray-500 text-[13px] mt-0.5 truncate">{link.slug}</p>
+                            <p className="text-[#8b53ff]/70 text-[13px] mt-0.5 truncate">{link.slug}</p>
                             <div className="flex items-center gap-3 mt-2">
                               {link.amount && (
                                 <span className="text-white font-semibold text-[15px]">
@@ -473,7 +475,7 @@ export default function PayPage() {
                             </div>
                           </div>
                           <svg
-                            className={`w-5 h-5 text-gray-500 transition-transform ${selectedLink?.id === link.id ? 'rotate-180' : ''}`}
+                            className={`w-5 h-5 text-[#8b53ff] transition-transform ${selectedLink?.id === link.id ? 'rotate-180' : ''}`}
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -483,16 +485,16 @@ export default function PayPage() {
                         </div>
                       </div>
 
-                      {/* Expanded View */}
+                      {/* Expanded View - No border separator */}
                       {selectedLink?.id === link.id && (
-                        <div className="px-4 pb-4 space-y-3 border-t border-white/[0.06] pt-3 animate-fade-in">
+                        <div className="px-4 pb-4 space-y-3 pt-0 animate-fade-in">
                           {link.description && (
                             <p className="text-gray-400 text-[14px]">{link.description}</p>
                           )}
 
                           {/* Link URL */}
-                          <div className="bg-black/30 rounded-xl p-3">
-                            <p className="text-gray-500 text-[11px] uppercase tracking-wide mb-1">Payment URL</p>
+                          <div className="bg-black/40 rounded-xl p-3">
+                            <p className="text-[#8b53ff] text-[11px] uppercase tracking-wide mb-1">Payment URL</p>
                             <p className="text-white text-[14px] font-mono break-all">{link.url}</p>
                           </div>
 
@@ -531,7 +533,7 @@ export default function PayPage() {
                               href={link.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center justify-center w-12 py-3 bg-[#0A84FF] hover:bg-[#0A84FF]/90 rounded-xl transition-colors active:scale-[0.98]"
+                              className="flex items-center justify-center w-12 py-3 bg-[#8b53ff] hover:bg-[#7a45e6] rounded-xl transition-colors active:scale-[0.98]"
                             >
                               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
