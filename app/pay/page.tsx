@@ -173,13 +173,13 @@ export default function PayPage() {
 
   return (
     <div className="min-h-screen bg-[#000000]">
-      {/* iOS-style Header */}
+      {/* Header with more spacing */}
       <header className="sticky top-0 z-50 bg-[#000000]/80 backdrop-blur-xl">
-        <div className="max-w-lg mx-auto px-4 py-3">
+        <div className="max-w-lg mx-auto px-4 pt-6 pb-4">
           <div className="flex items-center justify-between">
             <Link
               href="/"
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.08] active:bg-white/[0.12] transition-colors"
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-white/[0.08] active:bg-white/[0.12] transition-colors"
             >
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -189,10 +189,36 @@ export default function PayPage() {
               <Image src="/logo.svg" alt="Minisend" width={24} height={24} />
               <span className="text-white font-semibold text-[17px]">Payment Links</span>
             </div>
-            <div className="w-9" />
+            <div className="w-10" />
           </div>
         </div>
       </header>
+
+      {/* Description Section */}
+      <div className="max-w-lg mx-auto px-4 py-4">
+        <div className="bg-[#1c1c1e] border border-white/[0.1] rounded-3xl p-4">
+          <p className="text-gray-300 text-[14px] leading-relaxed mb-3">
+            Create shareable payment links to accept stablecoin payments instantly. Perfect for:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <span className="px-3 py-1.5 bg-[#8b53ff]/10 text-[#8b53ff] text-[12px] font-medium rounded-full">
+              E-commerce
+            </span>
+            <span className="px-3 py-1.5 bg-[#8b53ff]/10 text-[#8b53ff] text-[12px] font-medium rounded-full">
+              Invoicing
+            </span>
+            <span className="px-3 py-1.5 bg-[#8b53ff]/10 text-[#8b53ff] text-[12px] font-medium rounded-full">
+              Donations
+            </span>
+            <span className="px-3 py-1.5 bg-[#8b53ff]/10 text-[#8b53ff] text-[12px] font-medium rounded-full">
+              Subscriptions
+            </span>
+          </div>
+          <p className="text-gray-500 text-[12px] mt-3">
+            Supports USDC, USDT across Base, Polygon, Ethereum & more
+          </p>
+        </div>
+      </div>
 
       {/* Success Toast */}
       {success && (
@@ -208,12 +234,12 @@ export default function PayPage() {
 
       {/* Tab Bar */}
       <div className="max-w-lg mx-auto px-4 pt-4">
-        <div className="flex bg-[#1c1c1e] border border-white/[0.1] rounded-xl p-1">
+        <div className="flex bg-[#1c1c1e] border border-white/[0.1] rounded-xl p-1 gap-1">
           <button
             onClick={() => setActiveTab('links')}
             className={`flex-1 py-2.5 px-4 rounded-lg text-[15px] font-semibold transition-all ${
               activeTab === 'links'
-                ? 'bg-[#8b53ff]/20 text-[#8b53ff]'
+                ? 'bg-[#8b53ff] text-white'
                 : 'text-gray-400 hover:text-gray-300'
             }`}
           >
@@ -226,7 +252,7 @@ export default function PayPage() {
             }}
             className={`flex-1 py-2.5 px-4 rounded-lg text-[15px] font-semibold transition-all ${
               activeTab === 'create'
-                ? 'bg-[#8b53ff]/20 text-[#8b53ff]'
+                ? 'bg-[#8b53ff] text-white'
                 : 'text-gray-400 hover:text-gray-300'
             }`}
           >
@@ -291,7 +317,7 @@ export default function PayPage() {
             {/* Advanced Options Toggle */}
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-[#1c1c1e] border border-white/[0.1] rounded-2xl"
+              className="w-full flex items-center justify-between px-4 py-3 bg-[#1c1c1e] border border-white/[0.1] rounded-3xl"
             >
               <span className="text-white text-[15px] font-medium">Advanced Options</span>
               <svg
@@ -377,7 +403,7 @@ export default function PayPage() {
             </button>
 
             {/* Info Card */}
-            <div className="bg-[#1c1c1e] border border-white/[0.1] rounded-2xl p-4">
+            <div className="bg-[#1c1c1e] border border-white/[0.1] rounded-3xl p-4">
               <div className="flex gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#8b53ff]/10 flex items-center justify-center flex-shrink-0">
                   <svg className="w-5 h-5 text-[#8b53ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -422,7 +448,7 @@ export default function PayPage() {
                 {/* Create Button - Upload/Dropzone style with dashed border */}
                 <button
                   onClick={() => setActiveTab('create')}
-                  className="w-full mb-4 py-6 rounded-2xl border-2 border-dashed border-[#8b53ff]/40 hover:border-[#8b53ff]/60 bg-[#8b53ff]/5 hover:bg-[#8b53ff]/10 transition-all active:scale-[0.98] flex flex-col items-center justify-center gap-2"
+                  className="w-full mb-4 py-6 rounded-3xl border-2 border-dashed border-[#8b53ff]/40 hover:border-[#8b53ff]/60 bg-[#8b53ff]/5 hover:bg-[#8b53ff]/10 transition-all active:scale-[0.98] flex flex-col items-center justify-center gap-2"
                 >
                   <div className="w-12 h-12 rounded-full bg-[#8b53ff]/20 flex items-center justify-center">
                     <svg className="w-6 h-6 text-[#8b53ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -437,7 +463,7 @@ export default function PayPage() {
                   {links.map((link) => (
                     <div
                       key={link.id}
-                      className="bg-[#1c1c1e] border border-white/[0.1] rounded-2xl overflow-hidden active:bg-[#252528] transition-colors"
+                      className="bg-[#1c1c1e] border border-white/[0.1] rounded-3xl overflow-hidden active:bg-[#252528] transition-colors"
                     >
                       <div
                         className="p-4 cursor-pointer"
