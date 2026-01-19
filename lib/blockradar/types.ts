@@ -57,6 +57,42 @@ export interface BlockradarAddressResponse {
   statusCode: number;
 }
 
+export interface BlockradarAssetDetails {
+  address: string;
+  blockchain: BlockradarBlockchain;
+  createdAt: string;
+  decimals: number;
+  id: string;
+  isActive: boolean;
+  logoUrl: string;
+  name: string;
+  network: 'mainnet' | 'testnet';
+  standard: string | null;
+  symbol: string;
+  updatedAt: string;
+}
+
+export interface BlockradarWalletAsset {
+  asset: BlockradarAssetDetails;
+  createdAt: string;
+  id: string;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export interface BlockradarBalanceItem {
+  asset: BlockradarWalletAsset;
+  balance: string;
+  convertedBalance: string;
+}
+
+export interface BlockradarBalancesResponse {
+  data: BlockradarBalanceItem[];
+  message: string;
+  statusCode: number;
+}
+
+// Legacy type for backwards compatibility
 export interface BlockradarAsset {
   createdAt: string;
   currency: string;

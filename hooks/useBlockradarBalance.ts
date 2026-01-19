@@ -1,13 +1,34 @@
 /**
  * React Hook: useBlockradarBalance
- * Fetches and manages Blockradar gateway balance information
+ * Fetches and manages Blockradar address balance information
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { BlockradarBalanceData } from '@/lib/blockradar/types';
+
+interface BlockradarBalanceAsset {
+  symbol: string;
+  name: string;
+  decimals: number;
+  logoUrl: string;
+  network: 'mainnet' | 'testnet';
+  address: string;
+  blockchain?: {
+    name: string;
+    slug: string;
+    symbol: string;
+    logoUrl: string;
+  };
+}
+
+interface BlockradarBalanceData {
+  asset: BlockradarBalanceAsset;
+  balance: string;
+  convertedBalance: string;
+}
 
 interface UseBlockradarBalanceOptions {
   addressId: string | null;
+  asset?: string; // Optional asset symbol filter (e.g., 'USDC', 'ETH')
   autoFetch?: boolean;
   refreshInterval?: number; // Auto-refresh interval in milliseconds
 }
@@ -21,15 +42,16 @@ interface UseBlockradarBalanceReturn {
 }
 
 /**
- * Hook to fetch Blockradar gateway balance
- * 
+ * Hook to fetch Blockradar address balance
+ *
  * @param options - Configuration options
  * @returns Balance data, loading state, error, and refetch function
- * 
+ *
  * @example
  * ```tsx
  * const { balance, isLoading, error, refetch } = useBlockradarBalance({
  *   addressId: 'your-address-id',
+ *   asset: 'USDC', // Optional: filter by specific asset
  *   autoFetch: true,
  *   refreshInterval: 30000 // Refresh every 30 seconds
  * });
@@ -37,6 +59,7 @@ interface UseBlockradarBalanceReturn {
  */
 export function useBlockradarBalance({
   addressId,
+  asset = 'USDC', // Default to USDC for backwards compatibility
   autoFetch = true,
   refreshInterval,
 }: UseBlockradarBalanceOptions): UseBlockradarBalanceReturn {
@@ -59,7 +82,12 @@ export function useBlockradarBalance({
     setError(null);
 
     try {
-      const response = await fetch(`/api/blockradar/balance/${addressId}`);
+      // Build URL with optional asset filter
+      const url = asset
+        ? `/api/blockradar/balance/${addressId}?asset=${encodeURIComponent(asset)}`
+        : `/api/blockradar/balance/${addressId}`;
+
+      const response = await fetch(url);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -75,7 +103,7 @@ export function useBlockradarBalance({
       setBalance(data.data);
       console.log('[useBlockradarBalance] Balance fetched successfully:', {
         balance: data.data.balance,
-        asset: data.data.asset.symbol,
+        asset: data.data.asset?.symbol || 'unknown',
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
@@ -85,7 +113,7 @@ export function useBlockradarBalance({
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [addressId]);
+  }, [addressId, asset]);
 
   // Initial fetch
   useEffect(() => {

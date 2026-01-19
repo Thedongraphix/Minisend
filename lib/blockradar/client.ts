@@ -3,11 +3,11 @@
  * Handles all interactions with the Blockradar API for wallet and address management
  */
 
-import { validateBlockradarConfig, getBlockradarHeaders } from './config';
+import { validateBlockradarConfig, getBlockradarHeaders, BLOCKRADAR_CONFIG } from './config';
 import type {
   BlockradarApiError,
   BlockradarAddressResponse,
-  BlockradarBalanceResponse,
+  BlockradarBalancesResponse,
 } from './types';
 
 class BlockradarApiClient {
@@ -118,15 +118,29 @@ class BlockradarApiClient {
   }
 
   /**
-   * Get Gateway Balance
-   * Retrieves the child address gateway total balance
-   * 
+   * Get Address Balances
+   * Retrieves the balances associated with a specific address in a wallet
+   *
    * @param addressId - The address ID
-   * @returns Gateway balance information
+   * @param walletId - Optional wallet ID (uses config default if not provided)
+   * @returns Array of balance information for all assets
    */
-  async getGatewayBalance(addressId: string): Promise<BlockradarBalanceResponse> {
-    return this.request<BlockradarBalanceResponse>(
-      `/addresses/${addressId}/gateway/balance`,
+  async getAddressBalances(
+    addressId: string,
+    walletId?: string
+  ): Promise<BlockradarBalancesResponse> {
+    const effectiveWalletId = walletId || BLOCKRADAR_CONFIG.WALLET_ID;
+
+    if (!effectiveWalletId) {
+      throw {
+        statusCode: 400,
+        message: 'Wallet ID is required',
+        data: null,
+      } as BlockradarApiError;
+    }
+
+    return this.request<BlockradarBalancesResponse>(
+      `/wallets/${effectiveWalletId}/addresses/${addressId}/balances`,
       {
         method: 'GET',
       }

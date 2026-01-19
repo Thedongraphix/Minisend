@@ -17,6 +17,11 @@ export type {
   BlockradarConfigurations,
   BlockradarAddressData,
   BlockradarAddressResponse,
+  BlockradarAssetDetails,
+  BlockradarWalletAsset,
+  BlockradarBalanceItem,
+  BlockradarBalancesResponse,
+  // Legacy types for backwards compatibility
   BlockradarAsset,
   BlockradarBalanceData,
   BlockradarBalanceResponse,
