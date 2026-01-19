@@ -1,4 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Funnel+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+/**
+ * General Sans Variable Font
+ * Weight range: 200-700
+ * https://www.fontshare.com/fonts/general-sans
+ */
+@font-face {
+  font-family: 'General Sans';
+  src: url('/fonts/GeneralSans-Variable.woff2') format('woff2'),
+       url('/fonts/GeneralSans-Variable.woff') format('woff');
+  font-weight: 200 700;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'General Sans';
+  src: url('/fonts/GeneralSans-VariableItalic.woff2') format('woff2'),
+       url('/fonts/GeneralSans-VariableItalic.woff') format('woff');
+  font-weight: 200 700;
+  font-display: swap;
+  font-style: italic;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -27,7 +49,7 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: "Funnel Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "General Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
