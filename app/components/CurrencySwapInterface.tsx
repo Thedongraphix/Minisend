@@ -163,6 +163,15 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
     }
   }, [receiveCurrency, fetchRate])
 
+  // Recalculate receive amount when rate changes and send amount exists
+  useEffect(() => {
+    if (rate && sendAmount && Number.parseFloat(sendAmount) > 0) {
+      const totalLocal = Number.parseFloat(sendAmount) * rate
+      const recipientAmount = Math.round(totalLocal / 1.01)
+      setReceiveAmount(recipientAmount.toFixed(2))
+    }
+  }, [rate])
+
   const handleContinue = () => {
     if (!sendAmount || !receiveAmount || !rate || !receiveCurrency) return
 
@@ -357,7 +366,7 @@ export function CurrencySwapInterface({ onContinue, className = "" }: CurrencySw
                           onClick={() => {
                             setReceiveCurrency(currency.code as "KES" | "NGN" | "GHS" | "UGX")
                             setShowCurrencyMenu(false)
-                            setSendAmount("")
+                            // Clear only receive amount - it will be recalculated when new rate arrives
                             setReceiveAmount("")
                           }}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#3a3a3c] transition-colors"
