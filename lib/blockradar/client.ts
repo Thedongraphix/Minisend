@@ -8,6 +8,9 @@ import type {
   BlockradarApiError,
   BlockradarAddressResponse,
   BlockradarBalancesResponse,
+  BlockradarWithdrawRequest,
+  BlockradarWithdrawResponse,
+  BlockradarAssetsResponse,
 } from './types';
 
 class BlockradarApiClient {
@@ -149,7 +152,7 @@ class BlockradarApiClient {
 
   /**
    * Create a new address for a wallet
-   * 
+   *
    * @param walletId - The wallet ID
    * @param metadata - Optional metadata for the address
    * @param name - Optional name for the address
@@ -172,6 +175,71 @@ class BlockradarApiClient {
         }),
       }
     );
+  }
+
+  /**
+   * Withdraw from a child address
+   * Sends stablecoin assets from a child address to an external address
+   *
+   * @param addressId - The address ID to withdraw from
+   * @param params - Withdrawal parameters
+   * @param walletId - Optional wallet ID (uses config default if not provided)
+   * @returns Withdrawal transaction information
+   */
+  async withdrawFromAddress(
+    addressId: string,
+    params: BlockradarWithdrawRequest,
+    walletId?: string
+  ): Promise<BlockradarWithdrawResponse> {
+    const effectiveWalletId = walletId || BLOCKRADAR_CONFIG.WALLET_ID;
+
+    if (!effectiveWalletId) {
+      throw {
+        statusCode: 400,
+        message: 'Wallet ID is required',
+        data: null,
+      } as BlockradarApiError;
+    }
+
+    return this.request<BlockradarWithdrawResponse>(
+      `/wallets/${effectiveWalletId}/addresses/${addressId}/withdraw`,
+      {
+        method: 'POST',
+        body: JSON.stringify(params),
+      }
+    );
+  }
+
+  /**
+   * Get supported assets
+   * Retrieves a list of assets supported by Blockradar
+   *
+   * @param options - Filter options
+   * @returns List of supported assets
+   */
+  async getAssets(options?: {
+    network?: 'mainnet' | 'testnet';
+    symbol?: string;
+    blockchainId?: string;
+  }): Promise<BlockradarAssetsResponse> {
+    const queryParams = new URLSearchParams();
+
+    if (options?.network) {
+      queryParams.append('network', options.network);
+    }
+    if (options?.symbol) {
+      queryParams.append('symbol', options.symbol);
+    }
+    if (options?.blockchainId) {
+      queryParams.append('blockchainId', options.blockchainId);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/assets${queryString ? `?${queryString}` : ''}`;
+
+    return this.request<BlockradarAssetsResponse>(endpoint, {
+      method: 'GET',
+    });
   }
 }
 

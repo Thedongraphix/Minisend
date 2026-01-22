@@ -21,6 +21,13 @@ export type {
   BlockradarWalletAsset,
   BlockradarBalanceItem,
   BlockradarBalancesResponse,
+  // Withdraw types
+  BlockradarWithdrawRequest,
+  BlockradarWithdrawData,
+  BlockradarWithdrawResponse,
+  // Asset types
+  BlockradarAssetInfo,
+  BlockradarAssetsResponse,
   // Legacy types for backwards compatibility
   BlockradarAsset,
   BlockradarBalanceData,

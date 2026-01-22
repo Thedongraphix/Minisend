@@ -119,3 +119,49 @@ export interface BlockradarBalanceResponse {
   statusCode: number;
 }
 
+// Withdraw types
+export interface BlockradarWithdrawRequest {
+  assetId: string;
+  address: string;
+  amount: string;
+  reference?: string;
+  note?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface BlockradarWithdrawData {
+  id: string;
+  hash: string;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED';
+  amount: string;
+  recipientAddress: string;
+  reference?: string;
+  note?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface BlockradarWithdrawResponse {
+  data: BlockradarWithdrawData;
+  message: string;
+  statusCode: number;
+}
+
+// Assets types
+export interface BlockradarAssetInfo {
+  id: string;
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  network: 'mainnet' | 'testnet';
+  logoUrl: string;
+  blockchain: BlockradarBlockchain;
+}
+
+export interface BlockradarAssetsResponse {
+  data: BlockradarAssetInfo[];
+  message: string;
+  statusCode: number;
+}
+
