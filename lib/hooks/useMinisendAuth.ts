@@ -131,6 +131,13 @@ export function useMinisendAuth(): UseMinisendAuthReturn {
       setIsLoading(true);
       setError(null);
 
+      console.log('[useMinisendAuth] Assigning wallet for:', {
+        userId: authData.userId,
+        platform: authData.platform,
+        walletAddress: authData.walletAddress,
+        email: authData.email,
+      });
+
       // Use API client with automatic retry
       const { apiClient } = await import('../utils/api-client');
       const { validateAuthData } = await import('../utils/validation');
@@ -143,6 +150,12 @@ export function useMinisendAuth(): UseMinisendAuthReturn {
 
       const data = await apiClient.assignWallet(authData);
 
+      console.log('[useMinisendAuth] API response:', {
+        minisendWallet: data.minisendWallet,
+        blockradarAddressId: data.blockradarAddressId,
+        existing: data.existing,
+      });
+
       const minisendUser: MinisendUser = {
         userId: authData.userId,
         platform: authData.platform,
@@ -153,6 +166,8 @@ export function useMinisendAuth(): UseMinisendAuthReturn {
         displayName: data.displayName,
         avatarUrl: data.avatarUrl,
       };
+
+      console.log('[useMinisendAuth] Setting user:', minisendUser);
 
       setUser(minisendUser);
       setMinisendWallet(data.minisendWallet);

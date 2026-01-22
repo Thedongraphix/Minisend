@@ -5,6 +5,7 @@ import { useMiniKit } from '@coinbase/onchainkit/minikit';
 import { useAccount } from 'wagmi';
 import { PaymentProcessor } from './PaymentProcessor';
 import { PretiumPaymentProcessor } from './PretiumPaymentProcessor';
+import { BlockradarPaymentProcessor } from './BlockradarPaymentProcessor';
 import { BalanceView } from './BalanceView';
 import { Button } from './BaseComponents';
 import Image from 'next/image';
@@ -41,12 +42,34 @@ function getCurrencyInfo(currency: 'KES' | 'NGN' | 'GHS' | 'UGX') {
 export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const { context } = useMiniKit();
   const { address, isConnected } = useAccount();
-  const { minisendWallet } = useMinisendAuth();
+  const { minisendWallet, user, isLoading: authLoading } = useMinisendAuth();
 
   // User can proceed if they have either a connected wallet OR email authentication
   const hasWallet = isConnected && address;
   const walletAddress = address || minisendWallet;
   const isMiniKitEnvironment = !!context?.user;
+
+  // Determine if user should use Blockradar for payments
+  // Use Blockradar if: has minisendWallet AND no wagmi wallet connected
+  // minisendWallet indicates user authenticated via Privy and has a Blockradar custodial wallet
+  const useBlockradarPayment = !isConnected && !!minisendWallet;
+
+  // DEBUG: Log authentication state for troubleshooting
+  useEffect(() => {
+    console.log('[ExchangeFlow Debug] Auth state:', {
+      authLoading,
+      isConnected,
+      address,
+      minisendWallet,
+      user: user ? {
+        userId: user.userId,
+        platform: user.platform,
+        blockradarAddressId: user.blockradarAddressId,
+        minisendWallet: user.minisendWallet,
+      } : null,
+      useBlockradarPayment,
+    });
+  }, [authLoading, isConnected, address, minisendWallet, user, useBlockradarPayment]);
 
   const [mounted, setMounted] = useState(false);
   
@@ -93,6 +116,20 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
   const [loadingInstitutions, setLoadingInstitutions] = useState(false);
   const [transactionCode, setTransactionCode] = useState<string>('');
   const [paycrestOrderId, setPaycrestOrderId] = useState<string>('');
+
+  // DEBUG: Log which payment processor will be used when payment step is reached
+  useEffect(() => {
+    if (step === 'payment' && swapData) {
+      console.log('[ExchangeFlow Payment Step]', {
+        currency: swapData.currency,
+        isConnected,
+        useBlockradarPayment,
+        blockradarAddressId: user?.blockradarAddressId,
+        willUseBlockradar: swapData.currency === 'NGN' && useBlockradarPayment && !!user?.blockradarAddressId,
+        willUsePretium: swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'UGX',
+      });
+    }
+  }, [step, swapData, isConnected, useBlockradarPayment, user?.blockradarAddressId]);
 
   // Fetch institutions (banks) for NGN from PayCrest
   const fetchInstitutions = async () => {
@@ -603,115 +640,222 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             </div>
           </div>
 
+          {/* KES/GHS/UGX - Pretium */}
           {(swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'UGX') ? (
-            <PretiumPaymentProcessor
-              amount={swapData.usdcAmount}
-              phoneNumber={formData.phoneNumber}
-              accountName={formData.accountName}
-              returnAddress={walletAddress || ''}
-              rate={swapData.rate}
-              currency={swapData.currency}
-              onSuccess={(txCode) => {
-                // Store transaction code for receipt
-                if (txCode) {
-                  setTransactionCode(txCode);
-                }
+            useBlockradarPayment && user?.blockradarAddressId ? (
+              <BlockradarPaymentProcessor
+                amount={swapData.usdcAmount}
+                phoneNumber={formData.phoneNumber}
+                accountName={formData.accountName}
+                currency={swapData.currency}
+                blockradarAddressId={user.blockradarAddressId}
+                rate={swapData.rate}
+                onSuccess={(txCode) => {
+                  if (txCode) {
+                    setTransactionCode(txCode);
+                  }
 
-                trackOffRampEvent('payment_completed', {
-                  currency: swapData.currency,
-                  amount: parseFloat(swapData.localAmount),
-                  usdcAmount: parseFloat(swapData.usdcAmount),
-                  rate: swapData.rate,
-                  phoneNumber: formData.phoneNumber,
-                  provider: 'PRETIUM',
-                  step: 3,
-                  success: true,
-                }, context || undefined);
-
-                // Auto-save recipient for future use
-                if (formData.accountName) {
-                  saveRecipient({
-                    type: swapData.currency,
+                  trackOffRampEvent('payment_completed', {
+                    currency: swapData.currency,
+                    amount: parseFloat(swapData.localAmount),
+                    usdcAmount: parseFloat(swapData.usdcAmount),
+                    rate: swapData.rate,
                     phoneNumber: formData.phoneNumber,
-                    accountNumber: formData.accountNumber,
-                    accountName: formData.accountName,
-                    bankCode: formData.bankCode,
-                    bankName: undefined,
-                  });
-                }
+                    provider: 'BLOCKRADAR_PRETIUM',
+                    step: 3,
+                    success: true,
+                  }, context || undefined);
 
-                setStep('success');
-              }}
-              onError={(error) => {
-                trackOffRampEvent('payment_error', {
-                  currency: swapData.currency,
-                  amount: parseFloat(swapData.localAmount),
-                  usdcAmount: parseFloat(swapData.usdcAmount),
-                  rate: swapData.rate,
-                  provider: 'PRETIUM',
-                  error: error,
-                  step: 3,
-                  success: false,
-                }, context || undefined);
-              }}
-            />
+                  if (formData.accountName) {
+                    saveRecipient({
+                      type: swapData.currency,
+                      phoneNumber: formData.phoneNumber,
+                      accountNumber: formData.accountNumber,
+                      accountName: formData.accountName,
+                      bankCode: formData.bankCode,
+                      bankName: undefined,
+                    });
+                  }
+
+                  setStep('success');
+                }}
+                onError={(error) => {
+                  trackOffRampEvent('payment_error', {
+                    currency: swapData.currency,
+                    amount: parseFloat(swapData.localAmount),
+                    usdcAmount: parseFloat(swapData.usdcAmount),
+                    rate: swapData.rate,
+                    provider: 'BLOCKRADAR_PRETIUM',
+                    error: error,
+                    step: 3,
+                    success: false,
+                  }, context || undefined);
+                }}
+              />
+            ) : (
+              <PretiumPaymentProcessor
+                amount={swapData.usdcAmount}
+                phoneNumber={formData.phoneNumber}
+                accountName={formData.accountName}
+                returnAddress={walletAddress || ''}
+                rate={swapData.rate}
+                currency={swapData.currency}
+                onSuccess={(txCode) => {
+                  if (txCode) {
+                    setTransactionCode(txCode);
+                  }
+
+                  trackOffRampEvent('payment_completed', {
+                    currency: swapData.currency,
+                    amount: parseFloat(swapData.localAmount),
+                    usdcAmount: parseFloat(swapData.usdcAmount),
+                    rate: swapData.rate,
+                    phoneNumber: formData.phoneNumber,
+                    provider: 'PRETIUM',
+                    step: 3,
+                    success: true,
+                  }, context || undefined);
+
+                  if (formData.accountName) {
+                    saveRecipient({
+                      type: swapData.currency,
+                      phoneNumber: formData.phoneNumber,
+                      accountNumber: formData.accountNumber,
+                      accountName: formData.accountName,
+                      bankCode: formData.bankCode,
+                      bankName: undefined,
+                    });
+                  }
+
+                  setStep('success');
+                }}
+                onError={(error) => {
+                  trackOffRampEvent('payment_error', {
+                    currency: swapData.currency,
+                    amount: parseFloat(swapData.localAmount),
+                    usdcAmount: parseFloat(swapData.usdcAmount),
+                    rate: swapData.rate,
+                    provider: 'PRETIUM',
+                    error: error,
+                    step: 3,
+                    success: false,
+                  }, context || undefined);
+                }}
+              />
+            )
           ) : swapData.currency === 'NGN' ? (
-            <PaymentProcessor
-              amount={swapData.usdcAmount}
-              phoneNumber={formData.phoneNumber}
-              accountNumber={formData.accountNumber}
-              bankCode={formData.bankCode}
-              accountName={formData.accountName}
-              currency={swapData.currency}
-              returnAddress={walletAddress || ''}
-              rate={swapData.rate}
-              onSuccess={(orderId) => {
-                // Store PayCrest order ID for receipt tracking
-                if (orderId) {
-                  setPaycrestOrderId(orderId);
-                }
+            /* NGN - PayCrest */
+            useBlockradarPayment && user?.blockradarAddressId ? (
+              <BlockradarPaymentProcessor
+                amount={swapData.usdcAmount}
+                phoneNumber={formData.phoneNumber}
+                accountNumber={formData.accountNumber}
+                bankCode={formData.bankCode}
+                accountName={formData.accountName}
+                currency={swapData.currency}
+                blockradarAddressId={user.blockradarAddressId}
+                rate={swapData.rate}
+                onSuccess={(orderId) => {
+                  if (orderId) {
+                    setPaycrestOrderId(orderId);
+                  }
 
-                trackOffRampEvent('payment_completed', {
-                  currency: swapData.currency,
-                  amount: parseFloat(swapData.localAmount),
-                  usdcAmount: parseFloat(swapData.usdcAmount),
-                  rate: swapData.rate,
-                  phoneNumber: formData.phoneNumber,
-                  accountNumber: formData.accountNumber,
-                  bankCode: formData.bankCode,
-                  provider: 'PAYCREST',
-                  step: 3,
-                  success: true,
-                }, context || undefined);
-
-                // Auto-save recipient for future use
-                if (formData.accountName) {
-                  const bankName = institutions.find(inst => inst.code === formData.bankCode)?.name;
-                  saveRecipient({
-                    type: swapData.currency,
+                  trackOffRampEvent('payment_completed', {
+                    currency: swapData.currency,
+                    amount: parseFloat(swapData.localAmount),
+                    usdcAmount: parseFloat(swapData.usdcAmount),
+                    rate: swapData.rate,
                     phoneNumber: formData.phoneNumber,
                     accountNumber: formData.accountNumber,
-                    accountName: formData.accountName,
                     bankCode: formData.bankCode,
-                    bankName: bankName,
-                  });
-                }
+                    provider: 'BLOCKRADAR',
+                    step: 3,
+                    success: true,
+                  }, context || undefined);
 
-                setStep('success');
-              }}
-              onError={(error) => {
-                trackOffRampEvent('payment_error', {
-                  currency: swapData.currency,
-                  amount: parseFloat(swapData.localAmount),
-                  usdcAmount: parseFloat(swapData.usdcAmount),
-                  rate: swapData.rate,
-                  provider: 'PAYCREST',
-                  error: error,
-                  step: 3,
-                  success: false,
-                }, context || undefined);
-              }}
-            />
+                  if (formData.accountName) {
+                    const bankName = institutions.find(inst => inst.code === formData.bankCode)?.name;
+                    saveRecipient({
+                      type: swapData.currency,
+                      phoneNumber: formData.phoneNumber,
+                      accountNumber: formData.accountNumber,
+                      accountName: formData.accountName,
+                      bankCode: formData.bankCode,
+                      bankName: bankName,
+                    });
+                  }
+
+                  setStep('success');
+                }}
+                onError={(error) => {
+                  trackOffRampEvent('payment_error', {
+                    currency: swapData.currency,
+                    amount: parseFloat(swapData.localAmount),
+                    usdcAmount: parseFloat(swapData.usdcAmount),
+                    rate: swapData.rate,
+                    provider: 'BLOCKRADAR',
+                    error: error,
+                    step: 3,
+                    success: false,
+                  }, context || undefined);
+                }}
+              />
+            ) : (
+              <PaymentProcessor
+                amount={swapData.usdcAmount}
+                phoneNumber={formData.phoneNumber}
+                accountNumber={formData.accountNumber}
+                bankCode={formData.bankCode}
+                accountName={formData.accountName}
+                currency={swapData.currency}
+                returnAddress={walletAddress || ''}
+                rate={swapData.rate}
+                onSuccess={(orderId) => {
+                  if (orderId) {
+                    setPaycrestOrderId(orderId);
+                  }
+
+                  trackOffRampEvent('payment_completed', {
+                    currency: swapData.currency,
+                    amount: parseFloat(swapData.localAmount),
+                    usdcAmount: parseFloat(swapData.usdcAmount),
+                    rate: swapData.rate,
+                    phoneNumber: formData.phoneNumber,
+                    accountNumber: formData.accountNumber,
+                    bankCode: formData.bankCode,
+                    provider: 'PAYCREST',
+                    step: 3,
+                    success: true,
+                  }, context || undefined);
+
+                  if (formData.accountName) {
+                    const bankName = institutions.find(inst => inst.code === formData.bankCode)?.name;
+                    saveRecipient({
+                      type: swapData.currency,
+                      phoneNumber: formData.phoneNumber,
+                      accountNumber: formData.accountNumber,
+                      accountName: formData.accountName,
+                      bankCode: formData.bankCode,
+                      bankName: bankName,
+                    });
+                  }
+
+                  setStep('success');
+                }}
+                onError={(error) => {
+                  trackOffRampEvent('payment_error', {
+                    currency: swapData.currency,
+                    amount: parseFloat(swapData.localAmount),
+                    usdcAmount: parseFloat(swapData.usdcAmount),
+                    rate: swapData.rate,
+                    provider: 'PAYCREST',
+                    error: error,
+                    step: 3,
+                    success: false,
+                  }, context || undefined);
+                }}
+              />
+            )
           ) : null}
 
           <button
