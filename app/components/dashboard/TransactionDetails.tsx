@@ -26,184 +26,143 @@ export function TransactionDetails({ order }: TransactionDetailsProps) {
     return 'N/A';
   };
 
-  return (
-    <div className="p-6 bg-[#111] border border-gray-800/50 rounded-xl space-y-6">
-      {/* Transaction Code & Hash */}
-      <div>
-        <p className="text-xs text-gray-500 mb-1">Transaction Code</p>
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-mono text-white">{order.transaction_code}</p>
+  const DetailRow = ({ label, value, mono, copyable, copyKey, link }: {
+    label: string;
+    value: React.ReactNode;
+    mono?: boolean;
+    copyable?: string;
+    copyKey?: string;
+    link?: string;
+  }) => (
+    <div className="flex items-center justify-between py-2.5">
+      <span className="text-[13px] text-white/40">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className={`text-[13px] text-white/90 ${mono ? 'font-mono' : ''}`}>{value}</span>
+        {copyable && copyKey && (
           <button
-            onClick={() => handleCopy(order.transaction_code, 'code')}
-            className="text-xs text-blue-400 hover:text-blue-300"
+            onClick={() => handleCopy(copyable, copyKey)}
+            className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
           >
-            {copySuccess === 'code' ? '✓' : 'Copy'}
+            {copySuccess === copyKey ? 'Copied' : 'Copy'}
           </button>
-        </div>
+        )}
+        {link && (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            View
+          </a>
+        )}
       </div>
+    </div>
+  );
 
-      {order.transaction_hash && (
-        <div>
-          <p className="text-xs text-gray-500 mb-1">Blockchain Transaction</p>
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-mono text-white">{truncateHash(order.transaction_hash)}</p>
-            <button
-              onClick={() => handleCopy(order.transaction_hash!, 'hash')}
-              className="text-xs text-blue-400 hover:text-blue-300"
-            >
-              {copySuccess === 'hash' ? '✓' : 'Copy'}
-            </button>
-            <a
-              href={getBaseScanTxUrl(order.transaction_hash)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-            >
-              BaseScan 🔗
-            </a>
-          </div>
-        </div>
-      )}
+  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div>
+      <h4 className="text-[11px] font-semibold text-white/30 uppercase tracking-wider mb-1">{title}</h4>
+      <div className="divide-y divide-white/[0.04]">{children}</div>
+    </div>
+  );
 
-      {/* Financial Details */}
-      <div className="border-t border-white/10 pt-4">
-        <p className="text-xs text-gray-500 mb-3">Financial Details</p>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <p className="text-gray-400">USDC Amount</p>
-            <p className="text-white font-medium">{order.amount_in_usdc} USDC</p>
-          </div>
-          <div>
-            <p className="text-gray-400">KES Amount</p>
-            <p className="text-white font-medium">{order.amount_in_local?.toLocaleString()} KES</p>
-          </div>
-          <div>
-            <p className="text-gray-400">Exchange Rate</p>
-            <p className="text-white font-medium">{order.exchange_rate}</p>
-          </div>
-          <div>
-            <p className="text-gray-400">Fee (1%)</p>
-            <p className="text-white font-medium">{order.sender_fee} KES</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Information */}
-      <div className="border-t border-white/10 pt-4">
-        <p className="text-xs text-gray-500 mb-3">Payment Information</p>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-400">Type</span>
-            <span className="text-white font-medium">{order.payment_type}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-400">Destination</span>
-            <span className="text-white font-medium">{getDestination()}</span>
-          </div>
-          {order.account_name && (
-            <div className="flex justify-between">
-              <span className="text-gray-400">Account Name</span>
-              <span className="text-white font-medium">{order.account_name}</span>
-            </div>
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Left Column */}
+      <div className="space-y-6">
+        {/* Transaction Info */}
+        <Section title="Transaction">
+          <DetailRow
+            label="Code"
+            value={order.transaction_code}
+            mono
+            copyable={order.transaction_code}
+            copyKey="code"
+          />
+          {order.transaction_hash && (
+            <DetailRow
+              label="Blockchain Tx"
+              value={truncateHash(order.transaction_hash)}
+              mono
+              copyable={order.transaction_hash}
+              copyKey="hash"
+              link={getBaseScanTxUrl(order.transaction_hash)}
+            />
           )}
-          <div className="flex justify-between">
-            <span className="text-gray-400">Network</span>
-            <span className="text-white font-medium">{order.mobile_network || 'SAFARICOM'}</span>
-          </div>
-        </div>
+        </Section>
+
+        {/* Financial Details */}
+        <Section title="Financial">
+          <DetailRow label="USDC Amount" value={`${order.amount_in_usdc} USDC`} />
+          <DetailRow label={`${order.local_currency} Amount`} value={`${order.amount_in_local?.toLocaleString()} ${order.local_currency}`} />
+          <DetailRow label="Exchange Rate" value={order.exchange_rate} />
+          <DetailRow label="Fee (1%)" value={`${order.sender_fee} ${order.local_currency}`} />
+        </Section>
+
+        {/* Payment Info */}
+        <Section title="Payment">
+          <DetailRow label="Type" value={order.payment_type} />
+          <DetailRow label="Destination" value={getDestination()} />
+          {order.account_name && (
+            <DetailRow label="Account Name" value={order.account_name} />
+          )}
+          <DetailRow label="Network" value={order.mobile_network || 'SAFARICOM'} />
+        </Section>
       </div>
 
-      {/* Status Timeline */}
-      <div className="border-t border-white/10 pt-4">
-        <p className="text-xs text-gray-500 mb-3">Status Timeline</p>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-400">Created</span>
-            <span className="text-white">{formatEATDate(order.created_at)}</span>
-          </div>
+      {/* Right Column */}
+      <div className="space-y-6">
+        {/* Timeline */}
+        <Section title="Timeline">
+          <DetailRow label="Created" value={formatEATDate(order.created_at)} />
           {order.completed_at && (
             <>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Completed</span>
-                <span className="text-white">{formatEATDate(order.completed_at)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Duration</span>
-                <span className="text-white font-medium">
-                  {getTimeDifference(order.created_at, order.completed_at)}
-                </span>
-              </div>
+              <DetailRow label="Completed" value={formatEATDate(order.completed_at)} />
+              <DetailRow
+                label="Duration"
+                value={
+                  <span className="text-emerald-400">
+                    {getTimeDifference(order.created_at, order.completed_at)}
+                  </span>
+                }
+              />
             </>
           )}
-        </div>
-      </div>
+        </Section>
 
-      {/* Receipt Information */}
-      {order.receipt_number && (
-        <div className="border-t border-white/10 pt-4">
-          <p className="text-xs text-gray-500 mb-3">Receipt Information</p>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-400">M-Pesa Code</span>
-              <span className="text-white font-mono font-medium">{order.receipt_number}</span>
-            </div>
+        {/* Receipt */}
+        {order.receipt_number && (
+          <Section title="Receipt">
+            <DetailRow label="M-Pesa Code" value={order.receipt_number} mono />
             {order.public_name && (
-              <div className="flex justify-between">
-                <span className="text-gray-400">Recipient</span>
-                <span className="text-white font-medium">{order.public_name}</span>
-              </div>
+              <DetailRow label="Recipient" value={order.public_name} />
             )}
-          </div>
-        </div>
-      )}
+          </Section>
+        )}
 
-      {/* Wallet & Settlement */}
-      <div className="border-t border-white/10 pt-4">
-        <p className="text-xs text-gray-500 mb-3">Addresses</p>
-        <div className="space-y-3 text-sm">
-          <div>
-            <p className="text-gray-400 mb-1">Wallet</p>
-            <div className="flex items-center gap-2">
-              <p className="text-white font-mono text-xs">{truncateHash(order.wallet_address, 8, 6)}</p>
-              <button
-                onClick={() => handleCopy(order.wallet_address, 'wallet')}
-                className="text-xs text-blue-400 hover:text-blue-300"
-              >
-                {copySuccess === 'wallet' ? '✓' : 'Copy'}
-              </button>
-              <a
-                href={getBaseScanAddressUrl(order.wallet_address)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-400 hover:text-blue-300"
-              >
-                View 🔗
-              </a>
-            </div>
-          </div>
+        {/* Addresses */}
+        <Section title="Addresses">
+          <DetailRow
+            label="Wallet"
+            value={truncateHash(order.wallet_address, 8, 6)}
+            mono
+            copyable={order.wallet_address}
+            copyKey="wallet"
+            link={getBaseScanAddressUrl(order.wallet_address)}
+          />
           {order.settlement_address && (
-            <div>
-              <p className="text-gray-400 mb-1">Settlement (Pretium)</p>
-              <div className="flex items-center gap-2">
-                <p className="text-white font-mono text-xs">{truncateHash(order.settlement_address, 8, 6)}</p>
-                <a
-                  href={getBaseScanAddressUrl(order.settlement_address)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-400 hover:text-blue-300"
-                >
-                  View 🔗
-                </a>
-              </div>
-            </div>
+            <DetailRow
+              label="Settlement"
+              value={truncateHash(order.settlement_address, 8, 6)}
+              mono
+              link={getBaseScanAddressUrl(order.settlement_address)}
+            />
           )}
           {order.fid && (
-            <div className="flex justify-between">
-              <span className="text-gray-400">Farcaster ID</span>
-              <span className="text-white font-medium">{order.fid}</span>
-            </div>
+            <DetailRow label="Farcaster ID" value={order.fid} />
           )}
-        </div>
+        </Section>
       </div>
     </div>
   );

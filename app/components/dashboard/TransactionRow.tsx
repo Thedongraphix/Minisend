@@ -14,98 +14,105 @@ interface TransactionRowProps {
 export function TransactionRow({ order, onRefresh, refreshing }: TransactionRowProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusStyle = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-500/10 text-green-400 border-green-500/20';
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
       case 'pending':
-        return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
       case 'processing':
         return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
       case 'failed':
         return 'bg-red-500/10 text-red-400 border-red-500/20';
       case 'cancelled':
-        return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+        return 'bg-white/5 text-white/40 border-white/10';
       default:
-        return 'bg-gray-500/10 text-gray-400 border-gray-500/20';
+        return 'bg-white/5 text-white/40 border-white/10';
+    }
+  };
+
+  const getPaymentTypeLabel = (type: string) => {
+    switch (type) {
+      case 'MOBILE': return 'Mobile';
+      case 'BUY_GOODS': return 'Buy Goods';
+      case 'PAYBILL': return 'Paybill';
+      case 'BANK_TRANSFER': return 'Bank';
+      default: return type;
     }
   };
 
   return (
     <>
-      <tr className="border-b border-gray-800/30 hover:bg-[#0a0a0a] transition-colors">
+      <tr className="group hover:bg-white/[0.02] transition-colors">
         {/* Transaction Code */}
-        <td className="py-4 px-6">
+        <td className="py-4 px-5">
           <div>
-            <p className="font-mono text-sm text-white break-all">
+            <p className="font-mono text-[13px] text-white/90 tracking-tight">
               {order.transaction_code}
             </p>
-            <p className="text-xs text-gray-500">Transaction ID</p>
           </div>
         </td>
 
         {/* Amount */}
-        <td className="py-4 px-6">
+        <td className="py-4 px-5">
           <div>
-            <p className="text-white font-medium">${order.amount_in_usdc} USDC</p>
-            <p className="text-xs text-gray-500">→ {order.amount_in_local?.toLocaleString()} KES</p>
+            <p className="text-[14px] font-medium text-white">${order.amount_in_usdc}</p>
+            <p className="text-[12px] text-white/40 mt-0.5">
+              {order.amount_in_local?.toLocaleString()} {order.local_currency}
+            </p>
           </div>
         </td>
 
-        {/* Status (MIDDLE) */}
-        <td className="py-4 px-6">
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusBadge(order.status)}`}>
+        {/* Status */}
+        <td className="py-4 px-5">
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide border ${getStatusStyle(order.status)}`}>
             {order.status}
           </span>
         </td>
 
         {/* Payment Type */}
-        <td className="py-4 px-6">
-          <div>
-            <p className="text-sm text-gray-300">{order.payment_type}</p>
-            <p className="text-xs text-gray-500">Payment method</p>
-          </div>
+        <td className="py-4 px-5">
+          <span className="text-[13px] text-white/60">
+            {getPaymentTypeLabel(order.payment_type)}
+          </span>
         </td>
 
         {/* Created At */}
-        <td className="py-4 px-6">
-          <div>
-            <p className="text-sm text-gray-300">
-              {formatEATDate(order.created_at, true)}
-            </p>
-            <p className="text-xs text-gray-500">Created</p>
-          </div>
+        <td className="py-4 px-5">
+          <span className="text-[13px] text-white/50">
+            {formatEATDate(order.created_at, true)}
+          </span>
         </td>
 
         {/* Tx Hash */}
-        <td className="py-4 px-6">
+        <td className="py-4 px-5">
           {order.transaction_hash ? (
             <a
               href={getBaseScanTxUrl(order.transaction_hash)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center text-sm text-blue-400 hover:text-blue-300 transition-colors"
+              className="inline-flex items-center gap-1 text-[13px] text-blue-400 hover:text-blue-300 font-mono transition-colors"
             >
-              <span>{truncateHash(order.transaction_hash, 6, 4)}</span>
-              <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+              {truncateHash(order.transaction_hash, 6, 4)}
+              <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
             </a>
           ) : (
-            <span className="text-xs text-gray-500">No TX</span>
+            <span className="text-[12px] text-white/20">-</span>
           )}
         </td>
 
         {/* Actions */}
-        <td className="py-4 px-6">
-          <div className="flex gap-2 justify-end">
+        <td className="py-4 px-5">
+          <div className="flex gap-1 justify-end">
             <button
               onClick={() => setExpanded(!expanded)}
-              className="p-2 hover:bg-[#111] rounded-lg transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.05] transition-colors"
               aria-label="Toggle details"
             >
               <svg
-                className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 text-white/40 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -116,11 +123,11 @@ export function TransactionRow({ order, onRefresh, refreshing }: TransactionRowP
             <button
               onClick={() => onRefresh(order.transaction_code)}
               disabled={refreshing}
-              className="p-2 hover:bg-[#111] rounded-lg transition-colors disabled:opacity-50"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.05] transition-colors disabled:opacity-30"
               aria-label="Refresh status"
             >
               <svg
-                className={`w-4 h-4 text-gray-400 ${refreshing ? 'animate-spin' : ''}`}
+                className={`w-4 h-4 text-white/40 ${refreshing ? 'animate-spin' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -137,11 +144,11 @@ export function TransactionRow({ order, onRefresh, refreshing }: TransactionRowP
         </td>
       </tr>
 
-      {/* Expanded Details Row */}
+      {/* Expanded Details */}
       {expanded && (
         <tr>
-          <td colSpan={7} className="bg-[#0a0a0a] border-b border-gray-800/30">
-            <div className="px-6 py-4">
+          <td colSpan={7} className="bg-white/[0.01] border-t border-white/[0.04]">
+            <div className="p-5">
               <TransactionDetails order={order} />
             </div>
           </td>

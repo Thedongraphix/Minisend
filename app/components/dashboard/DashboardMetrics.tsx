@@ -15,15 +15,15 @@ interface DashboardMetricsProps {
 export function DashboardMetrics({ stats, loading }: DashboardMetricsProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="border border-gray-800/50 rounded-2xl p-6 bg-[#111]"
+            className="bg-white/[0.03] rounded-2xl p-5 border border-white/[0.06]"
           >
-            <div className="h-4 w-20 bg-gray-800 rounded animate-pulse mb-4"></div>
-            <div className="h-8 w-32 bg-gray-800 rounded animate-pulse mb-2"></div>
-            <div className="h-3 w-24 bg-gray-800 rounded animate-pulse"></div>
+            <div className="h-3 w-16 bg-white/10 rounded-full animate-pulse mb-3"></div>
+            <div className="h-8 w-24 bg-white/10 rounded-lg animate-pulse mb-2"></div>
+            <div className="h-3 w-20 bg-white/5 rounded-full animate-pulse"></div>
           </div>
         ))}
       </div>
@@ -31,27 +31,27 @@ export function DashboardMetrics({ stats, loading }: DashboardMetricsProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <MetricCard
         title="Total Orders"
         value={stats.totalOrders.toLocaleString()}
-        subtitle="All-time"
+        subtitle="All time"
       />
 
       <MetricCard
         title="Success Rate"
         value={`${stats.successRate}%`}
-        subtitle="Completed orders"
+        subtitle="Completed"
       />
 
       <MetricCard
-        title="Failed Orders"
+        title="Failed"
         value={stats.failedOrders}
-        subtitle="Requires attention"
+        subtitle="Needs attention"
       />
 
       <MetricCard
-        title="Total Volume"
+        title="Volume"
         value={`$${stats.totalUSDCVolume.toLocaleString()}`}
         subtitle="USDC processed"
       />

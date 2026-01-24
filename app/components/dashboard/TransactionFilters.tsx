@@ -47,63 +47,74 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
     updateFilters({ paymentType: newTypes });
   };
 
+  const hasActiveFilters = filters.search || filters.status.length > 0 || filters.paymentType.length > 0;
+
   return (
-    <div className="space-y-4 mb-6">
+    <div className="space-y-4">
       {/* Search Bar */}
-      <div className="relative flex-1">
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <svg className="w-[18px] h-[18px] text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
         <input
           type="text"
-          placeholder="Search transactions..."
+          placeholder="Search by tx hash, transaction code, wallet, phone, receipt..."
           value={filters.search}
           onChange={(e) => updateFilters({ search: e.target.value })}
-          className="w-full px-4 py-2 bg-[#111] border border-gray-800/50 rounded-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-gray-600"
+          className="w-full h-12 pl-11 pr-4 bg-white/[0.03] border border-white/[0.06] rounded-xl text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-white/20 focus:bg-white/[0.05] transition-all"
         />
-        <svg className="absolute right-3 top-2.5 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-        </svg>
       </div>
 
-      {/* Filters Row */}
-      <div className="flex flex-wrap gap-3 items-center">
-        {/* Status Filter */}
-        {['pending', 'processing', 'completed', 'failed'].map((status) => (
-          <button
-            key={status}
-            onClick={() => toggleStatus(status)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filters.status.includes(status)
-                ? 'bg-white text-black'
-                : 'bg-[#111] text-gray-400 hover:bg-gray-800 border border-gray-800/50'
-            }`}
-          >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </button>
-        ))}
+      {/* Filter Controls */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Status Segmented Control */}
+        <div className="flex items-center bg-white/[0.03] rounded-lg p-1 border border-white/[0.06]">
+          {['pending', 'processing', 'completed', 'failed'].map((status) => (
+            <button
+              key={status}
+              onClick={() => toggleStatus(status)}
+              className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all ${
+                filters.status.includes(status)
+                  ? 'bg-white text-black'
+                  : 'text-white/50 hover:text-white/80'
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          ))}
+        </div>
 
-        <div className="h-6 w-px bg-gray-800/50" />
+        {/* Divider */}
+        <div className="h-8 w-px bg-white/[0.06]" />
 
-        {/* Payment Type Filter */}
-        {['MOBILE', 'BUY_GOODS', 'PAYBILL'].map((type) => (
-          <button
-            key={type}
-            onClick={() => togglePaymentType(type)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filters.paymentType.includes(type)
-                ? 'bg-white text-black'
-                : 'bg-[#111] text-gray-400 hover:bg-gray-800 border border-gray-800/50'
-            }`}
-          >
-            {type.replace('_', ' ')}
-          </button>
-        ))}
+        {/* Payment Type Segmented Control */}
+        <div className="flex items-center bg-white/[0.03] rounded-lg p-1 border border-white/[0.06]">
+          {['MOBILE', 'BUY_GOODS', 'PAYBILL'].map((type) => (
+            <button
+              key={type}
+              onClick={() => togglePaymentType(type)}
+              className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all ${
+                filters.paymentType.includes(type)
+                  ? 'bg-white text-black'
+                  : 'text-white/50 hover:text-white/80'
+              }`}
+            >
+              {type === 'BUY_GOODS' ? 'Buy Goods' : type === 'PAYBILL' ? 'Paybill' : 'Mobile'}
+            </button>
+          ))}
+        </div>
 
-        <div className="h-6 w-px bg-gray-800/50" />
+        {/* Divider */}
+        <div className="h-8 w-px bg-white/[0.06]" />
 
-        {/* Date Range */}
+        {/* Date Range Dropdown */}
         <select
           value={filters.dateRange}
           onChange={(e) => updateFilters({ dateRange: e.target.value })}
-          className="px-4 py-2 bg-[#111] border border-gray-800/50 rounded-lg text-white text-sm focus:outline-none focus:border-gray-600 cursor-pointer"
+          className="h-9 px-3 bg-white/[0.03] border border-white/[0.06] rounded-lg text-[13px] text-white/70 focus:outline-none focus:border-white/20 cursor-pointer appearance-none"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff40' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 8px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px', paddingRight: '32px' }}
         >
           <option value="all">All Time</option>
           <option value="today">Today</option>
@@ -111,13 +122,14 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
           <option value="30d">Last 30 Days</option>
         </select>
 
+        {/* Spacer */}
         <div className="flex-1" />
 
         {/* Clear Filters */}
-        {(filters.search || filters.status.length > 0 || filters.paymentType.length > 0) && (
+        {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="px-4 py-2 bg-[#111] hover:bg-gray-800 text-gray-400 rounded-lg text-sm font-medium transition-colors border border-gray-800/50"
+            className="h-9 px-4 text-[13px] font-medium text-white/50 hover:text-white transition-colors"
           >
             Clear All
           </button>

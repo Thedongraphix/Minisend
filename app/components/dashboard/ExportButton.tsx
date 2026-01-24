@@ -20,7 +20,8 @@ export function ExportButton({ orders }: ExportButtonProps) {
         'Status',
         'Payment Type',
         'USDC Amount',
-        'KES Amount',
+        'Local Amount',
+        'Currency',
         'Exchange Rate',
         'Fee',
         'Destination',
@@ -47,6 +48,7 @@ export function ExportButton({ orders }: ExportButtonProps) {
           order.payment_type,
           order.amount_in_usdc,
           order.amount_in_local,
+          order.local_currency,
           order.exchange_rate,
           order.sender_fee,
           destination,
@@ -82,17 +84,17 @@ export function ExportButton({ orders }: ExportButtonProps) {
     <button
       onClick={exportToCSV}
       disabled={exporting || orders.length === 0}
-      className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+      className="h-9 px-4 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.06] text-[13px] font-medium text-white/70 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          strokeWidth={1.5}
+          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
         />
       </svg>
-      {exporting ? 'Exporting...' : 'Export CSV'}
+      {exporting ? 'Exporting...' : 'Export'}
     </button>
   );
 }

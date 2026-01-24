@@ -39,7 +39,7 @@ export function PretiumDashboard() {
       if (!response.ok) throw new Error('Failed to fetch stats');
       return response.json();
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   });
 
   // Fetch orders
@@ -55,7 +55,6 @@ export function PretiumDashboard() {
       if (filters.status.length > 0) params.set('status', filters.status.join(','));
       if (filters.paymentType.length > 0) params.set('payment_type', filters.paymentType.join(','));
 
-      // Date range handling
       if (filters.dateRange !== 'all') {
         const now = new Date();
         let startDate: Date;
@@ -79,55 +78,73 @@ export function PretiumDashboard() {
     },
   });
 
-  // Reset page when filters change
   useEffect(() => {
     setPage(1);
   }, [filters]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-xl font-medium text-white">Pretium Orders Dashboard</h1>
-            <p className="text-sm text-gray-400">Monitor and track all Pretium transactions</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <ExportButton orders={ordersData?.orders || []} />
-            <button
-              onClick={async () => {
-                await fetch('/api/auth/dashboard/logout', { method: 'POST' });
-                window.location.href = '/dashboard/pretium/login';
-              }}
-              className="px-4 py-2 bg-[#111] border border-gray-800/50 text-gray-400 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium"
-            >
-              Logout
-            </button>
+    <div className="min-h-screen bg-black">
+      {/* Top Navigation Bar */}
+      <div className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                <span className="text-white text-sm font-semibold">P</span>
+              </div>
+              <span className="text-[17px] font-semibold text-white">Pretium</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <ExportButton orders={ordersData?.orders || []} />
+              <button
+                onClick={async () => {
+                  await fetch('/api/auth/dashboard/logout', { method: 'POST' });
+                  window.location.href = '/dashboard/pretium/login';
+                }}
+                className="px-4 py-2 text-[15px] font-medium text-white/60 hover:text-white transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Metrics */}
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-[28px] font-semibold text-white tracking-tight">Dashboard</h1>
+          <p className="text-[15px] text-white/50 mt-1">Monitor and manage your transactions</p>
+        </div>
+
+        {/* Metrics Grid */}
         <DashboardMetrics
           stats={stats || { totalOrders: 0, successRate: 0, failedOrders: 0, totalUSDCVolume: 0 }}
           loading={statsLoading}
         />
 
-        {/* Filters */}
-        <TransactionFilters onFiltersChange={setFilters} />
+        {/* Filters Section */}
+        <div className="mt-8">
+          <TransactionFilters onFiltersChange={setFilters} />
+        </div>
 
-        {/* Orders Table */}
-        <TransactionTable
-          orders={ordersData?.orders || []}
-          loading={ordersLoading}
-          hasMore={ordersData?.hasMore}
-          onLoadMore={() => setPage((p) => p + 1)}
-        />
+        {/* Transactions Section */}
+        <div className="mt-6">
+          <TransactionTable
+            orders={ordersData?.orders || []}
+            loading={ordersLoading}
+            hasMore={ordersData?.hasMore}
+            onLoadMore={() => setPage((p) => p + 1)}
+          />
+        </div>
 
-        {/* Footer */}
+        {/* Footer Stats */}
         {ordersData && (
-          <div className="mt-4 text-center text-sm text-gray-500">
-            Showing {ordersData.orders.length} of {ordersData.total} orders
+          <div className="mt-6 text-center">
+            <span className="text-[13px] text-white/40">
+              Showing {ordersData.orders.length} of {ordersData.total} transactions
+            </span>
           </div>
         )}
       </div>
