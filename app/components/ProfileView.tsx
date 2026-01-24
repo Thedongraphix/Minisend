@@ -358,7 +358,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
     <div className="space-y-6 animate-fade-in">
       {/* Back Button */}
       <button
-        onClick={() => setActiveTab('send')}
+        onClick={() => setActiveTab('home')}
         className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-all duration-200"
         title="Go back"
       >
