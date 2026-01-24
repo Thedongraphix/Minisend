@@ -845,7 +845,7 @@ export class DatabaseService {
       .select('*', { count: 'exact' });
 
     if (search) {
-      query = query.or(`transaction_code.ilike.%${search}%,wallet_address.ilike.%${search}%,phone_number.eq.${search},till_number.eq.${search},paybill_number.eq.${search},account_name.ilike.%${search}%`);
+      query = query.or(`transaction_code.ilike.%${search}%,wallet_address.ilike.%${search}%,transaction_hash.ilike.%${search}%,phone_number.eq.${search},till_number.eq.${search},paybill_number.eq.${search},account_name.ilike.%${search}%,receipt_number.ilike.%${search}%`);
     }
 
     if (status && status.length > 0) {
