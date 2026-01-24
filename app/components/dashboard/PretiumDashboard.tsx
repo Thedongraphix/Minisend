@@ -90,9 +90,9 @@ export function PretiumDashboard() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">P</span>
+                <span className="text-white text-sm font-semibold">Minisend</span>
               </div>
-              <span className="text-[17px] font-semibold text-white">Pretium</span>
+              <span className="text-[17px] font-semibold text-white">Orders Dashboard</span>
             </div>
             <div className="flex items-center gap-3">
               <ExportButton orders={ordersData?.orders || []} />

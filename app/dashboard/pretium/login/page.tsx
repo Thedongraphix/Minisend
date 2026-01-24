@@ -47,7 +47,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-lg mb-4">
             <span className="text-black font-bold text-xl">M</span>
           </div>
-          <h1 className="text-2xl font-medium text-white mb-2">Pretium Dashboard</h1>
+          <h1 className="text-2xl font-medium text-white mb-2">Dashboard</h1>
           <p className="text-sm text-gray-400">Sign in to access the admin dashboard</p>
         </div>
 
