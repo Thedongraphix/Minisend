@@ -89,9 +89,6 @@ export function PretiumDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                <span className="text-white text-sm font-semibold">Minisend</span>
-              </div>
               <span className="text-[17px] font-semibold text-white">Orders Dashboard</span>
             </div>
             <div className="flex items-center gap-3">
@@ -114,8 +111,7 @@ export function PretiumDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-[28px] font-semibold text-white tracking-tight">Dashboard</h1>
-          <p className="text-[15px] text-white/50 mt-1">Monitor and manage your transactions</p>
+          <p className="text-[15px] text-white/50 mt-1">Monitor and track all transactions</p>
         </div>
 
         {/* Metrics Grid */}
