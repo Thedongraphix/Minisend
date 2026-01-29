@@ -1,9 +1,8 @@
 /**
  * BlockRadar Webhook Handler
- * Handles gateway deposit events and sends email notifications to users
+ * Handles deposit events and sends email notifications to users
  */
 
-import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
@@ -19,36 +18,6 @@ function getResendClient() {
     throw new Error('RESEND_API_KEY is not configured');
   }
   return new Resend(apiKey);
-}
-
-interface GatewayDepositWebhook {
-  event: 'gateway-deposit.success' | 'gateway-deposit.failed';
-  data: {
-    id: string;
-    reference: string;
-    senderAddress: string;
-    recipientAddress: string;
-    amount: string;
-    amountUSD: string;
-    hash: string;
-    status: 'SUCCESS' | 'FAILED';
-    type: 'GATEWAY_DEPOSIT';
-    note: string;
-    metadata?: {
-      user_id?: string;
-      [key: string]: unknown;
-    };
-    asset: {
-      name: string;
-      symbol: string;
-      decimals: number;
-    };
-    blockchain: {
-      name: string;
-      slug: string;
-    };
-    createdAt: string;
-  };
 }
 
 /**
@@ -289,30 +258,44 @@ async function sendDepositFailedNotification(
   }
 }
 
+/** Helper to return plain JSON responses without framework compression */
+function jsonResponse(body: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
 /**
  * POST /api/blockradar/webhook
- * Handles BlockRadar webhook events
+ * Handles BlockRadar webhook events for all event types
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const payload: GatewayDepositWebhook = await request.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const payload: any = await request.json();
+    const event = payload?.event as string;
+    const data = payload?.data;
 
     console.log('📨 BlockRadar webhook received:', {
-      event: payload.event,
-      type: payload.data.type,
-      amount: payload.data.amount,
-      blockchain: payload.data.blockchain.slug,
-      status: payload.data.status,
+      event,
+      type: data?.type,
+      amount: data?.amount,
+      blockchain: data?.blockchain?.slug,
+      status: data?.status,
     });
 
-    // Only handle gateway deposit events
-    if (payload.data.type !== 'GATEWAY_DEPOSIT') {
-      console.log('⏭️ Skipping non-gateway deposit event');
-      return NextResponse.json({ received: true });
+    // Only handle deposit events (both regular and gateway)
+    const depositTypes = ['DEPOSIT', 'GATEWAY_DEPOSIT'];
+    if (!depositTypes.includes(data?.type)) {
+      console.log('⏭️ Skipping non-deposit event:', data?.type);
+      return jsonResponse({ received: true });
     }
 
     // Extract recipient address (the user's Minisend wallet)
-    const recipientAddress = payload.data.recipientAddress;
+    const recipientAddress = data.recipientAddress;
 
     // Find user by their Minisend wallet address
     const { data: user, error: userError } = await supabase
@@ -323,55 +306,54 @@ export async function POST(request: NextRequest) {
 
     if (userError || !user) {
       console.warn('⚠️ User not found for address:', recipientAddress);
-      // Still return success - webhook was processed
-      return NextResponse.json({ received: true });
+      return jsonResponse({ received: true });
     }
 
     if (!user.email) {
       console.warn('⚠️ User has no email:', user.user_id);
-      return NextResponse.json({ received: true });
+      return jsonResponse({ received: true });
     }
 
     // Get estimated settlement time
-    const estimatedTime = getEstimatedSettlementTime(payload.data.blockchain.slug);
+    const blockchainSlug = data.blockchain?.slug || 'unknown';
+    const estimatedTime = getEstimatedSettlementTime(blockchainSlug);
 
-    // Handle based on event type
-    if (payload.event === 'gateway-deposit.success') {
+    // Handle based on event type (both regular and gateway deposit events)
+    const isSuccess = event === 'deposit.success' || event === 'gateway-deposit.success';
+    const isFailed = event === 'deposit.failed' || event === 'gateway-deposit.failed';
+
+    if (isSuccess) {
       await sendDepositNotification(
         user.email,
-        payload.data.amount,
-        payload.data.asset.symbol,
-        payload.data.blockchain.name,
+        data.amount,
+        data.asset?.symbol || 'USDC',
+        data.blockchain?.name || blockchainSlug,
         estimatedTime,
-        payload.data.hash
+        data.hash
       );
-    } else if (payload.event === 'gateway-deposit.failed') {
+    } else if (isFailed) {
       await sendDepositFailedNotification(
         user.email,
-        payload.data.amount,
-        payload.data.asset.symbol,
-        payload.data.blockchain.name,
-        payload.data.hash
+        data.amount,
+        data.asset?.symbol || 'USDC',
+        data.blockchain?.name || blockchainSlug,
+        data.hash
       );
     }
 
-    return NextResponse.json({
+    return jsonResponse({
       received: true,
       processed: true,
-      event: payload.event,
+      event,
     });
 
   } catch (error) {
     console.error('❌ BlockRadar webhook error:', error);
 
     // Return 200 even on error to prevent webhook retries
-    // Log the error for investigation
-    return NextResponse.json(
-      {
-        received: true,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 200 }
-    );
+    return jsonResponse({
+      received: true,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 }
