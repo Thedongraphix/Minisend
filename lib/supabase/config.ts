@@ -754,13 +754,32 @@ export class DatabaseService {
 
   // Dashboard query methods
   static async getDashboardStats() {
-    const { data, error } = await supabaseAdmin
-      .from('pretium_orders')
-      .select('*')
+    // Fetch all orders using pagination (Supabase defaults to 1000 row limit)
+    const PAGE_SIZE = 1000;
+    let allOrders: any[] = [];
+    let page = 0;
+    let hasMore = true;
 
-    if (error) throw error
+    while (hasMore) {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, error } = await supabaseAdmin
+        .from('pretium_orders')
+        .select('*')
+        .range(from, to)
 
-    const orders = data || [];
+      if (error) throw error
+
+      const rows = data || [];
+      allOrders = allOrders.concat(rows);
+
+      if (rows.length < PAGE_SIZE) {
+        hasMore = false;
+      }
+      page++;
+    }
+
+    const orders = allOrders;
     const totalOrders = orders.length;
     const completedOrders = orders.filter(o => o.status === 'completed').length;
     const failedOrders = orders.filter(o => o.status === 'failed').length;
