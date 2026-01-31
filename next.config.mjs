@@ -23,6 +23,18 @@ const nextConfig = {
       },
     ],
   },
+  // Prevent Vercel edge CDN from compressing webhook responses —
+  // Blockradar's axios v1.2.1 fails to decompress Brotli (Z_BUF_ERROR)
+  async headers() {
+    return [
+      {
+        source: '/api/blockradar/webhook',
+        headers: [
+          { key: 'Content-Encoding', value: 'identity' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

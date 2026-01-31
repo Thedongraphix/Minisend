@@ -258,12 +258,15 @@ async function sendDepositFailedNotification(
   }
 }
 
-/** Helper to return plain JSON responses without framework compression */
+/** Helper to return plain JSON responses — Content-Encoding: identity
+ *  prevents Vercel's edge CDN from applying Brotli/gzip compression,
+ *  which Blockradar's axios v1.2.1 fails to decompress (Z_BUF_ERROR). */
 function jsonResponse(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
       'Content-Type': 'application/json',
+      'Content-Encoding': 'identity',
     },
   });
 }
