@@ -756,7 +756,7 @@ export class DatabaseService {
   static async getDashboardStats() {
     // Fetch all orders using pagination (Supabase defaults to 1000 row limit)
     const PAGE_SIZE = 1000;
-    let allOrders: any[] = [];
+    let allOrders: PretiumOrder[] = [];
     let page = 0;
     let hasMore = true;
 
