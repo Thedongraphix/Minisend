@@ -33,7 +33,7 @@ export function BalanceView() {
     chainId
   });
 
-  const [isBalanceVisible, setIsBalanceVisible] = useState(true)
+  const [isBalanceVisible, setIsBalanceVisible] = useState(false)
   const [copyFeedback, setCopyFeedback] = useState(false)
 
   const networkConfig = getNetworkConfig(chainId)
