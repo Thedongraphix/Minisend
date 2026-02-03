@@ -17,6 +17,7 @@ interface CurrencySwapInterfaceProps {
 
 const CURRENCIES = [
   { code: "KES", name: "Kenyan Shilling", flag: "🇰🇪", symbol: "KSh" },
+  { code: "NGN", name: "Nigerian Naira", flag: "🇳🇬", symbol: "₦" },
   { code: "GHS", name: "Ghanaian Cedi", flag: "🇬🇭", symbol: "₵" },
   { code: "UGX", name: "Ugandan Shilling", flag: "🇺🇬", symbol: "USh" },
 ]
