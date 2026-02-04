@@ -45,36 +45,81 @@ function getEstimatedSettlementTime(blockchainSlug: string): string {
   return times[blockchainSlug.toLowerCase()] || '10-20 minutes';
 }
 
-// ─── Email: shared layout ───────────────────────────────────────────────────
+function explorerTxUrl(slug: string, txHash: string): string {
+  const explorers: Record<string, string> = {
+    base: 'https://basescan.org/tx/',
+    ethereum: 'https://etherscan.io/tx/',
+    polygon: 'https://polygonscan.com/tx/',
+    arbitrum: 'https://arbiscan.io/tx/',
+    optimism: 'https://optimistic.etherscan.io/tx/',
+    avalanche: 'https://snowtrace.io/tx/',
+    celo: 'https://celoscan.io/tx/',
+    lisk: 'https://blockscout.lisk.com/tx/',
+  };
+  const base = explorers[slug.toLowerCase()];
+  return base ? `${base}${txHash}` : '';
+}
 
-function emailLayout(headerBg: string, headerText: string, body: string): string {
+// ─── Email: shared layout & helpers ─────────────────────────────────────────
+
+const ASSET_BASE = 'https://app.minisend.xyz';
+
+function chainLogoUrl(slug: string): string | null {
+  const logos: Record<string, string> = {
+    base: `${ASSET_BASE}/Base_Network_Logo.svg`,
+    ethereum: `${ASSET_BASE}/ethereum-logo.svg`,
+    polygon: `${ASSET_BASE}/polygon-logo.svg`,
+    celo: `${ASSET_BASE}/celo-logo.svg`,
+    lisk: `${ASSET_BASE}/lisk-logo.svg`,
+  };
+  return logos[slug.toLowerCase()] || null;
+}
+
+function tokenLogoUrl(symbol: string): string {
+  if (symbol.toUpperCase() === 'USDT') return `${ASSET_BASE}/usdt.svg`;
+  return `${ASSET_BASE}/usd-coin.png`;
+}
+
+function inlineToken(amount: string, symbol: string): string {
+  return `<img src="${tokenLogoUrl(symbol)}" width="16" height="16" alt="${symbol}" style="vertical-align:middle;margin-right:4px;" /><span style="font-weight:600;">${amount} ${symbol}</span>`;
+}
+
+function inlineChain(name: string, slug: string): string {
+  const logo = chainLogoUrl(slug);
+  const img = logo
+    ? `<img src="${logo}" width="14" height="14" alt="${name}" style="vertical-align:middle;margin-right:4px;" />`
+    : '';
+  return `${img}<span>${name}</span>`;
+}
+
+function emailLayout(body: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f5f5f7;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f7;padding:40px 20px;">
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f7f7f8;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f7f8;padding:40px 16px;">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <table width="520" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;">
+          <!-- Logo -->
           <tr>
-            <td style="background:${headerBg};padding:36px 30px;text-align:center;">
-              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">${headerText}</h1>
+            <td style="padding:32px 32px 0;text-align:center;">
+              <img src="${ASSET_BASE}/icon.png" width="40" height="40" alt="Minisend" style="border-radius:10px;" />
             </td>
           </tr>
+          <!-- Body -->
           <tr>
-            <td style="padding:36px 30px;">
+            <td style="padding:24px 32px 32px;">
               ${body}
             </td>
           </tr>
+          <!-- Footer -->
           <tr>
-            <td style="background-color:#f9f9fb;padding:24px 30px;text-align:center;border-top:1px solid #e5e5ea;">
-              <p style="margin:0 0 6px;color:#86868b;font-size:12px;">
-                <a href="https://app.minisend.xyz" style="color:#0052FF;text-decoration:none;font-weight:500;">app.minisend.xyz</a>
-              </p>
-              <p style="margin:0;color:#aeaeb2;font-size:11px;">Minisend &mdash; Send money to mobile wallets</p>
+            <td style="padding:20px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+              <p style="margin:0;color:#9ca3af;font-size:12px;letter-spacing:0.02em;">Onchain earnings truly spendable</p>
             </td>
           </tr>
         </table>
@@ -85,25 +130,21 @@ function emailLayout(headerBg: string, headerText: string, body: string): string
 </html>`;
 }
 
-function detailsTable(rows: [string, string][]): string {
-  const rowsHtml = rows
-    .map(
-      ([label, value]) =>
-        `<tr>
-          <td style="color:#86868b;font-size:14px;font-weight:500;padding:8px 0;">${label}</td>
-          <td style="color:#1d1d1f;font-size:14px;font-weight:600;text-align:right;padding:8px 0;">${value}</td>
-        </tr>`
-    )
-    .join('');
-  return `<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f7;border-radius:8px;margin:24px 0;">
-    <tr><td style="padding:16px 20px;"><table width="100%" cellpadding="0" cellspacing="0">${rowsHtml}</table></td></tr>
+function ctaButton(): string {
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0;">
+    <tr>
+      <td align="center">
+        <a href="https://app.minisend.xyz" style="display:inline-block;background:#0052FF;color:#ffffff;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;text-decoration:none;">Launch Minisend</a>
+      </td>
+    </tr>
   </table>`;
 }
 
-function statusBox(color: string, borderColor: string, content: string): string {
-  return `<div style="background-color:${color};border-left:4px solid ${borderColor};border-radius:4px;padding:14px 16px;margin:20px 0;">
-    <p style="margin:0;color:#1d1d1f;font-size:14px;line-height:1.5;">${content}</p>
-  </div>`;
+function detailRow(label: string, value: string): string {
+  return `<tr>
+    <td style="color:#9ca3af;font-size:13px;padding:6px 0;">${label}</td>
+    <td style="color:#1a1a1a;font-size:13px;text-align:right;padding:6px 0;">${value}</td>
+  </tr>`;
 }
 
 // ─── Email senders ──────────────────────────────────────────────────────────
@@ -114,32 +155,38 @@ async function sendDepositReceivedEmail(
   asset: string,
   network: string,
   estimatedTime: string,
-  txHash: string
+  txHash: string,
+  blockchainSlug = ''
 ): Promise<void> {
   try {
     const body = `
-      <p style="margin:0 0 16px;color:#1d1d1f;font-size:16px;line-height:1.6;">
-        Your deposit has been received and is now being processed. Your funds will be converted to USDC and settled to your Minisend wallet on Base.
+      <h2 style="margin:0 0 8px;color:#1a1a1a;font-size:18px;font-weight:600;">&#x2705; Deposit received</h2>
+      <p style="margin:0 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
+        We received your deposit and it's being settled to Base.
       </p>
-      ${detailsTable([
-        ['Amount', `${amount} ${asset}`],
-        ['Network', network],
-        ['Est. Settlement', estimatedTime],
-      ])}
-      ${statusBox('#e8f5e9', '#4caf50',
-        `<strong>What happens next</strong><br/>
-        Your ${asset} is being converted to USDC and transferred to Base. We'll send you another email once your funds are available.`
-      )}
-      <p style="margin:20px 0 0;color:#aeaeb2;font-size:12px;word-break:break-all;">
-        Tx: <span style="font-family:monospace;">${txHash}</span>
-      </p>`;
+      <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;margin:0 0 20px;">
+        <tr><td style="padding:14px 16px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${detailRow('Amount', inlineToken(amount, asset))}
+            ${detailRow('Network', inlineChain(network, blockchainSlug))}
+            ${detailRow('Est. settlement', estimatedTime)}
+          </table>
+        </td></tr>
+      </table>
+      <p style="margin:0 0 4px;color:#6b7280;font-size:13px;line-height:1.5;">
+        We'll email you once your funds are available on Base.
+      </p>
+      ${ctaButton()}
+      ${txHash ? `<p style="margin:24px 0 0;font-size:11px;word-break:break-all;">
+        <a href="${explorerTxUrl(blockchainSlug, txHash)}" style="color:#9ca3af;text-decoration:none;" target="_blank">View on explorer &rarr;</a>
+      </p>` : ''}`;
 
     const resend = getResendClient();
     await resend.emails.send({
       from: 'Minisend <info@minisend.xyz>',
       to,
-      subject: `Deposit Received — ${amount} ${asset}`,
-      html: emailLayout('linear-gradient(135deg,#0052FF 0%,#003ECB 100%)', 'Deposit Received', body),
+      subject: `\u2705 Deposit received — ${amount} ${asset}`,
+      html: emailLayout(body),
     });
     console.log('Email sent: deposit received', { to, amount, asset });
   } catch (error) {
@@ -152,31 +199,37 @@ async function sendDepositFailedEmail(
   amount: string,
   asset: string,
   network: string,
-  txHash: string
+  txHash: string,
+  blockchainSlug = ''
 ): Promise<void> {
   try {
     const body = `
-      <p style="margin:0 0 16px;color:#1d1d1f;font-size:16px;line-height:1.6;">
-        We detected a deposit that could not be processed. No funds have been deducted from your account.
+      <h2 style="margin:0 0 8px;color:#1a1a1a;font-size:18px;font-weight:600;">&#x274C; Deposit failed</h2>
+      <p style="margin:0 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
+        Your deposit could not be processed. No funds were deducted.
       </p>
-      ${detailsTable([
-        ['Amount', `${amount} ${asset}`],
-        ['Network', network],
-      ])}
-      ${statusBox('#fce4ec', '#e53935',
-        `<strong>What to do</strong><br/>
-        Please try your deposit again. If the issue continues, contact our support team for assistance.`
-      )}
-      <p style="margin:20px 0 0;color:#aeaeb2;font-size:12px;word-break:break-all;">
-        Tx: <span style="font-family:monospace;">${txHash}</span>
-      </p>`;
+      <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;margin:0 0 20px;">
+        <tr><td style="padding:14px 16px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${detailRow('Amount', inlineToken(amount, asset))}
+            ${detailRow('Network', inlineChain(network, blockchainSlug))}
+          </table>
+        </td></tr>
+      </table>
+      <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">
+        Try again or reach out to support if the issue continues.
+      </p>
+      ${ctaButton()}
+      ${txHash ? `<p style="margin:24px 0 0;font-size:11px;word-break:break-all;">
+        <a href="${explorerTxUrl(blockchainSlug, txHash)}" style="color:#9ca3af;text-decoration:none;" target="_blank">View on explorer &rarr;</a>
+      </p>` : ''}`;
 
     const resend = getResendClient();
     await resend.emails.send({
       from: 'Minisend <info@minisend.xyz>',
       to,
-      subject: `Deposit Failed — ${amount} ${asset}`,
-      html: emailLayout('linear-gradient(135deg,#E53935 0%,#C62828 100%)', 'Deposit Failed', body),
+      subject: `\u274C Deposit failed — ${amount} ${asset}`,
+      html: emailLayout(body),
     });
     console.log('Email sent: deposit failed', { to, amount, asset });
   } catch (error) {
@@ -189,39 +242,33 @@ async function sendSettlementCompleteEmail(
   originalAmount: string,
   originalAsset: string,
   settledAmount: string,
-  network: string
+  network: string,
+  blockchainSlug = ''
 ): Promise<void> {
   try {
     const body = `
-      <p style="margin:0 0 16px;color:#1d1d1f;font-size:16px;line-height:1.6;">
-        Your funds have been converted and are now available in your Minisend wallet on Base.
+      <h2 style="margin:0 0 8px;color:#1a1a1a;font-size:18px;font-weight:600;">&#x1F389; Funds available</h2>
+      <p style="margin:0 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
+        Your deposit has been settled. USDC is ready in your wallet on Base.
       </p>
-      ${detailsTable([
-        ['Deposited', `${originalAmount} ${originalAsset}`],
-        ['Settled', `${settledAmount} USDC`],
-        ['Origin Network', network],
-        ['Destination', 'Base'],
-      ])}
-      ${statusBox('#e3f2fd', '#1976d2',
-        `<strong>Funds available</strong><br/>
-        Your USDC is ready to use. You can now send money to mobile wallets or withdraw at any time.`
-      )}
-      <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
-        <tr>
-          <td align="center">
-            <a href="https://app.minisend.xyz" style="display:inline-block;background:#0052FF;color:#ffffff;font-size:15px;font-weight:600;padding:12px 32px;border-radius:8px;text-decoration:none;">
-              Open Minisend
-            </a>
-          </td>
-        </tr>
-      </table>`;
+      <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;margin:0 0 20px;">
+        <tr><td style="padding:14px 16px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            ${detailRow('Deposited', inlineToken(originalAmount, originalAsset))}
+            ${detailRow('Settled', inlineToken(settledAmount, 'USDC'))}
+            ${detailRow('From', inlineChain(network, blockchainSlug))}
+            ${detailRow('To', inlineChain('Base', 'base'))}
+          </table>
+        </td></tr>
+      </table>
+      ${ctaButton()}`;
 
     const resend = getResendClient();
     await resend.emails.send({
       from: 'Minisend <info@minisend.xyz>',
       to,
-      subject: `Funds Available — ${settledAmount} USDC on Base`,
-      html: emailLayout('linear-gradient(135deg,#0052FF 0%,#003ECB 100%)', 'Funds Available', body),
+      subject: `\uD83C\uDF89 Funds available — ${settledAmount} USDC on Base`,
+      html: emailLayout(body),
     });
     console.log('Email sent: settlement complete', { to, settledAmount });
   } catch (error) {
@@ -265,12 +312,14 @@ async function storeDeposit(
 async function matchDepositForSwap(
   depositTxId?: string,
   settleAmount?: string
-): Promise<{ email: string; amount: string; asset_symbol: string; blockchain_name: string; id: string } | null> {
+): Promise<{ email: string; amount: string; asset_symbol: string; blockchain_name: string; blockchain_slug: string; id: string } | null> {
+  const cols = 'id, email, amount, asset_symbol, blockchain_name, blockchain_slug';
+
   // Primary: match by deposit transaction ID (swap reference → deposit blockradar_tx_id)
   if (depositTxId) {
     const { data, error } = await supabase
       .from('deposit_events')
-      .select('id, email, amount, asset_symbol, blockchain_name')
+      .select(cols)
       .eq('status', 'received')
       .eq('blockradar_tx_id', depositTxId)
       .single();
@@ -288,7 +337,7 @@ async function matchDepositForSwap(
     if (!isNaN(target)) {
       const { data: candidates } = await supabase
         .from('deposit_events')
-        .select('id, email, amount, asset_symbol, blockchain_name')
+        .select(cols)
         .eq('status', 'received')
         .order('created_at', { ascending: false })
         .limit(20);
@@ -385,11 +434,11 @@ export async function POST(request: Request) {
 
         if (isSuccess) {
           await sendDepositReceivedEmail(
-            user.email, data.amount, assetSymbol, blockchainName, estimatedTime, txHash
+            user.email, data.amount, assetSymbol, blockchainName, estimatedTime, txHash, blockchainSlug
           );
         } else if (isFailed) {
           await sendDepositFailedEmail(
-            user.email, data.amount, assetSymbol, blockchainName, txHash
+            user.email, data.amount, assetSymbol, blockchainName, txHash, blockchainSlug
           );
         }
       }
@@ -421,7 +470,8 @@ export async function POST(request: Request) {
               deposit.amount,
               deposit.asset_symbol,
               settledAmount || deposit.amount,
-              deposit.blockchain_name
+              deposit.blockchain_name,
+              deposit.blockchain_slug
             );
           }
           await markDepositSettled(deposit.id);
