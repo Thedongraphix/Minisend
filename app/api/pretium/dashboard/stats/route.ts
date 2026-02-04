@@ -1,11 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/supabase/config';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const stats = await DatabaseService.getDashboardStats();
+    const searchParams = request.nextUrl.searchParams;
+    const startDate = searchParams.get('start_date') || undefined;
+    const endDate = searchParams.get('end_date') || undefined;
+
+    const dateRange = (startDate || endDate)
+      ? { start: startDate, end: endDate }
+      : undefined;
+
+    const stats = await DatabaseService.getUnifiedDashboardStats(dateRange);
 
     return NextResponse.json(stats, {
       headers: {
