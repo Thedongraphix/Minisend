@@ -1,10 +1,10 @@
 'use client';
 
-import { PretiumOrder } from '@/lib/supabase/config';
+import { UnifiedOrder } from '@/lib/types/dashboard';
 import { useState } from 'react';
 
 interface ExportButtonProps {
-  orders: PretiumOrder[];
+  orders: UnifiedOrder[];
 }
 
 export function ExportButton({ orders }: ExportButtonProps) {
@@ -13,9 +13,9 @@ export function ExportButton({ orders }: ExportButtonProps) {
   const exportToCSV = () => {
     setExporting(true);
     try {
-      // CSV Headers
       const headers = [
-        'Transaction Code',
+        'Provider',
+        'Order ID',
         'Created At',
         'Status',
         'Payment Type',
@@ -32,43 +32,32 @@ export function ExportButton({ orders }: ExportButtonProps) {
         'Completed At',
       ];
 
-      // CSV Rows
-      const rows = orders.map((order) => {
-        const destination =
-          order.payment_type === 'MOBILE'
-            ? order.phone_number
-            : order.payment_type === 'BUY_GOODS'
-            ? `Till ${order.till_number}`
-            : `Paybill ${order.paybill_number} (${order.paybill_account})`;
+      const rows = orders.map((order) => [
+        order.provider,
+        order.orderId,
+        order.createdAt,
+        order.status,
+        order.paymentType,
+        order.amountInUsdc,
+        order.amountInLocal,
+        order.localCurrency,
+        order.exchangeRate || '',
+        order.senderFee,
+        order.destination,
+        order.accountName || '',
+        order.receiptNumber || '',
+        order.walletAddress,
+        order.transactionHash || '',
+        order.completedAt || '',
+      ]);
 
-        return [
-          order.transaction_code,
-          order.created_at,
-          order.status,
-          order.payment_type,
-          order.amount_in_usdc,
-          order.amount_in_local,
-          order.local_currency,
-          order.exchange_rate,
-          order.sender_fee,
-          destination,
-          order.account_name || '',
-          order.receipt_number || '',
-          order.wallet_address,
-          order.transaction_hash || '',
-          order.completed_at || '',
-        ];
-      });
-
-      // Build CSV
       const csv = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n');
 
-      // Download
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `pretium-orders-${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `minisend-orders-${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

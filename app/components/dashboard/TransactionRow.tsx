@@ -1,21 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { PretiumOrder } from '@/lib/supabase/config';
+import { UnifiedOrder } from '@/lib/types/dashboard';
 import { TransactionDetails } from './TransactionDetails';
 import { formatEATDate, truncateHash, getBaseScanTxUrl } from '@/lib/basescan-utils';
 
 interface TransactionRowProps {
-  order: PretiumOrder;
-  onRefresh: (transactionCode: string) => Promise<void>;
+  order: UnifiedOrder;
+  onRefresh: (order: UnifiedOrder) => Promise<void>;
   refreshing: boolean;
 }
 
 export function TransactionRow({ order, onRefresh, refreshing }: TransactionRowProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
+  const getStatusStyle = () => {
+    const normalized = order.normalizedStatus;
+    switch (normalized) {
       case 'completed':
         return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
       case 'pending':
@@ -24,8 +25,6 @@ export function TransactionRow({ order, onRefresh, refreshing }: TransactionRowP
         return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
       case 'failed':
         return 'bg-red-500/10 text-red-400 border-red-500/20';
-      case 'cancelled':
-        return 'bg-white/5 text-white/40 border-white/10';
       default:
         return 'bg-white/5 text-white/40 border-white/10';
     }
@@ -41,14 +40,30 @@ export function TransactionRow({ order, onRefresh, refreshing }: TransactionRowP
     }
   };
 
+  const getProviderBadge = () => {
+    if (order.provider === 'pretium') {
+      return (
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+          Pretium
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-teal-500/10 text-teal-400 border border-teal-500/20">
+        Paycrest
+      </span>
+    );
+  };
+
   return (
     <>
       <tr className="group hover:bg-white/[0.02] transition-colors">
-        {/* Transaction Code */}
+        {/* Provider + Order ID */}
         <td className="py-4 px-5">
-          <div>
+          <div className="flex items-center gap-2">
+            {getProviderBadge()}
             <p className="font-mono text-[13px] text-white/90 tracking-tight">
-              {order.transaction_code}
+              {truncateHash(order.orderId, 8, 4)}
             </p>
           </div>
         </td>
@@ -56,16 +71,16 @@ export function TransactionRow({ order, onRefresh, refreshing }: TransactionRowP
         {/* Amount */}
         <td className="py-4 px-5">
           <div>
-            <p className="text-[14px] font-medium text-white">${order.amount_in_usdc}</p>
+            <p className="text-[14px] font-medium text-white">${order.amountInUsdc}</p>
             <p className="text-[12px] text-white/40 mt-0.5">
-              {order.amount_in_local?.toLocaleString()} {order.local_currency}
+              {order.amountInLocal?.toLocaleString()} {order.localCurrency}
             </p>
           </div>
         </td>
 
         {/* Status */}
         <td className="py-4 px-5">
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide border ${getStatusStyle(order.status)}`}>
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide border ${getStatusStyle()}`}>
             {order.status}
           </span>
         </td>
@@ -73,27 +88,27 @@ export function TransactionRow({ order, onRefresh, refreshing }: TransactionRowP
         {/* Payment Type */}
         <td className="py-4 px-5">
           <span className="text-[13px] text-white/60">
-            {getPaymentTypeLabel(order.payment_type)}
+            {getPaymentTypeLabel(order.paymentType)}
           </span>
         </td>
 
         {/* Created At */}
         <td className="py-4 px-5">
           <span className="text-[13px] text-white/50">
-            {formatEATDate(order.created_at, true)}
+            {formatEATDate(order.createdAt, true)}
           </span>
         </td>
 
         {/* Tx Hash */}
         <td className="py-4 px-5">
-          {order.transaction_hash ? (
+          {order.transactionHash ? (
             <a
-              href={getBaseScanTxUrl(order.transaction_hash)}
+              href={getBaseScanTxUrl(order.transactionHash)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-[13px] text-blue-400 hover:text-blue-300 font-mono transition-colors"
             >
-              {truncateHash(order.transaction_hash, 6, 4)}
+              {truncateHash(order.transactionHash, 6, 4)}
               <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -121,7 +136,7 @@ export function TransactionRow({ order, onRefresh, refreshing }: TransactionRowP
               </svg>
             </button>
             <button
-              onClick={() => onRefresh(order.transaction_code)}
+              onClick={() => onRefresh(order)}
               disabled={refreshing}
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/[0.05] transition-colors disabled:opacity-30"
               aria-label="Refresh status"

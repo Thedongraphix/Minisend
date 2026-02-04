@@ -1,11 +1,12 @@
 'use client';
 
-import { PretiumOrder } from '@/lib/supabase/config';
+import { UnifiedOrder } from '@/lib/types/dashboard';
+import { PretiumOrder, Order } from '@/lib/supabase/config';
 import { getBaseScanTxUrl, getBaseScanAddressUrl, truncateHash, copyToClipboard, formatEATDate, getTimeDifference } from '@/lib/basescan-utils';
 import { useState } from 'react';
 
 interface TransactionDetailsProps {
-  order: PretiumOrder;
+  order: UnifiedOrder;
 }
 
 export function TransactionDetails({ order }: TransactionDetailsProps) {
@@ -20,9 +21,17 @@ export function TransactionDetails({ order }: TransactionDetailsProps) {
   };
 
   const getDestination = () => {
-    if (order.payment_type === 'MOBILE') return order.phone_number;
-    if (order.payment_type === 'BUY_GOODS') return `Till: ${order.till_number}`;
-    if (order.payment_type === 'PAYBILL') return `Paybill: ${order.paybill_number} (${order.paybill_account})`;
+    if (order.provider === 'pretium') {
+      const raw = order.raw as PretiumOrder;
+      if (raw.payment_type === 'MOBILE') return raw.phone_number;
+      if (raw.payment_type === 'BUY_GOODS') return `Till: ${raw.till_number}`;
+      if (raw.payment_type === 'PAYBILL') return `Paybill: ${raw.paybill_number} (${raw.paybill_account})`;
+      return 'N/A';
+    }
+    // Paycrest
+    const raw = order.raw as Order;
+    if (raw.phone_number) return raw.phone_number;
+    if (raw.account_number) return `${raw.bank_name || 'Bank'}: ${raw.account_number}`;
     return 'N/A';
   };
 
@@ -74,40 +83,63 @@ export function TransactionDetails({ order }: TransactionDetailsProps) {
         {/* Transaction Info */}
         <Section title="Transaction">
           <DetailRow
-            label="Code"
-            value={order.transaction_code}
+            label="Provider"
+            value={
+              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                order.provider === 'pretium'
+                  ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                  : 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+              }`}>
+                {order.provider === 'pretium' ? 'Pretium' : 'Paycrest'}
+              </span>
+            }
+          />
+          <DetailRow
+            label={order.provider === 'pretium' ? 'Transaction Code' : 'Order ID'}
+            value={order.orderId}
             mono
-            copyable={order.transaction_code}
+            copyable={order.orderId}
             copyKey="code"
           />
-          {order.transaction_hash && (
+          {order.transactionHash && (
             <DetailRow
               label="Blockchain Tx"
-              value={truncateHash(order.transaction_hash)}
+              value={truncateHash(order.transactionHash)}
               mono
-              copyable={order.transaction_hash}
+              copyable={order.transactionHash}
               copyKey="hash"
-              link={getBaseScanTxUrl(order.transaction_hash)}
+              link={getBaseScanTxUrl(order.transactionHash)}
             />
           )}
         </Section>
 
         {/* Financial Details */}
         <Section title="Financial">
-          <DetailRow label="USDC Amount" value={`${order.amount_in_usdc} USDC`} />
-          <DetailRow label={`${order.local_currency} Amount`} value={`${order.amount_in_local?.toLocaleString()} ${order.local_currency}`} />
-          <DetailRow label="Exchange Rate" value={order.exchange_rate} />
-          <DetailRow label="Fee (1%)" value={`${order.sender_fee} ${order.local_currency}`} />
+          <DetailRow label="USDC Amount" value={`${order.amountInUsdc} USDC`} />
+          <DetailRow label={`${order.localCurrency} Amount`} value={`${order.amountInLocal?.toLocaleString()} ${order.localCurrency}`} />
+          {order.exchangeRate && (
+            <DetailRow label="Exchange Rate" value={order.exchangeRate} />
+          )}
+          <DetailRow label="Fee" value={`${order.senderFee} USDC`} />
         </Section>
 
         {/* Payment Info */}
         <Section title="Payment">
-          <DetailRow label="Type" value={order.payment_type} />
+          <DetailRow label="Type" value={order.paymentType} />
           <DetailRow label="Destination" value={getDestination()} />
-          {order.account_name && (
-            <DetailRow label="Account Name" value={order.account_name} />
+          {order.accountName && (
+            <DetailRow label="Account Name" value={order.accountName} />
           )}
-          <DetailRow label="Network" value={order.mobile_network || 'SAFARICOM'} />
+          {/* Provider-specific payment details */}
+          {order.provider === 'pretium' && (
+            <DetailRow label="Network" value={(order.raw as PretiumOrder).mobile_network || 'SAFARICOM'} />
+          )}
+          {order.provider === 'paycrest' && (order.raw as Order).institution_code && (
+            <DetailRow label="Institution" value={(order.raw as Order).institution_code} />
+          )}
+          {order.provider === 'paycrest' && (order.raw as Order).bank_name && (
+            <DetailRow label="Bank" value={(order.raw as Order).bank_name} />
+          )}
         </Section>
       </div>
 
@@ -115,15 +147,15 @@ export function TransactionDetails({ order }: TransactionDetailsProps) {
       <div className="space-y-6">
         {/* Timeline */}
         <Section title="Timeline">
-          <DetailRow label="Created" value={formatEATDate(order.created_at)} />
-          {order.completed_at && (
+          <DetailRow label="Created" value={formatEATDate(order.createdAt)} />
+          {order.completedAt && (
             <>
-              <DetailRow label="Completed" value={formatEATDate(order.completed_at)} />
+              <DetailRow label="Completed" value={formatEATDate(order.completedAt)} />
               <DetailRow
                 label="Duration"
                 value={
                   <span className="text-emerald-400">
-                    {getTimeDifference(order.created_at, order.completed_at)}
+                    {getTimeDifference(order.createdAt, order.completedAt)}
                   </span>
                 }
               />
@@ -131,12 +163,33 @@ export function TransactionDetails({ order }: TransactionDetailsProps) {
           )}
         </Section>
 
-        {/* Receipt */}
-        {order.receipt_number && (
+        {/* Receipt (Pretium) */}
+        {order.provider === 'pretium' && (order.raw as PretiumOrder).receipt_number && (
           <Section title="Receipt">
-            <DetailRow label="M-Pesa Code" value={order.receipt_number} mono />
-            {order.public_name && (
-              <DetailRow label="Recipient" value={order.public_name} />
+            <DetailRow label="M-Pesa Code" value={(order.raw as PretiumOrder).receipt_number} mono />
+            {(order.raw as PretiumOrder).public_name && (
+              <DetailRow label="Recipient" value={(order.raw as PretiumOrder).public_name} />
+            )}
+          </Section>
+        )}
+
+        {/* Paycrest-specific details */}
+        {order.provider === 'paycrest' && (
+          <Section title="Paycrest Details">
+            {(order.raw as Order).paycrest_status && (
+              <DetailRow label="Paycrest Status" value={(order.raw as Order).paycrest_status} />
+            )}
+            {(order.raw as Order).reference_id && (
+              <DetailRow label="Reference ID" value={(order.raw as Order).reference_id} mono />
+            )}
+            {(order.raw as Order).receive_address && (
+              <DetailRow
+                label="Receive Address"
+                value={truncateHash((order.raw as Order).receive_address!, 8, 6)}
+                mono
+                copyable={(order.raw as Order).receive_address}
+                copyKey="receive"
+              />
             )}
           </Section>
         )}
@@ -145,18 +198,18 @@ export function TransactionDetails({ order }: TransactionDetailsProps) {
         <Section title="Addresses">
           <DetailRow
             label="Wallet"
-            value={truncateHash(order.wallet_address, 8, 6)}
+            value={truncateHash(order.walletAddress, 8, 6)}
             mono
-            copyable={order.wallet_address}
+            copyable={order.walletAddress}
             copyKey="wallet"
-            link={getBaseScanAddressUrl(order.wallet_address)}
+            link={getBaseScanAddressUrl(order.walletAddress)}
           />
-          {order.settlement_address && (
+          {order.provider === 'pretium' && (order.raw as PretiumOrder).settlement_address && (
             <DetailRow
               label="Settlement"
-              value={truncateHash(order.settlement_address, 8, 6)}
+              value={truncateHash((order.raw as PretiumOrder).settlement_address!, 8, 6)}
               mono
-              link={getBaseScanAddressUrl(order.settlement_address)}
+              link={getBaseScanAddressUrl((order.raw as PretiumOrder).settlement_address!)}
             />
           )}
           {order.fid && (

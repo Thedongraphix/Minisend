@@ -2,24 +2,54 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { PretiumOrder } from '@/lib/supabase/config';
+import { UnifiedOrder, UnifiedDashboardStats } from '@/lib/types/dashboard';
 import { DashboardMetrics } from './DashboardMetrics';
 import { TransactionFilters } from './TransactionFilters';
 import { TransactionTable } from './TransactionTable';
 import { ExportButton } from './ExportButton';
 
-interface DashboardStats {
-  totalOrders: number;
-  successRate: number;
-  failedOrders: number;
-  totalUSDCVolume: number;
-}
-
 interface OrdersResponse {
-  orders: PretiumOrder[];
+  orders: UnifiedOrder[];
   total: number;
   page: number;
   hasMore: boolean;
+}
+
+const DEFAULT_STATS: UnifiedDashboardStats = {
+  totalOrders: 0,
+  successRate: 0,
+  failedOrders: 0,
+  pendingOrders: 0,
+  totalUSDCVolume: 0,
+  uniqueWallets: 0,
+  newUsers: 0,
+  totalRevenue: 0,
+  stuckOrders: 0,
+  avgCompletionTime: 0,
+  providers: {
+    pretium: { total: 0, completed: 0, failed: 0, volume: 0, successRate: 0 },
+    paycrest: { total: 0, completed: 0, failed: 0, volume: 0, successRate: 0 },
+  },
+  currencies: {},
+  monthlyTrends: [],
+};
+
+function getDateRangeParams(dateRange: string): { start_date?: string; end_date?: string } {
+  if (dateRange === 'all') return {};
+  const now = new Date();
+  let startDate: Date;
+
+  if (dateRange === 'today') {
+    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if (dateRange === '7d') {
+    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (dateRange === '30d') {
+    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  } else {
+    return {};
+  }
+
+  return { start_date: startDate.toISOString() };
 }
 
 export function PretiumDashboard() {
@@ -27,24 +57,35 @@ export function PretiumDashboard() {
     search: '',
     status: [] as string[],
     paymentType: [] as string[],
+    provider: 'all',
+    currency: [] as string[],
     dateRange: '30d',
   });
   const [page, setPage] = useState(1);
 
-  // Fetch stats
-  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
-    queryKey: ['pretium-stats'],
+  // Fetch unified stats
+  const { data: stats, isLoading: statsLoading } = useQuery<UnifiedDashboardStats>({
+    queryKey: ['unified-stats', filters.dateRange],
     queryFn: async () => {
-      const response = await fetch('/api/pretium/dashboard/stats');
+      const dateParams = getDateRangeParams(filters.dateRange);
+      const params = new URLSearchParams();
+      if (dateParams.start_date) params.set('start_date', dateParams.start_date);
+      if (dateParams.end_date) params.set('end_date', dateParams.end_date);
+
+      const url = params.toString()
+        ? `/api/pretium/dashboard/stats?${params}`
+        : '/api/pretium/dashboard/stats';
+
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch stats');
       return response.json();
     },
     refetchInterval: 30000,
   });
 
-  // Fetch orders
+  // Fetch unified orders
   const { data: ordersData, isLoading: ordersLoading } = useQuery<OrdersResponse>({
-    queryKey: ['pretium-orders', filters, page],
+    queryKey: ['unified-orders', filters, page],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -54,22 +95,12 @@ export function PretiumDashboard() {
       if (filters.search) params.set('search', filters.search);
       if (filters.status.length > 0) params.set('status', filters.status.join(','));
       if (filters.paymentType.length > 0) params.set('payment_type', filters.paymentType.join(','));
+      if (filters.provider && filters.provider !== 'all') params.set('provider', filters.provider);
+      if (filters.currency.length > 0) params.set('currency', filters.currency.join(','));
 
       if (filters.dateRange !== 'all') {
-        const now = new Date();
-        let startDate: Date;
-
-        if (filters.dateRange === 'today') {
-          startDate = new Date(now.setHours(0, 0, 0, 0));
-        } else if (filters.dateRange === '7d') {
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        } else if (filters.dateRange === '30d') {
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        } else {
-          startDate = new Date(0);
-        }
-
-        params.set('start_date', startDate.toISOString());
+        const dateParams = getDateRangeParams(filters.dateRange);
+        if (dateParams.start_date) params.set('start_date', dateParams.start_date);
       }
 
       const response = await fetch(`/api/pretium/dashboard/orders?${params}`);
@@ -89,7 +120,7 @@ export function PretiumDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <span className="text-[17px] font-semibold text-white">Orders Dashboard</span>
+              <span className="text-[17px] font-semibold text-white">Minisend Dashboard</span>
             </div>
             <div className="flex items-center gap-3">
               <ExportButton orders={ordersData?.orders || []} />
@@ -111,12 +142,12 @@ export function PretiumDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <p className="text-[15px] text-white/50 mt-1">Monitor and track all transactions</p>
+          <p className="text-[15px] text-white/50 mt-1">Unified analytics across Pretium and Paycrest</p>
         </div>
 
         {/* Metrics Grid */}
         <DashboardMetrics
-          stats={stats || { totalOrders: 0, successRate: 0, failedOrders: 0, totalUSDCVolume: 0 }}
+          stats={stats || DEFAULT_STATS}
           loading={statsLoading}
         />
 

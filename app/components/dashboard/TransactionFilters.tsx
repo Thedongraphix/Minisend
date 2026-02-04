@@ -6,6 +6,8 @@ interface FiltersState {
   search: string;
   status: string[];
   paymentType: string[];
+  provider: string;
+  currency: string[];
   dateRange: string;
 }
 
@@ -18,6 +20,8 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
     search: '',
     status: [],
     paymentType: [],
+    provider: 'all',
+    currency: [],
     dateRange: '30d',
   });
 
@@ -28,7 +32,7 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
   };
 
   const clearFilters = () => {
-    const cleared = { search: '', status: [], paymentType: [], dateRange: '30d' };
+    const cleared: FiltersState = { search: '', status: [], paymentType: [], provider: 'all', currency: [], dateRange: '30d' };
     setFilters(cleared);
     onFiltersChange(cleared);
   };
@@ -47,7 +51,14 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
     updateFilters({ paymentType: newTypes });
   };
 
-  const hasActiveFilters = filters.search || filters.status.length > 0 || filters.paymentType.length > 0;
+  const toggleCurrency = (cur: string) => {
+    const newCurrency = filters.currency.includes(cur)
+      ? filters.currency.filter((c) => c !== cur)
+      : [...filters.currency, cur];
+    updateFilters({ currency: newCurrency });
+  };
+
+  const hasActiveFilters = filters.search || filters.status.length > 0 || filters.paymentType.length > 0 || filters.provider !== 'all' || filters.currency.length > 0;
 
   return (
     <div className="space-y-4">
@@ -60,7 +71,7 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
         </div>
         <input
           type="text"
-          placeholder="Search by tx hash, transaction code, wallet, phone, receipt..."
+          placeholder="Search by tx hash, order ID, wallet, phone, receipt..."
           value={filters.search}
           onChange={(e) => updateFilters({ search: e.target.value })}
           className="w-full h-12 pl-11 pr-4 bg-white/[0.03] border border-white/[0.06] rounded-xl text-[15px] text-white placeholder-white/30 focus:outline-none focus:border-white/20 focus:bg-white/[0.05] transition-all"
@@ -69,6 +80,30 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
 
       {/* Filter Controls */}
       <div className="flex flex-wrap items-center gap-3">
+        {/* Provider Segmented Control */}
+        <div className="flex items-center bg-white/[0.03] rounded-lg p-1 border border-white/[0.06]">
+          {[
+            { value: 'all', label: 'All' },
+            { value: 'pretium', label: 'Pretium' },
+            { value: 'paycrest', label: 'Paycrest' },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => updateFilters({ provider: opt.value })}
+              className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all ${
+                filters.provider === opt.value
+                  ? 'bg-white text-black'
+                  : 'text-white/50 hover:text-white/80'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="h-8 w-px bg-white/[0.06]" />
+
         {/* Status Segmented Control */}
         <div className="flex items-center bg-white/[0.03] rounded-lg p-1 border border-white/[0.06]">
           {['pending', 'processing', 'completed', 'failed'].map((status) => (
@@ -91,7 +126,7 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
 
         {/* Payment Type Segmented Control */}
         <div className="flex items-center bg-white/[0.03] rounded-lg p-1 border border-white/[0.06]">
-          {['MOBILE', 'BUY_GOODS', 'PAYBILL'].map((type) => (
+          {['MOBILE', 'BUY_GOODS', 'PAYBILL', 'BANK_TRANSFER'].map((type) => (
             <button
               key={type}
               onClick={() => togglePaymentType(type)}
@@ -101,7 +136,27 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
                   : 'text-white/50 hover:text-white/80'
               }`}
             >
-              {type === 'BUY_GOODS' ? 'Buy Goods' : type === 'PAYBILL' ? 'Paybill' : 'Mobile'}
+              {type === 'BUY_GOODS' ? 'Buy Goods' : type === 'PAYBILL' ? 'Paybill' : type === 'BANK_TRANSFER' ? 'Bank' : 'Mobile'}
+            </button>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="h-8 w-px bg-white/[0.06]" />
+
+        {/* Currency Segmented Control */}
+        <div className="flex items-center bg-white/[0.03] rounded-lg p-1 border border-white/[0.06]">
+          {['KES', 'NGN', 'UGX'].map((cur) => (
+            <button
+              key={cur}
+              onClick={() => toggleCurrency(cur)}
+              className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all ${
+                filters.currency.includes(cur)
+                  ? 'bg-white text-black'
+                  : 'text-white/50 hover:text-white/80'
+              }`}
+            >
+              {cur}
             </button>
           ))}
         </div>

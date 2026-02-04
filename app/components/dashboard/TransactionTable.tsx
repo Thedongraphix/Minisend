@@ -1,11 +1,11 @@
 'use client';
 
-import { PretiumOrder } from '@/lib/supabase/config';
+import { UnifiedOrder } from '@/lib/types/dashboard';
 import { TransactionRow } from './TransactionRow';
 import { useState } from 'react';
 
 interface TransactionTableProps {
-  orders: PretiumOrder[];
+  orders: UnifiedOrder[];
   loading?: boolean;
   onLoadMore?: () => void;
   hasMore?: boolean;
@@ -14,10 +14,13 @@ interface TransactionTableProps {
 export function TransactionTable({ orders, loading, onLoadMore, hasMore }: TransactionTableProps) {
   const [refreshing, setRefreshing] = useState<string | null>(null);
 
-  const handleRefresh = async (transactionCode: string) => {
-    setRefreshing(transactionCode);
+  const handleRefresh = async (order: UnifiedOrder) => {
+    setRefreshing(order.orderId);
     try {
-      const response = await fetch(`/api/pretium/status/${transactionCode}`);
+      const url = order.provider === 'pretium'
+        ? `/api/pretium/status/${order.orderId}`
+        : `/api/paycrest/status/${order.orderId}`;
+      const response = await fetch(url);
       if (response.ok) {
         window.location.reload();
       }
@@ -76,7 +79,7 @@ export function TransactionTable({ orders, loading, onLoadMore, hasMore }: Trans
                 key={order.id}
                 order={order}
                 onRefresh={handleRefresh}
-                refreshing={refreshing === order.transaction_code}
+                refreshing={refreshing === order.orderId}
               />
             ))}
           </tbody>
