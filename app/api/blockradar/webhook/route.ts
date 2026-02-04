@@ -136,7 +136,7 @@ async function sendDepositReceivedEmail(
 
     const resend = getResendClient();
     await resend.emails.send({
-      from: 'Minisend <info.minisend.xyz>',
+      from: 'Minisend <info@minisend.xyz>',
       to,
       subject: `Deposit Received — ${amount} ${asset}`,
       html: emailLayout('linear-gradient(135deg,#0052FF 0%,#003ECB 100%)', 'Deposit Received', body),
@@ -173,7 +173,7 @@ async function sendDepositFailedEmail(
 
     const resend = getResendClient();
     await resend.emails.send({
-      from: 'Minisend <info.minisend.xyz>',
+      from: 'Minisend <info@minisend.xyz>',
       to,
       subject: `Deposit Failed — ${amount} ${asset}`,
       html: emailLayout('linear-gradient(135deg,#E53935 0%,#C62828 100%)', 'Deposit Failed', body),
@@ -218,7 +218,7 @@ async function sendSettlementCompleteEmail(
 
     const resend = getResendClient();
     await resend.emails.send({
-      from: 'Minisend <info.minisend.xyz>',
+      from: 'Minisend <info@minisend.xyz>',
       to,
       subject: `Funds Available — ${settledAmount} USDC on Base`,
       html: emailLayout('linear-gradient(135deg,#0052FF 0%,#003ECB 100%)', 'Funds Available', body),
