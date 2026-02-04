@@ -263,23 +263,61 @@ async function storeDeposit(
 }
 
 async function matchDepositForSwap(
-  settleAmount: string
+  depositTxId?: string,
+  settleAmount?: string
 ): Promise<{ email: string; amount: string; asset_symbol: string; blockchain_name: string; id: string } | null> {
-  // Find the most recent unsettled deposit matching the settle amount
-  const { data, error } = await supabase
-    .from('deposit_events')
-    .select('id, email, amount, asset_symbol, blockchain_name')
-    .eq('status', 'received')
-    .eq('amount', settleAmount)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+  // Primary: match by deposit transaction ID (swap reference → deposit blockradar_tx_id)
+  if (depositTxId) {
+    const { data, error } = await supabase
+      .from('deposit_events')
+      .select('id, email, amount, asset_symbol, blockchain_name')
+      .eq('status', 'received')
+      .eq('blockradar_tx_id', depositTxId)
+      .single();
 
-  if (error || !data) {
-    console.warn('No matching deposit found for settle amount:', settleAmount);
-    return null;
+    if (!error && data) {
+      console.log('Deposit matched by tx ID:', depositTxId);
+      return data;
+    }
+    console.warn('No deposit found for tx ID:', depositTxId);
   }
-  return data;
+
+  // Fallback: approximate amount matching (within 5% tolerance)
+  if (settleAmount) {
+    const target = parseFloat(settleAmount);
+    if (!isNaN(target)) {
+      const { data: candidates } = await supabase
+        .from('deposit_events')
+        .select('id, email, amount, asset_symbol, blockchain_name')
+        .eq('status', 'received')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (candidates && candidates.length > 0) {
+        let bestMatch = null;
+        let bestDiff = Infinity;
+        for (const row of candidates) {
+          const diff = Math.abs(parseFloat(row.amount) - target);
+          const pct = diff / target;
+          if (pct <= 0.05 && diff < bestDiff) {
+            bestDiff = diff;
+            bestMatch = row;
+          }
+        }
+        if (bestMatch) {
+          console.log('Deposit matched by approximate amount:', {
+            settleAmount,
+            depositAmount: bestMatch.amount,
+            diff: bestDiff.toFixed(6),
+          });
+          return bestMatch;
+        }
+      }
+    }
+    console.warn('No matching deposit found for settle amount:', settleAmount);
+  }
+
+  return null;
 }
 
 async function markDepositSettled(depositId: string): Promise<void> {
@@ -360,21 +398,32 @@ export async function POST(request: Request) {
     }
 
     // ── Handle swap/settlement events ──────────────────────────────────
-    if (data?.type === 'SWAP' && data?.metadata?.swapAutoSettlement) {
-      const settleAmount = data.metadata.swapAutoSettlement.settleAmount;
-      const settledAmount = data.toAmount;
+    if (data?.type === 'SWAP') {
+      const depositTxId = data.reference || null;
+      const settleAmount = data.metadata?.swapAutoSettlement?.settleAmount || null;
+      const settledAmount = data.toAmount || data.amount;
 
-      if (settleAmount) {
-        const deposit = await matchDepositForSwap(settleAmount);
+      console.log('Swap settlement details:', {
+        depositTxId,
+        settleAmount,
+        settledAmount,
+        event,
+        status: data.status,
+      });
 
-        if (deposit?.email) {
-          await sendSettlementCompleteEmail(
-            deposit.email,
-            deposit.amount,
-            deposit.asset_symbol,
-            settledAmount || deposit.amount,
-            deposit.blockchain_name
-          );
+      if (data.status === 'SUCCESS' && (depositTxId || settleAmount)) {
+        const deposit = await matchDepositForSwap(depositTxId, settleAmount);
+
+        if (deposit) {
+          if (deposit.email) {
+            await sendSettlementCompleteEmail(
+              deposit.email,
+              deposit.amount,
+              deposit.asset_symbol,
+              settledAmount || deposit.amount,
+              deposit.blockchain_name
+            );
+          }
           await markDepositSettled(deposit.id);
         }
       }
