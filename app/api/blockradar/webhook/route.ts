@@ -64,8 +64,31 @@ function explorerTxUrl(slug: string, txHash: string): string {
 
 const ASSET_BASE = 'https://app.minisend.xyz';
 
+function tokenLogoUrl(symbol: string): string {
+  if (symbol.toUpperCase() === 'USDT') return `${ASSET_BASE}/usdt-logo.png`;
+  return `${ASSET_BASE}/usd-coin.png`;
+}
+
+function chainLogoUrl(slug: string): string | null {
+  const logos: Record<string, string> = {
+    base: `${ASSET_BASE}/base-logo.png`,
+    polygon: `${ASSET_BASE}/polygon-logo.png`,
+    celo: `${ASSET_BASE}/celo-logo.png`,
+    lisk: `${ASSET_BASE}/lisk-logo.png`,
+  };
+  return logos[slug.toLowerCase()] || null;
+}
+
 function inlineToken(amount: string, symbol: string): string {
-  return `<img src="${ASSET_BASE}/usd-coin.png" width="16" height="16" alt="${symbol}" style="vertical-align:middle;margin-right:4px;" /><span style="font-weight:600;">${amount} ${symbol}</span>`;
+  return `<img src="${tokenLogoUrl(symbol)}" width="16" height="16" alt="${symbol}" style="display:inline-block;vertical-align:middle;margin-right:5px;border-radius:50%;" /><span style="font-weight:600;vertical-align:middle;line-height:16px;">${amount} ${symbol}</span>`;
+}
+
+function inlineChain(name: string, slug: string): string {
+  const logo = chainLogoUrl(slug);
+  const img = logo
+    ? `<img src="${logo}" width="16" height="16" alt="${name}" style="display:inline-block;vertical-align:middle;margin-right:5px;border-radius:50%;" />`
+    : '';
+  return `${img}<span style="font-weight:600;vertical-align:middle;line-height:16px;">${name}</span>`;
 }
 
 function emailLayout(body: string): string {
@@ -74,28 +97,37 @@ function emailLayout(body: string): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @media only screen and (max-width: 560px) {
+      .email-card { width: 100% !important; border-radius: 0 !important; }
+      .email-body { padding: 20px 20px 28px !important; }
+      .email-logo { padding: 24px 20px 0 !important; }
+      .email-footer { padding: 16px 20px !important; }
+      .detail-cell { padding: 12px 14px !important; }
+    }
+  </style>
 </head>
 <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f7f7f8;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f7f8;padding:40px 16px;">
     <tr>
       <td align="center">
-        <table width="520" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;">
+        <table class="email-card" cellpadding="0" cellspacing="0" style="width:100%;max-width:520px;background-color:#ffffff;border-radius:16px;overflow:hidden;">
           <!-- Logo -->
           <tr>
-            <td style="padding:32px 32px 0;text-align:center;">
+            <td class="email-logo" style="padding:32px 32px 0;text-align:center;">
               <img src="${ASSET_BASE}/icon.png" width="40" height="40" alt="Minisend" style="border-radius:10px;" />
             </td>
           </tr>
           <!-- Body -->
           <tr>
-            <td style="padding:24px 32px 32px;text-align:center;">
+            <td class="email-body" style="padding:24px 32px 32px;text-align:center;">
               ${body}
             </td>
           </tr>
           <!-- Footer -->
           <tr>
-            <td style="padding:20px 32px;border-top:1px solid #f0f0f0;text-align:center;">
-              <p style="margin:0;color:#9ca3af;font-size:12px;letter-spacing:0.02em;">onchain early truly spendable</p>
+            <td class="email-footer" style="padding:20px 32px;border-top:1px solid #f0f0f0;text-align:center;">
+              <p style="margin:0;color:#9ca3af;font-size:12px;letter-spacing:0.02em;">Onchain earnings truly spendable</p>
             </td>
           </tr>
         </table>
@@ -141,10 +173,10 @@ async function sendDepositReceivedEmail(
         We received your deposit and it's being settled to Base.
       </p>
       <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;margin:0 0 20px;">
-        <tr><td style="padding:14px 16px;">
+        <tr><td class="detail-cell" style="padding:14px 16px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             ${detailRow('Amount', inlineToken(amount, asset))}
-            ${detailRow('Network', `<span style="font-weight:600;">${network}</span>`)}
+            ${detailRow('Network', inlineChain(network, blockchainSlug))}
             ${detailRow('Est. settlement', estimatedTime)}
           </table>
         </td></tr>
@@ -185,10 +217,10 @@ async function sendDepositFailedEmail(
         Your deposit could not be processed. No funds were deducted.
       </p>
       <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;margin:0 0 20px;">
-        <tr><td style="padding:14px 16px;">
+        <tr><td class="detail-cell" style="padding:14px 16px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             ${detailRow('Amount', inlineToken(amount, asset))}
-            ${detailRow('Network', `<span style="font-weight:600;">${network}</span>`)}
+            ${detailRow('Network', inlineChain(network, blockchainSlug))}
           </table>
         </td></tr>
       </table>
@@ -218,7 +250,8 @@ async function sendSettlementCompleteEmail(
   originalAmount: string,
   originalAsset: string,
   settledAmount: string,
-  network: string
+  network: string,
+  blockchainSlug = ''
 ): Promise<void> {
   try {
     const body = `
@@ -227,12 +260,12 @@ async function sendSettlementCompleteEmail(
         Your deposit has been settled. USDC is ready in your wallet on Base.
       </p>
       <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;margin:0 0 20px;">
-        <tr><td style="padding:14px 16px;">
+        <tr><td class="detail-cell" style="padding:14px 16px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             ${detailRow('Deposited', inlineToken(originalAmount, originalAsset))}
             ${detailRow('Settled', inlineToken(settledAmount, 'USDC'))}
-            ${detailRow('From', `<span style="font-weight:600;">${network}</span>`)}
-            ${detailRow('To', '<span style="font-weight:600;">Base</span>')}
+            ${detailRow('From', inlineChain(network, blockchainSlug))}
+            ${detailRow('To', inlineChain('Base', 'base'))}
           </table>
         </td></tr>
       </table>
@@ -445,7 +478,8 @@ export async function POST(request: Request) {
               deposit.amount,
               deposit.asset_symbol,
               settledAmount || deposit.amount,
-              deposit.blockchain_name
+              deposit.blockchain_name,
+              deposit.blockchain_slug
             );
           }
           await markDepositSettled(deposit.id);
