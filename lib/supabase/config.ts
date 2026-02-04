@@ -899,4 +899,337 @@ export class DatabaseService {
       hasMore: count ? offset + limit < count : false,
     };
   }
+
+  // --- Unified Dashboard Methods (Paycrest + Pretium) ---
+
+  private static normalizePaycrestStatus(status: string): 'completed' | 'failed' | 'pending' | 'processing' {
+    if (['completed', 'settled', 'fulfilled'].includes(status)) return 'completed';
+    if (['failed', 'cancelled', 'refunded', 'expired'].includes(status)) return 'failed';
+    if (status === 'processing') return 'processing';
+    return 'pending';
+  }
+
+  private static normalizePretiumOrder(order: PretiumOrder): import('@/lib/types/dashboard').UnifiedOrder {
+    return {
+      id: order.id,
+      provider: 'pretium',
+      orderId: order.transaction_code,
+      walletAddress: order.wallet_address,
+      transactionHash: order.transaction_hash,
+      status: order.status,
+      normalizedStatus: order.status === 'completed' ? 'completed'
+        : order.status === 'failed' || order.status === 'cancelled' ? 'failed'
+        : order.status === 'processing' ? 'processing' : 'pending',
+      amountInUsdc: Number(order.amount_in_usdc) || 0,
+      amountInLocal: Number(order.amount_in_local) || 0,
+      localCurrency: order.local_currency,
+      exchangeRate: Number(order.exchange_rate) || undefined,
+      senderFee: Number(order.sender_fee) || 0,
+      paymentType: order.payment_type || 'MOBILE',
+      destination: order.phone_number || order.till_number || order.paybill_number || order.account_number || '',
+      accountName: order.account_name,
+      receiptNumber: order.receipt_number,
+      fid: order.fid,
+      createdAt: order.created_at,
+      completedAt: order.completed_at,
+      raw: order,
+    };
+  }
+
+  private static normalizePaycrestOrder(order: Order): import('@/lib/types/dashboard').UnifiedOrder {
+    return {
+      id: order.id,
+      provider: 'paycrest',
+      orderId: order.paycrest_order_id,
+      walletAddress: order.wallet_address,
+      transactionHash: order.transaction_hash,
+      status: order.status,
+      normalizedStatus: this.normalizePaycrestStatus(order.status),
+      amountInUsdc: Number(order.amount_in_usdc) || 0,
+      amountInLocal: Number(order.amount_in_local) || 0,
+      localCurrency: order.local_currency,
+      exchangeRate: Number(order.rate) || Number(order.exchange_rate) || undefined,
+      senderFee: Number(order.sender_fee) || 0,
+      paymentType: order.account_number ? 'BANK_TRANSFER' : order.phone_number ? 'MOBILE' : 'BANK_TRANSFER',
+      destination: order.phone_number || order.account_number || '',
+      accountName: order.account_name,
+      receiptNumber: order.pretium_receipt_number,
+      fid: order.fid,
+      createdAt: order.created_at,
+      completedAt: order.completed_at,
+      raw: order,
+    };
+  }
+
+  private static async fetchAllFromTable<T>(tableName: string, dateRange?: { start?: string; end?: string }): Promise<T[]> {
+    const PAGE_SIZE = 1000;
+    let allRows: T[] = [];
+    let page = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      let query = supabaseAdmin.from(tableName).select('*').range(from, to);
+
+      if (dateRange?.start) query = query.gte('created_at', dateRange.start);
+      if (dateRange?.end) query = query.lt('created_at', dateRange.end);
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      const rows = (data || []) as T[];
+      allRows = allRows.concat(rows);
+
+      if (rows.length < PAGE_SIZE) hasMore = false;
+      page++;
+    }
+
+    return allRows;
+  }
+
+  static async getUnifiedDashboardStats(dateRange?: { start?: string; end?: string }): Promise<import('@/lib/types/dashboard').UnifiedDashboardStats> {
+    // Fetch both tables in parallel
+    const [pretiumOrders, paycrestOrders, newUsersData] = await Promise.all([
+      this.fetchAllFromTable<PretiumOrder>('pretium_orders', dateRange),
+      this.fetchAllFromTable<Order>('orders', dateRange),
+      (async () => {
+        let query = supabaseAdmin.from('minisend_users').select('*', { count: 'exact' });
+        if (dateRange?.start) query = query.gte('created_at', dateRange.start);
+        if (dateRange?.end) query = query.lt('created_at', dateRange.end);
+        const { count, error } = await query;
+        if (error) throw error;
+        return count || 0;
+      })(),
+    ]);
+
+    // Pretium stats
+    const pretiumCompleted = pretiumOrders.filter(o => o.status === 'completed').length;
+    const pretiumFailed = pretiumOrders.filter(o => o.status === 'failed' || o.status === 'cancelled').length;
+    const pretiumVolume = pretiumOrders.reduce((sum, o) => sum + (Number(o.amount_in_usdc) || 0), 0);
+
+    // Paycrest stats
+    const paycrestCompleted = paycrestOrders.filter(o => ['completed', 'settled', 'fulfilled'].includes(o.status)).length;
+    const paycrestFailed = paycrestOrders.filter(o => ['failed', 'cancelled', 'refunded', 'expired'].includes(o.status)).length;
+    const paycrestVolume = paycrestOrders.reduce((sum, o) => sum + (Number(o.amount_in_usdc) || 0), 0);
+
+    // Combined
+    const totalOrders = pretiumOrders.length + paycrestOrders.length;
+    const totalCompleted = pretiumCompleted + paycrestCompleted;
+    const totalFailed = pretiumFailed + paycrestFailed;
+    const totalVolume = pretiumVolume + paycrestVolume;
+    const successRate = totalOrders > 0 ? (totalCompleted / totalOrders) * 100 : 0;
+
+    // Pending/processing
+    const pretiumPending = pretiumOrders.filter(o => o.status === 'pending' || o.status === 'processing').length;
+    const paycrestPending = paycrestOrders.filter(o => ['pending', 'processing', 'validated'].includes(o.status)).length;
+    const pendingOrders = pretiumPending + paycrestPending;
+
+    // Stuck orders (pending > 30 min)
+    const now = new Date();
+    const thirtyMinsAgo = new Date(now.getTime() - 30 * 60 * 1000);
+    const stuckPretium = pretiumOrders.filter(o =>
+      (o.status === 'pending' || o.status === 'processing') &&
+      new Date(o.created_at) < thirtyMinsAgo
+    ).length;
+    const stuckPaycrest = paycrestOrders.filter(o =>
+      ['pending', 'processing', 'validated'].includes(o.status) &&
+      new Date(o.created_at) < thirtyMinsAgo
+    ).length;
+
+    // Unique wallets
+    const walletSet = new Set<string>();
+    pretiumOrders.forEach(o => walletSet.add(o.wallet_address));
+    paycrestOrders.forEach(o => walletSet.add(o.wallet_address));
+
+    // Revenue (fees)
+    const pretiumFees = pretiumOrders.reduce((sum, o) => sum + (Number(o.sender_fee) || 0), 0);
+    const paycrestFees = paycrestOrders.reduce((sum, o) => sum + (Number(o.sender_fee) || 0) + (Number(o.transaction_fee) || 0), 0);
+
+    // Avg completion time
+    const allCompletedWithTime = [
+      ...pretiumOrders.filter(o => o.status === 'completed' && o.created_at && o.completed_at),
+      ...paycrestOrders.filter(o => ['completed', 'settled', 'fulfilled'].includes(o.status) && o.created_at && o.completed_at),
+    ];
+    const avgCompletionTime = allCompletedWithTime.length > 0
+      ? allCompletedWithTime.reduce((sum, o) => {
+          return sum + (new Date(o.completed_at!).getTime() - new Date(o.created_at).getTime());
+        }, 0) / allCompletedWithTime.length / 1000
+      : 0;
+
+    // Currency breakdown
+    const currencies: Record<string, import('@/lib/types/dashboard').CurrencyStats> = {};
+    const addCurrency = (currency: string, usdc: number, local: number) => {
+      if (!currencies[currency]) currencies[currency] = { orders: 0, volume: 0, localVolume: 0 };
+      currencies[currency].orders++;
+      currencies[currency].volume += usdc;
+      currencies[currency].localVolume += local;
+    };
+    pretiumOrders.forEach(o => addCurrency(o.local_currency, Number(o.amount_in_usdc) || 0, Number(o.amount_in_local) || 0));
+    paycrestOrders.forEach(o => addCurrency(o.local_currency, Number(o.amount_in_usdc) || 0, Number(o.amount_in_local) || 0));
+
+    // Monthly trends
+    const monthlyMap = new Map<string, { pretiumVolume: number; paycrestVolume: number; orderCount: number }>();
+    const addMonthly = (createdAt: string, provider: 'pretium' | 'paycrest', usdc: number) => {
+      const date = new Date(createdAt);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthlyMap.has(key)) monthlyMap.set(key, { pretiumVolume: 0, paycrestVolume: 0, orderCount: 0 });
+      const entry = monthlyMap.get(key)!;
+      if (provider === 'pretium') entry.pretiumVolume += usdc;
+      else entry.paycrestVolume += usdc;
+      entry.orderCount++;
+    };
+    pretiumOrders.forEach(o => addMonthly(o.created_at, 'pretium', Number(o.amount_in_usdc) || 0));
+    paycrestOrders.forEach(o => addMonthly(o.created_at, 'paycrest', Number(o.amount_in_usdc) || 0));
+
+    const monthlyTrends = Array.from(monthlyMap.entries())
+      .map(([month, data]) => ({
+        month,
+        pretiumVolume: Math.round(data.pretiumVolume * 100) / 100,
+        paycrestVolume: Math.round(data.paycrestVolume * 100) / 100,
+        totalVolume: Math.round((data.pretiumVolume + data.paycrestVolume) * 100) / 100,
+        orderCount: data.orderCount,
+      }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    return {
+      totalOrders,
+      successRate: Math.round(successRate * 10) / 10,
+      failedOrders: totalFailed,
+      pendingOrders,
+      totalUSDCVolume: Math.round(totalVolume * 100) / 100,
+      uniqueWallets: walletSet.size,
+      newUsers: newUsersData,
+      totalRevenue: Math.round((pretiumFees + paycrestFees) * 100) / 100,
+      stuckOrders: stuckPretium + stuckPaycrest,
+      avgCompletionTime: Math.round(avgCompletionTime),
+      providers: {
+        pretium: {
+          total: pretiumOrders.length,
+          completed: pretiumCompleted,
+          failed: pretiumFailed,
+          volume: Math.round(pretiumVolume * 100) / 100,
+          successRate: pretiumOrders.length > 0 ? Math.round((pretiumCompleted / pretiumOrders.length) * 1000) / 10 : 0,
+        },
+        paycrest: {
+          total: paycrestOrders.length,
+          completed: paycrestCompleted,
+          failed: paycrestFailed,
+          volume: Math.round(paycrestVolume * 100) / 100,
+          successRate: paycrestOrders.length > 0 ? Math.round((paycrestCompleted / paycrestOrders.length) * 1000) / 10 : 0,
+        },
+      },
+      currencies,
+      monthlyTrends,
+    };
+  }
+
+  static async getUnifiedFilteredOrders(filters: import('@/lib/types/dashboard').UnifiedFilters) {
+    const {
+      search,
+      status,
+      paymentType,
+      provider = 'all',
+      currency,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 50,
+    } = filters;
+
+    let pretiumResults: PretiumOrder[] = [];
+    let paycrestResults: Order[] = [];
+
+    // Fetch Pretium orders
+    if (provider === 'all' || provider === 'pretium') {
+      let query = supabaseAdmin.from('pretium_orders').select('*');
+
+      if (search) {
+        query = query.or(`transaction_code.ilike.%${search}%,wallet_address.ilike.%${search}%,transaction_hash.ilike.%${search}%,phone_number.eq.${search},till_number.eq.${search},paybill_number.eq.${search},account_name.ilike.%${search}%,receipt_number.ilike.%${search}%`);
+      }
+      if (status && status.length > 0) {
+        query = query.in('status', status);
+      }
+      if (paymentType && paymentType.length > 0) {
+        const pretiumTypes = paymentType.filter(t => ['MOBILE', 'BUY_GOODS', 'PAYBILL'].includes(t));
+        if (pretiumTypes.length > 0) {
+          query = query.in('payment_type', pretiumTypes);
+        } else if (!paymentType.includes('BANK_TRANSFER')) {
+          // If only BANK_TRANSFER selected, skip pretium
+          pretiumResults = [];
+          query = null as never;
+        }
+      }
+      if (currency && currency.length > 0) {
+        query = query?.in('local_currency', currency);
+      }
+      if (startDate) query = query?.gte('created_at', startDate);
+      if (endDate) query = query?.lte('created_at', endDate);
+
+      if (query) {
+        const { data, error } = await query;
+        if (error) throw error;
+        pretiumResults = data || [];
+      }
+    }
+
+    // Fetch Paycrest orders
+    if (provider === 'all' || provider === 'paycrest') {
+      let query = supabaseAdmin.from('orders').select('*');
+
+      if (search) {
+        query = query.or(`paycrest_order_id.ilike.%${search}%,wallet_address.ilike.%${search}%,transaction_hash.ilike.%${search}%,phone_number.eq.${search},account_number.eq.${search},account_name.ilike.%${search}%`);
+      }
+      if (status && status.length > 0) {
+        // Map normalized statuses to Paycrest statuses
+        const paycrestStatuses: string[] = [];
+        if (status.includes('completed')) paycrestStatuses.push('completed', 'settled', 'fulfilled');
+        if (status.includes('failed')) paycrestStatuses.push('failed', 'cancelled', 'refunded', 'expired');
+        if (status.includes('pending')) paycrestStatuses.push('pending');
+        if (status.includes('processing')) paycrestStatuses.push('processing', 'validated');
+        if (paycrestStatuses.length > 0) {
+          query = query.in('status', paycrestStatuses);
+        }
+      }
+      if (paymentType && paymentType.length > 0) {
+        // Paycrest orders are all bank transfers for NGN
+        if (!paymentType.includes('BANK_TRANSFER')) {
+          paycrestResults = [];
+          query = null as never;
+        }
+      }
+      if (currency && currency.length > 0) {
+        query = query?.in('local_currency', currency);
+      }
+      if (startDate) query = query?.gte('created_at', startDate);
+      if (endDate) query = query?.lte('created_at', endDate);
+
+      if (query) {
+        const { data, error } = await query;
+        if (error) throw error;
+        paycrestResults = data || [];
+      }
+    }
+
+    // Normalize and merge
+    const unified: import('@/lib/types/dashboard').UnifiedOrder[] = [
+      ...pretiumResults.map(o => this.normalizePretiumOrder(o)),
+      ...paycrestResults.map(o => this.normalizePaycrestOrder(o)),
+    ];
+
+    // Sort by createdAt desc
+    unified.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    // Paginate
+    const total = unified.length;
+    const offset = (page - 1) * limit;
+    const paginatedOrders = unified.slice(offset, offset + limit);
+
+    return {
+      orders: paginatedOrders,
+      total,
+      page,
+      hasMore: offset + limit < total,
+    };
+  }
 }
