@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect, useState, useRef, useCallback } from "react";
 import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth';
-import { useBlockradarBalance } from '@/hooks/useBlockradarBalance';
+import { useUSDCBalance } from '@/hooks/useUSDCBalance';
 import Image from 'next/image';
 import QRCodeStyling from 'qr-code-styling';
 
@@ -397,15 +397,12 @@ export function Home({ setActiveTab }: HomeProps) {
   const [showDeposit, setShowDeposit] = useState(false);
   const [copied, setCopied] = useState(false);
   const qrContainerRef = useRef<HTMLDivElement>(null);
-  const { user, isAuthenticated, login, minisendWallet } = useMinisendAuth();
+  const { isAuthenticated, login, minisendWallet } = useMinisendAuth();
   const {
-    balance: blockradarBalance,
-    refetch: refetchBalance,
+    balance,
     isRefreshing: isBalanceRefreshing,
-  } = useBlockradarBalance({
-    addressId: user?.blockradarAddressId || null,
-    autoFetch: true,
-  });
+    fetchBalance: refetchBalance,
+  } = useUSDCBalance();
 
   useEffect(() => {
     setMounted(true);
@@ -451,9 +448,7 @@ export function Home({ setActiveTab }: HomeProps) {
     }
   }, [showDeposit, minisendWallet]);
 
-  const displayBalance = blockradarBalance
-    ? `$${parseFloat(blockradarBalance.balance).toFixed(2)}`
-    : '$0.00';
+  const displayBalance = `$${balance}`;
 
   const handleDeposit = () => {
     if (isAuthenticated && minisendWallet) {

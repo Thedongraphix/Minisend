@@ -10,7 +10,7 @@ import { DownloadButton } from './DownloadButton';
 import { CompactReceiptButton } from './PretiumReceipt';
 import { OrderData } from '../../lib/types/order';
 import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth';
-import { useBlockradarBalance } from '@/hooks/useBlockradarBalance';
+import { useUSDCBalance } from '@/hooks/useUSDCBalance';
 import Image from 'next/image';
 import QRCodeStyling from 'qr-code-styling';
 
@@ -53,21 +53,17 @@ function convertOrderToOrderData(order: Order): OrderData {
 
 export function ProfileView({ setActiveTab }: ProfileViewProps) {
   const { address } = useAccount();
-  const { minisendWallet, user } = useMinisendAuth();
+  const { minisendWallet } = useMinisendAuth();
 
   // Use connected wallet address OR minisend wallet for fetching orders
   const userWallet = address || minisendWallet;
 
-  // Fetch Blockradar gateway balance
-  const { 
-    balance: blockradarBalance, 
-    refetch: refetchBalance, 
-    isRefreshing: isBalanceRefreshing 
-  } = useBlockradarBalance({
-    addressId: user?.blockradarAddressId || null,
-    autoFetch: true,
-    // Refresh every minute
-  });
+  // Fetch on-chain USDC balance (works for both wagmi and minisend wallets)
+  const {
+    balance: usdcBalance,
+    fetchBalance: refetchBalance,
+    isRefreshing: isBalanceRefreshing
+  } = useUSDCBalance();
 
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [displayedOrders, setDisplayedOrders] = useState<Order[]>([]);
@@ -394,10 +390,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
         </div>
         <div className="flex items-center gap-2 mb-2">
           <span className="text-white text-4xl font-bold tracking-tight">
-            {isBalanceVisible
-              ? (blockradarBalance ? `$${parseFloat(blockradarBalance.balance).toFixed(2)}` : '$0.00')
-              : '••••'
-            }
+            {isBalanceVisible ? `$${usdcBalance}` : '••••'}
           </span>
         </div>
         <div className="flex items-center gap-3">
@@ -436,22 +429,20 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
               </svg>
             )}
           </button>
-          {user?.blockradarAddressId && (
-            <button
-              onClick={refetchBalance}
-              disabled={isBalanceRefreshing}
-              className="p-1.5 rounded-full bg-white/5 hover:bg-white/[0.08] transition-colors disabled:opacity-50"
-              title="Refresh balance"
-            >
-              {isBalanceRefreshing ? (
-                <div className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              )}
-            </button>
-          )}
+          <button
+            onClick={refetchBalance}
+            disabled={isBalanceRefreshing}
+            className="p-1.5 rounded-full bg-white/5 hover:bg-white/[0.08] transition-colors disabled:opacity-50"
+            title="Refresh balance"
+          >
+            {isBalanceRefreshing ? (
+              <div className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
