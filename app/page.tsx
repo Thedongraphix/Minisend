@@ -127,14 +127,32 @@ export default function App() {
   if (!mounted) {
     return (
       <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme">
-        <div className="w-full text-center py-6">
-          <div className="flex items-center justify-center space-x-3 mb-2">
-            <div className="animate-pulse bg-gray-700 h-10 w-10 rounded"></div>
-            <div className="animate-pulse bg-gray-700 h-8 w-24 rounded"></div>
+        <div className="w-full py-6 px-4">
+          <div className="flex items-center space-x-3 mb-2">
+            <div className="animate-pulse bg-gray-800 h-8 w-24 rounded"></div>
           </div>
         </div>
-        <div className="w-full max-w-md mx-auto px-4 pb-6">
-          <div className="animate-pulse bg-gray-800 h-64 rounded-3xl"></div>
+        <div className="w-full max-w-md mx-auto px-4 pb-6 space-y-8">
+          {/* Balance skeleton */}
+          <div className="flex flex-col items-center pt-4">
+            <div className="animate-pulse bg-gray-800 h-3 w-20 rounded mb-3"></div>
+            <div className="animate-pulse bg-gray-700 h-12 w-36 rounded-lg mb-3"></div>
+            <div className="flex gap-2">
+              <div className="animate-pulse bg-gray-800 h-7 w-7 rounded-full"></div>
+              <div className="animate-pulse bg-gray-800 h-7 w-7 rounded-full"></div>
+            </div>
+          </div>
+          {/* Action circles skeleton */}
+          <div className="flex justify-center gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5">
+                <div className="animate-pulse bg-gray-800 h-14 w-14 rounded-full"></div>
+                <div className="animate-pulse bg-gray-800 h-2.5 w-10 rounded"></div>
+              </div>
+            ))}
+          </div>
+          {/* Banner skeleton */}
+          <div className="animate-pulse bg-gray-800/30 h-24 rounded-2xl"></div>
         </div>
       </div>
     );
@@ -150,8 +168,8 @@ export default function App() {
               <Image
                 src="/minisend-white.png"
                 alt="Minisend"
-                width={130}
-                height={130}
+                width={100}
+                height={100}
                 className="flex-shrink-0"
               />
           
@@ -220,19 +238,6 @@ export default function App() {
           </main>
         </div>
 
-        {/* Footer outside container */}
-        <div className="w-full text-center px-4 py-4">
-          <div className="flex items-center justify-center">
-            <Image
-              src="/Base_lockup_2color.svg"
-              alt="Built on Base"
-              width={70}
-              height={18}
-              className="h-4 w-auto filter brightness-0 invert opacity-90"
-            />
-          </div>
-        </div>
-
         <DebugPanel />
         <WhatsAppButton showTooltip={showWhatsAppTooltip} />
 
@@ -244,7 +249,7 @@ export default function App() {
                 className="animate-fade-in cursor-pointer"
                 onClick={() => setShowOfframpGuide(false)}
               >
-                <div className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-xl p-3.5 shadow-lg">
+                <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-3.5 shadow-lg">
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 bg-[#0066FF]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                       <svg className="w-5 h-5 text-[#0066FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -273,7 +278,7 @@ export default function App() {
                 className="animate-fade-in cursor-pointer"
                 onClick={() => setShowSpendGuide(false)}
               >
-                <div className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-xl p-3.5 shadow-lg">
+                <div className="bg-white/[0.04] border border-white/[0.08] rounded-xl p-3.5 shadow-lg">
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 bg-[#0066FF]/10 rounded-lg flex items-center justify-center flex-shrink-0">
                       <svg className="w-5 h-5 text-[#0066FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">

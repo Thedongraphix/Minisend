@@ -1,6 +1,10 @@
 "use client";
 
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState, useRef, useCallback } from "react";
+import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth';
+import { useBlockradarBalance } from '@/hooks/useBlockradarBalance';
+import Image from 'next/image';
+import QRCodeStyling from 'qr-code-styling';
 
 type ButtonProps = {
   children: ReactNode;
@@ -10,7 +14,7 @@ type ButtonProps = {
   onClick?: () => void;
   disabled?: boolean;
   type?: "button" | "submit" | "reset";
-  iconName?: "heart" | "star" | "check" | "plus" | "arrow-right" | "dollar-sign" | "sparkles" | "user" | "bell";
+  iconName?: "heart" | "star" | "check" | "plus" | "arrow-right" | "dollar-sign" | "sparkles" | "user" | "bell" | "arrow-up-right" | "credit-card" | "arrows-swap" | "arrow-down" | "refresh";
   roundedFull?: boolean;
   fullWidth?: boolean;
 }
@@ -34,7 +38,7 @@ export function Button({
     "transition-all duration-300",
     "font-semibold",
     "tracking-tight",
-    "transform hover:scale-[1.02] active:scale-[0.98]"
+    "transform active:scale-[0.98]"
   ];
 
   const variantClasses = {
@@ -102,24 +106,21 @@ function Card({
 
   return (
     <div
-      className={`glass-effect rounded-3xl card-shadow overflow-hidden transition-all duration-300 hover:scale-[1.02] relative ${className} ${onClick ? "cursor-pointer hover:card-shadow-lg" : ""}`}
+      className={`bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden transition-all duration-300 relative ${className} ${onClick ? "cursor-pointer hover:bg-white/[0.04]" : ""}`}
       onClick={onClick}
       onKeyDown={onClick ? handleKeyDown : undefined}
       tabIndex={onClick ? 0 : undefined}
       role={onClick ? "button" : undefined}
     >
-      {/* Subtle background mesh */}
-      <div className="absolute inset-0 gradient-mesh opacity-20"></div>
-      
       <div className="relative">
         {title && (
-          <div className="px-8 py-6 border-b border-white/10">
+          <div className="px-6 py-5 border-b border-white/[0.06]">
             <h3 className="text-2xl font-bold text-white tracking-tight">
               {title}
             </h3>
           </div>
         )}
-        <div className="p-8">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
@@ -220,92 +221,441 @@ export function Features({ setActiveTab }: FeaturesProps) {
   );
 }
 
+// ActionCircle component for wallet-style action buttons
+type ActionCircleProps = {
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+};
+
+export function ActionCircle({ icon, label, onClick }: ActionCircleProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center gap-1.5 group"
+    >
+      <div className="w-14 h-14 rounded-full bg-[#1d1e22] border border-white/[0.08] flex items-center justify-center transition-all duration-200 hover:bg-[#252629] active:scale-95">
+        {icon}
+      </div>
+      <span className="text-[11px] text-gray-400 font-medium group-hover:text-gray-300 transition-colors">{label}</span>
+    </button>
+  );
+}
+
+// Rich promotional banners carousel
+function InfoBanners({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const bannerCount = 3;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % bannerCount);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="relative overflow-hidden">
+      <div
+        className="flex transition-transform duration-500 ease-out"
+        style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+      >
+        {/* Banner 1: Send — USDC to M-Pesa & Banks */}
+        <div className="w-full flex-shrink-0">
+          <button
+            onClick={() => setActiveTab("offramp")}
+            className="w-full text-left group"
+          >
+            <div className="relative overflow-hidden rounded-2xl"
+              style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #2d1b69 60%, #8b53ff 100%)' }}
+            >
+              {/* Subtle decorative — pushed to edges, low opacity */}
+              <div className="absolute -right-10 -top-10 w-28 h-28 rounded-full border border-[#8b53ff]/[0.10]" />
+              <div className="absolute -right-4 bottom-0 w-16 h-16 rounded-full border border-[#8b53ff]/[0.06]" />
+
+              <div className="relative p-5 flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0 z-10">
+                  <p className="text-[#c4a0ff] text-[10px] font-semibold uppercase tracking-widest mb-1.5">Send Money</p>
+                  <h3 className="text-white text-lg font-bold leading-tight mb-1">USDC to M-Pesa</h3>
+                  <p className="text-white/70 text-xs leading-relaxed">
+                    Convert USDC to KES, NGN,<br />UGX & GHS instantly.
+                  </p>
+                </div>
+                <div className="flex-shrink-0 z-10">
+                  <div className="px-4 py-2 rounded-xl bg-[#8b53ff]/20 group-hover:bg-[#8b53ff]/30 transition-colors">
+                    <span className="text-white text-xs font-semibold whitespace-nowrap flex items-center gap-1.5">
+                      Send Now
+                      <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {/* Banner 2: Pay — Till Numbers & Paybills */}
+        <div className="w-full flex-shrink-0">
+          <button
+            onClick={() => setActiveTab("spend")}
+            className="w-full text-left group"
+          >
+            <div className="relative overflow-hidden rounded-2xl"
+              style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #2d1b69 60%, #8b53ff 100%)' }}
+            >
+              {/* Subtle decorative — pushed to corners */}
+              <div className="absolute -left-8 -bottom-8 w-24 h-24 rounded-full border border-[#8b53ff]/[0.12]" />
+              <div className="absolute right-4 -top-8 w-20 h-20 rounded-full border border-[#8b53ff]/[0.08]" />
+
+              <div className="relative p-5 flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0 z-10">
+                  <p className="text-[#c4a0ff] text-[10px] font-semibold uppercase tracking-widest mb-1.5">Pay Bills</p>
+                  <h3 className="text-white text-lg font-bold leading-tight mb-1">Pay with USDC</h3>
+                  <p className="text-white/70 text-xs leading-relaxed">
+                    Pay till numbers and paybills<br />directly with USDC.
+                  </p>
+                </div>
+                <div className="flex-shrink-0 z-10">
+                  <div className="px-4 py-2 rounded-xl bg-[#8b53ff]/20 group-hover:bg-[#8b53ff]/30 transition-colors">
+                    <span className="text-white text-xs font-semibold whitespace-nowrap flex items-center gap-1.5">
+                      Pay Now
+                      <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {/* Banner 3: Deposit — Any chain, cashout instantly */}
+        <div className="w-full flex-shrink-0">
+          <button
+            onClick={() => setActiveTab("profile")}
+            className="w-full text-left group"
+          >
+            <div className="relative overflow-hidden rounded-2xl"
+              style={{ background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1035 50%, #2d1b69 100%)' }}
+            >
+              {/* Subtle decorative — thin rings far from text */}
+              <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-20 h-20 rounded-full border border-[#8b53ff]/[0.10]" />
+              <div className="absolute -left-6 -top-6 w-16 h-16 rounded-full border border-[#8b53ff]/[0.06]" />
+
+              <div className="relative p-5 flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0 z-10">
+                  <p className="text-[#8b53ff] text-[10px] font-semibold uppercase tracking-widest mb-1.5">Deposit</p>
+                  <h3 className="text-white text-lg font-bold leading-tight mb-1">Fund Your Wallet</h3>
+                  <p className="text-white/60 text-xs leading-relaxed">
+                    Deposit stablecoins on any<br />chain. Cash out instantly.
+                  </p>
+                </div>
+                <div className="flex-shrink-0 z-10">
+                  <div className="px-4 py-2 rounded-xl bg-[#8b53ff]/15 group-hover:bg-[#8b53ff]/25 transition-colors">
+                    <span className="text-white text-xs font-semibold whitespace-nowrap flex items-center gap-1.5">
+                      Deposit
+                      <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Dot indicators */}
+      <div className="flex justify-center gap-1.5 mt-3">
+        {[0, 1, 2].map((i) => (
+          <button
+            key={i}
+            onClick={() => setActiveIndex(i)}
+            className={`rounded-full transition-all duration-300 ${
+              i === activeIndex
+                ? 'w-5 h-1.5 bg-[#8b53ff]'
+                : 'w-1.5 h-1.5 bg-white/15 hover:bg-white/25'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type HomeProps = {
   setActiveTab: (tab: string) => void;
 };
 
 export function Home({ setActiveTab }: HomeProps) {
   const [mounted, setMounted] = useState(false);
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const [showDeposit, setShowDeposit] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const qrContainerRef = useRef<HTMLDivElement>(null);
+  const { user, isAuthenticated, login, minisendWallet } = useMinisendAuth();
+  const {
+    balance: blockradarBalance,
+    refetch: refetchBalance,
+    isRefreshing: isBalanceRefreshing,
+  } = useBlockradarBalance({
+    addressId: user?.blockradarAddressId || null,
+    autoFetch: true,
+  });
 
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
+  // Generate styled QR code when deposit modal opens
+  useEffect(() => {
+    if (showDeposit && minisendWallet && qrContainerRef.current) {
+      qrContainerRef.current.innerHTML = '';
+      const qrCode = new QRCodeStyling({
+        width: 188,
+        height: 190,
+        type: 'canvas',
+        data: minisendWallet,
+        margin: 0,
+        qrOptions: {
+          typeNumber: 0,
+          mode: 'Byte',
+          errorCorrectionLevel: 'H',
+        },
+        imageOptions: {
+          hideBackgroundDots: true,
+          imageSize: 0.3,
+          margin: 4,
+        },
+        dotsOptions: {
+          color: '#8b53ff',
+          type: 'rounded',
+        },
+        cornersSquareOptions: {
+          color: '#8b53ff',
+          type: 'extra-rounded',
+        },
+        cornersDotOptions: {
+          color: '#8b53ff',
+          type: 'dot',
+        },
+        backgroundOptions: {
+          color: '#FFFFFF',
+        },
+      });
+      qrCode.append(qrContainerRef.current);
+    }
+  }, [showDeposit, minisendWallet]);
+
+  const displayBalance = blockradarBalance
+    ? `$${parseFloat(blockradarBalance.balance).toFixed(2)}`
+    : '$0.00';
+
+  const handleDeposit = () => {
+    if (isAuthenticated && minisendWallet) {
+      setShowDeposit(true);
+    } else {
+      login();
+    }
+  };
+
+  const handleCopyAddress = useCallback(async () => {
+    if (!minisendWallet) return;
+    try {
+      await navigator.clipboard.writeText(minisendWallet);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
+  }, [minisendWallet]);
+
   // Prevent hydration mismatch by not rendering content on server
   if (!mounted) {
     return (
-      <div className="space-y-6 animate-fade-in">
-        <Card>
-          <div className="space-y-4 text-center">
-            <p className="text-gray-300 text-base leading-relaxed">
-              Convert USDC to mobile money instantly. Send directly to M-Pesa and bank accounts in Kenya & Nigeria.
-            </p>
-            <div className="space-y-3">
-              <div className="flex justify-center">
-                <div className="animate-pulse bg-gray-700 h-12 w-32 rounded-lg"></div>
-              </div>
-            </div>
+      <div className="space-y-8 animate-fade-in">
+        {/* Balance skeleton */}
+        <div className="flex flex-col items-center pt-4">
+          <div className="animate-pulse bg-gray-800 h-3 w-20 rounded mb-3"></div>
+          <div className="animate-pulse bg-gray-700 h-12 w-36 rounded-lg mb-3"></div>
+          <div className="flex gap-2">
+            <div className="animate-pulse bg-gray-800 h-7 w-7 rounded-full"></div>
+            <div className="animate-pulse bg-gray-800 h-7 w-7 rounded-full"></div>
           </div>
-        </Card>
+        </div>
+        {/* Action circles skeleton */}
+        <div className="flex justify-center gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5">
+              <div className="animate-pulse bg-gray-800 h-14 w-14 rounded-full"></div>
+              <div className="animate-pulse bg-gray-800 h-2.5 w-10 rounded"></div>
+            </div>
+          ))}
+        </div>
+        {/* Banner skeleton */}
+        <div className="animate-pulse bg-gray-800/30 h-24 rounded-2xl"></div>
       </div>
     );
   }
-  
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <Card>
-        <div className="space-y-4 text-center">
-          <p className="text-gray-300 text-base leading-relaxed">
-            Send to M-Pesa and banks in Kenya & Nigeria.
-          </p>
-
-          {/* Maintenance Notice
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-4">
-            <div className="flex items-center justify-center space-x-2 text-amber-400">
-              <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+    <div className="space-y-8 animate-slide-up">
+      {/* Balance Hero */}
+      <div className="flex flex-col items-center pt-4">
+        <span className="text-gray-500 text-xs uppercase tracking-widest mb-2">USDC Balance</span>
+        <span className="text-white text-5xl font-bold tracking-tight mb-3">
+          {isBalanceVisible ? displayBalance : '••••'}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+            className="p-1.5 rounded-full bg-white/5 hover:bg-white/[0.08] transition-colors"
+            title={isBalanceVisible ? "Hide balance" : "Show balance"}
+          >
+            {isBalanceVisible ? (
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
-              <span className="text-sm font-medium">Maintenance Notice</span>
+            ) : (
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+              </svg>
+            )}
+          </button>
+          <button
+            onClick={refetchBalance}
+            disabled={isBalanceRefreshing}
+            className="p-1.5 rounded-full bg-white/5 hover:bg-white/[0.08] transition-colors disabled:opacity-50"
+            title="Refresh balance"
+          >
+            {isBalanceRefreshing ? (
+              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Action Button Row */}
+      <div className="flex justify-center gap-6">
+        <ActionCircle
+          icon={<Icon name="arrow-up-right" size="md" className="text-white" />}
+          label="Send"
+          onClick={() => setActiveTab("offramp")}
+        />
+        <ActionCircle
+          icon={<Icon name="credit-card" size="md" className="text-white" />}
+          label="Pay"
+          onClick={() => setActiveTab("spend")}
+        />
+        <ActionCircle
+          icon={<Icon name="arrow-down" size="md" className="text-white" />}
+          label="Deposit"
+          onClick={handleDeposit}
+        />
+      </div>
+
+      {/* Info Banners */}
+      <InfoBanners setActiveTab={setActiveTab} />
+
+      {/* Deposit Modal Overlay */}
+      {showDeposit && minisendWallet && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={() => setShowDeposit(false)}
+          />
+          {/* Modal Sheet */}
+          <div className="relative w-full max-w-md bg-[#111113] border-t border-white/[0.08] rounded-t-3xl p-6 pb-10 animate-deposit-slide-up">
+            {/* Drag handle */}
+            <div className="flex justify-center mb-5">
+              <div className="w-10 h-1 rounded-full bg-white/20" />
             </div>
-            <p className="text-amber-300 text-sm mt-2 text-center">
-              We have a scheduled maintenance from today 8:00 am - 3:00 pm EAT. 
-USDC→NGN/KES withdrawals and transaction processing temporarily unavailable.We apologize for any inconvenience.
 
-           </p>
-          </div>
-           */}
-          
-            
-          {/* Action Buttons - Show immediately */}
-          <div className="space-y-3">
-            <Button
-              onClick={() => setActiveTab("offramp")}
-              variant="primary"
-              size="large"
-              fullWidth
-              roundedFull
+            {/* Close button */}
+            <button
+              onClick={() => setShowDeposit(false)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/[0.06] hover:bg-white/[0.10] flex items-center justify-center transition-colors"
             >
-              Start Offramp
-            </Button>
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
 
-            <Button
-              onClick={() => setActiveTab("spend")}
-              variant="outlined"
-              size="large"
-              fullWidth
-              roundedFull
-            >
-              Pay with USDC
-            </Button>
+            <div className="flex flex-col items-center gap-5">
+              <div className="text-center">
+                <h3 className="text-white text-lg font-semibold mb-1">Deposit USDC</h3>
+                <p className="text-gray-400 text-xs">Scan or copy your wallet address to deposit</p>
+              </div>
+
+              {/* QR Code */}
+              <div className="relative">
+                <div ref={qrContainerRef} className="rounded-xl overflow-hidden" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 pointer-events-none shadow-sm">
+                  <Image
+                    src="/logo.svg"
+                    alt="Minisend"
+                    width={20}
+                    height={20}
+                    className="w-full h-full"
+                  />
+                </div>
+              </div>
+
+              {/* Full address with copy */}
+              <button
+                onClick={handleCopyAddress}
+                className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-colors"
+              >
+                <span className="text-gray-300 text-xs font-mono truncate">
+                  {minisendWallet}
+                </span>
+                {copied ? (
+                  <span className="text-green-400 text-xs font-medium flex-shrink-0">Copied!</span>
+                ) : (
+                  <svg className="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Supported Networks */}
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-[10px] uppercase tracking-wider">Networks</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-full bg-white/10 p-0.5 flex items-center justify-center" title="Base">
+                    <Image src="/Base_Network_Logo.svg" alt="Base" width={12} height={12} />
+                  </div>
+                  <div className="w-5 h-5 rounded-full bg-white/10 p-0.5 flex items-center justify-center" title="Polygon">
+                    <Image src="/polygon-logo.svg" alt="Polygon" width={12} height={12} />
+                  </div>
+                  <div className="w-5 h-5 rounded-full bg-white/10 p-0.5 flex items-center justify-center" title="Celo">
+                    <Image src="/celo-logo.svg" alt="Celo" width={12} height={12} />
+                  </div>
+                  <div className="w-5 h-5 rounded-full bg-white p-0.5 flex items-center justify-center" title="Lisk">
+                    <Image src="/lisk-logo.svg" alt="Lisk" width={12} height={12} className="invert-0" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </Card>
+      )}
     </div>
   );
 }
 
 type IconProps = {
-  name: "heart" | "star" | "check" | "plus" | "arrow-right" | "dollar-sign" | "sparkles" | "user" | "bell";
+  name: "heart" | "star" | "check" | "plus" | "arrow-right" | "dollar-sign" | "sparkles" | "user" | "bell" | "arrow-up-right" | "credit-card" | "arrows-swap" | "arrow-down" | "refresh";
   size?: "sm" | "md" | "lg";
   className?: string;
 }
@@ -458,6 +808,44 @@ export function Icon({ name, size = "md", className = "" }: IconProps) {
         <title>Bell</title>
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+    ),
+    "arrow-up-right": (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <title>Arrow Up Right</title>
+        <line x1="7" y1="17" x2="17" y2="7" />
+        <polyline points="7 7 17 7 17 17" />
+      </svg>
+    ),
+    "credit-card": (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <title>Credit Card</title>
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
+      </svg>
+    ),
+    "arrows-swap": (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <title>Swap</title>
+        <polyline points="17 1 21 5 17 9" />
+        <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+        <polyline points="7 23 3 19 7 15" />
+        <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+      </svg>
+    ),
+    "arrow-down": (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <title>Arrow Down</title>
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <polyline points="19 12 12 19 5 12" />
+      </svg>
+    ),
+    refresh: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <title>Refresh</title>
+        <polyline points="23 4 23 10 17 10" />
+        <polyline points="1 20 1 14 7 14" />
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
       </svg>
     ),
   };

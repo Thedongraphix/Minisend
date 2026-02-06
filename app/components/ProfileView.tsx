@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import { base } from 'viem/chains';
-import { Name, Avatar } from '@coinbase/onchainkit/identity';
-import { Button, Icon } from './BaseComponents';
+import { Avatar } from '@coinbase/onchainkit/identity';
+import { Button, Icon, ActionCircle } from './BaseComponents';
 import { Order } from '../../lib/supabase/config';
 import { DownloadButton } from './DownloadButton';
 import { CompactReceiptButton } from './PretiumReceipt';
@@ -344,22 +344,35 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
   if (initialLoading) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <div className="glass-effect rounded-3xl p-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-4 border-white/20 border-t-blue-400 mx-auto mb-4"></div>
-            <p className="text-white">Loading profile...</p>
-          </div>
+        {/* Back button skeleton */}
+        <div className="animate-pulse bg-gray-800 h-10 w-10 rounded-full"></div>
+        {/* Balance skeleton */}
+        <div className="flex flex-col items-center py-2">
+          <div className="animate-pulse bg-gray-800 h-3 w-20 rounded mb-3"></div>
+          <div className="animate-pulse bg-gray-700 h-10 w-32 rounded-lg mb-2"></div>
+          <div className="animate-pulse bg-gray-800 h-3 w-28 rounded"></div>
         </div>
+        {/* Action circles skeleton */}
+        <div className="flex justify-center gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5">
+              <div className="animate-pulse bg-gray-800 h-14 w-14 rounded-full"></div>
+              <div className="animate-pulse bg-gray-800 h-2.5 w-10 rounded"></div>
+            </div>
+          ))}
+        </div>
+        {/* Deposit skeleton */}
+        <div className="animate-pulse bg-gray-800/50 h-16 rounded-2xl"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-slide-up">
       {/* Back Button */}
       <button
         onClick={() => setActiveTab('home')}
-        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-all duration-200"
+        className="w-10 h-10 rounded-full bg-[#1d1e22] hover:bg-[#252629] border border-white/[0.08] flex items-center justify-center transition-all duration-200"
         title="Go back"
       >
         <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -367,250 +380,215 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
         </svg>
       </button>
 
-      {/* Profile Header */}
-      <div className="relative mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <div className="relative flex-shrink-0">
-              <Avatar
-                address={userWallet as `0x${string}`}
-                chain={base}
-                className="h-14 w-14 ring-2 ring-blue-500/30"
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <Name
-                address={userWallet as `0x${string}`}
-                chain={base}
-                className="text-white text-lg font-bold truncate"
-              />
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-gray-400 text-xs font-medium">
-                  {minisendWallet?.substring(0, 6)}...{minisendWallet?.substring(minisendWallet.length - 4)}
-                </p>
-                {minisendWallet && (
-                  <button
-                    onClick={handleCopyAddress}
-                    className="p-1 rounded-md hover:bg-white/10 transition-colors"
-                    title="Copy address"
-                  >
-                    {copied ? (
-                      <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="w-3.5 h-3.5 text-gray-400 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+      {/* Balance Hero */}
+      <div className="flex flex-col items-center py-2">
+        <div className="flex items-center gap-2 mb-2">
+          {userWallet && (
+            <Avatar
+              address={userWallet as `0x${string}`}
+              chain={base}
+              className="h-6 w-6 ring-1 ring-white/10"
+            />
+          )}
+          <span className="text-gray-500 text-xs uppercase tracking-widest">USDC Balance</span>
         </div>
-      </div>
-
-      {/* Statistics Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Total Transactions
-        <div className="bg-white/5 rounded-2xl p-3 sm:p-4 border border-white/10 hover:bg-white/[0.07] hover:border-purple-500/30 transition-all duration-200">
-          <div className="flex items-center gap-1.5 sm:gap-2 mb-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-              <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <span className="text-gray-400 text-[9px] sm:text-xs font-semibold uppercase tracking-wide">Txns</span>
-          </div>
-          <p className="text-white text-xl sm:text-2xl md:text-3xl font-bold leading-none">{stats.totalTransactions}</p>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-white text-4xl font-bold tracking-tight">
+            {isBalanceVisible
+              ? (blockradarBalance ? `$${parseFloat(blockradarBalance.balance).toFixed(2)}` : '$0.00')
+              : '••••'
+            }
+          </span>
         </div>
-         */}
-
-        {/* Total Volume */}
-        <div className="bg-white/5 rounded-2xl p-3 sm:p-4 border border-white/10 hover:bg-white/[0.07] hover:border-purple-500/30 transition-all duration-200">
-          <div className="flex items-center gap-1.5 sm:gap-2 mb-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-              <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <span className="text-gray-400 text-[9px] sm:text-xs font-semibold uppercase tracking-wide">Volume</span>
-          </div>
-          <p className="text-white text-xl sm:text-2xl md:text-3xl font-bold leading-none">${stats.totalVolumeUSDC.toFixed(2)}</p>
-        </div>
-
-        {/* Current Balance */}
-        <div className="bg-white/5 rounded-2xl p-3 sm:p-4 border border-white/10 hover:bg-white/[0.07] hover:border-purple-500/30 transition-all duration-200">
-          <div className="flex items-center gap-1.5 sm:gap-2 mb-2">
-            <div className="w-6 h-5 sm:w-6 sm:h-6 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-              <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-            </div>
-            <span className="text-gray-400 text-[9px] sm:text-xs font-semibold uppercase tracking-wide">Balance</span>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-white text-xl sm:text-2xl md:text-3xl font-bold leading-none truncate">
-              {isBalanceVisible 
-                ? (blockradarBalance ? `$${parseFloat(blockradarBalance.balance).toFixed(2)}` : '—')
-                : '••••'
-              }
-            </p>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {/* Eye icon to toggle visibility */}
-              <button
-                onClick={() => setIsBalanceVisible(!isBalanceVisible)}
-                className="p-1 rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
-                title={isBalanceVisible ? "Hide balance" : "Show balance"}
-              >
-                {isBalanceVisible ? (
-                  <svg className="w-3.5 h-3.5 text-gray-400 hover:text-purple-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                ) : (
-                  <svg className="w-3.5 h-3.5 text-gray-400 hover:text-purple-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                  </svg>
-                )}
-              </button>
-              {/* Refresh button */}
-              {user?.blockradarAddressId && (
-                <button
-                  onClick={refetchBalance}
-                  disabled={isBalanceRefreshing}
-                  className="p-1 rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50 flex-shrink-0"
-                  title="Refresh balance"
-                >
-                  {isBalanceRefreshing ? (
-                    <div className="w-3.5 h-3.5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <svg className="w-3.5 h-3.5 text-gray-400 hover:text-purple-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Deposit Section */}
-      {minisendWallet && (
-        <button
-          onClick={() => setShowDeposit(!showDeposit)}
-          className="w-full bg-white/5 hover:bg-white/[0.07] border border-white/10 hover:border-white/20 rounded-2xl p-4 transition-all duration-200"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <div className="text-left">
-                <div className="text-white font-semibold text-sm">Deposit USDC</div>
-                <div className="text-gray-400 text-xs">Upto 4 networks supported</div>
-              </div>
-            </div>
-            <svg
-              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${showDeposit ? 'rotate-180' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+        <div className="flex items-center gap-3">
+          {minisendWallet && (
+            <button
+              onClick={handleCopyAddress}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/[0.08] transition-colors"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </button>
-      )}
-
-      {/* Expanded Deposit Details */}
-      {showDeposit && minisendWallet && (
-        <div className="animate-fade-in">
-          <div className="flex flex-col items-center gap-3">
-            {/* QR Code - rendered directly without card */}
-            <div className="relative">
-              <div ref={qrContainerRef} className="rounded-xl overflow-hidden" />
-              {/* Minisend Logo overlay in center */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 pointer-events-none shadow-sm">
-                <Image
-                  src="/logo.svg"
-                  alt="Minisend"
-                  width={20}
-                  height={20}
-                  className="w-full h-full"
-                />
-              </div>
-            </div>
-
-            {/* Wallet Address with Copy Icon */}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-300 text-xs font-mono">
+              <span className="text-gray-400 text-xs font-mono">
                 {minisendWallet.substring(0, 6)}...{minisendWallet.substring(minisendWallet.length - 4)}
               </span>
+              {copied ? (
+                <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-3 h-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              )}
+            </button>
+          )}
+          <button
+            onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+            className="p-1.5 rounded-full bg-white/5 hover:bg-white/[0.08] transition-colors"
+            title={isBalanceVisible ? "Hide balance" : "Show balance"}
+          >
+            {isBalanceVisible ? (
+              <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+              </svg>
+            )}
+          </button>
+          {user?.blockradarAddressId && (
+            <button
+              onClick={refetchBalance}
+              disabled={isBalanceRefreshing}
+              className="p-1.5 rounded-full bg-white/5 hover:bg-white/[0.08] transition-colors disabled:opacity-50"
+              title="Refresh balance"
+            >
+              {isBalanceRefreshing ? (
+                <div className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Quick Action Row */}
+      <div className="flex justify-center gap-6">
+        <ActionCircle
+          icon={<Icon name="arrow-up-right" size="md" className="text-white" />}
+          label="Send"
+          onClick={() => setActiveTab("offramp")}
+        />
+        <ActionCircle
+          icon={<Icon name="credit-card" size="md" className="text-white" />}
+          label="Pay"
+          onClick={() => setActiveTab("spend")}
+        />
+        <ActionCircle
+          icon={<Icon name="arrow-down" size="md" className="text-white" />}
+          label="Deposit"
+          onClick={() => setShowDeposit(!showDeposit)}
+        />
+      </div>
+
+      {/* Deposit Modal Overlay */}
+      {showDeposit && minisendWallet && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
+            onClick={() => setShowDeposit(false)}
+          />
+          {/* Modal Sheet */}
+          <div className="relative w-full max-w-md bg-[#111113] border-t border-white/[0.08] rounded-t-3xl p-6 pb-10 animate-deposit-slide-up">
+            {/* Drag handle */}
+            <div className="flex justify-center mb-5">
+              <div className="w-10 h-1 rounded-full bg-white/20" />
+            </div>
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowDeposit(false)}
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/[0.06] hover:bg-white/[0.10] flex items-center justify-center transition-colors"
+            >
+              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <div className="flex flex-col items-center gap-5">
+              <div className="text-center">
+                <h3 className="text-white text-lg font-semibold mb-1">Deposit USDC</h3>
+                <p className="text-gray-400 text-xs">Scan or copy your wallet address to deposit</p>
+              </div>
+
+              {/* QR Code */}
+              <div className="relative">
+                <div ref={qrContainerRef} className="rounded-xl overflow-hidden" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-lg flex items-center justify-center p-1.5 pointer-events-none shadow-sm">
+                  <Image
+                    src="/logo.svg"
+                    alt="Minisend"
+                    width={20}
+                    height={20}
+                    className="w-full h-full"
+                  />
+                </div>
+              </div>
+
+              {/* Full address with copy */}
               <button
                 onClick={handleCopyAddress}
-                className="p-1 rounded-md hover:bg-white/10 transition-colors"
-                title="Copy address"
+                className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-colors"
               >
+                <span className="text-gray-300 text-xs font-mono truncate">
+                  {minisendWallet}
+                </span>
                 {copied ? (
-                  <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <span className="text-green-400 text-xs font-medium flex-shrink-0">Copied!</span>
                 ) : (
-                  <svg className="w-3.5 h-3.5 text-gray-400 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                 )}
               </button>
-            </div>
 
-            {/* Blockchain Logos */}
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-white/10 p-1 flex items-center justify-center">
-                <Image src="/Base_Network_Logo.svg" alt="Base" width={14} height={14} />
-              </div>
-              <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
-                <Image src="/polygon-logo.svg" alt="Polygon" width={14} height={14} />
-              </div>
-              <div className="w-6 h-6 rounded-full bg-white/10 p-0.5 flex items-center justify-center">
-                <Image src="/celo-logo.svg" alt="Celo" width={14} height={14} />
-              </div>
-              <div className="w-6 h-6 rounded-full bg-white p-0.5 flex items-center justify-center">
-                <Image src="/lisk-logo.svg" alt="Lisk" width={14} height={14} className="invert-0" />
+              {/* Supported Networks */}
+              <div className="flex items-center gap-3">
+                <span className="text-gray-500 text-[10px] uppercase tracking-wider">Networks</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-full bg-white/10 p-0.5 flex items-center justify-center" title="Base">
+                    <Image src="/Base_Network_Logo.svg" alt="Base" width={12} height={12} />
+                  </div>
+                  <div className="w-5 h-5 rounded-full bg-white/10 p-0.5 flex items-center justify-center" title="Polygon">
+                    <Image src="/polygon-logo.svg" alt="Polygon" width={12} height={12} />
+                  </div>
+                  <div className="w-5 h-5 rounded-full bg-white/10 p-0.5 flex items-center justify-center" title="Celo">
+                    <Image src="/celo-logo.svg" alt="Celo" width={12} height={12} />
+                  </div>
+                  <div className="w-5 h-5 rounded-full bg-white p-0.5 flex items-center justify-center" title="Lisk">
+                    <Image src="/lisk-logo.svg" alt="Lisk" width={12} height={12} className="invert-0" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Transaction History */}
+      {/* Stats Row */}
+      <div className="flex items-center gap-4 px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500 text-xs">Volume</span>
+          <span className="text-white text-sm font-semibold">${stats.totalVolumeUSDC.toFixed(2)}</span>
+        </div>
+        <div className="w-px h-3 bg-white/10"></div>
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500 text-xs">Transactions</span>
+          <span className="text-white text-sm font-semibold">{stats.totalTransactions}</span>
+        </div>
+      </div>
+
+      {/* Activity */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold text-base sm:text-lg flex items-center gap-1.5">
-            <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="hidden sm:inline">Transaction History</span>
-            <span className="sm:hidden">History</span>
-          </h3>
+          <h3 className="text-white font-semibold text-base">Activity</h3>
           <button
             onClick={refreshStatuses}
             disabled={refreshing}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-full hover:bg-white/[0.06] transition-colors disabled:opacity-50"
             title="Refresh"
           >
             {refreshing ? (
-              <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              <svg className="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             )}
-            <span className="text-xs font-medium text-blue-400 hidden sm:inline">Refresh</span>
           </button>
         </div>
 
@@ -624,126 +602,106 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
           </div>
         ) : viewAll ? (
           // View all transactions
-          <div className="space-y-2">
+          <div>
             <button
               onClick={toggleViewAll}
-              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors text-xs font-medium mb-3"
+              className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors text-xs font-medium mb-3"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back to Groups
             </button>
 
-            {allOrders.slice(0, displayLimit).map((order) => {
-              const normalizedStatus = order.status?.toLowerCase() || '';
-              const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
-              const isExpanded = expandedCard === order.id;
+            <div className="bg-white/[0.02] rounded-2xl border border-white/[0.05] divide-y divide-white/[0.05] overflow-hidden">
+              {allOrders.slice(0, displayLimit).map((order) => {
+                const normalizedStatus = order.status?.toLowerCase() || '';
+                const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
+                const isPending = ['pending', 'processing', 'validated'].includes(normalizedStatus);
+                const isExpanded = expandedCard === order.id;
 
-              return (
-                <div
-                  key={order.id}
-                  className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden transition-all hover:bg-white/[0.07] hover:border-purple-500/30"
-                >
-                  {/* Collapsed View - Always Visible */}
-                  <div
-                    onClick={() => setExpandedCard(isExpanded ? null : order.id)}
-                    className="p-4 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-white font-bold text-lg">
-                            {order.local_currency} {order.amount_in_local.toLocaleString()}
-                          </span>
-                          {isSuccess && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded-full">
-                              <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
-                              <span className="text-[10px] text-green-300 font-medium">Done</span>
+                return (
+                  <div key={order.id}>
+                    <div
+                      onClick={() => setExpandedCard(isExpanded ? null : order.id)}
+                      className="px-4 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isSuccess ? 'bg-green-500/10' : isPending ? 'bg-yellow-500/10' : 'bg-red-500/10'
+                          }`}>
+                            <div className={`w-2 h-2 rounded-full ${
+                              isSuccess ? 'bg-green-400' : isPending ? 'bg-yellow-400' : 'bg-red-400'
+                            }`}></div>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-white text-sm font-medium truncate">{getPaymentDestination(order)}</p>
+                            <p className="text-gray-500 text-xs">{formatTime(order.created_at, order.local_currency)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="text-right">
+                            <p className="text-white text-sm font-semibold">-${order.amount_in_usdc.toFixed(2)}</p>
+                            <p className="text-gray-500 text-xs">{order.local_currency} {order.amount_in_local.toLocaleString()}</p>
+                          </div>
+                          {isSuccess && order.pretium_transaction_code && (
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <CompactReceiptButton transactionCode={order.pretium_transaction_code} className="" />
                             </div>
                           )}
-                        </div>
-                        <div className="text-gray-400 text-xs font-medium truncate">
-                          {getPaymentDestination(order)}
-                        </div>
-                        <div className="text-gray-500 text-[10px] mt-0.5">
-                          {formatTime(order.created_at, order.local_currency)}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {isSuccess && order.pretium_transaction_code && (
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <CompactReceiptButton
-                              transactionCode={order.pretium_transaction_code}
-                              className=""
-                            />
-                          </div>
-                        )}
-                        {isSuccess && !order.pretium_transaction_code && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const downloadBtn = document.getElementById(`download-${order.id}`);
-                              if (downloadBtn) downloadBtn.click();
-                            }}
-                            className="p-2 bg-purple-600 hover:bg-purple-700 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
-                            title="Download Receipt"
+                          {isSuccess && !order.pretium_transaction_code && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const downloadBtn = document.getElementById(`download-${order.id}`);
+                                if (downloadBtn) downloadBtn.click();
+                              }}
+                              className="p-1.5 rounded-full hover:bg-white/[0.06] transition-colors"
+                              title="Download Receipt"
+                            >
+                              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                            </button>
+                          )}
+                          <svg
+                            className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
                           >
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                          </button>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expanded View */}
+                    {isExpanded && (
+                      <div className="px-4 pb-3.5 space-y-3 border-t border-white/[0.05] pt-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-gray-500 text-xs mb-1 font-medium">USDC Amount</div>
+                            <div className="text-white text-sm font-semibold">${order.amount_in_usdc.toFixed(2)}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500 text-xs mb-1 font-medium">Date</div>
+                            <div className="text-white text-sm font-semibold">{formatDate(order.created_at, order.local_currency)}</div>
+                          </div>
+                        </div>
+                        {isSuccess && !order.pretium_transaction_code && (
+                          <div className="hidden">
+                            <div id={`download-${order.id}`}>
+                              <DownloadButton orderData={convertOrderToOrderData(order)} variant="secondary" size="sm" />
+                            </div>
+                          </div>
                         )}
-                        <svg
-                          className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
                       </div>
-                    </div>
+                    )}
                   </div>
-
-                  {/* Expanded View */}
-                  {isExpanded && (
-                    <div className="px-4 pb-4 space-y-3 border-t border-white/10 pt-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <div className="text-gray-500 text-xs mb-1 font-medium">USDC Amount</div>
-                          <div className="text-white text-sm font-semibold">
-                            ${order.amount_in_usdc.toFixed(2)}
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="text-gray-500 text-xs mb-1 font-medium">Date</div>
-                          <div className="text-white text-sm font-semibold">
-                            {formatDate(order.created_at, order.local_currency)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Hidden Download Button for non-Pretium orders */}
-                      {isSuccess && !order.pretium_transaction_code && (
-                        <div className="hidden">
-                          <div id={`download-${order.id}`}>
-                            <DownloadButton
-                              orderData={convertOrderToOrderData(order)}
-                              variant="secondary"
-                              size="sm"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
 
             {allOrders.length > displayLimit && (
               <div className="text-center pt-3">
@@ -751,7 +709,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                   onClick={() => setDisplayLimit(prev => prev + 20)}
                   variant="ghost"
                   size="medium"
-                  className="text-xs text-blue-400 hover:text-blue-300"
+                  className="text-xs text-gray-400 hover:text-white"
                 >
                   Load More
                 </Button>
@@ -763,155 +721,132 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
           </div>
         ) : selectedDate ? (
           // Detailed view for specific date
-          <div className="space-y-2">
+          <div>
             <button
               onClick={() => handleDateClick(selectedDate)}
-              className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors text-xs font-medium mb-3"
+              className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors text-xs font-medium mb-3"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back
             </button>
 
-            {displayedOrders.map((order) => {
-              const normalizedStatus = order.status?.toLowerCase() || '';
-              const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
-              const isExpanded = expandedCard === order.id;
+            <div className="bg-white/[0.02] rounded-2xl border border-white/[0.05] divide-y divide-white/[0.05] overflow-hidden">
+              {displayedOrders.map((order) => {
+                const normalizedStatus = order.status?.toLowerCase() || '';
+                const isSuccess = ['completed', 'fulfilled', 'settled'].includes(normalizedStatus);
+                const isPending = ['pending', 'processing', 'validated'].includes(normalizedStatus);
+                const isExpanded = expandedCard === order.id;
 
-              return (
-                <div
-                  key={order.id}
-                  className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden transition-all hover:bg-white/[0.07] hover:border-purple-500/30"
-                >
-                  {/* Collapsed View - Always Visible */}
-                  <div
-                    onClick={() => setExpandedCard(isExpanded ? null : order.id)}
-                    className="p-4 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-white font-bold text-lg">
-                            {order.local_currency} {order.amount_in_local.toLocaleString()}
-                          </span>
-                          {isSuccess && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded-full">
-                              <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
-                              <span className="text-[10px] text-green-300 font-medium">Done</span>
+                return (
+                  <div key={order.id}>
+                    <div
+                      onClick={() => setExpandedCard(isExpanded ? null : order.id)}
+                      className="px-4 py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isSuccess ? 'bg-green-500/10' : isPending ? 'bg-yellow-500/10' : 'bg-red-500/10'
+                          }`}>
+                            <div className={`w-2 h-2 rounded-full ${
+                              isSuccess ? 'bg-green-400' : isPending ? 'bg-yellow-400' : 'bg-red-400'
+                            }`}></div>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-white text-sm font-medium truncate">{getPaymentDestination(order)}</p>
+                            <p className="text-gray-500 text-xs">{formatTime(order.created_at, order.local_currency)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="text-right">
+                            <p className="text-white text-sm font-semibold">-${order.amount_in_usdc.toFixed(2)}</p>
+                            <p className="text-gray-500 text-xs">{order.local_currency} {order.amount_in_local.toLocaleString()}</p>
+                          </div>
+                          {isSuccess && order.pretium_transaction_code && (
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <CompactReceiptButton transactionCode={order.pretium_transaction_code} className="" />
                             </div>
                           )}
-                        </div>
-                        <div className="text-gray-400 text-xs font-medium truncate">
-                          {getPaymentDestination(order)}
-                        </div>
-                        <div className="text-gray-500 text-[10px] mt-0.5">
-                          {formatTime(order.created_at, order.local_currency)}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {isSuccess && order.pretium_transaction_code && (
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <CompactReceiptButton
-                              transactionCode={order.pretium_transaction_code}
-                              className=""
-                            />
-                          </div>
-                        )}
-                        {isSuccess && !order.pretium_transaction_code && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const downloadBtn = document.getElementById(`download-${order.id}`);
-                              if (downloadBtn) downloadBtn.click();
-                            }}
-                            className="p-2 bg-purple-600 hover:bg-purple-700 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
-                            title="Download Receipt"
+                          {isSuccess && !order.pretium_transaction_code && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const downloadBtn = document.getElementById(`download-${order.id}`);
+                                if (downloadBtn) downloadBtn.click();
+                              }}
+                              className="p-1.5 rounded-full hover:bg-white/[0.06] transition-colors"
+                              title="Download Receipt"
+                            >
+                              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                            </button>
+                          )}
+                          <svg
+                            className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
                           >
-                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                          </button>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="px-4 pb-3.5 space-y-3 border-t border-white/[0.05] pt-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-gray-500 text-xs mb-1 font-medium">USDC Amount</div>
+                            <div className="text-white text-sm font-semibold">${order.amount_in_usdc.toFixed(2)}</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500 text-xs mb-1 font-medium">Date</div>
+                            <div className="text-white text-sm font-semibold">{formatDate(order.created_at, order.local_currency)}</div>
+                          </div>
+                        </div>
+                        {isSuccess && !order.pretium_transaction_code && (
+                          <div className="hidden">
+                            <div id={`download-${order.id}`}>
+                              <DownloadButton orderData={convertOrderToOrderData(order)} variant="secondary" size="sm" />
+                            </div>
+                          </div>
                         )}
-                        <svg
-                          className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
                       </div>
-                    </div>
+                    )}
                   </div>
-
-                  {/* Expanded View */}
-                  {isExpanded && (
-                    <div className="px-4 pb-4 space-y-3 border-t border-white/10 pt-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <div className="text-gray-500 text-xs mb-1 font-medium">USDC Amount</div>
-                          <div className="text-white text-sm font-semibold">
-                            ${order.amount_in_usdc.toFixed(2)}
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="text-gray-500 text-xs mb-1 font-medium">Date</div>
-                          <div className="text-white text-sm font-semibold">
-                            {formatDate(order.created_at, order.local_currency)}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Hidden Download Button for non-Pretium orders */}
-                      {isSuccess && !order.pretium_transaction_code && (
-                        <div className="hidden">
-                          <div id={`download-${order.id}`}>
-                            <DownloadButton
-                              orderData={convertOrderToOrderData(order)}
-                              variant="secondary"
-                              size="sm"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         ) : (
           // Date grouped view
-          <div className="space-y-2">
+          <div className="space-y-4">
             {transactionsByDate.slice(0, displayLimit / 4).map(({ date, orders }) => {
               const successfulOrders = orders.filter(o => ['completed', 'fulfilled', 'settled'].includes(o.status?.toLowerCase() || ''));
               const totalUSDC = successfulOrders.reduce((sum, o) => sum + (o.amount_in_usdc || 0), 0);
 
               return (
-                <div
-                  key={date}
-                  onClick={() => handleDateClick(date)}
-                  className="bg-white/5 hover:bg-white/[0.07] rounded-2xl p-3.5 border border-white/10 hover:border-purple-500/30 cursor-pointer transition-all duration-200 group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-white font-bold text-sm mb-1 leading-none">{formatDate(date)}</p>
-                      <p className="text-gray-400 text-[10px] font-medium">
-                        {orders.length} transactions • {successfulOrders.length} completed
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-purple-400 font-bold text-sm leading-none">${totalUSDC.toFixed(2)}</p>
-                        <p className="text-gray-500 text-[10px] font-medium">total volume</p>
+                <div key={date}>
+                  <p className="text-gray-500 text-xs font-medium uppercase tracking-wider mb-2 px-1">{formatDate(date)}</p>
+                  <div
+                    onClick={() => handleDateClick(date)}
+                    className="bg-white/[0.02] hover:bg-white/[0.04] rounded-2xl px-4 py-3.5 border border-white/[0.05] cursor-pointer transition-all duration-200 group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-gray-400 text-xs font-medium">
+                          {orders.length} transactions · {successfulOrders.length} completed
+                        </p>
                       </div>
-                      <svg className="w-5 h-5 text-purple-400 group-hover:translate-x-1 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                      </svg>
+                      <div className="flex items-center gap-3">
+                        <p className="text-white font-semibold text-sm">${totalUSDC.toFixed(2)}</p>
+                        <svg className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -924,7 +859,7 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
                   onClick={() => setDisplayLimit(prev => prev + 20)}
                   variant="ghost"
                   size="medium"
-                  className="text-xs text-blue-400 hover:text-blue-300"
+                  className="text-xs text-gray-400 hover:text-white"
                 >
                   Load More
                 </Button>
@@ -935,10 +870,10 @@ export function ProfileView({ setActiveTab }: ProfileViewProps) {
             )}
 
             {/* View All Button */}
-            <div className="text-center pt-3 border-t border-white/10 mt-4">
+            <div className="text-center pt-3 border-t border-white/[0.05] mt-2">
               <button
                 onClick={toggleViewAll}
-                className="text-blue-400 hover:text-blue-300 text-xs font-medium transition-colors"
+                className="text-gray-400 hover:text-white text-xs font-medium transition-colors"
               >
                 View All Transactions
               </button>

@@ -49,9 +49,24 @@ body {
 
 .glass-effect {
   background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.animate-deposit-slide-up {
+  animation: depositSlideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes depositSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .premium-gradient {
   background: linear-gradient(135deg, #000000 0%, #111827 50%, #1F2937 100%);
