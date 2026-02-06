@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { CurrencySwapInterface } from './CurrencySwapInterface';
 import { FormInput } from './FormInput';
 import { PretiumReceipt } from './PretiumReceipt';
+import { useMinisendAuth } from '@/lib/hooks/useMinisendAuth';
 
 interface SpendFlowProps {
   setActiveTab: (tab: string) => void;
@@ -18,7 +19,11 @@ interface SpendFlowProps {
 
 export function SpendFlow({ setActiveTab }: SpendFlowProps) {
   const { address, isConnected } = useAccount();
-  
+  const { minisendWallet } = useMinisendAuth();
+
+  // User can proceed if they have a wagmi wallet OR a minisend wallet (email auth)
+  const hasWallet = isConnected || !!minisendWallet;
+
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -49,18 +54,41 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
   }>({});
 
 
-  // Show wallet connection if not connected or not mounted
-  if (!mounted || !isConnected) {
+  // Show loading skeleton while mounting
+  if (!mounted) {
     return (
       <div className="max-w-md mx-auto p-6">
-        <div className="text-center mb-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-10 w-10 bg-gray-700 rounded-full"></div>
+          <div className="h-8 bg-gray-700 rounded w-3/4 mx-auto"></div>
+          <div className="h-64 bg-gray-700 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show connect prompt if no wallet available
+  if (!hasWallet) {
+    return (
+      <div className="max-w-md mx-auto p-6">
+        <button
+          onClick={() => setActiveTab('home')}
+          className="w-10 h-10 rounded-full bg-[#1d1e22] hover:bg-[#252629] border border-white/[0.08] flex items-center justify-center transition-all duration-200 mb-6"
+          title="Go back"
+        >
+          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div className="text-center">
           <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl flex items-center justify-center mb-4">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Spend USDC</h1>
-          <p className="text-gray-300">Pay businesses with M-Pesa till & paybill</p>
+          <h1 className="text-2xl font-bold text-white mb-2">Spend USDC</h1>
+          <p className="text-gray-400 text-sm mb-6">Pay till numbers and paybills with USDC</p>
+          <p className="text-gray-500 text-xs">Connect your wallet to get started</p>
         </div>
       </div>
     );
