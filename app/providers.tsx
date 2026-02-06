@@ -28,7 +28,7 @@ function ConditionalPrivyProvider({ children }: { children: ReactNode }) {
             accentColor: '#0052FF',
             logo: process.env.NEXT_PUBLIC_ICON_URL,
             landingHeader: 'Get a Minisend Wallet',
-            loginMessage: 'Sign up and cashout USDC to mobile money',
+            loginMessage: 'Deposit stablecoins on any chain and cashout to mobile money',
           },
           // Email + Google OAuth login methods
           loginMethods: ['email', 'google'],
