@@ -165,32 +165,57 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
       {/* Details Step - Recipient Information */}
       {step === 'details' && swapData && (
         <>
-          {/* Amount Summary Banner - Mobile Optimized */}
-          <div className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-2xl p-4 sm:p-5 mb-6">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="text-[#8e8e93] text-[10px] sm:text-xs font-medium mb-1.5 sm:mb-2 uppercase tracking-wider">You&apos;re spending</div>
-                <div className="text-white font-bold text-2xl sm:text-3xl tracking-tight break-words mb-1">
-                  {swapData.currency === 'KES' ? 'KSh' : '₦'}{parseFloat(swapData.localAmount).toLocaleString()}
+          {/* Conversion Summary Card */}
+          <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden mb-6">
+            {/* You pay */}
+            <div className="px-5 pt-5 pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-500 text-[10px] font-medium uppercase tracking-widest mb-1">You pay</p>
+                  <p className="text-white text-2xl font-bold tracking-tight">${parseFloat(swapData.usdcAmount).toFixed(4)}</p>
                 </div>
-                <div className="text-[#8e8e93] text-xs sm:text-sm font-medium">
-                  ≈ ${parseFloat(swapData.usdcAmount).toFixed(4)} USDC
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
+                  <Image src="/usdc.svg" alt="USDC" width={18} height={18} />
+                  <span className="text-white text-xs font-semibold">USDC</span>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2c2c2e] border border-[#3a3a3c] rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg sm:text-xl">{swapData.currency === 'KES' ? '🇰🇪' : '🇳🇬'}</span>
-                </div>
-                <button
-                  onClick={() => setStep('swap')}
-                  className="text-[#8e8e93] hover:text-white transition-colors p-1.5 hover:bg-[#2c2c2e] rounded-lg"
-                  title="Edit amount"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
+            </div>
+
+            {/* Divider with arrow */}
+            <div className="relative px-5">
+              <div className="h-px bg-white/[0.06]" />
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-[#1d1e22] border border-white/[0.08] flex items-center justify-center">
+                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
               </div>
+            </div>
+
+            {/* Recipient gets */}
+            <div className="px-5 pt-3 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-500 text-[10px] font-medium uppercase tracking-widest mb-1">Recipient gets</p>
+                  <p className="text-white text-2xl font-bold tracking-tight">
+                    {swapData.currency === 'KES' ? 'KSh' : swapData.currency === 'NGN' ? '₦' : swapData.currency === 'GHS' ? 'GH₵' : 'USh'} {parseFloat(swapData.localAmount).toLocaleString()}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
+                  <span className="text-sm">{swapData.currency === 'KES' ? '🇰🇪' : swapData.currency === 'NGN' ? '🇳🇬' : swapData.currency === 'GHS' ? '🇬🇭' : '🇺🇬'}</span>
+                  <span className="text-white text-xs font-semibold">{swapData.currency}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Rate + Edit footer */}
+            <div className="px-5 py-3 bg-white/[0.02] border-t border-white/[0.05] flex items-center justify-between">
+              <p className="text-gray-500 text-[11px] font-medium">1 USDC = {swapData.rate.toFixed(2)} {swapData.currency}</p>
+              <button
+                onClick={() => setStep('swap')}
+                className="text-[#8b53ff] text-[11px] font-semibold hover:text-[#a370ff] transition-colors"
+              >
+                Edit
+              </button>
             </div>
           </div>
 
@@ -221,7 +246,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
                 !paymentMethod ||
                 !paymentMethod.formatted
               }
-              className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 border border-purple-500 hover:border-purple-400 disabled:border-gray-600"
+              className="w-full bg-[#8b53ff] hover:bg-[#7a47e6] disabled:bg-white/[0.06] disabled:text-gray-500 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-200 active:scale-[0.98]"
             >
               Continue to Payment
             </button>
@@ -232,68 +257,74 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
       {/* Payment Step */}
       {step === 'payment' && paymentMethod && swapData && (
         <div>
-          {/* Payment Summary - Mobile Optimized */}
+          {/* Payment Summary */}
           <div className="space-y-3 mb-6">
-            {/* Main Amount Card */}
-            <div className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-2xl p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-3 mb-3 sm:mb-4">
-                <div className="flex-1 min-w-0">
-                  <div className="text-[#8e8e93] text-[10px] sm:text-xs font-medium mb-1.5 sm:mb-2 uppercase tracking-wider">Recipient receives</div>
-                  <div className="text-white font-bold text-2xl sm:text-3xl tracking-tight break-words">
-                    {swapData.currency === 'KES' ? 'KSh' : '₦'}{parseFloat(swapData.localAmount).toLocaleString()}
+            {/* Conversion card */}
+            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
+              {/* You pay */}
+              <div className="px-5 pt-5 pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-500 text-[10px] font-medium uppercase tracking-widest mb-1">You pay</p>
+                    <p className="text-white text-2xl font-bold tracking-tight">${parseFloat(swapData.usdcAmount).toFixed(4)}</p>
                   </div>
-                  <div className="text-[#8e8e93] text-xs sm:text-sm mt-1 sm:mt-1.5 font-medium truncate">
-                    {paymentMethod.type === 'till'
-                      ? `Till ${paymentMethod.formatted}`
-                      : paymentMethod.type === 'paybill'
-                        ? `Paybill ${paymentMethod.formatted}${formData.paybillAccount ? ` - ${formData.paybillAccount}` : ''}`
-                        : paymentMethod.formatted}
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
+                    <Image src="/usdc.svg" alt="USDC" width={18} height={18} />
+                    <span className="text-white text-xs font-semibold">USDC</span>
                   </div>
                 </div>
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#2c2c2e] border border-[#3a3a3c] rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg sm:text-xl">{swapData.currency === 'KES' ? '🇰🇪' : '🇳🇬'}</span>
+              </div>
+
+              {/* Divider with arrow */}
+              <div className="relative px-5">
+                <div className="h-px bg-white/[0.06]" />
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-[#1d1e22] border border-white/[0.08] flex items-center justify-center">
+                  <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Recipient gets */}
+              <div className="px-5 pt-3 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-500 text-[10px] font-medium uppercase tracking-widest mb-1">Recipient gets</p>
+                    <p className="text-white text-2xl font-bold tracking-tight">
+                      {swapData.currency === 'KES' ? 'KSh' : swapData.currency === 'NGN' ? '₦' : swapData.currency === 'GHS' ? 'GH₵' : 'USh'} {parseFloat(swapData.localAmount).toLocaleString()}
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1 truncate">
+                      {paymentMethod.type === 'till'
+                        ? `Till ${paymentMethod.formatted}`
+                        : paymentMethod.type === 'paybill'
+                          ? `Paybill ${paymentMethod.formatted}${formData.paybillAccount ? ` · ${formData.paybillAccount}` : ''}`
+                          : paymentMethod.formatted}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
+                    <span className="text-sm">{swapData.currency === 'KES' ? '🇰🇪' : swapData.currency === 'NGN' ? '🇳🇬' : swapData.currency === 'GHS' ? '🇬🇭' : '🇺🇬'}</span>
+                    <span className="text-white text-xs font-semibold">{swapData.currency}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Transaction Breakdown */}
-            <div className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-2xl p-3.5 sm:p-4">
-              <div className="space-y-2.5 sm:space-y-3">
-                {/* You send */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-[#2c2c2e] rounded-md flex items-center justify-center flex-shrink-0">
-                      <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#8e8e93]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                      </svg>
-                    </div>
-                    <span className="text-[#8e8e93] text-xs sm:text-sm truncate">You send</span>
-                  </div>
-                  <span className="text-white font-semibold text-xs sm:text-sm flex-shrink-0">${parseFloat(swapData.usdcAmount).toFixed(4)}</span>
+            {/* Fee breakdown */}
+            <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl px-5 py-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 text-xs">Exchange rate</span>
+                  <span className="text-white text-xs font-medium">1 USDC = {swapData.rate.toFixed(2)} {swapData.currency}</span>
                 </div>
-
-                <div className="h-px bg-[#3a3a3c]"></div>
-
-                {/* Rate */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[#8e8e93] text-xs sm:text-sm truncate">Rate</span>
-                  <span className="text-white font-semibold text-xs sm:text-sm flex-shrink-0">1 USDC = {swapData.rate.toFixed(2)}</span>
+                <div className="h-px bg-white/[0.05]" />
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 text-xs">Service fee (1%)</span>
+                  <span className="text-white text-xs font-medium">${(parseFloat(swapData.usdcAmount) * 0.01).toFixed(4)}</span>
                 </div>
-
-                <div className="h-px bg-[#3a3a3c]"></div>
-
-                {/* Service fee - CALCULATED */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[#8e8e93] text-xs sm:text-sm truncate">Service fee</span>
-                  <span className="text-white font-semibold text-xs sm:text-sm flex-shrink-0">${(parseFloat(swapData.usdcAmount) * 0.01).toFixed(4)}</span>
-                </div>
-
-                <div className="h-px bg-[#3a3a3c]"></div>
-
-                {/* Gas fee */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[#8e8e93] text-xs sm:text-sm truncate">Gas fee</span>
-                  <span className="text-green-500 font-semibold text-xs sm:text-sm flex-shrink-0">Free (saves ~$0.08)</span>
+                <div className="h-px bg-white/[0.05]" />
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500 text-xs">Network fee</span>
+                  <span className="text-green-400 text-xs font-medium">Free</span>
                 </div>
               </div>
             </div>
