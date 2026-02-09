@@ -107,8 +107,11 @@ export async function POST(request: NextRequest) {
 
     const { assetId, balance } = usdcInfo;
 
+    // Sanitize amount: USDC has 6 decimals, BlockRadar rejects >8 decimal places
+    const sanitizedAmount = parseFloat(amount).toFixed(6).replace(/\.?0+$/, '');
+
     // Check if user has sufficient balance
-    const requestedAmount = parseFloat(amount);
+    const requestedAmount = parseFloat(sanitizedAmount);
     const availableBalance = parseFloat(balance);
 
     if (requestedAmount > availableBalance) {
@@ -129,7 +132,8 @@ export async function POST(request: NextRequest) {
     console.log('[Blockradar Withdraw] Initiating withdrawal:', {
       addressId,
       recipientAddress,
-      amount,
+      amount: sanitizedAmount,
+      originalAmount: amount,
       assetId,
       availableBalance: balance,
       reference,
@@ -142,7 +146,7 @@ export async function POST(request: NextRequest) {
       {
         assetId,
         address: recipientAddress,
-        amount,
+        amount: sanitizedAmount,
         reference: reference || `minisend-${Date.now()}`,
         note: note || 'Minisend cashout',
         metadata: {
