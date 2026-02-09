@@ -408,7 +408,7 @@ export async function POST(request: Request) {
       const { data: user, error: userError } = await supabase
         .from('minisend_users')
         .select('email, user_id')
-        .eq('minisend_wallet', recipientAddress)
+        .ilike('minisend_wallet', recipientAddress)
         .single();
 
       if (userError || !user) {
@@ -426,7 +426,7 @@ export async function POST(request: Request) {
         data.id,
         user.user_id,
         user.email || '',
-        recipientAddress,
+        recipientAddress.toLowerCase(),
         data.amount,
         assetSymbol,
         blockchainSlug,

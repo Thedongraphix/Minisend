@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         platform,
         connected_wallet: walletAddress,
-        minisend_wallet: minisendWallet,
+        minisend_wallet: minisendWallet.toLowerCase(),
         blockradar_address_id: addressId,
         email,
         last_login_at: new Date().toISOString(),
