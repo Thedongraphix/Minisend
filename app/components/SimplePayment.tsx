@@ -9,6 +9,7 @@ import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
 import type { ContractFunctionParameters } from 'viem';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useWalletAnalytics } from '@/hooks/useWalletAnalytics';
+import { builderCodeCapabilities } from '@/lib/builder-code';
 
 interface SimplePaymentProps {
   amount: string;
@@ -388,6 +389,7 @@ export function SimplePayment({
               chainId={base.id}
               calls={calls}
               onStatus={handleTransactionStatus}
+              capabilities={builderCodeCapabilities}
             >
               <TransactionButton
                 text={`Send Payment $${((parseFloat(orderData.amount) || 0) + (parseFloat(orderData.senderFee) || 0) + (parseFloat(orderData.transactionFee) || 0)).toFixed(2)}`}

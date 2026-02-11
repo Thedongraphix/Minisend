@@ -5,6 +5,7 @@ import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLab
 import { base } from 'wagmi/chains';
 import type { ContractFunctionParameters } from 'viem';
 import type { LifecycleStatus } from '@coinbase/onchainkit/transaction';
+import { builderCodeCapabilities } from '@/lib/builder-code';
 // import { SwipeButton } from './SwipeButton';
 
 interface TransactionHandlerProps {
@@ -40,6 +41,7 @@ export function TransactionHandler({
         onSuccess={onSuccess}
         onError={onError}
         isSponsored={true}
+        capabilities={builderCodeCapabilities}
       >
         {children || (
           <>
