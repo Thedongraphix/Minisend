@@ -166,42 +166,55 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if user already exists
-    const { data: existingUser, error: fetchError } = await supabase
+    // Step 1: Ensure user row exists and update metadata (without touching wallet fields)
+    const { error: upsertError } = await supabase
       .from('minisend_users')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('platform', platform)
-      .single();
+      .upsert({
+        user_id: userId,
+        platform,
+        connected_wallet: walletAddress,
+        email,
+        last_login_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id,platform',
+      });
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      // PGRST116 = no rows returned
-      console.error('Database error:', fetchError);
+    if (upsertError) {
+      console.error('Database error on user upsert:', upsertError);
       return NextResponse.json(
         { error: 'Database error' },
         { status: 500 }
       );
     }
 
-    // If user exists and has a Minisend wallet, return it
-    if (existingUser?.minisend_wallet) {
-      // Update last login
-      await supabase
-        .from('minisend_users')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('user_id', userId)
-        .eq('platform', platform);
+    // Step 2: Read current user state
+    const { data: currentUser, error: readError } = await supabase
+      .from('minisend_users')
+      .select('minisend_wallet, blockradar_address_id, display_name, avatar_url')
+      .eq('user_id', userId)
+      .eq('platform', platform)
+      .single();
 
+    if (readError || !currentUser) {
+      console.error('Failed to read user after upsert:', readError);
+      return NextResponse.json(
+        { error: 'Database error' },
+        { status: 500 }
+      );
+    }
+
+    // Step 3: If wallet already assigned, return it immediately
+    if (currentUser.minisend_wallet) {
       return NextResponse.json({
-        minisendWallet: existingUser.minisend_wallet,
-        blockradarAddressId: existingUser.blockradar_address_id,
-        displayName: existingUser.display_name,
-        avatarUrl: existingUser.avatar_url,
+        minisendWallet: currentUser.minisend_wallet,
+        blockradarAddressId: currentUser.blockradar_address_id,
+        displayName: currentUser.display_name,
+        avatarUrl: currentUser.avatar_url,
         existing: true,
       });
     }
 
-    // Create new BlockRadar wallet
+    // Step 4: Create new BlockRadar wallet
     const { address: minisendWallet, addressId } = await createBlockRadarWallet({
       user_id: userId,
       platform,
@@ -215,40 +228,49 @@ export async function POST(request: NextRequest) {
       minisendWallet,
     });
 
-    // Note: Auto-settlement rules should be configured manually in BlockRadar dashboard
-    // at the master wallet level. Rules configured there will automatically apply to
-    // all child addresses created under that wallet.
-
-    // Insert or update user in database
-    const { data: upsertedUser, error: upsertError} = await supabase
+    // Step 5: Atomically assign wallet ONLY if still unassigned.
+    // The IS NULL condition ensures exactly one concurrent request wins.
+    const { data: updatedUser, error: updateError } = await supabase
       .from('minisend_users')
-      .upsert({
-        user_id: userId,
-        platform,
-        connected_wallet: walletAddress,
+      .update({
         minisend_wallet: minisendWallet.toLowerCase(),
         blockradar_address_id: addressId,
-        email,
-        last_login_at: new Date().toISOString(),
-      }, {
-        onConflict: 'user_id,platform'
       })
-      .select()
+      .eq('user_id', userId)
+      .eq('platform', platform)
+      .is('minisend_wallet', null)
+      .select('minisend_wallet, blockradar_address_id, display_name, avatar_url')
       .single();
 
-    if (upsertError) {
-      console.error('Failed to save user:', upsertError);
-      return NextResponse.json(
-        { error: 'Failed to save user data' },
-        { status: 500 }
-      );
+    // Step 6: If update matched no rows, another request already won the race
+    if (updateError || !updatedUser) {
+      const { data: winnerUser } = await supabase
+        .from('minisend_users')
+        .select('minisend_wallet, blockradar_address_id, display_name, avatar_url')
+        .eq('user_id', userId)
+        .eq('platform', platform)
+        .single();
+
+      console.log('⚠️ Wallet already assigned by concurrent request:', {
+        userId,
+        existingWallet: winnerUser?.minisend_wallet,
+        discardedWallet: minisendWallet,
+      });
+
+      return NextResponse.json({
+        minisendWallet: winnerUser?.minisend_wallet,
+        blockradarAddressId: winnerUser?.blockradar_address_id,
+        displayName: winnerUser?.display_name,
+        avatarUrl: winnerUser?.avatar_url,
+        existing: true,
+      });
     }
 
     return NextResponse.json({
-      minisendWallet,
-      blockradarAddressId: addressId,
-      displayName: upsertedUser.display_name,
-      avatarUrl: upsertedUser.avatar_url,
+      minisendWallet: updatedUser.minisend_wallet,
+      blockradarAddressId: updatedUser.blockradar_address_id,
+      displayName: updatedUser.display_name,
+      avatarUrl: updatedUser.avatar_url,
       existing: false,
     });
 

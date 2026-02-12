@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAccount } from 'wagmi';
 import { usePrivy } from '@privy-io/react-auth';
 import { sdk } from '@farcaster/miniapp-sdk';
@@ -46,6 +46,7 @@ export function useMinisendAuth(): UseMinisendAuthReturn {
   const [minisendWallet, setMinisendWallet] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const assigningRef = useRef(false);
 
   const platform = getPlatform();
 
@@ -124,9 +125,13 @@ export function useMinisendAuth(): UseMinisendAuthReturn {
   }, [address, privyAuthenticated, privyUser]);
 
   /**
-   * Assign Minisend wallet via BlockRadar with retry logic
+   * Assign Minisend wallet via BlockRadar
+   * Uses a ref guard to ensure only one assignment runs at a time
    */
   const assignMinisendWallet = useCallback(async (authData: AuthData) => {
+    if (assigningRef.current) return;
+    assigningRef.current = true;
+
     try {
       setIsLoading(true);
       setError(null);
@@ -167,8 +172,6 @@ export function useMinisendAuth(): UseMinisendAuthReturn {
         avatarUrl: data.avatarUrl,
       };
 
-      console.log('[useMinisendAuth] Setting user:', minisendUser);
-
       setUser(minisendUser);
       setMinisendWallet(data.minisendWallet);
 
@@ -177,9 +180,9 @@ export function useMinisendAuth(): UseMinisendAuthReturn {
       const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
       setError(errorMessage);
       console.error('Failed to assign Minisend wallet:', err);
-      throw err;
     } finally {
       setIsLoading(false);
+      assigningRef.current = false;
     }
   }, []);
 
@@ -219,8 +222,13 @@ export function useMinisendAuth(): UseMinisendAuthReturn {
 
   /**
    * Effect: Handle auth when conditions change
+   * The assigningRef guard in assignMinisendWallet prevents concurrent API calls
+   * even when this effect re-fires from multiple rapid state changes during login.
    */
   useEffect(() => {
+    // Already authenticated — nothing to do
+    if (minisendWallet) return;
+
     // For Farcaster and Base App, auto-authenticate when wallet connects
     if (isFarcasterMiniApp() && isConnected) {
       handleAuth();
@@ -240,7 +248,7 @@ export function useMinisendAuth(): UseMinisendAuthReturn {
         setIsLoading(false);
       }
     }
-  }, [isConnected, privyAuthenticated, privyReady, handleAuth]);
+  }, [isConnected, privyAuthenticated, privyReady, handleAuth, minisendWallet]);
 
   return {
     user,
