@@ -6,9 +6,10 @@ import { UnifiedDashboardStats } from '@/lib/types/dashboard';
 interface DashboardMetricsProps {
   stats: UnifiedDashboardStats;
   loading?: boolean;
+  periodLabel: string;
 }
 
-export function DashboardMetrics({ stats, loading }: DashboardMetricsProps) {
+export function DashboardMetrics({ stats, loading, periodLabel }: DashboardMetricsProps) {
   if (loading) {
     return (
       <div className="space-y-6">
@@ -44,22 +45,22 @@ export function DashboardMetrics({ stats, loading }: DashboardMetricsProps) {
         <MetricCard
           title="Total Orders"
           value={stats.totalOrders.toLocaleString()}
-          subtitle="All providers"
+          subtitle={periodLabel}
         />
         <MetricCard
           title="Success Rate"
           value={`${stats.successRate}%`}
-          subtitle="Completed"
+          subtitle={`Completed \u00B7 ${periodLabel}`}
         />
         <MetricCard
           title="Volume"
           value={`$${stats.totalUSDCVolume.toLocaleString()}`}
-          subtitle="USDC processed"
+          subtitle={`USDC \u00B7 ${periodLabel}`}
         />
         <MetricCard
           title="Unique Wallets"
           value={stats.uniqueWallets.toLocaleString()}
-          subtitle="Active senders"
+          subtitle={periodLabel}
         />
       </div>
 
@@ -67,11 +68,14 @@ export function DashboardMetrics({ stats, loading }: DashboardMetricsProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Pretium Card */}
         <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/[0.06]">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-              Pretium
-            </span>
-            <span className="text-[13px] text-white/40">KES / UGX</span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                Pretium
+              </span>
+              <span className="text-[13px] text-white/40">KES / UGX</span>
+            </div>
+            <span className="text-[11px] text-white/30">{periodLabel}</span>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
@@ -91,11 +95,14 @@ export function DashboardMetrics({ stats, loading }: DashboardMetricsProps) {
 
         {/* Paycrest Card */}
         <div className="bg-white/[0.03] backdrop-blur-sm rounded-2xl p-5 border border-white/[0.06]">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-teal-500/10 text-teal-400 border border-teal-500/20">
-              Paycrest
-            </span>
-            <span className="text-[13px] text-white/40">NGN</span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                Paycrest
+              </span>
+              <span className="text-[13px] text-white/40">NGN</span>
+            </div>
+            <span className="text-[11px] text-white/30">{periodLabel}</span>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>

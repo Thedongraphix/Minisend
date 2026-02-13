@@ -8,7 +8,6 @@ interface FiltersState {
   paymentType: string[];
   provider: string;
   currency: string[];
-  dateRange: string;
 }
 
 interface TransactionFiltersProps {
@@ -22,7 +21,6 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
     paymentType: [],
     provider: 'all',
     currency: [],
-    dateRange: '30d',
   });
 
   const updateFilters = (updates: Partial<FiltersState>) => {
@@ -32,7 +30,7 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
   };
 
   const clearFilters = () => {
-    const cleared: FiltersState = { search: '', status: [], paymentType: [], provider: 'all', currency: [], dateRange: '30d' };
+    const cleared: FiltersState = { search: '', status: [], paymentType: [], provider: 'all', currency: [] };
     setFilters(cleared);
     onFiltersChange(cleared);
   };
@@ -160,22 +158,6 @@ export function TransactionFilters({ onFiltersChange }: TransactionFiltersProps)
             </button>
           ))}
         </div>
-
-        {/* Divider */}
-        <div className="h-8 w-px bg-white/[0.06]" />
-
-        {/* Date Range Dropdown */}
-        <select
-          value={filters.dateRange}
-          onChange={(e) => updateFilters({ dateRange: e.target.value })}
-          className="h-9 px-3 bg-white/[0.03] border border-white/[0.06] rounded-lg text-[13px] text-white/70 focus:outline-none focus:border-white/20 cursor-pointer appearance-none"
-          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff40' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 8px center', backgroundRepeat: 'no-repeat', backgroundSize: '16px', paddingRight: '32px' }}
-        >
-          <option value="all">All Time</option>
-          <option value="today">Today</option>
-          <option value="7d">Last 7 Days</option>
-          <option value="30d">Last 30 Days</option>
-        </select>
 
         {/* Spacer */}
         <div className="flex-1" />

@@ -34,6 +34,13 @@ const DEFAULT_STATS: UnifiedDashboardStats = {
   monthlyTrends: [],
 };
 
+const DATE_RANGE_OPTIONS = [
+  { value: 'today', label: 'Today' },
+  { value: '7d', label: 'Last 7 Days' },
+  { value: '30d', label: 'Last 30 Days' },
+  { value: 'all', label: 'All Time' },
+];
+
 function getDateRangeParams(dateRange: string): { start_date?: string; end_date?: string } {
   if (dateRange === 'all') return {};
   const now = new Date();
@@ -52,22 +59,28 @@ function getDateRangeParams(dateRange: string): { start_date?: string; end_date?
   return { start_date: startDate.toISOString() };
 }
 
+function getPeriodLabel(dateRange: string): string {
+  return DATE_RANGE_OPTIONS.find(o => o.value === dateRange)?.label || 'Last 30 Days';
+}
+
 export function PretiumDashboard() {
+  const [dateRange, setDateRange] = useState('30d');
   const [filters, setFilters] = useState({
     search: '',
     status: [] as string[],
     paymentType: [] as string[],
     provider: 'all',
     currency: [] as string[],
-    dateRange: '30d',
   });
   const [page, setPage] = useState(1);
 
+  const periodLabel = getPeriodLabel(dateRange);
+
   // Fetch unified stats
   const { data: stats, isLoading: statsLoading } = useQuery<UnifiedDashboardStats>({
-    queryKey: ['unified-stats', filters.dateRange],
+    queryKey: ['unified-stats', dateRange],
     queryFn: async () => {
-      const dateParams = getDateRangeParams(filters.dateRange);
+      const dateParams = getDateRangeParams(dateRange);
       const params = new URLSearchParams();
       if (dateParams.start_date) params.set('start_date', dateParams.start_date);
       if (dateParams.end_date) params.set('end_date', dateParams.end_date);
@@ -85,7 +98,7 @@ export function PretiumDashboard() {
 
   // Fetch unified orders
   const { data: ordersData, isLoading: ordersLoading } = useQuery<OrdersResponse>({
-    queryKey: ['unified-orders', filters, page],
+    queryKey: ['unified-orders', dateRange, filters, page],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -98,8 +111,8 @@ export function PretiumDashboard() {
       if (filters.provider && filters.provider !== 'all') params.set('provider', filters.provider);
       if (filters.currency.length > 0) params.set('currency', filters.currency.join(','));
 
-      if (filters.dateRange !== 'all') {
-        const dateParams = getDateRangeParams(filters.dateRange);
+      if (dateRange !== 'all') {
+        const dateParams = getDateRangeParams(dateRange);
         if (dateParams.start_date) params.set('start_date', dateParams.start_date);
       }
 
@@ -111,7 +124,7 @@ export function PretiumDashboard() {
 
   useEffect(() => {
     setPage(1);
-  }, [filters]);
+  }, [filters, dateRange]);
 
   return (
     <div className="min-h-screen bg-black">
@@ -140,15 +153,33 @@ export function PretiumDashboard() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <p className="text-[15px] text-white/50 mt-1">Unified analytics across Pretium and Paycrest</p>
+        {/* Page Header with Period Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div>
+            <p className="text-[15px] text-white/50">Unified analytics across Pretium and Paycrest</p>
+          </div>
+          <div className="flex items-center bg-white/[0.03] rounded-lg p-1 border border-white/[0.06]">
+            {DATE_RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setDateRange(opt.value)}
+                className={`px-3 sm:px-4 py-1.5 rounded-md text-[13px] font-medium transition-all ${
+                  dateRange === opt.value
+                    ? 'bg-white text-black'
+                    : 'text-white/50 hover:text-white/80'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Metrics Grid */}
         <DashboardMetrics
           stats={stats || DEFAULT_STATS}
           loading={statsLoading}
+          periodLabel={periodLabel}
         />
 
         {/* Filters Section */}
