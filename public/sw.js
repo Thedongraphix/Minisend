@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minisend-v1';
+const CACHE_NAME = 'minisend-v2';
 const STATIC_CACHE_URLS = [
   '/',
   '/manifest.json',
@@ -43,9 +43,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (event.request.method !== 'GET') return;
-  
+
   // Skip cross-origin requests
   if (!event.request.url.startsWith(self.location.origin)) return;
+
+  // Skip API requests - let them fail naturally so React Query can retry
+  if (event.request.url.includes('/api/')) return;
 
   event.respondWith(
     fetch(event.request)
@@ -71,6 +74,8 @@ self.addEventListener('fetch', (event) => {
             if (event.request.mode === 'navigate') {
               return caches.match('/');
             }
+            // Return a proper error response instead of undefined
+            return new Response('Network error', { status: 503, statusText: 'Service Unavailable' });
           });
       })
   );
