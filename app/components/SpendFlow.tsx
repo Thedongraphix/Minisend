@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { PaymentProcessor } from './PaymentProcessor';
 import { PretiumPaymentProcessor } from './PretiumPaymentProcessor';
+import { BlockradarPaymentProcessor } from './BlockradarPaymentProcessor';
 import { BalanceView } from './BalanceView';
 import { AdvancedSelector } from './AdvancedSelector';
 import { Button } from './BaseComponents';
@@ -19,10 +20,15 @@ interface SpendFlowProps {
 
 export function SpendFlow({ setActiveTab }: SpendFlowProps) {
   const { address, isConnected } = useAccount();
-  const { minisendWallet } = useMinisendAuth();
+  const { minisendWallet, user } = useMinisendAuth();
 
   // User can proceed if they have a wagmi wallet OR a minisend wallet (email auth)
   const hasWallet = isConnected || !!minisendWallet;
+  const walletAddress = address || minisendWallet;
+
+  // Determine if user should use Blockradar for payments
+  // Use Blockradar if: has minisendWallet AND no wagmi wallet connected
+  const useBlockradarPayment = !isConnected && !!minisendWallet;
 
   const [mounted, setMounted] = useState(false);
 
@@ -330,47 +336,88 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             </div>
           </div>
 
-          {swapData.currency === 'KES' ? (
-            <PretiumPaymentProcessor
-              amount={swapData.usdcAmount}
-              phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
-              tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
-              paybillNumber={paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined}
-              paybillAccount={paymentMethod.type === 'paybill' ? paymentMethod.paybillAccount : undefined}
-              accountName={
-                paymentMethod.type === 'paybill'
-                  ? `Paybill ${paymentMethod.formatted}`
-                  : paymentMethod.type === 'till'
-                  ? `Till ${paymentMethod.formatted}`
-                  : formData.accountName
-              }
-              returnAddress={address || ''}
-              rate={swapData.rate}
-              currency={swapData.currency}
-              onSuccess={(transactionCode, txHash) => {
-                setTransactionData({ transactionCode, txHash });
-                setStep('success');
-                // Receipt readiness polling is now handled by useReceiptReadiness hook
-              }}
-              onError={() => {
-                // Error handling managed by PretiumPaymentProcessor
-              }}
-            />
-          ) : (
-            <PaymentProcessor
-              amount={swapData.usdcAmount}
-              phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
-              tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
-              accountName={formData.accountName}
-              currency={swapData.currency}
-              returnAddress={address || ''}
-              rate={swapData.rate}
-              onSuccess={() => setStep('success')}
-              onError={() => {
-                // Error handled by PaymentProcessor
-              }}
-            />
-          )}
+          {/* KES/GHS/UGX - Pretium provider */}
+          {(swapData.currency === 'KES' || swapData.currency === 'GHS' || swapData.currency === 'UGX') ? (
+            useBlockradarPayment && user?.blockradarAddressId ? (
+              <BlockradarPaymentProcessor
+                amount={swapData.usdcAmount}
+                phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
+                tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
+                accountName={
+                  paymentMethod.type === 'paybill'
+                    ? `Paybill ${paymentMethod.formatted}`
+                    : paymentMethod.type === 'till'
+                    ? `Till ${paymentMethod.formatted}`
+                    : formData.accountName
+                }
+                currency={swapData.currency}
+                blockradarAddressId={user.blockradarAddressId}
+                rate={swapData.rate}
+                onSuccess={(txCode) => {
+                  setTransactionData({ transactionCode: txCode });
+                  setStep('success');
+                }}
+                onError={() => {
+                  // Error handling managed by BlockradarPaymentProcessor
+                }}
+              />
+            ) : (
+              <PretiumPaymentProcessor
+                amount={swapData.usdcAmount}
+                phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
+                tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
+                paybillNumber={paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined}
+                paybillAccount={paymentMethod.type === 'paybill' ? paymentMethod.paybillAccount : undefined}
+                accountName={
+                  paymentMethod.type === 'paybill'
+                    ? `Paybill ${paymentMethod.formatted}`
+                    : paymentMethod.type === 'till'
+                    ? `Till ${paymentMethod.formatted}`
+                    : formData.accountName
+                }
+                returnAddress={walletAddress || ''}
+                rate={swapData.rate}
+                currency={swapData.currency}
+                onSuccess={(transactionCode, txHash) => {
+                  setTransactionData({ transactionCode, txHash });
+                  setStep('success');
+                }}
+                onError={() => {
+                  // Error handling managed by PretiumPaymentProcessor
+                }}
+              />
+            )
+          ) : swapData.currency === 'NGN' ? (
+            /* NGN - PayCrest provider */
+            useBlockradarPayment && user?.blockradarAddressId ? (
+              <BlockradarPaymentProcessor
+                amount={swapData.usdcAmount}
+                phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
+                accountName={formData.accountName}
+                currency={swapData.currency}
+                blockradarAddressId={user.blockradarAddressId}
+                rate={swapData.rate}
+                onSuccess={() => setStep('success')}
+                onError={() => {
+                  // Error handling managed by BlockradarPaymentProcessor
+                }}
+              />
+            ) : (
+              <PaymentProcessor
+                amount={swapData.usdcAmount}
+                phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
+                tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
+                accountName={formData.accountName}
+                currency={swapData.currency}
+                returnAddress={walletAddress || ''}
+                rate={swapData.rate}
+                onSuccess={() => setStep('success')}
+                onError={() => {
+                  // Error handled by PaymentProcessor
+                }}
+              />
+            )
+          ) : null}
 
           <button
             onClick={() => setStep('details')}
