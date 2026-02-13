@@ -8,6 +8,7 @@ const PRETIUM_SETTLEMENT_ADDRESS = '0x8005ee53e57ab11e11eaa4efe07ee3835dc02f98';
 
 interface BlockradarPaymentProcessorProps {
   amount: string;
+  localAmount?: string;
   phoneNumber?: string;
   tillNumber?: string;
   accountNumber?: string;
@@ -22,6 +23,7 @@ interface BlockradarPaymentProcessorProps {
 
 export function BlockradarPaymentProcessor({
   amount,
+  localAmount,
   phoneNumber,
   tillNumber,
   accountNumber,
@@ -319,6 +321,7 @@ export function BlockradarPaymentProcessor({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: baseAmount.toString(),
+          localAmount,
           phoneNumber,
           tillNumber,
           accountName,

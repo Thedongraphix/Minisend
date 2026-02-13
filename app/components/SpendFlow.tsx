@@ -371,6 +371,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             useBlockradarPayment && user?.blockradarAddressId ? (
               <BlockradarPaymentProcessor
                 amount={swapData.usdcAmount}
+                localAmount={swapData.localAmount}
                 phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
                 tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
                 accountName={
@@ -394,6 +395,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
             ) : (
               <PretiumPaymentProcessor
                 amount={swapData.usdcAmount}
+                localAmount={swapData.localAmount}
                 phoneNumber={paymentMethod.type === 'phone' ? paymentMethod.formatted : undefined}
                 tillNumber={paymentMethod.type === 'till' ? paymentMethod.formatted : undefined}
                 paybillNumber={paymentMethod.type === 'paybill' ? paymentMethod.formatted : undefined}

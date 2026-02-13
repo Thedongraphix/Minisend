@@ -645,6 +645,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             useBlockradarPayment && user?.blockradarAddressId ? (
               <BlockradarPaymentProcessor
                 amount={swapData.usdcAmount}
+                localAmount={swapData.localAmount}
                 phoneNumber={formData.phoneNumber}
                 accountName={formData.accountName}
                 currency={swapData.currency}
@@ -695,6 +696,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             ) : (
               <PretiumPaymentProcessor
                 amount={swapData.usdcAmount}
+                localAmount={swapData.localAmount}
                 phoneNumber={formData.phoneNumber}
                 accountName={formData.accountName}
                 returnAddress={walletAddress || ''}

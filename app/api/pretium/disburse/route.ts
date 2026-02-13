@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
 
     const {
       amount,
+      localAmount,
       phoneNumber,
       tillNumber,
       paybillNumber,
@@ -201,31 +202,42 @@ export async function POST(request: NextRequest) {
     console.log(`[${requestId}] Exchange rate: 1 USDC = ${exchangeRate} ${currency}`);
 
     // ========================================================================
-    // STEP 4: CALCULATE AMOUNTS PER PRETIUM DOCS
-    // Per docs/fee.md:
-    // - User wants to receive 1000 KES with 1% fee (10 KES)
-    // - Deduct 1010 KES equivalent from wallet
-    // - Send: { amount: 1010, fee: 10 }
-    // - Pretium sends 1000 to recipient, credits 10 to our fiat wallet
+    // STEP 4: CALCULATE AMOUNTS PER PRETIUM DOCS (docs/fee.md)
+    // - User wants to receive X KES → fee = ceil(X * 0.01) → amount = X + fee
+    // - Send: { amount: X + fee, fee: fee }
+    // - Pretium sends X to recipient, credits fee to our fiat wallet
     //
-    // CRITICAL: Using Math.round() instead of Math.floor() to ensure
-    // recipients receive the exact amount they expect. Math.floor() can
-    // cause users to receive less due to floating point precision issues.
-    // Example: 1212 / 1.01 = 1199.999... → floor = 1199 (wrong!)
-    //          1212 / 1.01 = 1199.999... → round = 1200 (correct!)
+    // We use the exact localAmount from the frontend (what the user wants to
+    // receive) to avoid floating-point rounding errors from USDC↔KES conversion.
     // ========================================================================
 
     const totalLocalFromUSdc = Math.round(amountNum * exchangeRate);
-    const recipientAmount = Math.round(totalLocalFromUSdc / 1.01);
-    const feeAmount = totalLocalFromUSdc - recipientAmount;
+
+    let recipientAmount: number;
+    let feeAmount: number;
+    let totalForPretium: number;
+
+    if (localAmount && !isNaN(parseFloat(localAmount))) {
+      // Use exact local amount from frontend — no rounding errors
+      recipientAmount = Math.round(parseFloat(localAmount));
+      feeAmount = Math.ceil(recipientAmount * 0.01);
+      totalForPretium = recipientAmount + feeAmount;
+    } else {
+      // Fallback: derive from USDC (legacy, less accurate)
+      recipientAmount = Math.round(totalLocalFromUSdc / 1.01);
+      feeAmount = totalLocalFromUSdc - recipientAmount;
+      totalForPretium = totalLocalFromUSdc;
+    }
 
     console.log(`[${requestId}] Amount calculation:`, {
       usdc: amountNum,
       rate: exchangeRate,
-      total_local: totalLocalFromUSdc,
+      total_local_from_usdc: totalLocalFromUSdc,
+      local_amount_from_frontend: localAmount || 'not provided',
       recipient_gets: recipientAmount,
       platform_fee: feeAmount,
-      fee_percentage: ((feeAmount / totalLocalFromUSdc) * 100).toFixed(2) + '%'
+      total_for_pretium: totalForPretium,
+      fee_percentage: ((feeAmount / totalForPretium) * 100).toFixed(2) + '%'
     });
 
     // ========================================================================
@@ -258,7 +270,7 @@ export async function POST(request: NextRequest) {
       disburseRequest = {
         type: paymentType,
         account_name: accountName,
-        amount: totalLocalFromUSdc.toString(), // Total including fee
+        amount: totalForPretium.toString(), // Total including fee
         fee: feeAmount.toString(), // Fee to be credited to our wallet
         chain: PRETIUM_CONFIG.CHAIN,
         transaction_hash: transactionHash,

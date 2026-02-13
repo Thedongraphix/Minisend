@@ -11,6 +11,7 @@ import { PRETIUM_CONFIG } from '@/lib/pretium/config';
 
 interface PretiumPaymentProcessorProps {
   amount: string;
+  localAmount?: string;
   phoneNumber?: string;
   tillNumber?: string;
   paybillNumber?: string;
@@ -28,6 +29,7 @@ interface PretiumPaymentProcessorProps {
 
 export function PretiumPaymentProcessor({
   amount,
+  localAmount,
   phoneNumber,
   tillNumber,
   paybillNumber,
@@ -110,6 +112,7 @@ export function PretiumPaymentProcessor({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: normalizedAmount,
+          localAmount,
           phoneNumber,
           tillNumber,
           paybillNumber,
@@ -143,7 +146,7 @@ export function PretiumPaymentProcessor({
         onError(error.message);
       }
     }
-  }, [amount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountName, accountNumber, bankCode, bankName, returnAddress, currency, context, startPolling, onError]);
+  }, [amount, localAmount, phoneNumber, tillNumber, paybillNumber, paybillAccount, accountName, accountNumber, bankCode, bankName, returnAddress, currency, context, startPolling, onError]);
 
   // USDC transfer using OnchainKit standard format
   // Normalize amount to 2 decimal places to match what Pretium API expects
