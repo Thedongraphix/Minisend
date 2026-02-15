@@ -410,7 +410,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
             currentPhone={formData.phoneNumber}
             currentAccount={formData.accountNumber}
             onSelect={(recipient: SavedRecipient) => {
-              if (recipient.type === 'KES' || recipient.type === 'GHS') {
+              if (recipient.type === 'KES' || recipient.type === 'GHS' || recipient.type === 'UGX') {
                 setFormData(prev => ({
                   ...prev,
                   phoneNumber: recipient.phoneNumber || '',
@@ -424,6 +424,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                   accountName: recipient.accountName,
                 }));
               }
+              setAccountVerified(true);
             }}
           />
 
