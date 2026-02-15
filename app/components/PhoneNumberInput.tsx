@@ -84,6 +84,24 @@ export function PhoneNumberInput({
   const pattern = PHONE_PATTERNS[selectedCountry];
   const countryCode = pattern.countryCode;
 
+  // Sync displayValue when external value changes (e.g. from saved recipient selection)
+  useEffect(() => {
+    if (value) {
+      const digits = value.replace(/\D/g, '');
+      // Strip country code prefix to get the local number
+      const codeDigits = countryCode.replace(/\D/g, '');
+      if (digits.startsWith(codeDigits)) {
+        setDisplayValue(digits.substring(codeDigits.length));
+      } else if (digits.startsWith('0')) {
+        setDisplayValue(digits.substring(1));
+      } else {
+        setDisplayValue(digits);
+      }
+    } else {
+      setDisplayValue('');
+    }
+  }, [value, countryCode]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
