@@ -383,26 +383,6 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
       {/* Details Step - Recipient Information */}
       {step === 'details' && swapData && (
         <>
-          {/* Compact Amount Summary */}
-          <div className="bg-[#1c1c1e] border border-[#3a3a3c] rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
-            <div>
-              <div className="text-xs text-[#8e8e93] mb-1">You&apos;ll receive</div>
-              <div className="text-white font-bold text-lg">
-                {getCurrencyInfo(swapData.currency).symbol} {parseFloat(swapData.localAmount).toLocaleString()}
-              </div>
-              <div className="text-[#8e8e93] text-xs mt-0.5">
-                ${parseFloat(swapData.usdcAmount).toFixed(4)} USDC
-              </div>
-            </div>
-            <button
-              onClick={() => setStep('swap')}
-              className="px-3 py-1.5 bg-[#2c2c2e] hover:bg-[#3a3a3c] border border-[#3a3a3c] rounded-lg transition-all text-[#8e8e93] hover:text-white text-xs font-medium"
-              title="Edit amount"
-            >
-              Edit
-            </button>
-          </div>
-
         <div className="space-y-4">
           {/* Saved Recipients Section */}
           <SavedRecipients
