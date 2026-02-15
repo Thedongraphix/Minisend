@@ -622,7 +622,7 @@ export function BlockradarPaymentProcessor({
           {/* Approve button */}
           <button
             onClick={executeWithdrawal}
-            className="w-full bg-[#007AFF] hover:bg-[#0071E3] active:bg-[#0064CC] text-white font-semibold text-[17px] py-[14px] px-6 rounded-[14px] transition-all duration-200 active:scale-[0.98]"
+            className="w-full bg-[#8b53ff] hover:bg-[#7a45e6] active:bg-[#6a35d6] text-white font-semibold text-[17px] py-[14px] px-6 rounded-[14px] transition-all duration-200 active:scale-[0.98]"
           >
             Approve & Send
           </button>
@@ -631,56 +631,42 @@ export function BlockradarPaymentProcessor({
 
       {/* ─── PROCESSING ─── */}
       {status === 'processing' && (
-        <div className="ios-card rounded-2xl p-5 animate-ios-reveal">
-          {/* Main spinner */}
-          <div className="flex flex-col items-center text-center mb-5">
-            <div className="relative mb-3">
-              <div className="w-12 h-12 rounded-full border-[2.5px] border-white/10 border-t-[#007AFF] animate-spin" />
-              <div className="absolute inset-0 w-12 h-12 rounded-full bg-[#007AFF]/10 animate-pulse" />
-            </div>
-            <p className="text-white text-[17px] font-semibold">Processing withdrawal</p>
-            <p className="text-[#98989F] text-[13px] mt-0.5">
-              {processingSteps[currentStepIndex]?.description}
-            </p>
-          </div>
+        <div className="py-6 animate-ios-reveal">
+          {/* Status text */}
+          <p className="text-center text-[#98989F] text-[13px] mb-5">
+            {processingSteps[currentStepIndex]?.description}
+          </p>
 
-          {/* Horizontal step indicators */}
-          <div className="flex items-center justify-center gap-0">
+          {/* Horizontal dots + labels */}
+          <div className="flex items-center justify-center">
             {processingSteps.map((step, index) => {
               const isActive = index === currentStepIndex;
               const isCompleted = index < currentStepIndex;
 
               return (
                 <div key={step.key} className="flex items-center">
-                  {/* Step node */}
-                  <div className="flex flex-col items-center gap-2">
+                  <div className="flex flex-col items-center gap-1.5">
+                    {/* Dot */}
                     {isCompleted ? (
-                      <div className="w-8 h-8 bg-[#34C759]/15 rounded-full flex items-center justify-center">
-                        <svg className="w-4 h-4 text-[#34C759]" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#8b53ff]" />
                     ) : isActive ? (
-                      <div className="relative w-8 h-8 flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full border-[2px] border-white/10 border-t-[#007AFF] animate-spin" />
-                      </div>
+                      <div className="w-2.5 h-2.5 rounded-full bg-[#8b53ff] animate-pulse" />
                     ) : (
-                      <div className="w-8 h-8 bg-white/[0.04] rounded-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white/20 rounded-full" />
-                      </div>
+                      <div className="w-2 h-2 rounded-full bg-white/15" />
                     )}
-                    <p className={`text-[11px] font-medium text-center w-20 leading-tight transition-colors duration-300 ${
-                      isCompleted ? 'text-[#34C759]' : isActive ? 'text-white' : 'text-[#48484A]'
+                    {/* Label */}
+                    <span className={`text-[10px] w-16 text-center leading-tight ${
+                      isCompleted ? 'text-[#8b53ff]/70' : isActive ? 'text-white/80' : 'text-[#48484A]'
                     }`}>
                       {step.label}
-                    </p>
+                    </span>
                   </div>
 
-                  {/* Connector line */}
+                  {/* Connector */}
                   {index < processingSteps.length - 1 && (
-                    <div className={`w-8 h-px mb-6 ${
-                      isCompleted ? 'bg-[#34C759]/40' : 'bg-white/[0.08]'
-                    } transition-colors duration-300`} />
+                    <div className={`w-10 h-px mb-5 ${
+                      isCompleted ? 'bg-[#8b53ff]/40' : 'bg-white/[0.06]'
+                    }`} />
                   )}
                 </div>
               );
