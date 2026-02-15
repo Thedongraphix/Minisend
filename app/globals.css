@@ -110,6 +110,17 @@ body {
   100% { stroke-dashoffset: 0; }
 }
 
+/* iOS-style shimmer for swipe slider */
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .premium-gradient {
   background: linear-gradient(135deg, #000000 0%, #111827 50%, #1F2937 100%);
 }
