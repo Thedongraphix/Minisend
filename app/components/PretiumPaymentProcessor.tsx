@@ -409,8 +409,24 @@ export function PretiumPaymentProcessor({
         </div>
       )}
 
-      {/* ─── TRANSACTION + PROCESSING PROGRESS ─── */}
-      {(status === 'ready-to-pay' || status === 'processing') && (
+      {/* ─── WALLET APPROVAL ─── */}
+      {status === 'ready-to-pay' && (
+        <div className="animate-ios-reveal">
+          <TransactionHandler
+            chainId={base.id}
+            calls={calls}
+            buttonText="Approve & Send"
+            onStatus={handleTransactionStatus}
+            onError={() => {
+              setStatus('error');
+              onError('Transaction failed');
+            }}
+          />
+        </div>
+      )}
+
+      {/* ─── PROCESSING PROGRESS ─── */}
+      {status === 'processing' && (
         <div className="space-y-3 animate-ios-reveal">
           {/* Horizontal multi-step progress */}
           <div className="ios-card rounded-2xl p-5">
@@ -462,18 +478,6 @@ export function PretiumPaymentProcessor({
               })}
             </div>
           </div>
-
-          {/* Transaction Handler (wallet approval) */}
-          <TransactionHandler
-            chainId={base.id}
-            calls={calls}
-            buttonText="Approve & Send"
-            onStatus={handleTransactionStatus}
-            onError={() => {
-              setStatus('error');
-              onError('Transaction failed');
-            }}
-          />
         </div>
       )}
 
