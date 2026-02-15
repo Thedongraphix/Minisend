@@ -45,7 +45,6 @@ export function PretiumPaymentProcessor({
 }: PretiumPaymentProcessorProps) {
   const { context } = useMiniKit();
   const [status, setStatus] = useState<'idle' | 'ready-to-pay' | 'processing' | 'success' | 'error'>('idle');
-  const [processingStep, setProcessingStep] = useState<'approving' | 'confirming' | 'disbursing'>('approving');
   const pollingStartedRef = useRef(false);
   const successTriggeredRef = useRef(false);
   const transactionDataRef = useRef<{ transactionCode?: string; txHash?: string }>({});
@@ -106,8 +105,6 @@ export function PretiumPaymentProcessor({
   const createPretiumOrder = useCallback(async (txHash: string) => {
     // Normalize amount to 2 decimal places to match blockchain transaction
     const normalizedAmount = (Math.round(parseFloat(amount) * 100) / 100).toFixed(2);
-
-    setProcessingStep('disbursing');
 
     try {
       const response = await fetch('/api/pretium/disburse', {
@@ -180,7 +177,6 @@ export function PretiumPaymentProcessor({
     switch (lifecycleStatus.statusName) {
       case 'transactionPending':
         setStatus('processing');
-        setProcessingStep('confirming');
         break;
       case 'success':
         if (successTriggeredRef.current) return;
@@ -240,7 +236,6 @@ export function PretiumPaymentProcessor({
       setIsSwipeComplete(true);
       setIsDragging(false);
       setStatus('ready-to-pay');
-      setProcessingStep('approving');
     }
   }, [isDragging, isSwipeComplete]);
 
@@ -311,15 +306,6 @@ export function PretiumPaymentProcessor({
       document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isDragging, handleTouchMove, handleTouchEnd]);
-
-  // Processing steps config
-  const processingSteps = [
-    { key: 'approving', label: 'Approve transaction', description: 'Confirm in your wallet' },
-    { key: 'confirming', label: 'Confirming on-chain', description: 'Waiting for confirmation' },
-    { key: 'disbursing', label: 'Initiating transfer', description: `Processing ${currency} payout` },
-  ];
-
-  const currentStepIndex = processingSteps.findIndex(s => s.key === processingStep);
 
   return (
     <div className="space-y-4">
@@ -409,8 +395,8 @@ export function PretiumPaymentProcessor({
         </div>
       )}
 
-      {/* ─── WALLET APPROVAL ─── */}
-      {status === 'ready-to-pay' && (
+      {/* ─── TRANSACTION (wallet approval + processing) ─── */}
+      {(status === 'ready-to-pay' || status === 'processing') && (
         <div className="animate-ios-reveal">
           <TransactionHandler
             chainId={base.id}
@@ -422,62 +408,6 @@ export function PretiumPaymentProcessor({
               onError('Transaction failed');
             }}
           />
-        </div>
-      )}
-
-      {/* ─── PROCESSING PROGRESS ─── */}
-      {status === 'processing' && (
-        <div className="space-y-3 animate-ios-reveal">
-          {/* Horizontal multi-step progress */}
-          <div className="ios-card rounded-2xl p-5">
-            {/* Active step description */}
-            <p className="text-center text-[#98989F] text-[13px] mb-4">
-              {processingSteps[currentStepIndex]?.description}
-            </p>
-
-            {/* Horizontal step indicators */}
-            <div className="flex items-center justify-center gap-0">
-              {processingSteps.map((step, index) => {
-                const isActive = index === currentStepIndex;
-                const isCompleted = index < currentStepIndex;
-
-                return (
-                  <div key={step.key} className="flex items-center">
-                    {/* Step node */}
-                    <div className="flex flex-col items-center gap-2">
-                      {isCompleted ? (
-                        <div className="w-8 h-8 bg-[#34C759]/15 rounded-full flex items-center justify-center">
-                          <svg className="w-4 h-4 text-[#34C759]" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      ) : isActive ? (
-                        <div className="relative w-8 h-8 flex items-center justify-center">
-                          <div className="w-8 h-8 rounded-full border-[2px] border-white/10 border-t-[#007AFF] animate-spin" />
-                        </div>
-                      ) : (
-                        <div className="w-8 h-8 bg-white/[0.04] rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white/20 rounded-full" />
-                        </div>
-                      )}
-                      <p className={`text-[11px] font-medium text-center w-20 leading-tight transition-colors duration-300 ${
-                        isCompleted ? 'text-[#34C759]' : isActive ? 'text-white' : 'text-[#48484A]'
-                      }`}>
-                        {step.label}
-                      </p>
-                    </div>
-
-                    {/* Connector line */}
-                    {index < processingSteps.length - 1 && (
-                      <div className={`w-8 h-px mb-6 ${
-                        isCompleted ? 'bg-[#34C759]/40' : 'bg-white/[0.08]'
-                      } transition-colors duration-300`} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
       )}
 

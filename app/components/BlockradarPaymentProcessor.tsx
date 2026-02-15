@@ -632,10 +632,17 @@ export function BlockradarPaymentProcessor({
       {/* ─── PROCESSING ─── */}
       {status === 'processing' && (
         <div className="ios-card rounded-2xl p-5 animate-ios-reveal">
-          {/* Active step description */}
-          <p className="text-center text-[#98989F] text-[13px] mb-4">
-            {processingSteps[currentStepIndex]?.description}
-          </p>
+          {/* Main spinner */}
+          <div className="flex flex-col items-center text-center mb-5">
+            <div className="relative mb-3">
+              <div className="w-12 h-12 rounded-full border-[2.5px] border-white/10 border-t-[#007AFF] animate-spin" />
+              <div className="absolute inset-0 w-12 h-12 rounded-full bg-[#007AFF]/10 animate-pulse" />
+            </div>
+            <p className="text-white text-[17px] font-semibold">Processing withdrawal</p>
+            <p className="text-[#98989F] text-[13px] mt-0.5">
+              {processingSteps[currentStepIndex]?.description}
+            </p>
+          </div>
 
           {/* Horizontal step indicators */}
           <div className="flex items-center justify-center gap-0">
