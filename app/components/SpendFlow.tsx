@@ -123,7 +123,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
   return (
     <div className="max-w-md mx-auto p-6 space-y-6 overflow-visible">
       {/* Back and Profile Buttons */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 relative z-20">
         <button
           onClick={() => setActiveTab('home')}
           className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-all duration-200"

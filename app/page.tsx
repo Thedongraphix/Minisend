@@ -162,7 +162,7 @@ export default function App() {
     <AppProvider>
       <div className="flex flex-col min-h-screen bg-black text-white font-sans mini-app-theme overflow-visible">
         {/* Main heading outside container */}
-        <div className="w-full py-6 px-4">
+        <div className="w-full py-6 px-4 relative z-20">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-3 min-w-0 flex-1">
               <Image
@@ -228,7 +228,7 @@ export default function App() {
             </div>
           )}
 
-          <main className="flex-1 overflow-visible relative">
+          <main className="flex-1 overflow-visible relative z-10">
             {activeTab === "home" && <Home setActiveTab={setActiveTab} />}
             {activeTab === "features" && <Features setActiveTab={setActiveTab} />}
             {activeTab === "offramp" && <ExchangeFlow setActiveTab={setActiveTab} />}
