@@ -45,6 +45,7 @@ export function PretiumPaymentProcessor({
 }: PretiumPaymentProcessorProps) {
   const { context } = useMiniKit();
   const [status, setStatus] = useState<'idle' | 'ready-to-pay' | 'processing' | 'success' | 'error'>('idle');
+  const [processingStep, setProcessingStep] = useState<'approving' | 'confirming' | 'disbursing'>('approving');
   const pollingStartedRef = useRef(false);
   const successTriggeredRef = useRef(false);
   const transactionDataRef = useRef<{ transactionCode?: string; txHash?: string }>({});
@@ -105,6 +106,8 @@ export function PretiumPaymentProcessor({
   const createPretiumOrder = useCallback(async (txHash: string) => {
     // Normalize amount to 2 decimal places to match blockchain transaction
     const normalizedAmount = (Math.round(parseFloat(amount) * 100) / 100).toFixed(2);
+
+    setProcessingStep('disbursing');
 
     try {
       const response = await fetch('/api/pretium/disburse', {
@@ -177,6 +180,7 @@ export function PretiumPaymentProcessor({
     switch (lifecycleStatus.statusName) {
       case 'transactionPending':
         setStatus('processing');
+        setProcessingStep('confirming');
         break;
       case 'success':
         if (successTriggeredRef.current) return;
@@ -236,6 +240,7 @@ export function PretiumPaymentProcessor({
       setIsSwipeComplete(true);
       setIsDragging(false);
       setStatus('ready-to-pay');
+      setProcessingStep('approving');
     }
   }, [isDragging, isSwipeComplete]);
 
@@ -307,90 +312,158 @@ export function PretiumPaymentProcessor({
     };
   }, [isDragging, handleTouchMove, handleTouchEnd]);
 
+  // Processing steps config
+  const processingSteps = [
+    { key: 'approving', label: 'Approve transaction', description: 'Confirm in your wallet' },
+    { key: 'confirming', label: 'Confirming on-chain', description: 'Waiting for confirmation' },
+    { key: 'disbursing', label: 'Initiating transfer', description: `Processing ${currency} payout` },
+  ];
+
+  const currentStepIndex = processingSteps.findIndex(s => s.key === processingStep);
+
   return (
     <div className="space-y-4">
-      {/* Swipe to Confirm */}
+      {/* ─── SWIPE TO CONFIRM ─── */}
       {status === 'idle' && (
-        <div className="space-y-3">
-          <div className="space-y-2">
+        <div className="space-y-3 animate-ios-reveal">
+          {/* Swipe Track */}
+          <div
+            ref={containerRef}
+            className="relative h-[58px] ios-card rounded-2xl overflow-hidden touch-none"
+            style={{ touchAction: 'none' }}
+          >
+            {/* Progress fill */}
             <div
-              ref={containerRef}
-              className="relative h-14 sm:h-14 bg-[#1c1c1e] border-2 border-[#3a3a3c] rounded-xl sm:rounded-2xl overflow-hidden touch-none"
-              style={{ touchAction: 'none' }}
-            >
-              <div
-                className="absolute inset-0 bg-[#0066FF] transition-all duration-200"
-                style={{
-                  width: `${swipeProgress}%`,
-                  opacity: swipeProgress > 0 ? 0.15 : 0
-                }}
-              />
+              className="absolute inset-0 bg-[#007AFF]/10 transition-all duration-150"
+              style={{ width: `${swipeProgress}%` }}
+            />
 
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-12">
-                <span className={`font-semibold text-xs sm:text-sm transition-all duration-200 text-white ${swipeProgress > 50 ? 'opacity-0' : 'opacity-100'}`}>
-                  {isSwipeComplete ? 'Confirming...' : 'Slide to confirm'}
-                </span>
-              </div>
+            {/* Shimmer hint */}
+            {swipeProgress === 0 && !isSwipeComplete && (
+              <div className="absolute inset-0 animate-shimmer rounded-2xl" />
+            )}
 
-              <div
-                ref={sliderRef}
-                onMouseDown={handleMouseDown}
-                onTouchStart={handleTouchStart}
-                className={`absolute left-1 top-1 bottom-1 w-10 sm:w-12 bg-[#0066FF] rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-200 ${
-                  isDragging ? 'cursor-grabbing scale-105' : 'cursor-grab active:scale-105'
-                }`}
-                style={{
-                  transform: `translateX(${(swipeProgress / 100) * (containerRef.current ? containerRef.current.offsetWidth - (containerRef.current.offsetWidth >= 640 ? 56 : 48) : 0)}px)`,
-                  transition: isDragging ? 'none' : 'transform 0.3s ease-out',
-                  WebkitTapHighlightColor: 'transparent'
-                }}
+            {/* Center label */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span
+                className="text-[15px] font-semibold text-[#98989F] transition-opacity duration-200"
+                style={{ opacity: swipeProgress > 40 ? 0 : 1 }}
               >
-                {isSwipeComplete ? (
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 5l7 7-7 7" />
-                  </svg>
-                )}
-              </div>
+                {isSwipeComplete ? 'Confirming...' : 'Slide to confirm'}
+              </span>
+            </div>
 
-              {!isSwipeComplete && swipeProgress < 90 && (
-                <>
-                  <div
-                    className="absolute right-6 sm:right-8 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity duration-200"
-                    style={{ opacity: Math.max(0, 0.3 - swipeProgress / 100) }}
-                  >
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4 text-[#8e8e93]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                  <div
-                    className="hidden sm:block absolute right-12 sm:right-14 top-1/2 -translate-y-1/2 pointer-events-none transition-opacity duration-200"
-                    style={{ opacity: Math.max(0, 0.2 - swipeProgress / 100) }}
-                  >
-                    <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#8e8e93]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </>
+            {/* Slider thumb */}
+            <div
+              ref={sliderRef}
+              onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
+              className={`absolute left-1.5 top-1.5 bottom-1.5 w-12 bg-[#007AFF] rounded-[14px] flex items-center justify-center transition-all duration-150 ${
+                isDragging ? 'cursor-grabbing shadow-[0_0_16px_rgba(0,122,255,0.5)]' : 'cursor-grab shadow-[0_0_12px_rgba(0,122,255,0.3)]'
+              }`}
+              style={{
+                transform: `translateX(${(swipeProgress / 100) * (containerRef.current ? containerRef.current.offsetWidth - 54 : 0)}px)`,
+                transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                WebkitTapHighlightColor: 'transparent'
+              }}
+            >
+              {isSwipeComplete ? (
+                <svg className="w-5 h-5 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 5l7 7-7 7" />
+                </svg>
               )}
             </div>
+
+            {/* Right chevrons hint */}
+            {!isSwipeComplete && swipeProgress < 80 && (
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none">
+                <svg
+                  className="w-3.5 h-3.5 text-[#98989F]/30"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  style={{ opacity: Math.max(0, 0.3 - swipeProgress / 200) }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+                <svg
+                  className="w-3.5 h-3.5 text-[#98989F]/50"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  style={{ opacity: Math.max(0, 0.5 - swipeProgress / 150) }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[#8e8e93] text-[10px] sm:text-xs px-2">
-            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          {/* Trust badge */}
+          <div className="flex items-center justify-center gap-1.5 text-[#98989F] text-[11px]">
+            <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            <span className="text-center">Slide to authorize transaction</span>
+            <span>Protected by Minisend</span>
           </div>
         </div>
       )}
 
-      {/* Transaction Component */}
+      {/* ─── TRANSACTION + PROCESSING PROGRESS ─── */}
       {(status === 'ready-to-pay' || status === 'processing') && (
-        <div>
+        <div className="space-y-3 animate-ios-reveal">
+          {/* Horizontal multi-step progress */}
+          <div className="ios-card rounded-2xl p-5">
+            {/* Active step description */}
+            <p className="text-center text-[#98989F] text-[13px] mb-4">
+              {processingSteps[currentStepIndex]?.description}
+            </p>
+
+            {/* Horizontal step indicators */}
+            <div className="flex items-center justify-center gap-0">
+              {processingSteps.map((step, index) => {
+                const isActive = index === currentStepIndex;
+                const isCompleted = index < currentStepIndex;
+
+                return (
+                  <div key={step.key} className="flex items-center">
+                    {/* Step node */}
+                    <div className="flex flex-col items-center gap-2">
+                      {isCompleted ? (
+                        <div className="w-8 h-8 bg-[#34C759]/15 rounded-full flex items-center justify-center">
+                          <svg className="w-4 h-4 text-[#34C759]" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      ) : isActive ? (
+                        <div className="relative w-8 h-8 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full border-[2px] border-white/10 border-t-[#007AFF] animate-spin" />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 bg-white/[0.04] rounded-full flex items-center justify-center">
+                          <div className="w-2 h-2 bg-white/20 rounded-full" />
+                        </div>
+                      )}
+                      <p className={`text-[11px] font-medium text-center w-20 leading-tight transition-colors duration-300 ${
+                        isCompleted ? 'text-[#34C759]' : isActive ? 'text-white' : 'text-[#48484A]'
+                      }`}>
+                        {step.label}
+                      </p>
+                    </div>
+
+                    {/* Connector line */}
+                    {index < processingSteps.length - 1 && (
+                      <div className={`w-8 h-px mb-6 ${
+                        isCompleted ? 'bg-[#34C759]/40' : 'bg-white/[0.08]'
+                      } transition-colors duration-300`} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Transaction Handler (wallet approval) */}
           <TransactionHandler
             chainId={base.id}
             calls={calls}
@@ -404,47 +477,42 @@ export function PretiumPaymentProcessor({
         </div>
       )}
 
-      {/* Success */}
+      {/* ─── SUCCESS ─── */}
       {status === 'success' && (
-        <div className="text-center space-y-6 py-8">
-          <div className="relative">
-            <div className="w-24 h-24 mx-auto bg-green-500 rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-green-500/50">
-              <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="absolute inset-0 w-24 h-24 mx-auto bg-green-500 rounded-full animate-ping opacity-20"></div>
+        <div className="text-center space-y-5 py-6 animate-ios-reveal">
+          {/* iOS-style success checkmark */}
+          <div className="w-20 h-20 mx-auto bg-[#34C759] rounded-full flex items-center justify-center animate-ios-spring">
+            <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 13l4 4L19 7" strokeDasharray="24" strokeDashoffset="0" className="animate-checkmark" />
+            </svg>
           </div>
 
-          <div className="space-y-2">
-            <h3 className="text-white font-bold text-2xl">Transaction Confirmed!</h3>
-            <p className="text-green-300 text-base font-medium">
-              Your USDC payment was sent successfully
+          <div className="space-y-1.5">
+            <h3 className="text-white font-bold text-[22px] tracking-tight">Payment Sent</h3>
+            <p className="text-[#98989F] text-[15px]">
+              Your {currency} transfer is being processed
             </p>
-            <p className="text-gray-400 text-sm">
-              Processing your M-Pesa transfer...
-            </p>
-          </div>
-
-          <div className="flex items-center justify-center space-x-2 text-gray-400 text-sm">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
           </div>
         </div>
       )}
 
-      {/* Error */}
+      {/* ─── ERROR ─── */}
       {status === 'error' && (
-        <div className="text-center space-y-4 py-8">
-          <div className="w-20 h-20 mx-auto bg-red-500/10 rounded-full flex items-center justify-center">
-            <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-white font-bold text-xl">Transaction Failed</h3>
-            <p className="text-red-400 text-sm">Please try again</p>
+        <div className="space-y-4 animate-ios-reveal">
+          <div className="ios-card rounded-2xl p-6">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-14 h-14 bg-[#FF3B30]/10 rounded-2xl flex items-center justify-center">
+                <svg className="w-7 h-7 text-[#FF3B30]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-white font-bold text-[20px] tracking-tight">Something went wrong</h3>
+                <p className="text-[#98989F] text-[14px]">
+                  Your transaction could not be completed. Please try again.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
