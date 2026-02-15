@@ -121,6 +121,15 @@ body {
   100% { background-position: -200% 0; }
 }
 
+/* Rates ticker marquee */
+.animate-ticker {
+  animation: ticker 20s linear infinite;
+}
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 .premium-gradient {
   background: linear-gradient(135deg, #000000 0%, #111827 50%, #1F2937 100%);
 }

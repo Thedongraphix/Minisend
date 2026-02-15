@@ -242,6 +242,112 @@ export function ActionCircle({ icon, label, onClick }: ActionCircleProps) {
   );
 }
 
+// Live exchange rates marquee ticker
+function RatesTicker() {
+  const [rates, setRates] = useState<{ currency: string; flag: string; symbol: string; rate: string }[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const currencies = [
+      { code: 'KES', flag: '🇰🇪', symbol: 'KES' },
+      { code: 'GHS', flag: '🇬🇭', symbol: 'GHS' },
+      { code: 'UGX', flag: '🇺🇬', symbol: 'UGX' },
+      { code: 'NGN', flag: '🇳🇬', symbol: 'NGN' },
+    ];
+
+    const fetchRates = async () => {
+      try {
+        const pretiumCurrencies = currencies.filter(c => c.code !== 'NGN');
+        const ngnCurrency = currencies.find(c => c.code === 'NGN');
+
+        const pretiumResults = await Promise.all(
+          pretiumCurrencies.map(async (c) => {
+            try {
+              const res = await fetch(`/api/pretium/rates?currency=${c.code}`);
+              const data = await res.json();
+              if (data.success && data.rates?.buying_rate) {
+                return {
+                  currency: c.code,
+                  flag: c.flag,
+                  symbol: c.symbol,
+                  rate: parseFloat(data.rates.buying_rate).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }),
+                };
+              }
+            } catch {
+              // skip failed currency
+            }
+            return null;
+          })
+        );
+
+        // Fetch NGN from Paycrest
+        let ngnResult = null;
+        if (ngnCurrency) {
+          try {
+            const res = await fetch('/api/paycrest/rates/USDC/1/NGN');
+            const data = await res.json();
+            if (data.success && data.rate) {
+              ngnResult = {
+                currency: ngnCurrency.code,
+                flag: ngnCurrency.flag,
+                symbol: ngnCurrency.symbol,
+                rate: parseFloat(data.rate).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }),
+              };
+            }
+          } catch {
+            // skip NGN
+          }
+        }
+
+        const allResults = [...pretiumResults, ngnResult];
+        const valid = allResults.filter(Boolean) as { currency: string; flag: string; symbol: string; rate: string }[];
+        if (valid.length > 0) {
+          setRates(valid);
+          setLoaded(true);
+        }
+      } catch {
+        // silently fail
+      }
+    };
+
+    fetchRates();
+    const interval = setInterval(fetchRates, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!loaded || rates.length === 0) return null;
+
+  // Duplicate items for seamless loop
+  const tickerItems = [...rates, ...rates];
+
+  return (
+    <div className="relative overflow-hidden rounded-xl bg-white/[0.02] border border-white/[0.04] py-2.5">
+      {/* Left fade */}
+      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-black to-transparent z-10 pointer-events-none" />
+      {/* Right fade */}
+      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-black to-transparent z-10 pointer-events-none" />
+
+      <div className="flex animate-ticker whitespace-nowrap">
+        {tickerItems.map((r, i) => (
+          <div key={`${r.currency}-${i}`} className="flex items-center gap-4 mx-5 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="text-base leading-none">{r.flag}</span>
+              <span className="text-white/40 text-[11px] font-medium">{r.symbol}</span>
+            </div>
+            <span className="text-white text-[13px] font-semibold tabular-nums">{r.rate}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Rich promotional banners carousel
 function InfoBanners({ setActiveTab }: { setActiveTab: (tab: string) => void }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -393,7 +499,7 @@ type HomeProps = {
 
 export function Home({ setActiveTab }: HomeProps) {
   const [mounted, setMounted] = useState(false);
-  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const [isBalanceVisible, setIsBalanceVisible] = useState(false);
   const [showDeposit, setShowDeposit] = useState(false);
   const [copied, setCopied] = useState(false);
   const qrContainerRef = useRef<HTMLDivElement>(null);
@@ -558,8 +664,13 @@ export function Home({ setActiveTab }: HomeProps) {
         />
       </div>
 
+     
+
       {/* Info Banners */}
       <InfoBanners setActiveTab={setActiveTab} />
+
+       {/* Live Rates Ticker */}
+       <RatesTicker />
 
       {/* Deposit Modal Overlay */}
       {showDeposit && minisendWallet && (
