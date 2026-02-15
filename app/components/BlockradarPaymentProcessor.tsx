@@ -637,7 +637,7 @@ export function BlockradarPaymentProcessor({
             {processingSteps[currentStepIndex]?.description}
           </p>
 
-          {/* Horizontal dots + labels */}
+          {/* Horizontal spinners + dashes */}
           <div className="flex items-center justify-center">
             {processingSteps.map((step, index) => {
               const isActive = index === currentStepIndex;
@@ -646,27 +646,44 @@ export function BlockradarPaymentProcessor({
               return (
                 <div key={step.key} className="flex items-center">
                   <div className="flex flex-col items-center gap-1.5">
-                    {/* Dot */}
+                    {/* Node */}
                     {isCompleted ? (
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#8b53ff]" />
+                      <div className="w-5 h-5 rounded-full border-2 border-[#8b53ff] flex items-center justify-center">
+                        <svg className="w-3 h-3 text-[#8b53ff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
                     ) : isActive ? (
-                      <div className="w-2.5 h-2.5 rounded-full bg-[#8b53ff] animate-pulse" />
+                      <div className="w-5 h-5 rounded-full border-2 border-white/10 border-t-[#8b53ff] animate-spin" />
                     ) : (
-                      <div className="w-2 h-2 rounded-full bg-white/15" />
+                      <div className="w-5 h-5 rounded-full border-2 border-white/10" />
                     )}
                     {/* Label */}
                     <span className={`text-[10px] w-16 text-center leading-tight ${
-                      isCompleted ? 'text-[#8b53ff]/70' : isActive ? 'text-white/80' : 'text-[#48484A]'
+                      isCompleted ? 'text-[#8b53ff]' : isActive ? 'text-white/80' : 'text-[#48484A]'
                     }`}>
                       {step.label}
                     </span>
                   </div>
 
-                  {/* Connector */}
+                  {/* Dashed connector */}
                   {index < processingSteps.length - 1 && (
-                    <div className={`w-10 h-px mb-5 ${
-                      isCompleted ? 'bg-[#8b53ff]/40' : 'bg-white/[0.06]'
-                    }`} />
+                    <div className="flex items-center gap-[3px] mb-5 mx-1">
+                      {[0, 1, 2, 3].map((dash) => (
+                        <div
+                          key={dash}
+                          className="w-[6px] h-[2px] rounded-full transition-colors duration-300"
+                          style={{
+                            backgroundColor: isCompleted
+                              ? '#8b53ff'
+                              : isActive
+                                ? `rgba(139, 83, 255, ${Math.max(0.15, 1 - dash * 0.3)})`
+                                : 'rgba(255, 255, 255, 0.06)',
+                            transitionDelay: isActive ? `${dash * 150}ms` : '0ms',
+                          }}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
               );
