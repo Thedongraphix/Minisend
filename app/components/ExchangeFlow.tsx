@@ -650,6 +650,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                 accountName={formData.accountName}
                 currency={swapData.currency}
                 blockradarAddressId={user.blockradarAddressId}
+                walletAddress={walletAddress || ''}
                 rate={swapData.rate}
                 onSuccess={(txCode) => {
                   if (txCode) {
@@ -756,6 +757,7 @@ export function ExchangeFlow({ setActiveTab }: ExchangeFlowProps) {
                 accountName={formData.accountName}
                 currency={swapData.currency}
                 blockradarAddressId={user.blockradarAddressId}
+                walletAddress={walletAddress || ''}
                 rate={swapData.rate}
                 onSuccess={(orderId) => {
                   if (orderId) {

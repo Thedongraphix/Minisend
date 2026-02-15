@@ -16,6 +16,7 @@ interface BlockradarPaymentProcessorProps {
   accountName: string;
   currency: 'KES' | 'NGN' | 'GHS' | 'UGX';
   blockradarAddressId: string;
+  walletAddress: string;
   rate?: number | null;
   onSuccess: (orderId?: string) => void;
   onError: (error: string) => void;
@@ -31,6 +32,7 @@ export function BlockradarPaymentProcessor({
   accountName,
   currency,
   blockradarAddressId,
+  walletAddress,
   rate,
   onSuccess,
   onError
@@ -84,7 +86,7 @@ export function BlockradarPaymentProcessor({
           accountName,
           currency,
           provider: 'Bank Transfer',
-          returnAddress: '', // Not needed for Blockradar withdrawals
+          returnAddress: walletAddress, // User's wallet for transaction history tracking
           ...(rate && { rate }),
           ...(context?.user?.fid && {
             fid: context.user.fid,
@@ -142,7 +144,7 @@ export function BlockradarPaymentProcessor({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Failed to create order');
     }
-  }, [amount, phoneNumber, tillNumber, accountNumber, bankCode, accountName, currency, rate, onError, context?.user?.fid, context?.user?.username, context?.user?.displayName, context?.user?.pfpUrl, context?.client?.clientFid, context?.client?.platformType, context?.location?.type]);
+  }, [amount, phoneNumber, tillNumber, accountNumber, bankCode, accountName, currency, walletAddress, rate, onError, context?.user?.fid, context?.user?.username, context?.user?.displayName, context?.user?.pfpUrl, context?.client?.clientFid, context?.client?.platformType, context?.location?.type]);
 
   // Execute Blockradar withdrawal to PayCrest (for NGN)
   const executeBlockradarWithdrawPaycrest = useCallback(async () => {
@@ -326,7 +328,7 @@ export function BlockradarPaymentProcessor({
           tillNumber,
           accountName,
           transactionHash,
-          returnAddress: blockradarAddressId, // Use address ID as reference
+          returnAddress: walletAddress, // User's wallet for transaction history tracking
           currency,
           ...(context?.user?.fid && { fid: context.user.fid })
         }),
@@ -355,7 +357,7 @@ export function BlockradarPaymentProcessor({
       setStatus('error');
       onError(error instanceof Error ? error.message : 'Transaction failed');
     }
-  }, [amount, blockradarAddressId, currency, accountName, phoneNumber, tillNumber, context?.user?.fid, onSuccess, onError, pollForTransactionHash]);
+  }, [amount, blockradarAddressId, walletAddress, currency, accountName, phoneNumber, tillNumber, context?.user?.fid, onSuccess, onError, pollForTransactionHash, localAmount]);
 
   // Initiate order creation on swipe complete
   const initiatePayment = useCallback(async () => {

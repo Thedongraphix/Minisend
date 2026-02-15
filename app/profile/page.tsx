@@ -258,6 +258,17 @@ export default function ProfilePage() {
   }, [allOrders]);
 
   const getPaymentDestination = (order: Order) => {
+    // Pretium paybill orders
+    if (order.paybill_number) {
+      return `Paybill ${order.paybill_number}${order.paybill_account ? ` (${order.paybill_account})` : ''}`;
+    }
+
+    // Pretium till/buy goods orders
+    if (order.till_number) {
+      return `Till ${order.till_number}`;
+    }
+
+    // PayCrest-style paybill (via memo field)
     if (order.memo && order.memo.includes('Account:')) {
       const paybillMatch = order.phone_number?.match(/\d+/);
       const accountMatch = order.memo.match(/Account:\s*(\d+)/);
@@ -266,10 +277,7 @@ export default function ProfilePage() {
       }
     }
 
-    if (order.phone_number && order.phone_number.length <= 8 && /^\d+$/.test(order.phone_number)) {
-      return `Till ${order.phone_number}`;
-    }
-
+    // M-Pesa mobile payments
     if (order.phone_number) {
       const cleanNumber = order.phone_number.replace(/\D/g, '');
       if (cleanNumber.length === 9) {
@@ -278,7 +286,12 @@ export default function ProfilePage() {
       return order.phone_number;
     }
 
-    return order.account_number || 'Unknown';
+    // NGN bank transfers
+    if (order.account_number) {
+      return order.account_name ? `${order.account_name} (${order.account_number})` : order.account_number;
+    }
+
+    return order.account_name || 'Unknown';
   };
 
   const getTimezoneInfo = (currency?: string) => {

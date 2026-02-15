@@ -383,6 +383,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
                 }
                 currency={swapData.currency}
                 blockradarAddressId={user.blockradarAddressId}
+                walletAddress={walletAddress || ''}
                 rate={swapData.rate}
                 onSuccess={(txCode) => {
                   setTransactionData({ transactionCode: txCode });
@@ -428,6 +429,7 @@ export function SpendFlow({ setActiveTab }: SpendFlowProps) {
                 accountName={formData.accountName}
                 currency={swapData.currency}
                 blockradarAddressId={user.blockradarAddressId}
+                walletAddress={walletAddress || ''}
                 rate={swapData.rate}
                 onSuccess={() => setStep('success')}
                 onError={() => {
